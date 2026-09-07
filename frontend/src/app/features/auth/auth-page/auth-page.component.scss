@@ -206,4 +206,9 @@ h1 {
   color: var(--text-tertiary);
   padding-top: 24px;
   margin: 0;
+
+  a {
+    color: var(--text-secondary);
+    text-decoration: underline;
+  }
 }

@@ -1,0 +1,50 @@
+.banner {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+}
+
+p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+
+  a {
+    color: var(--accent);
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  flex: 1;
+  height: 42px;
+  border-radius: var(--radius-pill);
+  font: 600 12.5px/1 var(--font-ui);
+  cursor: pointer;
+  border: 1px solid transparent;
+
+  &.ghost {
+    background: transparent;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  &.primary {
+    background: var(--accent);
+    color: var(--accent-on);
+  }
+}

@@ -14,6 +14,13 @@ export const routes: Routes = [
     data: { mode: 'register' },
   },
   {
+    path: 'privacy',
+    loadComponent: () =>
+      import('./features/legal/privacy-policy/privacy-policy.component').then(
+        (m) => m.PrivacyPolicyComponent,
+      ),
+  },
+  {
     path: 'auth/callback',
     loadComponent: () =>
       import('./features/auth/auth-callback/auth-callback.component').then(
