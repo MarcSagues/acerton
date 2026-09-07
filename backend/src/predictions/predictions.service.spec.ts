@@ -11,7 +11,7 @@ function buildPrismaMock(predictions: unknown[]) {
 
 function buildSubmitDeps(
   match: { status: string; kickoff: Date; matchdayId?: string },
-  options: { isCurrentMatchday?: boolean } = {},
+  options: { canAcceptPredictions?: boolean } = {},
 ) {
   const prisma = {
     match: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', matchdayId: 'md1', ...match }) },
@@ -20,7 +20,7 @@ function buildSubmitDeps(
   const wildcardsService = { assertCanUseDoubleChance: jest.fn().mockResolvedValue(undefined) };
   const groupsService = { assertIsMember: jest.fn().mockResolvedValue(undefined) };
   const matchdaysService = {
-    isCurrentMatchday: jest.fn().mockResolvedValue(options.isCurrentMatchday ?? true),
+    canAcceptPredictions: jest.fn().mockResolvedValue(options.canAcceptPredictions ?? true),
   };
   const service = new PredictionsService(
     prisma as never,
@@ -141,7 +141,7 @@ describe('PredictionsService.submit', () => {
   it('rechaza un partido de una jornada futura previsualizada (todavia no es la jornada actual)', async () => {
     const { service, prisma } = buildSubmitDeps(
       { status: 'SCHEDULED', kickoff: future },
-      { isCurrentMatchday: false },
+      { canAcceptPredictions: false },
     );
 
     await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).rejects.toThrow();

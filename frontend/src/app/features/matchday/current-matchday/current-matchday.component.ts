@@ -53,6 +53,8 @@ export class CurrentMatchdayComponent {
   readonly navigating = signal(false);
   /** Id de la jornada "en vivo" de cada pestana (competicion), tal como se cargo al entrar — para saber si te has alejado navegando y poder volver. */
   private readonly liveMatchdayIds = signal<Record<number, string>>({});
+  /** Orden de esa misma jornada "en vivo" — para saber si la que se esta viendo ahora es una previsualizacion futura (ver isFuturePreview). */
+  private readonly liveMatchdayOrders = signal<Record<number, number>>({});
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -82,6 +84,21 @@ export class CurrentMatchdayComponent {
     const entry = this.activeEntry();
     if (!entry) return true;
     return this.liveMatchdayIds()[this.activeTabIndex()] === entry.matchday.id;
+  });
+  /**
+   * true cuando la jornada que se esta viendo tiene un numero de orden mayor
+   * que el de la "en vivo" — es decir, es una previsualizacion de una
+   * jornada que todavia no le toca (navegacion "siguiente"). Una jornada con
+   * numero menor que la actual pero que se ve al navegar "anterior" NO
+   * cuenta como futura aunque cierre mas tarde por un aplazamiento: esa ya
+   * deberia poder predecirse (ver MatchdaysService.canAcceptPredictions en
+   * el backend, misma regla espejada aqui).
+   */
+  readonly isFuturePreview = computed(() => {
+    const entry = this.activeEntry();
+    if (!entry) return false;
+    const liveOrder = this.liveMatchdayOrders()[this.activeTabIndex()];
+    return liveOrder !== undefined && entry.matchday.order > liveOrder;
   });
   /**
    * Metodo normal, no computed(): predictionState es un Map mutado a mano
@@ -127,6 +144,7 @@ export class CurrentMatchdayComponent {
       next: (entries) => {
         this.entries.set(entries);
         this.liveMatchdayIds.set(Object.fromEntries(entries.map((e, i) => [i, e.matchday.id])));
+        this.liveMatchdayOrders.set(Object.fromEntries(entries.map((e, i) => [i, e.matchday.order])));
         this.activeTabIndex.set(0);
         this.loadExistingPredictions(groupId, entries);
         this.refreshComeback(groupId);

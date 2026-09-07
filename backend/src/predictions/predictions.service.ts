@@ -32,7 +32,7 @@ export class PredictionsService {
     if (!isMatchPredictable(match, new Date())) {
       throw new ForbiddenException('Este partido ya ha empezado, no se admiten mas predicciones');
     }
-    if (!(await this.matchdaysService.isCurrentMatchday(match.matchdayId))) {
+    if (!(await this.matchdaysService.canAcceptPredictions(match.matchdayId))) {
       throw new ForbiddenException(
         'Todavia no se puede predecir esta jornada, espera a que sea la jornada actual',
       );

@@ -311,26 +311,32 @@ export class MatchdaysService {
   }
 
   /**
-   * true si esta jornada es la "actual" de su competicion (ver
-   * getCurrentMatchdayForCompetition). Se usa para no dejar enviar
-   * pronosticos en una jornada futura que se sincronizo solo para
-   * previsualizarla (navegacion "siguiente"): predecir toca cuando le llegue
-   * el turno, no antes — si no, la app pierde el motivo para abrirla cada
-   * semana.
+   * true si esta jornada ya deberia poder recibir pronosticos: es la jornada
+   * "actual" de su competicion (ver getCurrentMatchdayForCompetition, la de
+   * cierre mas proximo) o una anterior en el orden de rondas. Esto ultimo
+   * cubre el caso de una jornada con numero mas bajo que la actual pero que
+   * se juega mas tarde por un aplazamiento — no es una jornada "futura" que
+   * se este intentando rellenar antes de tiempo, sino una que se quedo
+   * atras; bloquearla solo confundiria al usuario sin aportar nada. Lo que
+   * si se bloquea es una jornada con numero mas alto que la actual
+   * (navegacion "siguiente" antes de que le toque) — eso es lo que evitaria
+   * rellenar varias semanas de golpe y le quitaria a la app el motivo para
+   * abrirla cada semana.
    */
-  async isCurrentMatchday(matchdayId: string): Promise<boolean> {
+  async canAcceptPredictions(matchdayId: string): Promise<boolean> {
     const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
     if (!matchday || matchday.status === 'FINISHED') {
       return false;
     }
 
-    const earlierPending = await this.prisma.matchday.findFirst({
-      where: {
-        competitionId: matchday.competitionId,
-        status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] },
-        closesAt: { lt: matchday.closesAt },
-      },
+    const current = await this.prisma.matchday.findFirst({
+      where: { competitionId: matchday.competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
+      orderBy: { closesAt: 'asc' },
     });
-    return !earlierPending;
+    if (!current) {
+      return true;
+    }
+
+    return matchday.order <= current.order;
   }
 }
