@@ -76,6 +76,13 @@ export class RankingsPageComponent {
     if (groupId) this.fetchRanking(groupId);
   }
 
+  /** "+2"/"-1"/"=" para el indicador de posicion ganada/perdida respecto a la jornada anterior. */
+  deltaLabel(delta: number): string {
+    if (delta > 0) return `+${delta}`;
+    if (delta < 0) return `${delta}`;
+    return '=';
+  }
+
   initials(name: string): string {
     return name
       .split(/\s+/)

@@ -148,7 +148,14 @@ export class RankingsService {
     ]);
   }
 
-  /** Ultima foto de clasificacion disponible para un scope (semanal = ultima jornada; total = mas reciente acumulada). */
+  /**
+   * Ultima foto de clasificacion disponible para un scope (semanal = ultima
+   * jornada; total = mas reciente acumulada), con `positionDelta` (positivo
+   * = ha subido, negativo = ha bajado, 0 = igual) respecto a la foto anterior
+   * de ese mismo scope. Si no hay foto anterior (primera jornada jugada) se
+   * compara contra la posicion 1 para todos: antes de jugarse nada todo el
+   * mundo esta a 0 puntos, osea empatado en la misma posicion.
+   */
   async getLatestRanking(groupId: string, period: RankingPeriod, competitionId: string | null) {
     const latest = await this.prisma.rankingSnapshot.findFirst({
       where: { groupId, period, competitionId },
@@ -158,11 +165,29 @@ export class RankingsService {
       return this.emptyRanking(groupId, period, competitionId);
     }
 
-    return this.prisma.rankingSnapshot.findMany({
-      where: { groupId, period, competitionId, matchdayId: latest.matchdayId },
-      orderBy: { position: 'asc' },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
-    });
+    const [current, previousSnapshot] = await Promise.all([
+      this.prisma.rankingSnapshot.findMany({
+        where: { groupId, period, competitionId, matchdayId: latest.matchdayId },
+        orderBy: { position: 'asc' },
+        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      }),
+      this.prisma.rankingSnapshot.findFirst({
+        where: { groupId, period, competitionId, matchdayId: { not: latest.matchdayId } },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const previousRows = previousSnapshot
+      ? await this.prisma.rankingSnapshot.findMany({
+          where: { groupId, period, competitionId, matchdayId: previousSnapshot.matchdayId },
+        })
+      : [];
+    const previousPositionByUser = new Map(previousRows.map((row) => [row.userId, row.position]));
+
+    return current.map((row) => ({
+      ...row,
+      positionDelta: (previousPositionByUser.get(row.userId) ?? 1) - row.position,
+    }));
   }
 
   /**
@@ -186,6 +211,7 @@ export class RankingsService {
       userId: entry.userId,
       points: entry.points,
       position: entry.position,
+      positionDelta: 0,
       createdAt: new Date(),
       user: members.find((m) => m.userId === entry.userId)!.user,
     }));

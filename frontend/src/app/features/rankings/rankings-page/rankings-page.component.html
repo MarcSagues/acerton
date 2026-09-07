@@ -30,6 +30,9 @@
         <div class="my-pos mono">{{ mine.position }}</div>
         <div class="my-meta">
           <div class="my-name">Tu · {{ mine.user.name }}</div>
+          <div class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
+            {{ deltaLabel(mine.positionDelta) }} esta semana
+          </div>
         </div>
         <div class="my-pts">
           <div class="pts-value mono">{{ mine.points }}</div>
@@ -40,6 +43,7 @@
 
     <div class="table-head">
       <div class="col-pos mono">#</div>
+      <div class="col-delta mono"></div>
       <div class="col-name mono">JUGADOR</div>
       <div class="col-pts mono">PTS</div>
     </div>
@@ -53,6 +57,9 @@
         @for (row of rows(); track row.userId) {
           <div class="row" [class.me]="row.userId === currentUserId">
             <div class="col-pos mono">{{ row.position }}</div>
+            <div class="col-delta mono" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
+              {{ deltaLabel(row.positionDelta) }}
+            </div>
             <div class="col-name">
               <span class="avatar">{{ initials(row.user.name) }}</span>
               <span class="name">{{ row.user.name }}</span>

@@ -99,6 +99,20 @@
   font: 600 14px/1.2 var(--font-ui);
 }
 
+.my-delta {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+
+  &.up {
+    color: var(--accent);
+  }
+
+  &.down {
+    color: var(--danger);
+  }
+}
+
 .my-pts {
   text-align: right;
 }
@@ -184,6 +198,21 @@
   width: 38px;
   text-align: right;
   font: 700 14px/1 var(--font-mono);
+}
+
+.col-delta {
+  width: 26px;
+  text-align: center;
+  font: 600 11px/1 var(--font-mono);
+  color: var(--text-tertiary);
+
+  &.up {
+    color: var(--accent);
+  }
+
+  &.down {
+    color: var(--danger);
+  }
 }
 
 .empty {
