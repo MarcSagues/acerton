@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Matchday, PredictionChoice } from '@prisma/client';
+import { Competition, Matchday, PredictionChoice } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   FOOTBALL_PROVIDER,
@@ -50,8 +50,76 @@ export class MatchdaysService {
       return null;
     }
 
-    const roundName = fixtures[0].round;
     const existingCount = await this.prisma.matchday.count({ where: { competitionId } });
+    return this.persistRoundFixtures(competition, fixtures, existingCount);
+  }
+
+  /**
+   * Jornada anterior/siguiente a una dada, dentro de la misma competicion,
+   * ordenada por `order` (numero de jornada) en vez de por closesAt, para
+   * que un partido reprogramado antes/despues de su jornada no desordene la
+   * navegacion. "Anterior" siempre esta ya sincronizada (no se borra
+   * historial); "siguiente" se sincroniza bajo demanda contra el proveedor
+   * la primera vez que se pide, si todavia no existe en BBDD.
+   */
+  async getAdjacentMatchday(matchdayId: string, direction: 'previous' | 'next') {
+    const current = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
+    if (!current) {
+      throw new NotFoundException('Jornada no encontrada');
+    }
+
+    if (direction === 'previous') {
+      const previous = await this.prisma.matchday.findFirst({
+        where: { competitionId: current.competitionId, order: { lt: current.order } },
+        orderBy: { order: 'desc' },
+      });
+      return previous ? this.getMatchdayWithMatches(previous.id) : null;
+    }
+
+    const existingNext = await this.prisma.matchday.findFirst({
+      where: { competitionId: current.competitionId, order: { gt: current.order } },
+      orderBy: { order: 'asc' },
+    });
+    if (existingNext) {
+      return this.getMatchdayWithMatches(existingNext.id);
+    }
+
+    return this.syncSpecificRound(current.competitionId, current.order + 1);
+  }
+
+  /**
+   * Sincroniza bajo demanda una jornada por su numero de orden concreto (no
+   * la "actual" del proveedor) — usado solo para previsualizar la siguiente
+   * jornada antes de que se convierta en la actual. Solo funciona en
+   * competiciones de liga regular con jornadas numeradas: en fases de
+   * eliminatoria el proveedor puede no devolver nada para ese numero, y
+   * entonces simplemente no hay "siguiente" que mostrar todavia.
+   */
+  private async syncSpecificRound(competitionId: string, roundNumber: number) {
+    const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
+    if (!competition) {
+      throw new NotFoundException('Competicion no encontrada');
+    }
+
+    const fixtures = await this.footballProvider.getFixturesForRound(
+      competition.externalId,
+      competition.currentSeason,
+      roundNumber,
+    );
+    if (fixtures.length === 0) {
+      return null;
+    }
+
+    const matchday = await this.persistRoundFixtures(competition, fixtures, roundNumber - 1);
+    return this.getMatchdayWithMatches(matchday.id);
+  }
+
+  private async persistRoundFixtures(
+    competition: Competition,
+    fixtures: ProviderFixture[],
+    fallbackOrderIndex: number,
+  ): Promise<Matchday> {
+    const roundName = fixtures[0].round;
     const closesAt = fixtures.reduce(
       (min, fixture) => (fixture.kickoff < min ? fixture.kickoff : min),
       fixtures[0].kickoff,
@@ -60,17 +128,17 @@ export class MatchdaysService {
     const matchday = await this.prisma.matchday.upsert({
       where: {
         competitionId_season_name: {
-          competitionId,
+          competitionId: competition.id,
           season: competition.currentSeason,
           name: roundName,
         },
       },
       update: { closesAt },
       create: {
-        competitionId,
+        competitionId: competition.id,
         season: competition.currentSeason,
         name: roundName,
-        order: parseRoundOrder(roundName, existingCount),
+        order: parseRoundOrder(roundName, fallbackOrderIndex),
         closesAt,
         status: 'OPEN',
       },

@@ -87,12 +87,20 @@ export class FootballDataOrgProvider implements FootballProvider {
       return [];
     }
 
+    return this.getFixturesForRound(competitionExternalId, season, currentMatchday);
+  }
+
+  async getFixturesForRound(
+    competitionExternalId: number,
+    season: number,
+    round: number,
+  ): Promise<ProviderFixture[]> {
     this.logger.log(
-      `Peticion football-data.org: /competitions/${competitionExternalId}/matches jornada=${currentMatchday}`,
+      `Peticion football-data.org: /competitions/${competitionExternalId}/matches jornada=${round}`,
     );
     const matchesResponse = await this.http.get<{ matches: FootballDataMatch[] }>(
       `/competitions/${competitionExternalId}/matches`,
-      { params: { matchday: currentMatchday, season } },
+      { params: { matchday: round, season } },
     );
 
     return matchesResponse.data.matches.map(mapMatch);

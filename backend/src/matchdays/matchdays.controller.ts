@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Query } from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { MatchdaysService } from './matchdays.service';
 import { GroupsService } from '../groups/groups.service';
@@ -33,5 +33,13 @@ export class MatchdaysController {
   @Get('matchdays/:id')
   getOne(@Param('id') id: string) {
     return this.matchdaysService.getMatchdayWithMatches(id);
+  }
+
+  @Get('matchdays/:id/adjacent')
+  getAdjacent(@Param('id') id: string, @Query('direction') direction: string) {
+    if (direction !== 'previous' && direction !== 'next') {
+      throw new BadRequestException('direction debe ser "previous" o "next"');
+    }
+    return this.matchdaysService.getAdjacentMatchday(id, direction);
   }
 }

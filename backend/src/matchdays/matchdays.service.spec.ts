@@ -100,6 +100,118 @@ describe('MatchdaysService.syncCurrentRound (ahorro de cupo de API)', () => {
   });
 });
 
+describe('MatchdaysService.getAdjacentMatchday', () => {
+  function byId(rows: Record<string, unknown>) {
+    return jest.fn(({ where }: { where: { id: string } }) =>
+      Promise.resolve(rows[where.id] ?? null),
+    );
+  }
+
+  it('anterior: devuelve la jornada con el order inmediatamente menor', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findUnique = byId({
+      current: { id: 'current', competitionId: 'c1', order: 5 },
+      previous: { id: 'previous', competitionId: 'c1', order: 4, matches: [] },
+    });
+    prisma.matchday.findFirst.mockResolvedValue({ id: 'previous' });
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.getAdjacentMatchday('current', 'previous');
+
+    expect(result).toMatchObject({ id: 'previous' });
+    expect(prisma.matchday.findFirst).toHaveBeenCalledWith({
+      where: { competitionId: 'c1', order: { lt: 5 } },
+      orderBy: { order: 'desc' },
+    });
+  });
+
+  it('anterior: null si ya es la primera jornada de la competicion', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findUnique = byId({ current: { id: 'current', competitionId: 'c1', order: 1 } });
+    prisma.matchday.findFirst.mockResolvedValue(null);
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.getAdjacentMatchday('current', 'previous');
+
+    expect(result).toBeNull();
+  });
+
+  it('siguiente: si ya existe en BBDD, la devuelve sin llamar al proveedor', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findUnique = byId({
+      current: { id: 'current', competitionId: 'c1', order: 5 },
+      next: { id: 'next', competitionId: 'c1', order: 6, matches: [] },
+    });
+    prisma.matchday.findFirst.mockResolvedValue({ id: 'next' });
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.getAdjacentMatchday('current', 'next');
+
+    expect(result).toMatchObject({ id: 'next' });
+    expect(footballProvider.getFixturesForRound).not.toHaveBeenCalled();
+  });
+
+  it('siguiente: si no existe todavia, la sincroniza bajo demanda pidiendo order+1 al proveedor', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findUnique = byId({
+      current: { id: 'current', competitionId: 'c1', order: 5 },
+      'new-md': { id: 'new-md', competitionId: 'c1', order: 6, matches: [] },
+    });
+    prisma.matchday.findFirst.mockResolvedValue(null); // no hay siguiente ya sincronizada
+    prisma.competition.findUnique.mockResolvedValue({
+      id: 'c1',
+      externalId: 39,
+      currentSeason: 2026,
+    });
+    prisma.matchday.upsert.mockResolvedValue({ id: 'new-md' });
+    const footballProvider = {
+      getCurrentRoundFixtures: jest.fn(),
+      getFixturesForRound: jest.fn().mockResolvedValue([
+        {
+          fixtureId: 1,
+          round: 'Regular Season - 6',
+          kickoff: new Date('2026-04-01T20:00:00Z'),
+          homeTeam: { name: 'A', logoUrl: null },
+          awayTeam: { name: 'B', logoUrl: null },
+          status: 'SCHEDULED',
+          homeGoals: null,
+          awayGoals: null,
+        },
+      ]),
+    };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.getAdjacentMatchday('current', 'next');
+
+    expect(footballProvider.getFixturesForRound).toHaveBeenCalledWith(39, 2026, 6);
+    expect(result).toMatchObject({ id: 'new-md' });
+  });
+
+  it('siguiente: null si el proveedor no devuelve nada para esa jornada todavia', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findUnique = byId({ current: { id: 'current', competitionId: 'c1', order: 5 } });
+    prisma.matchday.findFirst.mockResolvedValue(null);
+    prisma.competition.findUnique.mockResolvedValue({
+      id: 'c1',
+      externalId: 39,
+      currentSeason: 2026,
+    });
+    const footballProvider = {
+      getCurrentRoundFixtures: jest.fn(),
+      getFixturesForRound: jest.fn().mockResolvedValue([]),
+    };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.getAdjacentMatchday('current', 'next');
+
+    expect(result).toBeNull();
+    expect(prisma.matchday.upsert).not.toHaveBeenCalled();
+  });
+});
+
 describe('MatchdaysService.syncResultsForClosedMatchdays (una sola tanda de peticiones)', () => {
   it('no llama al proveedor si no hay jornadas cerradas', async () => {
     const prisma = buildPrismaMock();

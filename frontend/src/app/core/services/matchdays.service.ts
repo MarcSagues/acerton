@@ -16,4 +16,11 @@ export class MatchdaysService {
   getById(matchdayId: string) {
     return this.http.get<Matchday>(`${environment.apiUrl}/matchdays/${matchdayId}`);
   }
+
+  /** null cuando no hay jornada anterior/siguiente (todavia). */
+  getAdjacent(matchdayId: string, direction: 'previous' | 'next') {
+    return this.http.get<Matchday | null>(`${environment.apiUrl}/matchdays/${matchdayId}/adjacent`, {
+      params: { direction },
+    });
+  }
 }

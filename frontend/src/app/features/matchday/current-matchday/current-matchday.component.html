@@ -32,7 +32,18 @@
 
     @if (activeEntry(); as entry) {
       <div class="summary">
-        <div class="eyebrow">{{ entry.competition.name }} · {{ entry.matchday.name }}</div>
+        <div class="eyebrow-row">
+          <button class="nav-btn" [disabled]="navigating()" (click)="navigatePrevious()" title="Jornada anterior">
+            <mat-icon inline>chevron_left</mat-icon>
+          </button>
+          <div class="eyebrow">{{ entry.competition.name }} · {{ entry.matchday.name }}</div>
+          <button class="nav-btn" [disabled]="navigating()" (click)="navigateNext()" title="Jornada siguiente">
+            <mat-icon inline>chevron_right</mat-icon>
+          </button>
+        </div>
+        @if (!isViewingLive()) {
+          <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
+        }
         <div class="summary-top">
           <div class="headline">{{ isLocked(entry) ? 'Cerrada' : 'Cierra en' }}</div>
           @if (!isLocked(entry)) {
@@ -64,7 +75,14 @@
             </div>
 
             @if (match.status === 'FINISHED') {
-              <div class="result mono">{{ match.homeScore }}-{{ match.awayScore }}</div>
+              <div class="result-block">
+                <div class="result mono">{{ match.homeScore }}-{{ match.awayScore }}</div>
+                @if (pickLabel(match.id); as pick) {
+                  <span class="my-pick mono" [class.hit]="isPickHit(match) === true" [class.miss]="isPickHit(match) === false">
+                    tu {{ pick }}
+                  </span>
+                }
+              </div>
             } @else if (isMatchLocked(match)) {
               <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
             } @else {

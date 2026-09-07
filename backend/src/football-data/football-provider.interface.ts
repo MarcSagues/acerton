@@ -27,6 +27,15 @@ export interface FootballProvider {
   /** Fixtures de la jornada en curso (o la siguiente si no hay ninguna en curso) de una liga+temporada. */
   getCurrentRoundFixtures(leagueId: number, season: number): Promise<ProviderFixture[]>;
 
+  /**
+   * Fixtures de un numero de jornada concreto (no necesariamente la actual).
+   * Usado para previsualizar la siguiente jornada bajo demanda (navegacion
+   * "adelante" en la UI) antes de que se convierta en la jornada en curso.
+   * Solo tiene sentido para competiciones de liga regular con jornadas
+   * numeradas; en fases de eliminatoria puede no devolver nada.
+   */
+  getFixturesForRound(leagueId: number, season: number, round: number): Promise<ProviderFixture[]>;
+
   /** Estado/resultado actualizado de un conjunto de fixtures por su id externo. */
   getFixturesByIds(fixtureIds: number[]): Promise<ProviderFixture[]>;
 }

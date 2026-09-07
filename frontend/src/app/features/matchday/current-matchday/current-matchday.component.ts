@@ -11,7 +11,7 @@ import { PredictionsService } from '../../../core/services/predictions.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-switcher.component';
-import { CurrentMatchdayEntry, Match, PredictionChoice } from '../../../core/models/matchday.model';
+import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { formatCountdown } from '../../../shared/countdown.util';
@@ -50,6 +50,9 @@ export class CurrentMatchdayComponent {
   readonly comeback = signal<ComebackStatus | null>(null);
   readonly activeTabIndex = signal(0);
   readonly now = signal(new Date());
+  readonly navigating = signal(false);
+  /** Id de la jornada "en vivo" de cada pestana (competicion), tal como se cargo al entrar — para saber si te has alejado navegando y poder volver. */
+  private readonly liveMatchdayIds = signal<Record<number, string>>({});
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -73,6 +76,12 @@ export class CurrentMatchdayComponent {
   readonly countdownLabel = computed(() => {
     const deadline = this.nextDeadline();
     return deadline ? formatCountdown(new Date(deadline.kickoff), this.now()) : '';
+  });
+  /** false cuando has navegado a una jornada distinta de la que estaba "en vivo" al entrar. */
+  readonly isViewingLive = computed(() => {
+    const entry = this.activeEntry();
+    if (!entry) return true;
+    return this.liveMatchdayIds()[this.activeTabIndex()] === entry.matchday.id;
   });
   /**
    * Metodo normal, no computed(): predictionState es un Map mutado a mano
@@ -117,6 +126,7 @@ export class CurrentMatchdayComponent {
     this.matchdaysService.getCurrentForGroup(groupId).subscribe({
       next: (entries) => {
         this.entries.set(entries);
+        this.liveMatchdayIds.set(Object.fromEntries(entries.map((e, i) => [i, e.matchday.id])));
         this.activeTabIndex.set(0);
         this.loadExistingPredictions(groupId, entries);
         this.refreshComeback(groupId);
@@ -134,6 +144,69 @@ export class CurrentMatchdayComponent {
     }
   }
 
+  navigatePrevious(): void {
+    this.navigate('previous');
+  }
+
+  navigateNext(): void {
+    this.navigate('next');
+  }
+
+  /** Vuelve a la jornada "en vivo" de la pestana activa tras haber navegado a otra. */
+  goToLive(): void {
+    const groupId = this.activeGroupService.activeId();
+    const liveId = this.liveMatchdayIds()[this.activeTabIndex()];
+    if (!groupId || !liveId || this.navigating()) return;
+
+    this.navigating.set(true);
+    this.matchdaysService.getById(liveId).subscribe({
+      next: (matchday) => {
+        this.navigating.set(false);
+        this.applyMatchdayToActiveTab(matchday, groupId);
+      },
+      error: () => {
+        this.navigating.set(false);
+        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  private navigate(direction: 'previous' | 'next'): void {
+    const entry = this.activeEntry();
+    const groupId = this.activeGroupService.activeId();
+    if (!entry || !groupId || this.navigating()) return;
+
+    this.navigating.set(true);
+    this.matchdaysService.getAdjacent(entry.matchday.id, direction).subscribe({
+      next: (matchday) => {
+        this.navigating.set(false);
+        if (!matchday) {
+          this.snackBar.open(
+            direction === 'previous' ? 'No hay jornada anterior' : 'Todavia no hay jornada siguiente',
+            'Cerrar',
+            { duration: 2500 },
+          );
+          return;
+        }
+        this.applyMatchdayToActiveTab(matchday, groupId);
+      },
+      error: () => {
+        this.navigating.set(false);
+        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  private applyMatchdayToActiveTab(matchday: Matchday, groupId: string): void {
+    const idx = this.activeTabIndex();
+    this.entries.update((list) => list.map((e, i) => (i === idx ? { ...e, matchday } : e)));
+    const entry = this.entries()[idx];
+    if (entry) {
+      this.loadExistingPredictions(groupId, [entry]);
+    }
+    this.refreshComeback(groupId);
+  }
+
   private refreshComeback(groupId: string): void {
     const matchdayId = this.activeEntry()?.matchday.id;
     this.wildcardsService
@@ -143,9 +216,6 @@ export class CurrentMatchdayComponent {
 
   private loadExistingPredictions(groupId: string, entries: CurrentMatchdayEntry[]): void {
     for (const entry of entries) {
-      if (entry.matchday.status === 'FINISHED') {
-        continue;
-      }
       this.predictionsService.getMine(groupId, entry.matchday.id).subscribe((predictions) => {
         for (const prediction of predictions) {
           this.predictionState.set(prediction.matchId, {
@@ -184,6 +254,35 @@ export class CurrentMatchdayComponent {
   /** No basta con el status persistido: el cron que actualiza resultados puede tardar hasta 10 min en correr. */
   isMatchLocked(match: Match): boolean {
     return !this.isMatchPredictable(match);
+  }
+
+  /** Tu pronostico en formato corto (1/X/2 o 1X/X2/12), o null si no enviaste ninguno. */
+  pickLabel(matchId: string): string | null {
+    const state = this.predictionState.get(matchId);
+    if (!state) return null;
+    if (state.doubleChanceOption) {
+      return { HOME_OR_DRAW: '1X', DRAW_OR_AWAY: 'X2', HOME_OR_AWAY: '12' }[state.doubleChanceOption];
+    }
+    if (state.choice) {
+      return state.choice === 'HOME' ? '1' : state.choice === 'AWAY' ? '2' : 'X';
+    }
+    return null;
+  }
+
+  /** null si el partido no ha terminado o no enviaste pronostico. */
+  isPickHit(match: Match): boolean | null {
+    const state = this.predictionState.get(match.id);
+    if (!state || !match.result) return null;
+    if (state.doubleChanceOption) {
+      const coverage: Record<DoubleChanceOption, PredictionChoice[]> = {
+        HOME_OR_DRAW: ['HOME', 'DRAW'],
+        DRAW_OR_AWAY: ['DRAW', 'AWAY'],
+        HOME_OR_AWAY: ['HOME', 'AWAY'],
+      };
+      return coverage[state.doubleChanceOption].includes(match.result);
+    }
+    if (!state.choice) return null;
+    return state.choice === match.result;
   }
 
   matchLockedLabel(match: Match): string {
