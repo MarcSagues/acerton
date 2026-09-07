@@ -45,11 +45,21 @@
           <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
         }
         <div class="summary-top">
-          <div class="headline">{{ isLocked(entry) ? 'Cerrada' : 'Cierra en' }}</div>
-          @if (!isLocked(entry)) {
-            <div class="countdown mono">{{ countdownLabel() }}</div>
-          } @else {
+          <div class="headline">
+            @if (isLocked(entry)) {
+              Cerrada
+            } @else if (!isMatchdayOpenByTime()) {
+              Se abre en
+            } @else {
+              Cierra en
+            }
+          </div>
+          @if (isLocked(entry)) {
             <div class="countdown mono">{{ totalPoints() }} pts</div>
+          } @else if (!isMatchdayOpenByTime()) {
+            <div class="countdown mono">{{ opensInLabel() }}</div>
+          } @else {
+            <div class="countdown mono">{{ countdownLabel() }}</div>
           }
         </div>
         @if (!isLocked(entry)) {
@@ -90,7 +100,7 @@
               </div>
             } @else if (isMatchLocked(match)) {
               <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
-            } @else if (!canPredictActiveMatchday()) {
+            } @else if (!pickingAllowed()) {
               <div class="result mono dim">Aun no</div>
             } @else {
               <div class="wc-icons">

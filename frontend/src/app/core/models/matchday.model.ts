@@ -28,6 +28,8 @@ export interface Matchday {
   status: MatchdayStatus;
   /** false cuando esta jornada todavia no le toca (previsualizada con "siguiente"), aunque sus partidos no esten bloqueados por horario. */
   canPredict: boolean;
+  /** ISO date: 4 dias antes del primer partido — antes de esto no se admiten pronosticos aunque canPredict sea true. */
+  opensAt: string;
   matches: Match[];
   competition?: Competition;
 }

@@ -8,6 +8,9 @@ import {
 } from '../football-data/football-provider.interface';
 import { computeMatchResult, parseRoundOrder, shouldCloseMatchday } from './matchday.util';
 
+/** Las predicciones de una jornada se abren como mucho 4 dias antes de su primer partido, no en cuanto termina la anterior. */
+export const PREDICTIONS_OPEN_BEFORE_MS = 4 * 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class MatchdaysService {
   private readonly logger = new Logger(MatchdaysService.name);
@@ -332,21 +335,31 @@ export class MatchdaysService {
   }
 
   /**
-   * Añade `canPredict` a una jornada ya cargada, para que el frontend sepa
-   * si sus partidos todavia no bloqueados por horario se pueden predecir sin
-   * tener que replicar la regla de canAcceptPredictions comparando ordenes
-   * el mismo (eso fue justo lo que causo que la jornada "actual" para
-   * mostrar por defecto — la de numero mas bajo — y la jornada limite para
-   * predecir — la de cierre mas proximo — se confundieran entre si).
+   * Añade `canPredict` y `opensAt` a una jornada ya cargada, para que el
+   * frontend sepa si sus partidos todavia no bloqueados por horario se
+   * pueden predecir sin tener que replicar la regla de canAcceptPredictions
+   * comparando ordenes el mismo (eso fue justo lo que causo que la jornada
+   * "actual" para mostrar por defecto — la de numero mas bajo — y la jornada
+   * limite para predecir — la de cierre mas proximo — se confundieran entre
+   * si). `canPredict` aqui solo refleja la regla de orden (jornada actual o
+   * anterior en el orden de rondas): el propio frontend cruza `opensAt` con
+   * la hora actual para decidir si ademas ya toca mostrar "Cierra en" en vez
+   * de "Se abre en" — ver canAcceptPredictions para la regla combinada que
+   * de verdad manda en el backend a la hora de aceptar un envio.
    */
-  private async attachCanPredict<T extends { order: number; status: string; competitionId: string }>(
+  private async attachCanPredict<T extends { order: number; status: string; competitionId: string; closesAt: Date }>(
     matchday: T,
-  ): Promise<T & { canPredict: boolean }> {
+  ): Promise<T & { canPredict: boolean; opensAt: string }> {
+    const opensAt = new Date(matchday.closesAt.getTime() - PREDICTIONS_OPEN_BEFORE_MS).toISOString();
     if (matchday.status === 'FINISHED') {
-      return { ...matchday, canPredict: false };
+      return { ...matchday, canPredict: false, opensAt };
     }
     const earliestPendingOrder = await this.getEarliestPendingOrder(matchday.competitionId);
-    return { ...matchday, canPredict: earliestPendingOrder === null || matchday.order <= earliestPendingOrder };
+    return {
+      ...matchday,
+      canPredict: earliestPendingOrder === null || matchday.order <= earliestPendingOrder,
+      opensAt,
+    };
   }
 
   /**
@@ -360,13 +373,16 @@ export class MatchdaysService {
    * si se bloquea es una jornada con numero mas alto que la actual
    * (navegacion "siguiente" antes de que le toque) — eso es lo que evitaria
    * rellenar varias semanas de golpe y le quitaria a la app el motivo para
-   * abrirla cada semana.
+   * abrirla cada semana. Ademas, incluso siendo la jornada correcta por
+   * orden, no se acepta nada hasta PREDICTIONS_OPEN_BEFORE_MS antes de su
+   * primer partido — cerrar una jornada no abre la siguiente de golpe.
    */
   async canAcceptPredictions(matchdayId: string): Promise<boolean> {
     const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
     if (!matchday) {
       return false;
     }
-    return (await this.attachCanPredict(matchday)).canPredict;
+    const decorated = await this.attachCanPredict(matchday);
+    return decorated.canPredict && new Date(decorated.opensAt).getTime() <= Date.now();
   }
 }

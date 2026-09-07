@@ -94,6 +94,18 @@ export class CurrentMatchdayComponent {
    * si, como paso cuando esto se calculaba comparando ordenes en el cliente.
    */
   readonly canPredictActiveMatchday = computed(() => this.activeEntry()?.matchday.canPredict ?? false);
+  /** false hasta 4 dias antes del primer partido (matchday.opensAt) — antes de eso no se admiten pronosticos aunque le toque por orden. */
+  readonly isMatchdayOpenByTime = computed(() => {
+    const entry = this.activeEntry();
+    if (!entry) return true;
+    return new Date(entry.matchday.opensAt).getTime() <= this.now().getTime();
+  });
+  /** Se puede predecir solo cuando le toca por orden Y ya se ha abierto la ventana de 4 dias. */
+  readonly pickingAllowed = computed(() => this.canPredictActiveMatchday() && this.isMatchdayOpenByTime());
+  readonly opensInLabel = computed(() => {
+    const entry = this.activeEntry();
+    return entry ? formatCountdown(new Date(entry.matchday.opensAt), this.now()) : '';
+  });
   /**
    * Metodo normal, no computed(): predictionState es un Map mutado a mano
    * (no un signal), asi que un computed() no detectaria sus cambios y se
