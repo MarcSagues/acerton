@@ -1,6 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: '/api',
+  // Frontend (Cloudflare Pages) y backend (Render) van en subdominios distintos
+  // del mismo dominio, no en el mismo origen, asi que hace falta la URL completa.
+  apiUrl: 'https://api.acerton.app/api',
   firebase: {
     apiKey: 'AIzaSyCbYMyNUeENK5PfohH_NX1CuxvKgG6k11Y',
     authDomain: 'acerton-39f07.firebaseapp.com',
