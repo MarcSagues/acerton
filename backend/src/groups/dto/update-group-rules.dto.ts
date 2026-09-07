@@ -10,4 +10,8 @@ export class UpdateGroupRulesDto {
   @Min(1)
   @Max(50)
   comebackPointsPerBonus?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
 }

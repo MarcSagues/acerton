@@ -61,6 +61,6 @@ export default (): AppConfig => ({
     enabled: (process.env.COMEBACK_ENABLED_DEFAULT ?? 'true') === 'true',
     // Cada N puntos de diferencia con el lider dan 1 uso mas del comodin de
     // remontada esa jornada (ver WildcardsService.getComebackStatus).
-    pointsPerBonus: parseInt(process.env.COMEBACK_POINTS_PER_BONUS_DEFAULT ?? '6', 10),
+    pointsPerBonus: parseInt(process.env.COMEBACK_POINTS_PER_BONUS_DEFAULT ?? '10', 10),
   },
 });

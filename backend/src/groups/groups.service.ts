@@ -56,6 +56,7 @@ export class GroupsService {
       data: {
         comebackEnabled: dto.comebackEnabled,
         comebackPointsPerBonus: dto.comebackPointsPerBonus,
+        isPublic: dto.isPublic,
       },
     });
   }

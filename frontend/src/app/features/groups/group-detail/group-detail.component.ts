@@ -41,8 +41,9 @@ export class GroupDetailComponent implements OnInit {
 
   readonly editingRules = signal(false);
   readonly savingRules = signal(false);
-  readonly comebackEnabledInput = signal(true);
-  readonly comebackPointsPerBonusInput = signal(6);
+  readonly comebackPointsPerBonusInput = signal(10);
+  /** Toggles de guardado inmediato (comodin / privacidad): sin modo edicion, se aplican al toque. */
+  readonly togglingRule = signal(false);
 
   readonly isAdmin = computed(() => {
     const userId = this.authService.currentUser()?.id;
@@ -75,7 +76,6 @@ export class GroupDetailComponent implements OnInit {
         this.group.set(group);
         this.members.set(members);
         this.catalog.set(this.competitionsService.catalog());
-        this.comebackEnabledInput.set(group.comebackEnabled);
         this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
         const active = new Set(
           (group.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competitionId),
@@ -152,23 +152,15 @@ export class GroupDetailComponent implements OnInit {
   cancelEditingRules(): void {
     const group = this.group();
     if (group) {
-      this.comebackEnabledInput.set(group.comebackEnabled);
       this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
     }
     this.editingRules.set(false);
   }
 
-  toggleComebackEnabledInput(): void {
-    this.comebackEnabledInput.update((v) => !v);
-  }
-
   saveRules(): void {
     this.savingRules.set(true);
     this.groupsService
-      .updateRules(this.groupId, {
-        comebackEnabled: this.comebackEnabledInput(),
-        comebackPointsPerBonus: this.comebackPointsPerBonusInput(),
-      })
+      .updateRules(this.groupId, { comebackPointsPerBonus: this.comebackPointsPerBonusInput() })
       .subscribe({
         next: (group) => {
           this.group.set(group);
@@ -181,6 +173,37 @@ export class GroupDetailComponent implements OnInit {
           this.snackBar.open(error.error?.message ?? 'No se pudo guardar', 'Cerrar', { duration: 3000 });
         },
       });
+  }
+
+  /** Comodin y privacidad se guardan al toque, sin pasar por el modo "Editar". */
+  toggleComebackEnabled(): void {
+    const group = this.group();
+    if (!this.isAdmin() || !group || this.togglingRule()) {
+      return;
+    }
+    this.applyToggle({ comebackEnabled: !group.comebackEnabled });
+  }
+
+  togglePrivacy(): void {
+    const group = this.group();
+    if (!this.isAdmin() || !group || this.togglingRule()) {
+      return;
+    }
+    this.applyToggle({ isPublic: !group.isPublic });
+  }
+
+  private applyToggle(change: { comebackEnabled?: boolean; isPublic?: boolean }): void {
+    this.togglingRule.set(true);
+    this.groupsService.updateRules(this.groupId, change).subscribe({
+      next: (group) => {
+        this.group.set(group);
+        this.togglingRule.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.togglingRule.set(false);
+        this.snackBar.open(error.error?.message ?? 'No se pudo actualizar', 'Cerrar', { duration: 3000 });
+      },
+    });
   }
 
   copyInviteLink(): void {

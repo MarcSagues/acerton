@@ -151,6 +151,12 @@
   background: var(--surface-alt);
   position: relative;
   flex: none;
+  cursor: pointer;
+
+  &.disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
 
   .knob {
     position: absolute;

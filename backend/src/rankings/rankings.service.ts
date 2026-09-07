@@ -155,7 +155,7 @@ export class RankingsService {
       orderBy: { createdAt: 'desc' },
     });
     if (!latest) {
-      return [];
+      return this.emptyRanking(groupId, period, competitionId);
     }
 
     return this.prisma.rankingSnapshot.findMany({
@@ -163,6 +163,32 @@ export class RankingsService {
       orderBy: { position: 'asc' },
       include: { user: { select: { id: true, name: true, avatarUrl: true } } },
     });
+  }
+
+  /**
+   * Antes de que se finalice ninguna jornada no existe ninguna fila de
+   * RankingSnapshot todavia, pero el grupo si tiene miembros — se listan
+   * todos empatados a 0 puntos en vez de dejar la tabla vacia.
+   */
+  private async emptyRanking(groupId: string, period: RankingPeriod, competitionId: string | null) {
+    const members = await this.prisma.groupMembership.findMany({
+      where: { groupId },
+      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+    });
+
+    const ranked = rankEntries(members.map((m) => ({ userId: m.userId, points: 0 })));
+    return ranked.map((entry) => ({
+      id: `empty-${entry.userId}`,
+      groupId,
+      competitionId,
+      matchdayId: '',
+      period,
+      userId: entry.userId,
+      points: entry.points,
+      position: entry.position,
+      createdAt: new Date(),
+      user: members.find((m) => m.userId === entry.userId)!.user,
+    }));
   }
 
   async getRankingForMatchday(

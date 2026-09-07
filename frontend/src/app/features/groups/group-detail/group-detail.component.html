@@ -86,19 +86,14 @@
               <div class="rule-name">Comodin de remontada</div>
               <div class="rule-hint mono">Doble oportunidad (1X/X2/12) para quien va por detras</div>
             </div>
-            @if (editingRules()) {
-              <span
-                class="toggle"
-                [class.on]="comebackEnabledInput()"
-                (click)="toggleComebackEnabledInput()"
-              >
-                <span class="knob"></span>
-              </span>
-            } @else {
-              <span class="toggle" [class.on]="g.comebackEnabled">
-                <span class="knob"></span>
-              </span>
-            }
+            <span
+              class="toggle"
+              [class.on]="g.comebackEnabled"
+              [class.disabled]="!isAdmin()"
+              (click)="toggleComebackEnabled()"
+            >
+              <span class="knob"></span>
+            </span>
           </div>
           <div class="rule-card">
             <div>
@@ -123,7 +118,12 @@
               <div class="rule-name">Grupo privado</div>
               <div class="rule-hint mono">Solo por link de invitacion</div>
             </div>
-            <span class="toggle" [class.on]="!g.isPublic">
+            <span
+              class="toggle"
+              [class.on]="!g.isPublic"
+              [class.disabled]="!isAdmin()"
+              (click)="togglePrivacy()"
+            >
               <span class="knob"></span>
             </span>
           </div>

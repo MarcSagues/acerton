@@ -59,7 +59,10 @@ export class GroupsService {
     });
   }
 
-  updateRules(groupId: string, rules: { comebackEnabled?: boolean; comebackPointsPerBonus?: number }) {
+  updateRules(
+    groupId: string,
+    rules: { comebackEnabled?: boolean; comebackPointsPerBonus?: number; isPublic?: boolean },
+  ) {
     return this.http.patch<Group>(`${environment.apiUrl}/groups/${groupId}/rules`, rules);
   }
 }
