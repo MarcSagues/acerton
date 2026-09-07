@@ -1,0 +1,42 @@
+.confirm-dialog {
+  padding: 20px;
+  max-width: 320px;
+  background: var(--surface);
+}
+
+.title {
+  font: 600 15px/1.3 var(--font-ui);
+  margin-bottom: 10px;
+}
+
+.message {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn {
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+  border: 1px solid transparent;
+
+  &.ghost {
+    background: transparent;
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  &.primary {
+    background: var(--accent);
+    color: var(--accent-on);
+  }
+}

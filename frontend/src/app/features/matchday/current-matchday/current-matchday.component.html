@@ -1,0 +1,159 @@
+@if (loading()) {
+  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+} @else if (entries().length === 0) {
+  <div class="page empty-page">
+    <app-group-switcher></app-group-switcher>
+    <p class="empty">
+      Todavia no hay jornada sincronizada para las competiciones de este grupo. Vuelve mas tarde.
+    </p>
+  </div>
+} @else {
+  <div class="page">
+    <header class="head">
+      <app-group-switcher></app-group-switcher>
+      @if (activeEntry(); as entry) {
+        @if (isLocked(entry)) {
+          <span class="pill pill-neutral">{{ entry.matchday.status === 'FINISHED' ? 'FINALIZADA' : 'CERRADA' }}</span>
+        } @else {
+          <span class="pill pill-open"><span class="pulse-dot"></span>ABIERTA</span>
+        }
+      }
+    </header>
+
+    @if (entries().length > 1) {
+      <div class="comp-switcher">
+        @for (entry of entries(); track entry.competition.id; let i = $index) {
+          <button class="comp-chip" [class.active]="i === activeTabIndex()" (click)="selectTab(i)">
+            {{ entry.competition.name }} · {{ entry.matchday.matches.length }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (activeEntry(); as entry) {
+      <div class="summary">
+        <div class="eyebrow">{{ entry.competition.name }} · {{ entry.matchday.name }}</div>
+        <div class="summary-top">
+          <div class="headline">{{ isLocked(entry) ? 'Cerrada' : 'Cierra en' }}</div>
+          @if (!isLocked(entry)) {
+            <div class="countdown mono">{{ countdownLabel() }}</div>
+          }
+        </div>
+        @if (!isLocked(entry)) {
+          <div class="progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" [style.width]="progressPct()"></div>
+            </div>
+            <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+          </div>
+        }
+      </div>
+
+      <div class="match-list">
+        @for (match of entry.matchday.matches; track match.id) {
+          <div class="match-row">
+            <div class="kickoff mono">
+              <span>{{ matchDayLabel(match.kickoff) }}</span>
+              <span>{{ match.kickoff | date: 'HH:mm' }}</span>
+            </div>
+
+            <span class="crest">{{ match.homeTeam.slice(0, 3).toUpperCase() }}</span>
+            <div class="teams">
+              <span class="team-home">{{ match.homeTeam }}</span>
+              <span class="team-away">{{ match.awayTeam }}</span>
+            </div>
+
+            @if (match.status === 'FINISHED') {
+              <div class="result mono">{{ match.homeScore }}-{{ match.awayScore }}</div>
+            } @else if (isMatchLocked(match)) {
+              <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
+            } @else {
+              <div class="wc-icons">
+                @if (stateFor(match.id).saving) {
+                  <mat-spinner diameter="12"></mat-spinner>
+                } @else if (stateFor(match.id).saved) {
+                  <mat-icon class="saved-icon" inline>check_circle</mat-icon>
+                }
+                @if ((comeback()?.enabled && (comeback()?.remaining ?? 0) > 0) || stateFor(match.id).doubleChanceOption) {
+                  <button
+                    class="wc-icon-btn rescue"
+                    [class.active]="!!stateFor(match.id).doubleChanceOption"
+                    [title]="'Remontada (quedan ' + (comeback()?.remaining ?? 0) + ')'"
+                    (click)="toggleDoubleChance(match)"
+                  >
+                    <mat-icon inline>health_and_safety</mat-icon>
+                  </button>
+                }
+              </div>
+
+              @if (stateFor(match.id).doubleChanceOption) {
+                <div class="choices compact">
+                  <button
+                    class="choice-btn"
+                    [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW'"
+                    (click)="selectDoubleChance(match, 'HOME_OR_DRAW')"
+                  >
+                    1X
+                  </button>
+                  <button
+                    class="choice-btn"
+                    [class.selected]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY'"
+                    (click)="selectDoubleChance(match, 'DRAW_OR_AWAY')"
+                  >
+                    X2
+                  </button>
+                  <button
+                    class="choice-btn"
+                    [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY'"
+                    (click)="selectDoubleChance(match, 'HOME_OR_AWAY')"
+                  >
+                    12
+                  </button>
+                </div>
+              } @else {
+                <div class="choices compact">
+                  <button
+                    class="choice-btn"
+                    [class.selected]="stateFor(match.id).choice === 'HOME'"
+                    (click)="selectChoice(match, 'HOME')"
+                  >
+                    1
+                  </button>
+                  <button
+                    class="choice-btn"
+                    [class.selected]="stateFor(match.id).choice === 'DRAW'"
+                    (click)="selectChoice(match, 'DRAW')"
+                  >
+                    X
+                  </button>
+                  <button
+                    class="choice-btn"
+                    [class.selected]="stateFor(match.id).choice === 'AWAY'"
+                    (click)="selectChoice(match, 'AWAY')"
+                  >
+                    2
+                  </button>
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+
+      @if (entry.matchday.status === 'FINISHED') {
+        <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">Ver resultados de esta jornada</a>
+      } @else if (!isLocked(entry)) {
+        <div class="cta-bar" [class.complete]="doneCount() === entry.matchday.matches.length">
+          <span>
+            @if (doneCount() === entry.matchday.matches.length) {
+              Jornada completa
+            } @else {
+              Faltan {{ entry.matchday.matches.length - doneCount() }} por enviar
+            }
+          </span>
+        </div>
+        <p class="autosave-hint">Se guarda al toque · editable hasta el cierre</p>
+      }
+    }
+  </div>
+}

@@ -1,0 +1,155 @@
+@if (loading()) {
+  <div class="loading"><span class="mono">Cargando...</span></div>
+} @else {
+  @if (group(); as g) {
+    <div class="page">
+      <header class="head">
+        <a routerLink="/groups" class="back">&lt;</a>
+        <div>
+          <div class="title">Ajustes del grupo</div>
+          <div class="sub mono">{{ g.name }} · {{ isAdmin() ? 'eres admin' : 'miembro' }}</div>
+        </div>
+      </header>
+
+      <div class="section">
+        <div class="card">
+          <div class="eyebrow">LINK DE INVITACION</div>
+          <div class="invite-row">
+            <div class="invite-code mono">{{ g.inviteCode }}</div>
+            <button class="copy-btn" (click)="copyInviteLink()">Copiar link</button>
+          </div>
+          <div class="invite-url mono">{{ inviteLink() }}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="eyebrow">COMPETICIONES ACTIVAS</span>
+          <span class="count mono">{{ selectedCompetitionIds().size }} de {{ catalog().length }}</span>
+        </div>
+        <div class="comp-list">
+          @for (competition of catalog(); track competition.id) {
+            <div
+              class="comp-row"
+              [class.active]="selectedCompetitionIds().has(competition.id)"
+              [class.disabled]="!isAdmin() || isLocked(competition.id)"
+              (click)="toggleCompetition(competition.id)"
+            >
+              <span class="comp-abbr mono">{{ competition.name.slice(0, 3).toUpperCase() }}</span>
+              <div class="comp-meta">
+                <div class="comp-name">{{ competition.name }}</div>
+                <div class="comp-code mono">
+                  {{ competition.code }}
+                  @if (isLocked(competition.id)) {
+                    · activada, no se puede quitar
+                  }
+                </div>
+              </div>
+              @if (isLocked(competition.id)) {
+                <mat-icon class="lock-icon" inline>lock</mat-icon>
+              } @else {
+                <span class="toggle" [class.on]="selectedCompetitionIds().has(competition.id)">
+                  <span class="knob"></span>
+                </span>
+              }
+            </div>
+          }
+        </div>
+        @if (isAdmin()) {
+          <button
+            class="cta"
+            [disabled]="savingCompetitions() || !hasCompetitionChanges()"
+            (click)="saveCompetitions()"
+          >
+            Guardar cambios
+          </button>
+        }
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <span class="eyebrow">REGLAS</span>
+          @if (isAdmin() && !editingRules()) {
+            <button class="edit-link mono" (click)="startEditingRules()">Editar</button>
+          }
+        </div>
+        <div class="rules">
+          <div class="rule-card">
+            <div>
+              <div class="rule-name">Puntos por acierto 1X2</div>
+              <div class="rule-hint mono">Fijo para todo el grupo</div>
+            </div>
+            <div class="rule-value mono">1</div>
+          </div>
+          <div class="rule-card">
+            <div>
+              <div class="rule-name">Comodin de remontada</div>
+              <div class="rule-hint mono">Doble oportunidad (1X/X2/12) para quien va por detras</div>
+            </div>
+            @if (editingRules()) {
+              <span
+                class="toggle"
+                [class.on]="comebackEnabledInput()"
+                (click)="toggleComebackEnabledInput()"
+              >
+                <span class="knob"></span>
+              </span>
+            } @else {
+              <span class="toggle" [class.on]="g.comebackEnabled">
+                <span class="knob"></span>
+              </span>
+            }
+          </div>
+          <div class="rule-card">
+            <div>
+              <div class="rule-name">Puntos por opcion doble</div>
+              <div class="rule-hint mono">Cada N puntos de diferencia con el lider dan 1 uso mas esa jornada</div>
+            </div>
+            @if (editingRules()) {
+              <input
+                class="rule-input mono"
+                type="number"
+                min="1"
+                max="50"
+                [value]="comebackPointsPerBonusInput()"
+                (input)="comebackPointsPerBonusInput.set(+$any($event.target).value)"
+              />
+            } @else {
+              <div class="rule-value mono">{{ g.comebackPointsPerBonus }}</div>
+            }
+          </div>
+          <div class="rule-card">
+            <div>
+              <div class="rule-name">Grupo privado</div>
+              <div class="rule-hint mono">Solo por link de invitacion</div>
+            </div>
+            <span class="toggle" [class.on]="!g.isPublic">
+              <span class="knob"></span>
+            </span>
+          </div>
+        </div>
+        @if (editingRules()) {
+          <div class="rules-actions">
+            <button class="btn ghost" [disabled]="savingRules()" (click)="cancelEditingRules()">Cancelar</button>
+            <button class="btn primary" [disabled]="savingRules()" (click)="saveRules()">Guardar reglas</button>
+          </div>
+        }
+      </div>
+
+      <div class="section">
+        <div class="eyebrow">MIEMBROS · {{ members().length }}</div>
+        <div class="members">
+          @for (member of members(); track member.id) {
+            <div class="member-row">
+              <span class="avatar">{{ member.user.name.slice(0, 2).toUpperCase() }}</span>
+              <span class="member-name">{{ member.user.name }}</span>
+              @if (member.role === 'ADMIN') {
+                <span class="admin-badge">Admin</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+}

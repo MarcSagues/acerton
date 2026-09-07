@@ -1,0 +1,21 @@
+{
+  "name": "acerton",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Quiniela de futbol semanal para grupos de amigos",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=backend",
+    "dev:frontend": "npm run start --workspace=frontend",
+    "test:backend": "npm run test --workspace=backend",
+    "prisma:generate": "npm run prisma:generate --workspace=backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace=backend",
+    "prisma:seed": "npm run prisma:seed --workspace=backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

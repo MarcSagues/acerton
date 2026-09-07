@@ -1,0 +1,23 @@
+@if (activeGroupService.activeGroup(); as g) {
+  <button class="switcher" [matMenuTriggerFor]="menu">
+    <span class="avatar">{{ initials(g.name) }}</span>
+    <span class="meta">
+      <span class="name">{{ g.name }}</span>
+      <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'publico' : 'privado' }}</span>
+    </span>
+    @if (activeGroupService.groups().length > 1) {
+      <mat-icon class="chevron">expand_more</mat-icon>
+    }
+  </button>
+
+  <mat-menu #menu="matMenu">
+    @for (group of activeGroupService.groups(); track group.id) {
+      <button mat-menu-item (click)="select(group.id)">{{ group.name }}</button>
+    }
+    <a mat-menu-item routerLink="/groups">Ver todos los grupos</a>
+  </mat-menu>
+} @else {
+  <a class="switcher empty" routerLink="/groups">
+    <span class="name">Unete o crea un grupo</span>
+  </a>
+}

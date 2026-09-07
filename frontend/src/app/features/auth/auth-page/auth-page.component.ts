@@ -1,0 +1,86 @@
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { AuthService } from '../../../core/services/auth.service';
+
+type AuthMode = 'login' | 'register';
+
+@Component({
+  selector: 'app-auth-page',
+  standalone: true,
+  imports: [ReactiveFormsModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
+  templateUrl: './auth-page.component.html',
+  styleUrl: './auth-page.component.scss',
+})
+export class AuthPageComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+
+  readonly mode = signal<AuthMode>('login');
+  readonly isRegister = computed(() => this.mode() === 'register');
+  readonly loading = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly passwordVisible = signal(false);
+  readonly googleLoginUrl = this.authService.googleLoginUrl;
+
+  readonly form = this.fb.nonNullable.group({
+    name: [''],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+  });
+
+  ngOnInit(): void {
+    const initialMode = (this.route.snapshot.data['mode'] as AuthMode) ?? 'login';
+    this.setMode(initialMode);
+  }
+
+  setMode(mode: AuthMode): void {
+    this.mode.set(mode);
+    this.errorMessage.set(null);
+    const nameControl = this.form.controls.name;
+    if (mode === 'register') {
+      nameControl.setValidators([Validators.required, Validators.minLength(2)]);
+    } else {
+      nameControl.clearValidators();
+    }
+    nameControl.updateValueAndValidity();
+    this.router.navigate([mode === 'register' ? '/register' : '/login']);
+  }
+
+  togglePasswordVisibility(): void {
+    this.passwordVisible.update((v) => !v);
+  }
+
+  submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    const { name, email, password } = this.form.getRawValue();
+
+    const request = this.isRegister()
+      ? this.authService.register({ name, email, password })
+      : this.authService.login({ email, password });
+
+    request.subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.router.navigate(['/matchday']);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.loading.set(false);
+        this.errorMessage.set(
+          error.error?.message ?? (this.isRegister() ? 'No se pudo crear la cuenta' : 'No se pudo iniciar sesion'),
+        );
+      },
+    });
+  }
+}

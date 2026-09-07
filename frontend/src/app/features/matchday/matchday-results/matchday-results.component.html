@@ -1,0 +1,84 @@
+@if (loading()) {
+  <div class="loading"><span class="mono">Cargando...</span></div>
+} @else if (locked()) {
+  <div class="page">
+    <p class="empty">Esta jornada todavia esta abierta; los pronosticos del grupo se veran al cerrar.</p>
+  </div>
+} @else {
+  @if (matchday(); as md) {
+    <div class="page">
+      <header class="head">
+        <div>
+          <div class="title">{{ md.name }}</div>
+          <div class="sub mono">{{ md.competition?.name }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}</div>
+        </div>
+        <a class="rankings-link" routerLink="/rankings">Tabla</a>
+      </header>
+
+      <div class="summary">
+        <div class="points-ring mono">
+          <div class="points-value">{{ totalPoints() }}</div>
+          <div class="points-label">PUNTOS</div>
+        </div>
+        <div class="breakdown">
+          <div class="line">
+            <span>Aciertos 1X2</span>
+            <span class="mono">{{ hits() }} / {{ myPredictions().length }}</span>
+          </div>
+          @if (rescueHits() > 0) {
+            <div class="line">
+              <span>Doble oportunidad acertada</span>
+              <span class="mono accent">{{ rescueHits() }}</span>
+            </div>
+          }
+          @if (position(); as p) {
+            <div class="line">
+              <span>Puesto de la jornada</span>
+              <span class="mono">{{ p.pos }}.º de {{ p.total }}</span>
+            </div>
+          }
+          <div class="rule"></div>
+          <div class="line strong">
+            <span>Racha de participacion</span>
+            <span class="mono accent">{{ currentStreak() }} jornadas</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title mono">TUS PRONOSTICOS</div>
+      <div class="predictions">
+        @for (prediction of myPredictions(); track prediction.id) {
+          <div class="pred-row">
+            <div class="bar" [class.hit]="(prediction.pointsEarned ?? 0) > 0" [class.miss]="(prediction.pointsEarned ?? 0) === 0"></div>
+            <div class="pred-meta">
+              <div class="pred-match">{{ matchLabel(prediction, md) }}</div>
+              <div class="pred-sub mono">
+                {{ scoreLabel(prediction, md) }} · tu {{ pickLabel(prediction) }} · real {{ realLabel(prediction, md) }}
+              </div>
+            </div>
+            @if (prediction.doubleChanceOption) {
+              <span class="wc-tag wc-tag-rescue mono">SOS</span>
+            }
+            <span class="pred-pts mono" [class.accent]="(prediction.pointsEarned ?? 0) > 0">
+              {{ prediction.pointsEarned }}
+            </span>
+          </div>
+        }
+      </div>
+
+      @if (newBadges().length > 0) {
+        <div class="section">
+          @for (userBadge of newBadges(); track userBadge.id) {
+            <div class="badge-card">
+              <span class="badge-icon mono">{{ userBadge.badge.name.slice(0, 2).toUpperCase() }}</span>
+              <div>
+                <div class="badge-title">Insignia desbloqueada</div>
+                <div class="badge-desc mono">{{ userBadge.badge.name }} · {{ userBadge.badge.description }}</div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+}

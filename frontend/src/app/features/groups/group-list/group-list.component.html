@@ -1,0 +1,91 @@
+<div class="page">
+  <div class="head">
+    <h1>Mis grupos</h1>
+    <p class="sub mono">{{ groups().length }} {{ groups().length === 1 ? 'activo' : 'activos' }}</p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading"><span class="mono">Cargando...</span></div>
+  } @else if (groups().length === 0) {
+    <p class="empty">Todavia no perteneces a ningun grupo. ¡Crea uno o unete con un codigo!</p>
+  } @else {
+    <div class="groups">
+      @for (group of groups(); track group.id) {
+        <div class="group-card" (click)="goToGroup(group.id)">
+          <div class="group-top">
+            <span class="avatar">{{ initials(group.name) }}</span>
+            <div class="meta">
+              <div class="name">{{ group.name }}</div>
+              <div class="sub mono">{{ group.isPublic ? 'publico' : 'privado' }} · {{ group._count?.memberships ?? 0 }} miembros</div>
+            </div>
+          </div>
+
+          @if (group.groupCompetitions && group.groupCompetitions.length > 0) {
+            <div class="chips">
+              @for (gc of group.groupCompetitions; track gc.id) {
+                @if (gc.isActive) {
+                  <span class="chip mono">{{ gc.competition.name }}</span>
+                }
+              }
+            </div>
+          }
+
+          <div class="divider"></div>
+          <div class="footer">
+            <span class="footer-label mono">Ver jornada y clasificacion</span>
+            <a class="settings-link" [routerLink]="['/groups', group.id, 'settings']" (click)="$event.stopPropagation()">
+              <mat-icon inline>tune</mat-icon>
+            </a>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="actions">
+    <button class="primary-btn" (click)="openCreateSheet()">Crear grupo</button>
+    <button class="secondary-btn" (click)="openJoinSheet()">Unirme con codigo</button>
+  </div>
+</div>
+
+@if (showCreateSheet() || showJoinSheet()) {
+  <div class="sheet-overlay" (click)="closeSheets()">
+    <div class="sheet" (click)="$event.stopPropagation()">
+      <div class="sheet-handle"></div>
+
+      @if (showCreateSheet()) {
+        <h2>Crear grupo</h2>
+        <form [formGroup]="createForm" (ngSubmit)="createGroup()" class="sheet-form">
+          <label class="field">
+            <span class="field-label">Nombre del grupo</span>
+            <input class="field-input" formControlName="name" />
+          </label>
+          <label class="field">
+            <span class="field-label">Descripcion (opcional)</span>
+            <input class="field-input" formControlName="description" />
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" formControlName="isPublic" />
+            <span>Grupo publico (visible para cualquiera)</span>
+          </label>
+          @if (errorMessage()) {
+            <p class="error">{{ errorMessage() }}</p>
+          }
+          <button type="submit" class="cta" [disabled]="formLoading()">Crear</button>
+        </form>
+      }
+
+      @if (showJoinSheet()) {
+        <h2>Unirme a un grupo</h2>
+        <p class="sheet-desc">Introduce el codigo de invitacion que te han compartido.</p>
+        <form [formGroup]="joinForm" (ngSubmit)="joinGroup()" class="sheet-form">
+          <input class="code-input mono" formControlName="inviteCode" placeholder="NQ5CQK93" maxlength="12" />
+          @if (errorMessage()) {
+            <p class="error">{{ errorMessage() }}</p>
+          }
+          <button type="submit" class="cta" [disabled]="formLoading()">Unirme</button>
+        </form>
+      }
+    </div>
+  </div>
+}

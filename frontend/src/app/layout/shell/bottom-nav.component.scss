@@ -1,0 +1,155 @@
+:host {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+}
+
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.item {
+  flex: 1;
+  padding: 9px 0 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border-top: 2px solid transparent;
+  margin-top: -1px;
+  cursor: pointer;
+}
+
+.item.active {
+  border-top-color: var(--accent);
+
+  .label {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .icon-matchday {
+    border-color: var(--accent);
+    .tick {
+      background: var(--accent);
+    }
+  }
+  .icon-groups .circle.c1 {
+    border-color: var(--accent);
+  }
+  .icon-groups .circle.c2 {
+    background: var(--accent);
+  }
+  .icon-table .bar {
+    background: var(--accent);
+  }
+  .icon-profile .head,
+  .icon-profile .body {
+    border-color: var(--accent);
+  }
+}
+
+.label {
+  font: 500 10px/1.2 var(--font-ui);
+  color: var(--text-tertiary);
+}
+
+.icon {
+  width: 17px;
+  height: 17px;
+  position: relative;
+  display: block;
+}
+
+/* Jornada: cuadrado con "check" */
+.icon-matchday {
+  box-sizing: border-box;
+  border: 1.5px solid var(--text-tertiary);
+  border-radius: 4px;
+
+  .tick {
+    position: absolute;
+    left: 1.5px;
+    right: 1.5px;
+    top: 2.5px;
+    height: 1.5px;
+    background: var(--text-tertiary);
+  }
+}
+
+/* Grupos: dos círculos superpuestos */
+.icon-groups {
+  width: 19px;
+
+  .circle {
+    position: absolute;
+    top: 3px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+  .c1 {
+    left: 0;
+    box-sizing: border-box;
+    border: 1.5px solid var(--text-tertiary);
+  }
+  .c2 {
+    right: 0;
+    background: var(--text-tertiary);
+    opacity: 0.45;
+  }
+}
+
+/* Tabla: barras */
+.icon-table {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+
+  .bar {
+    flex: 1;
+    border-radius: 1px;
+    background: var(--text-tertiary);
+  }
+  .b1 {
+    height: 7px;
+  }
+  .b2 {
+    height: 14px;
+  }
+  .b3 {
+    height: 10px;
+  }
+}
+
+/* Perfil: persona */
+.icon-profile {
+  .head {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    border: 1.5px solid var(--text-tertiary);
+  }
+  .body {
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    height: 8px;
+    border-radius: 8px 8px 3px 3px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--text-tertiary);
+    border-bottom: none;
+  }
+}

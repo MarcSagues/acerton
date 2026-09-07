@@ -1,0 +1,102 @@
+@if (loading()) {
+  <div class="loading"><span class="mono">Cargando...</span></div>
+} @else {
+  @if (profile(); as p) {
+  <div class="page">
+    <header class="head">
+      <span class="avatar">{{ initials(authService.currentUser()?.name ?? '') }}</span>
+      <div class="meta">
+        <div class="name">{{ authService.currentUser()?.name }}</div>
+        <div class="email mono">{{ authService.currentUser()?.email }}</div>
+      </div>
+    </header>
+
+    <div class="stats">
+      <div class="stat-tile">
+        <div class="stat-value mono accent">{{ bestCurrentStreak() }}</div>
+        <div class="stat-label mono">RACHA ACTUAL</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value mono">{{ bestLongestStreak() }}</div>
+        <div class="stat-label mono">MEJOR RACHA</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-value mono">{{ totalComebackAllowance() }}</div>
+        <div class="stat-label mono">REMONTADAS</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="card notif-card">
+        <div>
+          <div class="card-title">Notificaciones push</div>
+          @if (!pushNotifications.supported) {
+            <div class="notif-hint mono">Este navegador no las soporta.</div>
+          } @else if (!pushNotifications.configured) {
+            <div class="notif-hint mono">No configuradas en este entorno.</div>
+          } @else if (pushNotifications.permission() === 'granted') {
+            <div class="notif-hint mono">Activadas: recordatorios de cierre y resultados.</div>
+          } @else if (pushNotifications.permission() === 'denied') {
+            <div class="notif-hint mono">Bloqueadas en los permisos del navegador.</div>
+          } @else {
+            <div class="notif-hint mono">Avisa antes del cierre de jornada y cuando hay resultados.</div>
+          }
+          @if (pushNotifications.error()) {
+            <div class="notif-error mono">{{ pushNotifications.error() }}</div>
+          }
+        </div>
+        @if (pushNotifications.supported && pushNotifications.configured && pushNotifications.permission() !== 'granted' && pushNotifications.permission() !== 'denied') {
+          <button class="notif-btn" [disabled]="pushNotifications.loading()" (click)="enablePushNotifications()">
+            {{ pushNotifications.loading() ? 'Activando...' : 'Activar' }}
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (p.groups.length > 0) {
+      <div class="section">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Racha por grupo</span>
+          </div>
+          <div class="group-streaks">
+            @for (summary of p.groups; track summary.group.id) {
+              <div class="group-streak-row">
+                <div class="group-streak-top">
+                  <span class="group-name">{{ summary.group.name }}</span>
+                  <span class="mono">{{ summary.streak.currentStreak }} jornadas (mejor {{ summary.streak.longestStreak }})</span>
+                </div>
+                <div class="group-wildcards mono">
+                  @if (!summary.comeback.enabled) {
+                    Remontada: desactivada en este grupo
+                  } @else if (summary.comeback.allowance > 0) {
+                    Remontada: {{ summary.comeback.allowance }} disponibles (vas {{ summary.comeback.gap }} pts detras)
+                  } @else {
+                    Remontada: no disponible todavia
+                  }
+                </div>
+              </div>
+            }
+          </div>
+          <div class="hint mono">La racha se rompe si no envias ninguna prediccion en una jornada.</div>
+        </div>
+      </div>
+    }
+
+    <div class="section-head">
+      <span class="eyebrow">INSIGNIAS</span>
+      <span class="count mono">{{ p.badges.length }} de {{ catalog().length }}</span>
+    </div>
+    <div class="badges-grid">
+      @for (item of badgeStates(); track item.badge.id) {
+        <div class="badge-tile" [class.earned]="item.earned">
+          <span class="badge-medal mono">{{ item.badge.name.slice(0, 2).toUpperCase() }}</span>
+          <span class="badge-name">{{ item.badge.name }}</span>
+          <span class="badge-hint mono">{{ item.badge.description }}</span>
+        </div>
+      }
+    </div>
+    <p class="footnote mono">El catalogo de insignias es extensible: cada una es una regla evaluada al cerrar la jornada.</p>
+  </div>
+  }
+}

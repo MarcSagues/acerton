@@ -1,0 +1,378 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+/// Catalogo cerrado de competiciones soportadas en el MVP.
+/// Anadir una nueva liga requiere migracion (aceptable para el alcance actual).
+enum CompetitionCode {
+  PREMIER_LEAGUE
+  LA_LIGA
+  SERIE_A
+  BUNDESLIGA
+  LIGUE_1
+  CHAMPIONS_LEAGUE
+  CONFERENCE_LEAGUE
+}
+
+enum MatchdayStatus {
+  SCHEDULED
+  OPEN
+  CLOSED
+  FINISHED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  POSTPONED
+  CANCELLED
+}
+
+enum PredictionChoice {
+  HOME
+  DRAW
+  AWAY
+}
+
+enum RankingPeriod {
+  WEEKLY
+  TOTAL
+}
+
+/// Combinacion de resultados cubierta por el comodin de remontada (doble oportunidad).
+enum DoubleChanceOption {
+  HOME_OR_DRAW
+  DRAW_OR_AWAY
+  HOME_OR_AWAY
+}
+
+// ---------------------------------------------------------------------------
+// Identidad
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String? // null cuando el usuario solo usa Google OAuth
+  googleId     String?  @unique
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships        GroupMembership[]
+  predictions        Prediction[]
+  userBadges         UserBadge[]
+  streaks            Streak[]
+  rankingSnapshots   RankingSnapshot[]
+  refreshTokens      RefreshToken[]
+  notificationTokens NotificationToken[]
+
+  @@map("users")
+}
+
+/// Refresh tokens en tabla propia (en vez de un unico hash en User) para
+/// soportar multiples dispositivos y revocacion individual.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model NotificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notification_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Grupos
+// ---------------------------------------------------------------------------
+
+model Group {
+  id                     String   @id @default(cuid())
+  name                   String
+  description            String?
+  isPublic               Boolean  @default(false)
+  inviteCode             String   @unique
+  /// Comodin de remontada (doble oportunidad): activable/desactivable por grupo.
+  comebackEnabled        Boolean  @default(true)
+  /// Cada N puntos de diferencia con el lider del grupo dan derecho a 1 uso
+  /// mas del comodin de remontada esa jornada (ver WildcardsService).
+  comebackPointsPerBonus Int      @default(6)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  memberships       GroupMembership[]
+  groupCompetitions GroupCompetition[]
+  predictions       Prediction[]
+  rankingSnapshots  RankingSnapshot[]
+  streaks           Streak[]
+  userBadges        UserBadge[]
+
+  @@map("groups")
+}
+
+model GroupMembership {
+  id       String    @id @default(cuid())
+  userId   String
+  groupId  String
+  role     GroupRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@map("group_memberships")
+}
+
+// ---------------------------------------------------------------------------
+// Competiciones y calendario
+// ---------------------------------------------------------------------------
+
+model Competition {
+  id            String          @id @default(cuid())
+  code          CompetitionCode @unique
+  name          String
+  /// Id de la competicion en el proveedor de datos activo (ver FootballProvider).
+  /// No es especifico de ningun proveedor concreto pese al nombre generico:
+  /// cambiar de proveedor implica volver a poblar este campo via seed.
+  externalId    Int             @unique
+  logoUrl       String?
+  currentSeason Int
+
+  groupCompetitions GroupCompetition[]
+  matchdays         Matchday[]
+  rankingSnapshots  RankingSnapshot[]
+
+  @@map("competitions")
+}
+
+/// Que competiciones estan activas dentro de un grupo concreto.
+model GroupCompetition {
+  id            String   @id @default(cuid())
+  groupId       String
+  competitionId String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  group       Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, competitionId])
+  @@index([groupId])
+  @@map("group_competitions")
+}
+
+model Matchday {
+  id                String         @id @default(cuid())
+  competitionId     String
+  season            Int
+  /// Nombre de ronda tal como lo expone el proveedor (ej. "Regular Season - 5")
+  name              String
+  /// Orden secuencial dentro de la temporada, para ordenar jornadas en UI
+  order             Int
+  /// Cierre de predicciones = kickoff del primer partido de la jornada
+  closesAt          DateTime
+  status            MatchdayStatus @default(SCHEDULED)
+  /// Recordatorios push de cierre escalonados (null = ese aviso aun no se ha
+  /// enviado). Cada uno se dispara como mucho una vez, independientemente de
+  /// los demas; ver JobsService.REMINDER_TIERS.
+  reminder5hSentAt  DateTime?
+  reminder1hSentAt  DateTime?
+  reminder30mSentAt DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  competition       Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  matches           Match[]
+  rankingSnapshots  RankingSnapshot[]
+  streaksLastPlayed Streak[]          @relation("StreakLastMatchday")
+
+  @@unique([competitionId, season, name])
+  @@index([competitionId, status])
+  @@map("matchdays")
+}
+
+model Match {
+  id           String            @id @default(cuid())
+  matchdayId   String
+  /// Id del partido en el proveedor de datos activo (ver FootballProvider).
+  externalId   Int               @unique
+  homeTeam     String
+  awayTeam     String
+  homeTeamLogo String?
+  awayTeamLogo String?
+  kickoff      DateTime
+  status       MatchStatus       @default(SCHEDULED)
+  homeScore    Int?
+  awayScore    Int?
+  result       PredictionChoice?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  predictions Prediction[]
+
+  @@index([matchdayId])
+  @@map("matches")
+}
+
+// ---------------------------------------------------------------------------
+// Predicciones
+// ---------------------------------------------------------------------------
+
+/// Prediccion 1X2 de un usuario para un partido, dentro del contexto de UN
+/// grupo. Se decide anclar la prediccion al grupo (en vez de a user+match a
+/// nivel global) porque comodines, racha, insignias y clasificacion son
+/// todos conceptos "por grupo": si un usuario pertenece a dos grupos con la
+/// misma competicion activa, envia una prediccion independiente en cada uno
+/// (puede reutilizar el mismo pick, pero el comodin y los puntos se calculan
+/// por separado en cada grupo).
+model Prediction {
+  id                 String              @id @default(cuid())
+  userId             String
+  groupId            String
+  matchId            String
+  /// Null cuando la prediccion usa el comodin de remontada (ver doubleChanceOption)
+  choice             PredictionChoice?
+  /// Solo se rellena cuando se usa el comodin de remontada; en ese caso
+  /// sustituye a `choice` como fuente de verdad para puntuar.
+  doubleChanceOption DoubleChanceOption?
+  pointsEarned       Int?
+  submittedAt        DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId, matchId])
+  @@index([groupId, matchId])
+  @@index([userId, groupId])
+  @@map("predictions")
+}
+
+// ---------------------------------------------------------------------------
+// Clasificaciones
+// ---------------------------------------------------------------------------
+
+/// Fila de clasificacion calculada al cerrar/puntuar una jornada.
+/// competitionId = null representa la clasificacion general combinada del
+/// grupo (solo tiene sentido cuando el grupo tiene mas de una competicion
+/// activa). period distingue clasificacion semanal (solo esa jornada) de
+/// total (acumulada hasta esa jornada inclusive).
+model RankingSnapshot {
+  id            String        @id @default(cuid())
+  groupId       String
+  competitionId String?
+  matchdayId    String
+  period        RankingPeriod
+  userId        String
+  points        Int
+  position      Int
+  createdAt     DateTime      @default(now())
+
+  group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  competition Competition? @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, competitionId, matchdayId, period, userId])
+  @@index([groupId, period, competitionId])
+  @@map("ranking_snapshots")
+}
+
+// ---------------------------------------------------------------------------
+// Insignias
+// ---------------------------------------------------------------------------
+
+/// Catalogo de insignias, pensado para crecer sin migraciones de schema:
+/// anadir una insignia nueva = insertar una fila + registrar su checker en
+/// BadgesService. `code` es el identificador estable usado por el codigo.
+model Badge {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  iconUrl     String?
+  createdAt   DateTime @default(now())
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+/// groupId/matchdayId son opcionales porque no todas las insignias tienen
+/// contexto de grupo o jornada, pero la mayoria del catalogo inicial si.
+model UserBadge {
+  id         String   @id @default(cuid())
+  userId     String
+  badgeId    String
+  groupId    String?
+  matchdayId String?
+  earnedAt   DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge  @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId, groupId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// ---------------------------------------------------------------------------
+// Racha de participacion
+// ---------------------------------------------------------------------------
+
+/// Una fila por (usuario, grupo). Se actualiza al cerrar cada jornada de
+/// cualquier competicion activa del grupo: si el usuario envio al menos una
+/// prediccion en esa jornada, currentStreak++; si no, currentStreak = 0.
+model Streak {
+  id             String   @id @default(cuid())
+  userId         String
+  groupId        String
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastMatchdayId String?
+  updatedAt      DateTime @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group        Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  lastMatchday Matchday? @relation("StreakLastMatchday", fields: [lastMatchdayId], references: [id])
+
+  @@unique([userId, groupId])
+  @@map("streaks")
+}
