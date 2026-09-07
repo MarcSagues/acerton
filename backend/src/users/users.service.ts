@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicUser } from '../auth/auth.types';
+import { NAME_CHANGE_COOLDOWN_MS, toPublicUser } from '../auth/public-user.util';
 
 @Injectable()
 export class UsersService {
@@ -11,7 +12,39 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl };
+    return toPublicUser(user);
+  }
+
+  /**
+   * Cambia el nombre mostrado (usado tanto por el onboarding inicial de
+   * cuentas de Google como por el ajuste en Perfil). Limitado a una vez cada
+   * NAME_CHANGE_COOLDOWN_MS para que no se use para trolear las
+   * clasificaciones del grupo cambiandolo constantemente; `nameChangedAt`
+   * null (nunca se ha cambiado, sea cuenta nueva o antigua) siempre se
+   * permite sin esperar.
+   */
+  async updateName(userId: string, name: string): Promise<PublicUser> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (user.nameChangedAt) {
+      const availableAt = user.nameChangedAt.getTime() + NAME_CHANGE_COOLDOWN_MS;
+      if (availableAt > Date.now()) {
+        throw new ForbiddenException(
+          `Solo puedes cambiar el nombre una vez por semana. Podras hacerlo de nuevo el ${new Date(
+            availableAt,
+          ).toLocaleDateString('es-ES')}.`,
+        );
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { name: name.trim(), usernameConfirmed: true, nameChangedAt: new Date() },
+    });
+    return toPublicUser(updated);
   }
 
   async registerNotificationToken(userId: string, token: string): Promise<void> {

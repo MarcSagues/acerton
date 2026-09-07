@@ -1,6 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -11,7 +13,7 @@ import { Badge } from '../../../core/models/profile.model';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './profile-page.component.html',
   styleUrl: './profile-page.component.scss',
 })
@@ -44,8 +46,39 @@ export class ProfilePageComponent implements OnInit {
     return this.catalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));
   });
 
+  readonly nameInput = signal('');
+  readonly nameSaving = signal(false);
+  readonly nameError = signal<string | null>(null);
+
+  readonly nameChangeAvailableAt = computed(() => {
+    const iso = this.authService.currentUser()?.nameChangeAvailableAt;
+    return iso ? new Date(iso) : null;
+  });
+
   enablePushNotifications(): void {
     this.pushNotifications.enable();
+  }
+
+  saveName(): void {
+    const name = this.nameInput().trim();
+    const current = this.authService.currentUser();
+    if (!name || !current || name === current.name || this.nameSaving()) {
+      return;
+    }
+
+    this.nameSaving.set(true);
+    this.nameError.set(null);
+    this.profileService.updateName(name).subscribe({
+      next: (user) => {
+        this.nameSaving.set(false);
+        this.authService.setCurrentUser(user);
+        this.nameInput.set(user.name);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.nameSaving.set(false);
+        this.nameError.set(error.error?.message ?? 'No se pudo cambiar el nombre');
+      },
+    });
   }
 
   logout(): void {
@@ -61,6 +94,7 @@ export class ProfilePageComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.nameInput.set(this.authService.currentUser()?.name ?? '');
     this.profileService.getMyProfile().subscribe({
       next: (profile) => {
         this.profile.set(profile);

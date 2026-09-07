@@ -27,6 +27,36 @@
     </div>
 
     <div class="section">
+      <div class="card">
+        <div class="card-title">Nombre</div>
+        @if (nameChangeAvailableAt(); as availableAt) {
+          <div class="notif-hint mono">Ya lo has cambiado. Podras hacerlo de nuevo el {{ availableAt | date: 'dd/MM/yyyy' }}.</div>
+        } @else {
+          <div class="name-edit-row">
+            <input
+              class="name-input mono"
+              type="text"
+              maxlength="60"
+              [ngModel]="nameInput()"
+              (ngModelChange)="nameInput.set($event)"
+              (keydown.enter)="saveName()"
+            />
+            <button
+              class="notif-btn"
+              [disabled]="nameSaving() || !nameInput().trim() || nameInput().trim() === authService.currentUser()?.name"
+              (click)="saveName()"
+            >
+              {{ nameSaving() ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        }
+        @if (nameError()) {
+          <div class="notif-error mono">{{ nameError() }}</div>
+        }
+      </div>
+    </div>
+
+    <div class="section">
       <div class="card notif-card">
         <div>
           <div class="card-title">Notificaciones push</div>

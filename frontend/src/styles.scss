@@ -90,6 +90,22 @@ a {
   --mdc-circular-progress-active-indicator-color: var(--accent);
 }
 
+.mat-mdc-menu-panel {
+  --mat-menu-container-color: var(--surface-alt);
+  --mat-menu-item-label-text-color: var(--text-primary);
+  --mat-menu-item-icon-color: var(--text-secondary);
+  --mat-menu-item-hover-state-layer-color: var(--surface-alt-2);
+  --mat-menu-item-focus-state-layer-color: var(--surface-alt-2);
+  --mat-menu-item-label-text-font: var(--font-ui);
+}
+
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-color: var(--surface);
+  --mdc-dialog-subhead-color: var(--text-primary);
+  --mdc-dialog-supporting-text-color: var(--text-secondary);
+  --mdc-dialog-supporting-text-font: var(--font-ui);
+}
+
 /* Atomos reutilizados por las pantallas (ver Quiniela.dc.html) */
 @keyframes pulseDot {
   0%,

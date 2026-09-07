@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
 import { RegisterNotificationTokenDto } from './dto/register-notification-token.dto';
+import { UpdateNameDto } from './dto/update-name.dto';
 
 @Controller('users')
 export class UsersController {
@@ -10,6 +11,11 @@ export class UsersController {
   @Get('me')
   me(@CurrentUser() user: AuthenticatedUser) {
     return this.usersService.findPublicById(user.id);
+  }
+
+  @Patch('me/name')
+  updateName(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateNameDto) {
+    return this.usersService.updateName(user.id, dto.name);
   }
 
   @Post('me/notification-tokens')

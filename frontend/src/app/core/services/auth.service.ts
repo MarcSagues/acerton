@@ -89,6 +89,11 @@ export class AuthService {
     );
   }
 
+  /** Refleja en el signal local un usuario ya actualizado en el backend (ej. tras cambiar el nombre). */
+  setCurrentUser(user: User): void {
+    this.currentUserSignal.set(user);
+  }
+
   logout(): Observable<unknown> {
     return this.http
       .post(`${environment.apiUrl}/auth/logout`, {}, { withCredentials: true })

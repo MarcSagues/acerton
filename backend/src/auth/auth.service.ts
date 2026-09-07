@@ -8,6 +8,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthTokens, JwtAccessPayload, JwtRefreshPayload, PublicUser } from './auth.types';
 import { hashToken } from './token-hash.util';
+import { toPublicUser } from './public-user.util';
 
 const SALT_ROUNDS = 12;
 
@@ -38,7 +39,7 @@ export class AuthService {
     });
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
-    return { user: this.toPublicUser(user), tokens };
+    return { user: toPublicUser(user), tokens };
   }
 
   async login(dto: LoginDto): Promise<{ user: PublicUser; tokens: AuthTokens }> {
@@ -53,7 +54,7 @@ export class AuthService {
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
-    return { user: this.toPublicUser(user), tokens };
+    return { user: toPublicUser(user), tokens };
   }
 
   async validateOrCreateGoogleUser(
@@ -77,12 +78,15 @@ export class AuthService {
               name: profile.name,
               googleId: profile.googleId,
               avatarUrl: profile.avatarUrl,
+              // El nombre viene del perfil de Google, no lo eligio el usuario:
+              // se le pide confirmarlo/cambiarlo en el onboarding.
+              usernameConfirmed: false,
             },
           });
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
-    return { user: this.toPublicUser(user), tokens };
+    return { user: toPublicUser(user), tokens };
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
@@ -161,15 +165,6 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
-  }
-
-  private toPublicUser(user: {
-    id: string;
-    email: string;
-    name: string;
-    avatarUrl: string | null;
-  }): PublicUser {
-    return { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl };
   }
 }
 

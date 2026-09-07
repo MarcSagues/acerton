@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { hasGroupGuard } from './core/guards/has-group.guard';
+import { usernameGuard } from './core/guards/username-guard';
 
 export const routes: Routes = [
   {
@@ -43,8 +44,19 @@ export const routes: Routes = [
       import('./features/groups/group-list/group-list.component').then((m) => m.GroupListComponent),
   },
   {
+    // Cuentas de Google recien creadas: el nombre viene del perfil de Google
+    // sin que el usuario lo haya elegido, se le pide confirmarlo antes de
+    // dejarlo pasar (ver usernameGuard).
+    path: 'onboarding/username',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/onboarding/username-onboarding/username-onboarding.component').then(
+        (m) => m.UsernameOnboardingComponent,
+      ),
+  },
+  {
     path: '',
-    canActivate: [authGuard, hasGroupGuard],
+    canActivate: [authGuard, usernameGuard, hasGroupGuard],
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
     children: [
       { path: '', redirectTo: 'matchday', pathMatch: 'full' },

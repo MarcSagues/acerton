@@ -1,0 +1,26 @@
+<div class="onboarding-page">
+  <div class="onboarding-content">
+    <div class="brand">1X2</div>
+    <h1>Como quieres<br />que te vean</h1>
+    <p class="tagline">Este es el nombre que veran tus amigos en la tabla y en los grupos. Podras cambiarlo mas adelante, una vez por semana.</p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+      <label class="field">
+        <span class="field-label">Nombre</span>
+        <input class="field-input" type="text" formControlName="name" autocomplete="nickname" autofocus />
+      </label>
+
+      @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+      }
+
+      <button type="submit" class="cta" [disabled]="loading()">
+        @if (loading()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          Continuar
+        }
+      </button>
+    </form>
+  </div>
+</div>
