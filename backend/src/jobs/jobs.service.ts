@@ -174,7 +174,7 @@ export class JobsService {
 
     for (const gc of groupCompetitions) {
       await this.badgesService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
-      await this.notificationsService.notifyResultsPublished(gc.groupId, matchdayId, matchdayName);
+      await this.notificationsService.notifyMatchdayFinished(gc.groupId, matchdayId, matchdayName);
     }
   }
 }

@@ -110,24 +110,41 @@ export class NotificationsService implements OnModuleInit {
     });
   }
 
-  /** Aviso de resultados publicados a todos los miembros del grupo. */
-  async notifyResultsPublished(
+  /**
+   * Aviso de fin de jornada, uno por miembro con sus propios puntos (no el
+   * mismo mensaje generico para todos) — se calculan sumando pointsEarned de
+   * sus predicciones de esa jornada, ya rellenado por
+   * PredictionsService.scoreFinishedMatchday antes de llamar aqui.
+   */
+  async notifyMatchdayFinished(
     groupId: string,
     matchdayId: string,
     matchdayName: string,
   ): Promise<void> {
-    const members = await this.prisma.groupMembership.findMany({
-      where: { groupId },
-      select: { userId: true },
-    });
+    const [members, predictions] = await Promise.all([
+      this.prisma.groupMembership.findMany({ where: { groupId }, select: { userId: true } }),
+      this.prisma.prediction.findMany({
+        where: { groupId, match: { matchdayId } },
+        select: { userId: true, pointsEarned: true },
+      }),
+    ]);
 
-    await this.sendToUsers(
-      members.map((m) => m.userId),
-      {
-        title: 'Resultados publicados',
-        body: `Ya se han publicado los resultados de ${matchdayName}.`,
-        data: { type: 'RESULTS_PUBLISHED', groupId, matchdayId },
-      },
+    const pointsByUser = new Map<string, number>(members.map((m) => [m.userId, 0]));
+    for (const prediction of predictions) {
+      pointsByUser.set(
+        prediction.userId,
+        (pointsByUser.get(prediction.userId) ?? 0) + (prediction.pointsEarned ?? 0),
+      );
+    }
+
+    await Promise.all(
+      [...pointsByUser.entries()].map(([userId, points]) =>
+        this.sendToUser(userId, {
+          title: `${matchdayName} terminada`,
+          body: `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}. La clasificacion ya esta actualizada.`,
+          data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId },
+        }),
+      ),
     );
   }
 }
