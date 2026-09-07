@@ -34,11 +34,11 @@
       <div class="summary">
         <div class="eyebrow-row">
           <button class="nav-btn" [disabled]="navigating()" (click)="navigatePrevious()" title="Jornada anterior">
-            <mat-icon inline>chevron_left</mat-icon>
+            <span class="chevron chevron-left"></span>
           </button>
-          <div class="eyebrow">{{ entry.competition.name }} · {{ entry.matchday.name }}</div>
+          <div class="eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</div>
           <button class="nav-btn" [disabled]="navigating()" (click)="navigateNext()" title="Jornada siguiente">
-            <mat-icon inline>chevron_right</mat-icon>
+            <span class="chevron chevron-right"></span>
           </button>
         </div>
         @if (!isViewingLive()) {
@@ -48,6 +48,8 @@
           <div class="headline">{{ isLocked(entry) ? 'Cerrada' : 'Cierra en' }}</div>
           @if (!isLocked(entry)) {
             <div class="countdown mono">{{ countdownLabel() }}</div>
+          } @else {
+            <div class="countdown mono">{{ totalPoints() }} pts</div>
           }
         </div>
         @if (!isLocked(entry)) {
@@ -166,10 +168,11 @@
       @if (entry.matchday.status === 'FINISHED') {
         <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">Ver resultados de esta jornada</a>
       } @else if (!isLocked(entry)) {
-        <div class="cta-bar" [class.complete]="doneCount() === entry.matchday.matches.length">
+        <div class="cta-bar">
           <span>
             @if (doneCount() === entry.matchday.matches.length) {
-              Jornada completa
+              <mat-icon class="cta-check" inline>check_circle</mat-icon>
+              Completado
             } @else {
               Faltan {{ entry.matchday.matches.length - doneCount() }} por enviar
             }

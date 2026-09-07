@@ -9,6 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PushNotificationsService } from '../../../core/services/push-notifications.service';
 import { UserProfile } from '../../../core/models/profile.model';
 import { Badge } from '../../../core/models/profile.model';
+import { usernameHint, validateUsername } from '../../../shared/username.util';
 
 @Component({
   selector: 'app-profile-page',
@@ -34,13 +35,6 @@ export class ProfilePageComponent implements OnInit {
   readonly bestLongestStreak = computed(() =>
     Math.max(0, ...(this.profile()?.groups.map((g) => g.streak.longestStreak) ?? [0])),
   );
-  readonly totalComebackAllowance = computed(() =>
-    (this.profile()?.groups ?? []).reduce((sum, g) => sum + g.comeback.allowance, 0),
-  );
-  readonly anyEligibleForComeback = computed(() =>
-    (this.profile()?.groups ?? []).some((g) => g.comeback.enabled && g.comeback.allowance > 0),
-  );
-
   readonly badgeStates = computed(() => {
     const earnedCodes = new Set((this.profile()?.badges ?? []).map((b) => b.badge.code));
     return this.catalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));
@@ -55,16 +49,34 @@ export class ProfilePageComponent implements OnInit {
     return iso ? new Date(iso) : null;
   });
 
+  /** Feedback en vivo mientras se escribe. */
+  nameHint(): string | null {
+    const value = this.nameInput();
+    if (!value) return null;
+    return usernameHint(validateUsername(value));
+  }
+
+  canSaveName(): boolean {
+    const name = this.nameInput().trim();
+    const current = this.authService.currentUser();
+    return (
+      !this.nameSaving() &&
+      !!name &&
+      !!current &&
+      name !== current.name &&
+      validateUsername(this.nameInput()) === null
+    );
+  }
+
   enablePushNotifications(): void {
     this.pushNotifications.enable();
   }
 
   saveName(): void {
-    const name = this.nameInput().trim();
-    const current = this.authService.currentUser();
-    if (!name || !current || name === current.name || this.nameSaving()) {
+    if (!this.canSaveName()) {
       return;
     }
+    const name = this.nameInput().trim();
 
     this.nameSaving.set(true);
     this.nameError.set(null);

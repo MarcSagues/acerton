@@ -302,6 +302,13 @@ export class CurrentMatchdayComponent {
     return this.predictionState.get(matchId)?.pointsEarned ?? 0;
   }
 
+  /** Suma de puntos de toda la jornada activa, para mostrar junto a "Cerrada" al navegar a jornadas anteriores. */
+  totalPoints(): number {
+    const entry = this.activeEntry();
+    if (!entry) return 0;
+    return entry.matchday.matches.reduce((sum, m) => sum + this.pointsFor(m.id), 0);
+  }
+
   matchLockedLabel(match: Match): string {
     if (match.status === 'POSTPONED') return 'Aplazado';
     if (match.status === 'CANCELLED') return 'Cancelado';

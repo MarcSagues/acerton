@@ -26,9 +26,12 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="form">
       @if (isRegister()) {
         <label class="field">
-          <span class="field-label">Nombre</span>
-          <input class="field-input" type="text" formControlName="name" autocomplete="name" />
+          <span class="field-label">Nombre de usuario</span>
+          <input class="field-input" type="text" formControlName="name" autocomplete="username" maxlength="24" />
         </label>
+        @if (nameHint(); as hint) {
+          <p class="error">{{ hint }}</p>
+        }
       }
 
       <label class="field">

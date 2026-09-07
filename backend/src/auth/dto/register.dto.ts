@@ -1,4 +1,5 @@
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { USERNAME_PATTERN, USERNAME_PATTERN_MESSAGE } from '../../users/username.util';
 
 export class RegisterDto {
   @IsEmail()
@@ -11,6 +12,7 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(2)
-  @MaxLength(60)
+  @MaxLength(24)
+  @Matches(USERNAME_PATTERN, { message: USERNAME_PATTERN_MESSAGE })
   name!: string;
 }

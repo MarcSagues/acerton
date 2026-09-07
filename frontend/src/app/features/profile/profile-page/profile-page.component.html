@@ -20,10 +20,6 @@
         <div class="stat-value mono">{{ bestLongestStreak() }}</div>
         <div class="stat-label mono">MEJOR RACHA</div>
       </div>
-      <div class="stat-tile">
-        <div class="stat-value mono">{{ totalComebackAllowance() }}</div>
-        <div class="stat-label mono">REMONTADAS</div>
-      </div>
     </div>
 
     <div class="section">
@@ -36,19 +32,18 @@
             <input
               class="name-input mono"
               type="text"
-              maxlength="60"
+              maxlength="24"
               [ngModel]="nameInput()"
               (ngModelChange)="nameInput.set($event)"
               (keydown.enter)="saveName()"
             />
-            <button
-              class="notif-btn"
-              [disabled]="nameSaving() || !nameInput().trim() || nameInput().trim() === authService.currentUser()?.name"
-              (click)="saveName()"
-            >
+            <button class="notif-btn" [disabled]="!canSaveName()" (click)="saveName()">
               {{ nameSaving() ? 'Guardando...' : 'Guardar' }}
             </button>
           </div>
+          @if (nameHint(); as hint) {
+            <div class="notif-error mono">{{ hint }}</div>
+          }
         }
         @if (nameError()) {
           <div class="notif-error mono">{{ nameError() }}</div>
@@ -95,15 +90,6 @@
                 <div class="group-streak-top">
                   <span class="group-name">{{ summary.group.name }}</span>
                   <span class="mono">{{ summary.streak.currentStreak }} jornadas (mejor {{ summary.streak.longestStreak }})</span>
-                </div>
-                <div class="group-wildcards mono">
-                  @if (!summary.comeback.enabled) {
-                    Remontada: desactivada en este grupo
-                  } @else if (summary.comeback.allowance > 0) {
-                    Remontada: {{ summary.comeback.allowance }} disponibles (vas {{ summary.comeback.gap }} pts detras)
-                  } @else {
-                    Remontada: no disponible todavia
-                  }
                 </div>
               </div>
             }

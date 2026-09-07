@@ -97,6 +97,23 @@
   }
 }
 
+.chevron {
+  width: 6px;
+  height: 6px;
+  border-top: 1.5px solid currentColor;
+  border-left: 1.5px solid currentColor;
+}
+
+.chevron-left {
+  transform: rotate(-45deg);
+  margin-left: 2px;
+}
+
+.chevron-right {
+  transform: rotate(135deg);
+  margin-right: 2px;
+}
+
 .live-link {
   align-self: center;
   background: none;
@@ -356,9 +373,17 @@
   justify-content: center;
   font: 600 13px/1 var(--font-ui);
 
-  &.complete {
-    background: var(--accent);
-    color: var(--accent-on);
+  span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cta-check {
+    color: var(--accent);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
   }
 }
 

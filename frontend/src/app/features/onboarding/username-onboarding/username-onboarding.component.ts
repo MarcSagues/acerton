@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProfileService } from '../../../core/services/profile.service';
+import { usernameHint, usernameValidator } from '../../../shared/username.util';
 
 @Component({
   selector: 'app-username-onboarding',
@@ -23,8 +24,15 @@ export class UsernameOnboardingComponent {
   readonly errorMessage = signal<string | null>(null);
 
   readonly form = this.fb.nonNullable.group({
-    name: [this.authService.currentUser()?.name ?? '', [Validators.required, Validators.minLength(2), Validators.maxLength(60)]],
+    name: [this.authService.currentUser()?.name ?? '', [Validators.required, usernameValidator()]],
   });
+
+  /** Feedback en vivo mientras se escribe. */
+  nameHint(): string | null {
+    const control = this.form.controls.name;
+    if (!control.value) return null;
+    return usernameHint(control.errors);
+  }
 
   submit(): void {
     if (this.form.invalid) {

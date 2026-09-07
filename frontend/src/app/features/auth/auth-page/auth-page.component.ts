@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
+import { usernameHint, usernameValidator } from '../../../shared/username.util';
 
 type AuthMode = 'login' | 'register';
 
@@ -44,12 +45,20 @@ export class AuthPageComponent implements OnInit {
     this.errorMessage.set(null);
     const nameControl = this.form.controls.name;
     if (mode === 'register') {
-      nameControl.setValidators([Validators.required, Validators.minLength(2)]);
+      nameControl.setValidators([Validators.required, usernameValidator()]);
     } else {
       nameControl.clearValidators();
     }
     nameControl.updateValueAndValidity();
     this.router.navigate([mode === 'register' ? '/register' : '/login']);
+  }
+
+  /** Feedback en vivo mientras se escribe, sin esperar a que se toque el campo o se intente enviar. */
+  nameHint(): string | null {
+    if (!this.isRegister()) return null;
+    const control = this.form.controls.name;
+    if (!control.value) return null;
+    return usernameHint(control.errors);
   }
 
   togglePasswordVisibility(): void {
@@ -67,7 +76,7 @@ export class AuthPageComponent implements OnInit {
     const { name, email, password } = this.form.getRawValue();
 
     const request = this.isRegister()
-      ? this.authService.register({ name, email, password })
+      ? this.authService.register({ name: name.trim(), email, password })
       : this.authService.login({ email, password });
 
     request.subscribe({

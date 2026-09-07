@@ -6,9 +6,12 @@
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="form">
       <label class="field">
-        <span class="field-label">Nombre</span>
-        <input class="field-input" type="text" formControlName="name" autocomplete="nickname" autofocus />
+        <span class="field-label">Nombre de usuario</span>
+        <input class="field-input" type="text" formControlName="name" autocomplete="nickname" maxlength="24" autofocus />
       </label>
+      @if (nameHint(); as hint) {
+        <p class="error">{{ hint }}</p>
+      }
 
       @if (errorMessage()) {
         <p class="error">{{ errorMessage() }}</p>
