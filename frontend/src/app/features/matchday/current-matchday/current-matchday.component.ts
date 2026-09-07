@@ -74,19 +74,28 @@ export class CurrentMatchdayComponent {
     const deadline = this.nextDeadline();
     return deadline ? formatCountdown(new Date(deadline.kickoff), this.now()) : '';
   });
-  readonly doneCount = computed(() => {
+  /**
+   * Metodo normal, no computed(): predictionState es un Map mutado a mano
+   * (no un signal), asi que un computed() no detectaria sus cambios y se
+   * quedaria con el valor cacheado del primer render (ej. las predicciones
+   * ya guardadas que llegan de forma asincrona en loadExistingPredictions).
+   * Al ser un metodo se reevalua en cada ciclo de deteccion de cambios,
+   * igual que ya hace stateFor() para cada fila.
+   */
+  doneCount(): number {
     const entry = this.activeEntry();
     if (!entry) return 0;
     return entry.matchday.matches.filter((m) => {
       const state = this.predictionState.get(m.id);
       return !!(state?.choice || state?.doubleChanceOption);
     }).length;
-  });
-  readonly progressPct = computed(() => {
+  }
+
+  progressPct(): string {
     const entry = this.activeEntry();
     if (!entry || entry.matchday.matches.length === 0) return '0%';
     return `${Math.round((this.doneCount() / entry.matchday.matches.length) * 100)}%`;
-  });
+  }
 
   constructor() {
     effect(
