@@ -85,6 +85,8 @@
               </div>
             } @else if (isMatchLocked(match)) {
               <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
+            } @else if (!isViewingLive()) {
+              <div class="result mono dim">Aun no</div>
             } @else {
               <div class="wc-icons">
                 @if (stateFor(match.id).saving) {

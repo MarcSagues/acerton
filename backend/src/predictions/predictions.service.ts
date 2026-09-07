@@ -8,6 +8,7 @@ import { Prediction } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WildcardsService } from '../wildcards/wildcards.service';
 import { GroupsService } from '../groups/groups.service';
+import { MatchdaysService } from '../matchdays/matchdays.service';
 import { SubmitPredictionDto } from './dto/submit-prediction.dto';
 import { calculatePoints } from './scoring.util';
 import { isMatchPredictable } from '../matchdays/matchday.util';
@@ -18,6 +19,7 @@ export class PredictionsService {
     private readonly prisma: PrismaService,
     private readonly wildcardsService: WildcardsService,
     private readonly groupsService: GroupsService,
+    private readonly matchdaysService: MatchdaysService,
   ) {}
 
   async submit(userId: string, groupId: string, dto: SubmitPredictionDto): Promise<Prediction> {
@@ -29,6 +31,11 @@ export class PredictionsService {
     }
     if (!isMatchPredictable(match, new Date())) {
       throw new ForbiddenException('Este partido ya ha empezado, no se admiten mas predicciones');
+    }
+    if (!(await this.matchdaysService.isCurrentMatchday(match.matchdayId))) {
+      throw new ForbiddenException(
+        'Todavia no se puede predecir esta jornada, espera a que sea la jornada actual',
+      );
     }
 
     const isDoubleChance = !!dto.doubleChanceOption;

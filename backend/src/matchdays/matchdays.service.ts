@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Competition, Matchday, PredictionChoice } from '@prisma/client';
+import { Competition, Matchday, MatchdayStatus, PredictionChoice } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   FOOTBALL_PROVIDER,
@@ -58,9 +58,12 @@ export class MatchdaysService {
    * Jornada anterior/siguiente a una dada, dentro de la misma competicion,
    * ordenada por `order` (numero de jornada) en vez de por closesAt, para
    * que un partido reprogramado antes/despues de su jornada no desordene la
-   * navegacion. "Anterior" siempre esta ya sincronizada (no se borra
-   * historial); "siguiente" se sincroniza bajo demanda contra el proveedor
-   * la primera vez que se pide, si todavia no existe en BBDD.
+   * navegacion. Ambas direcciones se sincronizan bajo demanda contra el
+   * proveedor la primera vez que se piden, si todavia no existen en BBDD:
+   * "anterior" no esta garantizada solo porque ya haya pasado, ya que el
+   * cron unicamente sincroniza la jornada "actual" (si el grupo/competicion
+   * empezo a seguirse a partir de la jornada 6, las jornadas 1-5 nunca se
+   * guardaron aunque ya se jugaran).
    */
   async getAdjacentMatchday(matchdayId: string, direction: 'previous' | 'next') {
     const current = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
@@ -73,7 +76,13 @@ export class MatchdaysService {
         where: { competitionId: current.competitionId, order: { lt: current.order } },
         orderBy: { order: 'desc' },
       });
-      return previous ? this.getMatchdayWithMatches(previous.id) : null;
+      if (previous) {
+        return this.getMatchdayWithMatches(previous.id);
+      }
+      if (current.order <= 1) {
+        return null;
+      }
+      return this.syncSpecificRound(current.competitionId, current.order - 1);
     }
 
     const existingNext = await this.prisma.matchday.findFirst({
@@ -89,11 +98,13 @@ export class MatchdaysService {
 
   /**
    * Sincroniza bajo demanda una jornada por su numero de orden concreto (no
-   * la "actual" del proveedor) — usado solo para previsualizar la siguiente
-   * jornada antes de que se convierta en la actual. Solo funciona en
-   * competiciones de liga regular con jornadas numeradas: en fases de
-   * eliminatoria el proveedor puede no devolver nada para ese numero, y
-   * entonces simplemente no hay "siguiente" que mostrar todavia.
+   * la "actual" del proveedor) — usado para previsualizar la siguiente
+   * jornada antes de que se convierta en la actual, o para traer una jornada
+   * anterior que nunca llego a guardarse (la app empezo a seguir la
+   * competicion mas tarde). Solo funciona en competiciones de liga regular
+   * con jornadas numeradas: en fases de eliminatoria el proveedor puede no
+   * devolver nada para ese numero, y entonces simplemente no hay jornada que
+   * mostrar todavia en esa direccion.
    */
   private async syncSpecificRound(competitionId: string, roundNumber: number) {
     const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
@@ -140,13 +151,30 @@ export class MatchdaysService {
         name: roundName,
         order: parseRoundOrder(roundName, fallbackOrderIndex),
         closesAt,
-        status: 'OPEN',
+        status: this.deriveInitialStatus(fixtures, closesAt),
       },
     });
 
     await Promise.all(fixtures.map((fixture) => this.upsertMatch(matchday.id, fixture)));
 
     return matchday;
+  }
+
+  /**
+   * Estado inicial al crear una jornada nueva en BBDD. Necesario porque
+   * `syncSpecificRound` tambien se usa para traer una jornada anterior que
+   * ya se jugo por completo (nunca se sincronizo porque el seguimiento de la
+   * competicion empezo despues): sin esto se crearia como OPEN aunque todos
+   * sus partidos ya tengan resultado.
+   */
+  private deriveInitialStatus(fixtures: ProviderFixture[], closesAt: Date): MatchdayStatus {
+    if (fixtures.every((fixture) => fixture.status === 'FINISHED')) {
+      return 'FINISHED';
+    }
+    if (closesAt.getTime() <= Date.now()) {
+      return 'CLOSED';
+    }
+    return 'OPEN';
   }
 
   private matchDataFromFixture(fixture: ProviderFixture) {
@@ -280,5 +308,29 @@ export class MatchdaysService {
       orderBy: { closesAt: 'desc' },
       include: { matches: { orderBy: { kickoff: 'asc' } } },
     });
+  }
+
+  /**
+   * true si esta jornada es la "actual" de su competicion (ver
+   * getCurrentMatchdayForCompetition). Se usa para no dejar enviar
+   * pronosticos en una jornada futura que se sincronizo solo para
+   * previsualizarla (navegacion "siguiente"): predecir toca cuando le llegue
+   * el turno, no antes — si no, la app pierde el motivo para abrirla cada
+   * semana.
+   */
+  async isCurrentMatchday(matchdayId: string): Promise<boolean> {
+    const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
+    if (!matchday || matchday.status === 'FINISHED') {
+      return false;
+    }
+
+    const earlierPending = await this.prisma.matchday.findFirst({
+      where: {
+        competitionId: matchday.competitionId,
+        status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] },
+        closesAt: { lt: matchday.closesAt },
+      },
+    });
+    return !earlierPending;
   }
 }
