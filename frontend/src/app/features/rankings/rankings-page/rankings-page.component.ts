@@ -66,6 +66,12 @@ export class RankingsPageComponent {
 
   setScope(scope: string): void {
     this.scope.set(scope);
+    // La clasificacion semanal general no existe (cada competicion tiene su
+    // propio calendario de jornadas), asi que al elegir "general" se fuerza
+    // a "Total" en vez de dejar una combinacion sin sentido seleccionada.
+    if (scope === 'general' && this.period() === 'WEEKLY') {
+      this.period.set('TOTAL');
+    }
     const groupId = this.activeGroupService.activeId();
     if (groupId) this.fetchRanking(groupId);
   }

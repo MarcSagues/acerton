@@ -8,7 +8,9 @@
     </div>
 
     <div class="tabs">
-      <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
+      @if (scope() !== 'general') {
+        <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
+      }
       <button class="tab" [class.active]="period() === 'TOTAL'" (click)="setPeriod('TOTAL')">Total</button>
     </div>
 
@@ -23,48 +25,42 @@
       }
     </div>
 
-    @if (period() === 'WEEKLY' && scope() === 'general') {
-      <p class="hint">La clasificacion semanal general no esta disponible: cada competicion tiene su propio calendario de jornadas.</p>
-    } @else {
-      @if (myRow(); as mine) {
-        <div class="my-row">
-          <div class="my-pos mono">{{ mine.position }}</div>
-          <div class="my-meta">
-            <div class="my-name">Tu · {{ mine.user.name }}</div>
-          </div>
-          <div class="my-pts">
-            <div class="pts-value mono">{{ mine.points }}</div>
-            <div class="pts-label mono">PTS</div>
-          </div>
+    @if (myRow(); as mine) {
+      <div class="my-row">
+        <div class="my-pos mono">{{ mine.position }}</div>
+        <div class="my-meta">
+          <div class="my-name">Tu · {{ mine.user.name }}</div>
         </div>
-      }
+        <div class="my-pts">
+          <div class="pts-value mono">{{ mine.points }}</div>
+          <div class="pts-label mono">PTS</div>
+        </div>
+      </div>
     }
 
-    @if (!(period() === 'WEEKLY' && scope() === 'general')) {
-      <div class="table-head">
-        <div class="col-pos mono">#</div>
-        <div class="col-name mono">JUGADOR</div>
-        <div class="col-pts mono">PTS</div>
-      </div>
+    <div class="table-head">
+      <div class="col-pos mono">#</div>
+      <div class="col-name mono">JUGADOR</div>
+      <div class="col-pts mono">PTS</div>
+    </div>
 
-      @if (loadingRanking()) {
-        <div class="loading"><span class="mono">...</span></div>
-      } @else if (rows().length === 0) {
-        <p class="empty">Todavia no hay puntos calculados para esta vista.</p>
-      } @else {
-        <div class="rows">
-          @for (row of rows(); track row.userId) {
-            <div class="row" [class.me]="row.userId === currentUserId">
-              <div class="col-pos mono">{{ row.position }}</div>
-              <div class="col-name">
-                <span class="avatar">{{ initials(row.user.name) }}</span>
-                <span class="name">{{ row.user.name }}</span>
-              </div>
-              <div class="col-pts mono">{{ row.points }}</div>
+    @if (loadingRanking()) {
+      <div class="loading"><span class="mono">...</span></div>
+    } @else if (rows().length === 0) {
+      <p class="empty">Todavia no hay puntos calculados para esta vista.</p>
+    } @else {
+      <div class="rows">
+        @for (row of rows(); track row.userId) {
+          <div class="row" [class.me]="row.userId === currentUserId">
+            <div class="col-pos mono">{{ row.position }}</div>
+            <div class="col-name">
+              <span class="avatar">{{ initials(row.user.name) }}</span>
+              <span class="name">{{ row.user.name }}</span>
             </div>
-          }
-        </div>
-      }
+            <div class="col-pts mono">{{ row.points }}</div>
+          </div>
+        }
+      </div>
     }
   </div>
 }
