@@ -82,7 +82,7 @@
                     {{ pickLabel(match.id) ?? 'N/A' }}
                   </span>
                   <span class="badge points" [class.earned]="pointsFor(match.id) > 0">
-                    {{ pointsFor(match.id) }}
+                    {{ pointsFor(match.id) > 0 ? '+' : '' }}{{ pointsFor(match.id) }}
                   </span>
                 </div>
               </div>
