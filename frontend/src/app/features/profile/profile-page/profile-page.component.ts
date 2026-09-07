@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -17,6 +18,7 @@ import { Badge } from '../../../core/models/profile.model';
 export class ProfilePageComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly badgesService = inject(BadgesService);
+  private readonly router = inject(Router);
   readonly authService = inject(AuthService);
   readonly pushNotifications = inject(PushNotificationsService);
 
@@ -44,6 +46,10 @@ export class ProfilePageComponent implements OnInit {
 
   enablePushNotifications(): void {
     this.pushNotifications.enable();
+  }
+
+  logout(): void {
+    this.authService.logout().subscribe(() => this.router.navigate(['/login']));
   }
 
   initials(name: string): string {

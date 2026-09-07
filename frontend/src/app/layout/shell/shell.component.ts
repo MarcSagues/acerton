@@ -1,7 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { GroupsService } from '../../core/services/groups.service';
-import { ActiveGroupService } from '../../core/services/active-group.service';
 import { BottomNavComponent } from './bottom-nav.component';
 
 @Component({
@@ -31,11 +29,4 @@ import { BottomNavComponent } from './bottom-nav.component';
     `,
   ],
 })
-export class ShellComponent implements OnInit {
-  private readonly groupsService = inject(GroupsService);
-  private readonly activeGroupService = inject(ActiveGroupService);
-
-  ngOnInit(): void {
-    this.groupsService.loadMyGroups().subscribe((groups) => this.activeGroupService.setGroups(groups));
-  }
-}
+export class ShellComponent {}

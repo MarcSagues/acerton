@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { hasGroupGuard } from './core/guards/has-group.guard';
 
 export const routes: Routes = [
   {
@@ -26,8 +27,17 @@ export const routes: Routes = [
       import('./features/groups/group-join/group-join.component').then((m) => m.GroupJoinComponent),
   },
   {
-    path: '',
+    // Fuera del shell (sin bottom nav) a proposito: sin ningun grupo no hay
+    // nada que hacer en el resto de la app, asi que esta pantalla se planta
+    // por delante hasta que se crea uno o se une a uno.
+    path: 'welcome',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/group-list/group-list.component').then((m) => m.GroupListComponent),
+  },
+  {
+    path: '',
+    canActivate: [authGuard, hasGroupGuard],
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
     children: [
       { path: '', redirectTo: 'matchday', pathMatch: 'full' },
