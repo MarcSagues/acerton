@@ -77,15 +77,18 @@
             @if (match.status === 'FINISHED') {
               <div class="result-block">
                 <div class="result mono">{{ match.homeScore }}-{{ match.awayScore }}</div>
-                @if (pickLabel(match.id); as pick) {
-                  <span class="my-pick mono" [class.hit]="isPickHit(match) === true" [class.miss]="isPickHit(match) === false">
-                    tu {{ pick }}
+                <div class="pick-line mono">
+                  <span class="badge pick" [class.hit]="isPickHit(match) === true" [class.miss]="isPickHit(match) === false">
+                    {{ pickLabel(match.id) ?? 'N/A' }}
                   </span>
-                }
+                  <span class="badge points" [class.earned]="pointsFor(match.id) > 0">
+                    {{ pointsFor(match.id) }}
+                  </span>
+                </div>
               </div>
             } @else if (isMatchLocked(match)) {
               <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
-            } @else if (isFuturePreview()) {
+            } @else if (!canPredictActiveMatchday()) {
               <div class="result mono dim">Aun no</div>
             } @else {
               <div class="wc-icons">

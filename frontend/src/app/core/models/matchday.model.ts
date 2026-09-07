@@ -26,6 +26,8 @@ export interface Matchday {
   order: number;
   closesAt: string;
   status: MatchdayStatus;
+  /** false cuando esta jornada todavia no le toca (previsualizada con "siguiente"), aunque sus partidos no esten bloqueados por horario. */
+  canPredict: boolean;
   matches: Match[];
   competition?: Competition;
 }

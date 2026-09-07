@@ -253,6 +253,36 @@ describe('MatchdaysService.getAdjacentMatchday', () => {
   });
 });
 
+describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
+  it('elige la jornada de numero mas bajo entre las no finalizadas, no la de cierre mas proximo', async () => {
+    // Escenario real: un partido aplazado hace que la jornada 6 (order 6)
+    // cierre antes que la 5 (order 5), pero la 5 todavia no se ha jugado —
+    // debe seguir siendo "la actual" a mostrar, no la 6.
+    const prisma = buildPrismaMock();
+    prisma.matchday.findFirst.mockResolvedValue({ id: 'jornada-5', order: 5 });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    const result = await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(result).toMatchObject({ id: 'jornada-5' });
+    expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { order: 'asc' } }),
+    );
+  });
+
+  it('si todas estan finalizadas, devuelve la ultima jugada', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findFirst
+      .mockResolvedValueOnce(null) // no hay ninguna pendiente
+      .mockResolvedValueOnce({ id: 'jornada-4' });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    const result = await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(result).toMatchObject({ id: 'jornada-4' });
+  });
+});
+
 describe('MatchdaysService.canAcceptPredictions', () => {
   it('false si la jornada ya esta FINISHED', async () => {
     const prisma = buildPrismaMock();

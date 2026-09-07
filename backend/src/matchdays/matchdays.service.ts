@@ -289,25 +289,64 @@ export class MatchdaysService {
     if (!matchday) {
       throw new NotFoundException('Jornada no encontrada');
     }
-    return matchday;
+    return this.attachCanPredict(matchday);
   }
 
-  /** Jornada relevante "actual" de una competicion: la mas reciente no finalizada, o si no hay, la ultima finalizada. */
+  /**
+   * Jornada relevante "actual" de una competicion para mostrar por defecto:
+   * la de numero de ronda mas bajo entre las no finalizadas, o si no hay
+   * ninguna, la ultima finalizada. Se ordena por `order` y no por
+   * `closesAt` porque un partido aplazado puede hacer que una jornada
+   * anterior (ej. la 5) cierre despues que la siguiente (la 6) — closesAt
+   * marcaria la 6 como "actual" aunque la 5 todavia no se haya jugado, que
+   * es justo lo contrario de lo que se espera ver al abrir la app.
+   */
   async getCurrentMatchdayForCompetition(competitionId: string) {
     const open = await this.prisma.matchday.findFirst({
       where: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
-      orderBy: { closesAt: 'asc' },
+      orderBy: { order: 'asc' },
       include: { matches: { orderBy: { kickoff: 'asc' } } },
     });
     if (open) {
-      return open;
+      return this.attachCanPredict(open);
     }
 
-    return this.prisma.matchday.findFirst({
+    const finished = await this.prisma.matchday.findFirst({
       where: { competitionId, status: 'FINISHED' },
       orderBy: { closesAt: 'desc' },
       include: { matches: { orderBy: { kickoff: 'asc' } } },
     });
+    return finished ? this.attachCanPredict(finished) : null;
+  }
+
+  /**
+   * Orden de la jornada "actual" por cierre mas proximo (ver
+   * canAcceptPredictions) — null si no queda ninguna pendiente.
+   */
+  private async getEarliestPendingOrder(competitionId: string): Promise<number | null> {
+    const current = await this.prisma.matchday.findFirst({
+      where: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
+      orderBy: { closesAt: 'asc' },
+    });
+    return current?.order ?? null;
+  }
+
+  /**
+   * Añade `canPredict` a una jornada ya cargada, para que el frontend sepa
+   * si sus partidos todavia no bloqueados por horario se pueden predecir sin
+   * tener que replicar la regla de canAcceptPredictions comparando ordenes
+   * el mismo (eso fue justo lo que causo que la jornada "actual" para
+   * mostrar por defecto — la de numero mas bajo — y la jornada limite para
+   * predecir — la de cierre mas proximo — se confundieran entre si).
+   */
+  private async attachCanPredict<T extends { order: number; status: string; competitionId: string }>(
+    matchday: T,
+  ): Promise<T & { canPredict: boolean }> {
+    if (matchday.status === 'FINISHED') {
+      return { ...matchday, canPredict: false };
+    }
+    const earliestPendingOrder = await this.getEarliestPendingOrder(matchday.competitionId);
+    return { ...matchday, canPredict: earliestPendingOrder === null || matchday.order <= earliestPendingOrder };
   }
 
   /**
@@ -325,18 +364,9 @@ export class MatchdaysService {
    */
   async canAcceptPredictions(matchdayId: string): Promise<boolean> {
     const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
-    if (!matchday || matchday.status === 'FINISHED') {
+    if (!matchday) {
       return false;
     }
-
-    const current = await this.prisma.matchday.findFirst({
-      where: { competitionId: matchday.competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
-      orderBy: { closesAt: 'asc' },
-    });
-    if (!current) {
-      return true;
-    }
-
-    return matchday.order <= current.order;
+    return (await this.attachCanPredict(matchday)).canPredict;
   }
 }

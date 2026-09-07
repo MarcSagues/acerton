@@ -21,6 +21,8 @@ interface MatchPredictionState {
   doubleChanceOption: DoubleChanceOption | null;
   saving: boolean;
   saved: boolean;
+  /** Solo se rellena una vez el partido termina y se puntua; null mientras tanto. */
+  pointsEarned: number | null;
 }
 
 @Component({
@@ -53,8 +55,6 @@ export class CurrentMatchdayComponent {
   readonly navigating = signal(false);
   /** Id de la jornada "en vivo" de cada pestana (competicion), tal como se cargo al entrar — para saber si te has alejado navegando y poder volver. */
   private readonly liveMatchdayIds = signal<Record<number, string>>({});
-  /** Orden de esa misma jornada "en vivo" — para saber si la que se esta viendo ahora es una previsualizacion futura (ver isFuturePreview). */
-  private readonly liveMatchdayOrders = signal<Record<number, number>>({});
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -86,20 +86,14 @@ export class CurrentMatchdayComponent {
     return this.liveMatchdayIds()[this.activeTabIndex()] === entry.matchday.id;
   });
   /**
-   * true cuando la jornada que se esta viendo tiene un numero de orden mayor
-   * que el de la "en vivo" — es decir, es una previsualizacion de una
-   * jornada que todavia no le toca (navegacion "siguiente"). Una jornada con
-   * numero menor que la actual pero que se ve al navegar "anterior" NO
-   * cuenta como futura aunque cierre mas tarde por un aplazamiento: esa ya
-   * deberia poder predecirse (ver MatchdaysService.canAcceptPredictions en
-   * el backend, misma regla espejada aqui).
+   * false cuando la jornada activa todavia no le toca (previsualizada con
+   * "siguiente") — el backend es quien decide esto (ver
+   * MatchdaysService.canAcceptPredictions), no se replica la regla aqui para
+   * evitar que la nocion de "jornada en vivo para volver" (por id) y la de
+   * "jornada limite para predecir" (por cierre mas proximo) diverjan entre
+   * si, como paso cuando esto se calculaba comparando ordenes en el cliente.
    */
-  readonly isFuturePreview = computed(() => {
-    const entry = this.activeEntry();
-    if (!entry) return false;
-    const liveOrder = this.liveMatchdayOrders()[this.activeTabIndex()];
-    return liveOrder !== undefined && entry.matchday.order > liveOrder;
-  });
+  readonly canPredictActiveMatchday = computed(() => this.activeEntry()?.matchday.canPredict ?? false);
   /**
    * Metodo normal, no computed(): predictionState es un Map mutado a mano
    * (no un signal), asi que un computed() no detectaria sus cambios y se
@@ -144,7 +138,6 @@ export class CurrentMatchdayComponent {
       next: (entries) => {
         this.entries.set(entries);
         this.liveMatchdayIds.set(Object.fromEntries(entries.map((e, i) => [i, e.matchday.id])));
-        this.liveMatchdayOrders.set(Object.fromEntries(entries.map((e, i) => [i, e.matchday.order])));
         this.activeTabIndex.set(0);
         this.loadExistingPredictions(groupId, entries);
         this.refreshComeback(groupId);
@@ -241,6 +234,7 @@ export class CurrentMatchdayComponent {
             doubleChanceOption: prediction.doubleChanceOption,
             saving: false,
             saved: true,
+            pointsEarned: prediction.pointsEarned,
           });
         }
       });
@@ -303,6 +297,11 @@ export class CurrentMatchdayComponent {
     return state.choice === match.result;
   }
 
+  /** Puntos ganados en este partido, o 0 si no se envio pronostico (o todavia no se ha puntuado). */
+  pointsFor(matchId: string): number {
+    return this.predictionState.get(matchId)?.pointsEarned ?? 0;
+  }
+
   matchLockedLabel(match: Match): string {
     if (match.status === 'POSTPONED') return 'Aplazado';
     if (match.status === 'CANCELLED') return 'Cancelado';
@@ -331,7 +330,7 @@ export class CurrentMatchdayComponent {
   stateFor(matchId: string): MatchPredictionState {
     let state = this.predictionState.get(matchId);
     if (!state) {
-      state = { choice: null, doubleChanceOption: null, saving: false, saved: false };
+      state = { choice: null, doubleChanceOption: null, saving: false, saved: false, pointsEarned: null };
       this.predictionState.set(matchId, state);
     }
     return state;
