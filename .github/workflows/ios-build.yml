@@ -18,8 +18,13 @@ jobs:
       # (ver https://github.com/ionic-team/capacitor/issues/8333).
       - name: Seleccionar Xcode 26
         run: |
-          if [ -d "/Applications/Xcode_26.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          # El nombre exacto de la app varia segun la imagen del runner
+          # (Xcode_26.6.app, Xcode_26.6.0.app, etc.) - se coge la version 26.x
+          # mas alta disponible en vez de fijar un numero de parche concreto.
+          XCODE_PATH=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XCODE_PATH" ]; then
+            echo "Usando $XCODE_PATH"
+            sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           else
             echo "Xcode 26 no encontrado en este runner. Versiones disponibles:"
             ls /Applications | grep -i xcode || true
