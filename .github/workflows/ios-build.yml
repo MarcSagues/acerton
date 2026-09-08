@@ -57,7 +57,7 @@ jobs:
         working-directory: frontend/ios/App
         run: |
           xcodebuild archive \
-            -workspace App.xcworkspace \
+            -project App.xcodeproj \
             -scheme App \
             -sdk iphoneos \
             -configuration Release \
