@@ -56,6 +56,11 @@ jobs:
       - name: Archivar (xcodebuild archive)
         working-directory: frontend/ios/App
         run: |
+          # La firma manual (equipo/identidad/perfil) vive en la config Release
+          # del target App dentro del propio project.pbxproj, no aqui: pasarla
+          # por linea de comandos se aplica a TODOS los targets del build,
+          # incluidos los paquetes SPM de terceros (Google Sign-In, etc.), que
+          # no admiten perfil de aprovisionamiento y hacen fallar el archivado.
           xcodebuild archive \
             -project App.xcodeproj \
             -scheme App \
@@ -63,10 +68,6 @@ jobs:
             -configuration Release \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -destination "generic/platform=iOS" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="Sagui" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
       - name: Exportar .ipa
