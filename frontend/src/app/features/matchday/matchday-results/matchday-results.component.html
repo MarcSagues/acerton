@@ -35,6 +35,21 @@
         <a class="rankings-link" routerLink="/rankings">Tabla</a>
       </header>
 
+      @if (hasMultipleCompetitions()) {
+        <div class="comp-switcher">
+          @for (competition of activeCompetitions(); track competition.id) {
+            <button
+              class="comp-chip"
+              [class.active]="competition.id === md.competitionId"
+              [disabled]="switchingCompetition()"
+              (click)="switchCompetition(competition.id)"
+            >
+              {{ competition.name }}
+            </button>
+          }
+        </div>
+      }
+
       <div class="summary">
         <div class="points-ring mono">
           <div class="points-value">{{ totalPoints() }}</div>

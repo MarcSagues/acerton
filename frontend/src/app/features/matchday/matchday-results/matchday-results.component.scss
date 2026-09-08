@@ -59,6 +59,36 @@
   margin-right: 2px;
 }
 
+.comp-switcher {
+  padding: 10px 16px 0;
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+}
+
+.comp-chip {
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  font: 500 11px/1 var(--font-ui);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &.active {
+    background: var(--text-primary);
+    color: var(--bg);
+    border-color: transparent;
+    font-weight: 600;
+  }
+}
+
 .title {
   font: 700 18px/1.1 var(--font-ui);
 }

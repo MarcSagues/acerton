@@ -8,11 +8,13 @@ import { PredictionsService } from '../../../core/services/predictions.service';
 import { RankingsService } from '../../../core/services/rankings.service';
 import { StreaksService } from '../../../core/services/streaks.service';
 import { ProfileService } from '../../../core/services/profile.service';
+import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Matchday } from '../../../core/models/matchday.model';
 import { Prediction } from '../../../core/models/prediction.model';
 import { UserBadge } from '../../../core/models/profile.model';
+import { Competition } from '../../../core/models/competition.model';
 
 @Component({
   selector: 'app-matchday-results',
@@ -29,6 +31,7 @@ export class MatchdayResultsComponent implements OnInit {
   private readonly rankingsService = inject(RankingsService);
   private readonly streaksService = inject(StreaksService);
   private readonly profileService = inject(ProfileService);
+  private readonly groupsService = inject(GroupsService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly authService = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
@@ -40,8 +43,10 @@ export class MatchdayResultsComponent implements OnInit {
 
   readonly loading = signal(true);
   readonly navigating = signal(false);
+  readonly switchingCompetition = signal(false);
   readonly locked = signal(false);
   readonly matchday = signal<Matchday | null>(null);
+  readonly activeCompetitions = signal<Competition[]>([]);
   readonly predictions = signal<Prediction[]>([]);
   readonly targetUserName = signal<string | null>(null);
   readonly position = signal<{ pos: number; total: number } | null>(null);
@@ -51,6 +56,7 @@ export class MatchdayResultsComponent implements OnInit {
   readonly noNextAvailable = signal(false);
   readonly noPreviousAvailable = signal(false);
 
+  readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
   readonly totalPoints = computed(() => this.predictions().reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0));
   readonly hits = computed(() => this.predictions().filter((p) => (p.pointsEarned ?? 0) > 0).length);
   readonly rescueHits = computed(
@@ -60,6 +66,41 @@ export class MatchdayResultsComponent implements OnInit {
   ngOnInit(): void {
     const matchdayId = this.route.snapshot.paramMap.get('matchdayId')!;
     this.loadMatchday(matchdayId);
+
+    const groupId = this.activeGroupService.activeId();
+    if (groupId) {
+      this.groupsService.getById(groupId).subscribe((group) => {
+        this.activeCompetitions.set(
+          (group.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competition),
+        );
+      });
+    }
+  }
+
+  /** Cambia de competicion sin salir de la pantalla: va a la jornada cerrada mas reciente de esa liga para el mismo jugador. */
+  switchCompetition(competitionId: string): void {
+    const groupId = this.activeGroupService.activeId();
+    const current = this.matchday();
+    if (!groupId || !current || competitionId === current.competitionId || this.switchingCompetition()) return;
+
+    this.switchingCompetition.set(true);
+    this.matchdaysService.getLatestLockedMatchday(groupId, competitionId).subscribe({
+      next: (matchday) => {
+        this.switchingCompetition.set(false);
+        if (!matchday) {
+          this.snackBar.open('Todavia no hay jornadas cerradas para esa competicion', 'Cerrar', { duration: 2500 });
+          return;
+        }
+        this.noNextAvailable.set(false);
+        this.noPreviousAvailable.set(false);
+        this.goTo(matchday.id);
+        this.loadMatchday(matchday.id);
+      },
+      error: () => {
+        this.switchingCompetition.set(false);
+        this.snackBar.open('No se pudo cargar la competicion', 'Cerrar', { duration: 3000 });
+      },
+    });
   }
 
   navigatePrevious(): void {
@@ -93,11 +134,7 @@ export class MatchdayResultsComponent implements OnInit {
         }
         this.noNextAvailable.set(false);
         this.noPreviousAvailable.set(false);
-        // Mantiene la URL sincronizada (compartible / recargable) sin recrear el componente.
-        const path = this.viewingSelf
-          ? ['/matchday', next.id, 'results']
-          : ['/matchday', next.id, 'results', this.routeUserId!];
-        this.router.navigate(path, { replaceUrl: true });
+        this.goTo(next.id);
         this.loadMatchday(next.id);
       },
       error: () => {
@@ -105,6 +142,14 @@ export class MatchdayResultsComponent implements OnInit {
         this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
       },
     });
+  }
+
+  /** Mantiene la URL sincronizada (compartible / recargable) sin recrear el componente. */
+  private goTo(matchdayId: string): void {
+    const path = this.viewingSelf
+      ? ['/matchday', matchdayId, 'results']
+      : ['/matchday', matchdayId, 'results', this.routeUserId!];
+    this.router.navigate(path, { replaceUrl: true });
   }
 
   private loadMatchday(matchdayId: string): void {

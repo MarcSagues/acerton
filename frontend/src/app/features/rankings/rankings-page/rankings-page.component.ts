@@ -10,7 +10,6 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
 import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-switcher.component';
 import { Group } from '../../../core/models/group.model';
 import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
-import { Matchday } from '../../../core/models/matchday.model';
 
 @Component({
   selector: 'app-rankings-page',
@@ -115,49 +114,24 @@ export class RankingsPageComponent {
     if (!competitionId) return;
 
     this.resolvingUserId.set(userId);
-    this.matchdaysService.getCurrentForGroup(groupId).subscribe({
-      next: (entries) => {
-        const entry = entries.find((e) => e.competition.id === competitionId);
-        if (!entry) {
-          this.resolvingUserId.set(null);
-          this.snackBar.open('No se encontro la jornada de esta competicion', 'Cerrar', { duration: 2500 });
-          return;
-        }
-        this.resolveLockedMatchday(entry.matchday, userId);
-      },
-      error: () => {
+    this.matchdaysService.getLatestLockedMatchday(groupId, competitionId).subscribe({
+      next: (matchday) => {
         this.resolvingUserId.set(null);
-        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
-      },
-    });
-  }
-
-  private resolveLockedMatchday(matchday: Matchday, userId: string): void {
-    if (matchday.status === 'CLOSED' || matchday.status === 'FINISHED') {
-      this.resolvingUserId.set(null);
-      this.goToResults(matchday.id, userId);
-      return;
-    }
-    this.matchdaysService.getAdjacent(matchday.id, 'previous').subscribe({
-      next: (previous) => {
-        this.resolvingUserId.set(null);
-        if (!previous) {
+        if (!matchday) {
           this.snackBar.open('Todavia no hay jornadas cerradas para ver quinielas', 'Cerrar', { duration: 2500 });
           return;
         }
-        this.goToResults(previous.id, userId);
+        const path =
+          userId === this.currentUserId
+            ? ['/matchday', matchday.id, 'results']
+            : ['/matchday', matchday.id, 'results', userId];
+        this.router.navigate(path);
       },
       error: () => {
         this.resolvingUserId.set(null);
         this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
       },
     });
-  }
-
-  private goToResults(matchdayId: string, userId: string): void {
-    const path =
-      userId === this.currentUserId ? ['/matchday', matchdayId, 'results'] : ['/matchday', matchdayId, 'results', userId];
-    this.router.navigate(path);
   }
 
   private fetchRanking(groupId: string): void {
