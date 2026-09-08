@@ -81,18 +81,14 @@
 	</array>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Usamos este identificador para mostrarte anuncios mas relevantes.</string>
-	<!-- TODO: sustituir por el Client ID de tipo "iOS" creado en Google Cloud Console
-	     (Credenciales > Crear credenciales > ID de cliente de OAuth > iOS), usando
-	     el mismo Bundle ID que este proyecto. Sin esto, Google Sign-In no funcionara
-	     en iOS, pero tampoco provoca ningun crash mientras tanto. -->
 	<key>GIDClientID</key>
-	<string>TODO_IOS_OAUTH_CLIENT_ID.apps.googleusercontent.com</string>
+	<string>533114077011-igbkfle67d0rerdhnmhjf4bm3psgee0f.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.TODO_IOS_OAUTH_CLIENT_ID</string>
+				<string>com.googleusercontent.apps.533114077011-igbkfle67d0rerdhnmhjf4bm3psgee0f</string>
 			</array>
 		</dict>
 	</array>
