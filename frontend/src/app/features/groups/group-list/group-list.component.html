@@ -46,6 +46,31 @@
     <button class="primary-btn" (click)="openCreateSheet()">Crear grupo</button>
     <button class="secondary-btn" (click)="openJoinSheet()">Unirme con codigo</button>
   </div>
+
+  @if (discoverableGroups().length > 0) {
+    <div class="head public-head">
+      <h2>Grupos publicos</h2>
+      <p class="sub mono">Abiertos a cualquiera, sin invitacion</p>
+    </div>
+    <div class="public-groups">
+      @for (group of discoverableGroups(); track group.id) {
+        <div class="public-group-row">
+          <span class="avatar">{{ initials(group.name) }}</span>
+          <div class="meta">
+            <div class="name">{{ group.name }}</div>
+            <div class="sub mono">{{ group._count?.memberships ?? 0 }} miembros</div>
+          </div>
+          <button
+            class="join-btn"
+            [disabled]="joiningGroupId() === group.id"
+            (click)="joinPublicGroup(group.id)"
+          >
+            {{ joiningGroupId() === group.id ? 'Uniendo...' : 'Unirme' }}
+          </button>
+        </div>
+      }
+    </div>
+  }
 </div>
 
 @if (showCreateSheet() || showJoinSheet()) {

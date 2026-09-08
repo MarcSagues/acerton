@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { Group } from '../../../core/models/group.model';
 
 @Component({
   selector: 'app-group-list',
@@ -22,6 +23,14 @@ export class GroupListComponent implements OnInit {
 
   readonly groups = this.groupsService.myGroups;
   readonly loading = signal(true);
+
+  readonly publicGroups = signal<Group[]>([]);
+  readonly joiningGroupId = signal<string | null>(null);
+  /** Solo los publicos a los que todavia no perteneces — unirte no tiene sentido si ya eres miembro. */
+  readonly discoverableGroups = computed(() => {
+    const myIds = new Set(this.groups().map((g) => g.id));
+    return this.publicGroups().filter((g) => !myIds.has(g.id));
+  });
 
   readonly showCreateSheet = signal(false);
   readonly showJoinSheet = signal(false);
@@ -45,6 +54,19 @@ export class GroupListComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
+    });
+    this.groupsService.loadPublicGroups().subscribe((groups) => this.publicGroups.set(groups));
+  }
+
+  joinPublicGroup(groupId: string): void {
+    if (this.joiningGroupId()) return;
+    this.joiningGroupId.set(groupId);
+    this.groupsService.joinPublic(groupId).subscribe({
+      next: (group) => {
+        this.joiningGroupId.set(null);
+        this.goToGroup(group.id);
+      },
+      error: () => this.joiningGroupId.set(null),
     });
   }
 
