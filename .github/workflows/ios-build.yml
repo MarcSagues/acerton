@@ -90,7 +90,15 @@ jobs:
             -destination "generic/platform=iOS" \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
-      - name: Exportar .ipa
+      # Clave de API de App Store Connect (rol "App Manager"), usada por
+      # xcodebuild para autenticar la subida a TestFlight sin Xcode/Transporter.
+      - name: Preparar clave de App Store Connect
+        env:
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+        run: |
+          echo "$APPSTORE_API_KEY_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Exportar .ipa y subir a TestFlight
         working-directory: frontend/ios/App
         run: |
           cat > ExportOptions.plist <<EOF
@@ -109,13 +117,19 @@ jobs:
               <key>app.acerton.quiniela</key>
               <string>Sagui</string>
             </dict>
+            <key>destination</key>
+            <string>upload</string>
           </dict>
           </plist>
           EOF
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist ExportOptions.plist
+            -exportOptionsPlist ExportOptions.plist \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID ${{ secrets.APPSTORE_API_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
 
       - name: Subir el .ipa como artefacto de este workflow
         uses: actions/upload-artifact@v4
