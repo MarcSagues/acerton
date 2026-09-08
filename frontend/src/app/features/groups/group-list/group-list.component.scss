@@ -213,6 +213,31 @@
   gap: 12px;
 }
 
+.mode-tabs {
+  display: flex;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+}
+
+.tab {
+  flex: 1;
+  height: 34px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  font: 500 12px/1 var(--font-ui);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &.active {
+    background: var(--accent);
+    color: var(--accent-on);
+    font-weight: 600;
+  }
+}
+
 .field {
   display: flex;
   flex-direction: column;

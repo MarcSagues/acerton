@@ -2,12 +2,13 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Group, GroupMember } from '../models/group.model';
+import { Group, GroupMember, ScoringMode } from '../models/group.model';
 
 export interface CreateGroupPayload {
   name: string;
   description?: string;
   isPublic?: boolean;
+  scoringMode?: ScoringMode;
 }
 
 @Injectable({ providedIn: 'root' })

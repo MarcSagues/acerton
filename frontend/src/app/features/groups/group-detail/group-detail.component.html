@@ -69,50 +69,74 @@
       <div class="section">
         <div class="section-head">
           <span class="eyebrow">REGLAS</span>
-          @if (isAdmin() && !editingRules()) {
+          @if (isAdmin() && !editingRules() && g.scoringMode === 'ONE_X_TWO') {
             <button class="edit-link mono" (click)="startEditingRules()">Editar</button>
           }
         </div>
         <div class="rules">
           <div class="rule-card">
             <div>
-              <div class="rule-name">Puntos por acierto 1X2</div>
-              <div class="rule-hint mono">Fijo para todo el grupo</div>
+              <div class="rule-name">Modo de puntuacion</div>
+              <div class="rule-hint mono">Fijo, elegido al crear el grupo</div>
             </div>
-            <div class="rule-value mono">1</div>
+            <div class="rule-value mono">{{ g.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</div>
           </div>
-          <div class="rule-card">
-            <div>
-              <div class="rule-name">Comodin de remontada</div>
-              <div class="rule-hint mono">Doble oportunidad (1X/X2/12) para quien va por detras</div>
+          @if (g.scoringMode === 'EXACT_SCORE') {
+            <div class="rule-card">
+              <div>
+                <div class="rule-name">Puntos por marcador exacto</div>
+                <div class="rule-hint mono">Fijo para todo el grupo</div>
+              </div>
+              <div class="rule-value mono">5</div>
             </div>
-            <span
-              class="toggle"
-              [class.on]="g.comebackEnabled"
-              [class.disabled]="!isAdmin()"
-              (click)="toggleComebackEnabled()"
-            >
-              <span class="knob"></span>
-            </span>
-          </div>
-          <div class="rule-card">
-            <div>
-              <div class="rule-name">Puntos por opcion doble</div>
-              <div class="rule-hint mono">Cada N puntos de diferencia con el lider dan 1 uso mas esa jornada</div>
+            <div class="rule-card">
+              <div>
+                <div class="rule-name">Puntos por acertar solo el ganador</div>
+                <div class="rule-hint mono">Fijo para todo el grupo</div>
+              </div>
+              <div class="rule-value mono">2</div>
             </div>
-            @if (editingRules()) {
-              <input
-                class="rule-input mono"
-                type="number"
-                min="1"
-                max="50"
-                [value]="comebackPointsPerBonusInput()"
-                (input)="comebackPointsPerBonusInput.set(+$any($event.target).value)"
-              />
-            } @else {
-              <div class="rule-value mono">{{ g.comebackPointsPerBonus }}</div>
-            }
-          </div>
+          } @else {
+            <div class="rule-card">
+              <div>
+                <div class="rule-name">Puntos por acierto 1X2</div>
+                <div class="rule-hint mono">Fijo para todo el grupo</div>
+              </div>
+              <div class="rule-value mono">1</div>
+            </div>
+            <div class="rule-card">
+              <div>
+                <div class="rule-name">Comodin de remontada</div>
+                <div class="rule-hint mono">Doble oportunidad (1X/X2/12) para quien va por detras</div>
+              </div>
+              <span
+                class="toggle"
+                [class.on]="g.comebackEnabled"
+                [class.disabled]="!isAdmin()"
+                (click)="toggleComebackEnabled()"
+              >
+                <span class="knob"></span>
+              </span>
+            </div>
+            <div class="rule-card">
+              <div>
+                <div class="rule-name">Puntos por opcion doble</div>
+                <div class="rule-hint mono">Cada N puntos de diferencia con el lider dan 1 uso mas esa jornada</div>
+              </div>
+              @if (editingRules()) {
+                <input
+                  class="rule-input mono"
+                  type="number"
+                  min="1"
+                  max="50"
+                  [value]="comebackPointsPerBonusInput()"
+                  (input)="comebackPointsPerBonusInput.set(+$any($event.target).value)"
+                />
+              } @else {
+                <div class="rule-value mono">{{ g.comebackPointsPerBonus }}</div>
+              }
+            </div>
+          }
           <div class="rule-card">
             <div>
               <div class="rule-name">Grupo privado</div>

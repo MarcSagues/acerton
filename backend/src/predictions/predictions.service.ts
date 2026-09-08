@@ -10,7 +10,7 @@ import { WildcardsService } from '../wildcards/wildcards.service';
 import { GroupsService } from '../groups/groups.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { SubmitPredictionDto } from './dto/submit-prediction.dto';
-import { calculatePoints } from './scoring.util';
+import { calculateExactScorePoints, calculatePoints } from './scoring.util';
 import { isMatchPredictable } from '../matchdays/matchday.util';
 
 @Injectable()
@@ -24,6 +24,7 @@ export class PredictionsService {
 
   async submit(userId: string, groupId: string, dto: SubmitPredictionDto): Promise<Prediction> {
     await this.groupsService.assertIsMember(groupId, userId);
+    const scoringMode = await this.groupsService.getScoringMode(groupId);
 
     const match = await this.prisma.match.findUnique({ where: { id: dto.matchId } });
     if (!match) {
@@ -36,6 +37,35 @@ export class PredictionsService {
       throw new ForbiddenException(
         'Todavia no se puede predecir esta jornada, espera a que sea la jornada actual',
       );
+    }
+
+    if (scoringMode === 'EXACT_SCORE') {
+      if (dto.choice || dto.doubleChanceOption) {
+        throw new BadRequestException('Este grupo juega en modo resultado exacto, no admite pronostico 1X2');
+      }
+      if (dto.predictedHomeScore === undefined || dto.predictedAwayScore === undefined) {
+        throw new BadRequestException('Falta el resultado exacto (goles local y visitante)');
+      }
+      return this.prisma.prediction.upsert({
+        where: { userId_groupId_matchId: { userId, groupId, matchId: dto.matchId } },
+        update: {
+          predictedHomeScore: dto.predictedHomeScore,
+          predictedAwayScore: dto.predictedAwayScore,
+          choice: null,
+          doubleChanceOption: null,
+        },
+        create: {
+          userId,
+          groupId,
+          matchId: dto.matchId,
+          predictedHomeScore: dto.predictedHomeScore,
+          predictedAwayScore: dto.predictedAwayScore,
+        },
+      });
+    }
+
+    if (dto.predictedHomeScore !== undefined || dto.predictedAwayScore !== undefined) {
+      throw new BadRequestException('Este grupo juega en modo 1X2, no admite resultado exacto');
     }
 
     const isDoubleChance = !!dto.doubleChanceOption;
@@ -99,7 +129,7 @@ export class PredictionsService {
   async scoreFinishedMatchday(matchdayId: string): Promise<number> {
     const predictions = await this.prisma.prediction.findMany({
       where: { match: { matchdayId } },
-      include: { match: true },
+      include: { match: true, group: { select: { scoringMode: true } } },
     });
 
     let scored = 0;
@@ -107,10 +137,13 @@ export class PredictionsService {
       if (prediction.match.status !== 'FINISHED') {
         continue;
       }
-      const points = calculatePoints(
-        { choice: prediction.choice, doubleChanceOption: prediction.doubleChanceOption },
-        prediction.match.result,
-      );
+      const points =
+        prediction.group.scoringMode === 'EXACT_SCORE'
+          ? calculateExactScorePoints(prediction, prediction.match.homeScore, prediction.match.awayScore)
+          : calculatePoints(
+              { choice: prediction.choice, doubleChanceOption: prediction.doubleChanceOption },
+              prediction.match.result,
+            );
       await this.prisma.prediction.update({
         where: { id: prediction.id },
         data: { pointsEarned: points },

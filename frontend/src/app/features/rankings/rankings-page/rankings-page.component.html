@@ -8,14 +8,12 @@
     </div>
 
     <div class="tabs">
-      @if (scope() !== 'general') {
-        <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
-      }
+      <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
       <button class="tab" [class.active]="period() === 'TOTAL'" (click)="setPeriod('TOTAL')">Total</button>
     </div>
 
     <div class="comp-pills">
-      @if (hasMultipleCompetitions()) {
+      @if (hasMultipleCompetitions() && period() !== 'WEEKLY') {
         <button class="comp-pill" [class.active]="scope() === 'general'" (click)="setScope('general')">General</button>
       }
       @for (competition of activeCompetitions(); track competition.id) {

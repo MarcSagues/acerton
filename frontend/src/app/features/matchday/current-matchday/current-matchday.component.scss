@@ -127,12 +127,23 @@
 .headline {
   font: 700 24px/1 var(--font-ui);
   letter-spacing: -0.01em;
+
+  /* "Se abre en": todavia no se puede predecir, se distingue en gris de
+     "Cierra en" (accion posible ahora) para no confundir una cuenta atras
+     con la otra. */
+  &.pending {
+    color: var(--text-secondary);
+  }
 }
 
 .countdown {
   font: 700 24px/1 var(--font-mono);
   color: var(--accent);
   white-space: nowrap;
+
+  &.pending {
+    color: var(--text-secondary);
+  }
 }
 
 .progress-row {
@@ -278,6 +289,54 @@
     width: 30px;
     height: 30px;
   }
+}
+
+.exact-score-inputs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ancho fijo aunque este vacio: que el spinner/check aparezca y desaparezca
+   no debe cambiar el ancho total de .exact-score-inputs, o el bloque de
+   nombres de equipo (flex:1) se encoge/expande y las casillas se desplazan. */
+.exact-score-status {
+  flex: none;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.score-input {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 13px/1 var(--font-ui);
+  text-align: center;
+  padding: 0;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+
+  /* Oculta las flechas de incremento/decremento del input numerico nativo. */
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  appearance: textfield;
+}
+
+.score-sep {
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .choice-btn {

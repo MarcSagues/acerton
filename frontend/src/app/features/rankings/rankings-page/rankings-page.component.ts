@@ -67,18 +67,19 @@ export class RankingsPageComponent {
 
   setPeriod(period: RankingPeriod): void {
     this.period.set(period);
+    // La clasificacion semanal general no existe (cada competicion tiene su
+    // propio calendario de jornadas): al elegir "Semanal" estando en
+    // "General" se cambia a la primera competicion activa en vez de dejar
+    // una combinacion sin sentido seleccionada.
+    if (period === 'WEEKLY' && this.scope() === 'general') {
+      this.scope.set(this.activeCompetitions()[0]?.id ?? 'general');
+    }
     const groupId = this.activeGroupService.activeId();
     if (groupId) this.fetchRanking(groupId);
   }
 
   setScope(scope: string): void {
     this.scope.set(scope);
-    // La clasificacion semanal general no existe (cada competicion tiene su
-    // propio calendario de jornadas), asi que al elegir "general" se fuerza
-    // a "Total" en vez de dejar una combinacion sin sentido seleccionada.
-    if (scope === 'general' && this.period() === 'WEEKLY') {
-      this.period.set('TOTAL');
-    }
     const groupId = this.activeGroupService.activeId();
     if (groupId) this.fetchRanking(groupId);
   }

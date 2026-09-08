@@ -57,6 +57,7 @@ export class MatchdayResultsComponent implements OnInit {
   readonly noPreviousAvailable = signal(false);
 
   readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
+  readonly scoringMode = computed(() => this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO');
   readonly totalPoints = computed(() => this.predictions().reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0));
   readonly hits = computed(() => this.predictions().filter((p) => (p.pointsEarned ?? 0) > 0).length);
   readonly rescueHits = computed(
@@ -202,6 +203,10 @@ export class MatchdayResultsComponent implements OnInit {
   }
 
   pickLabel(prediction: Prediction): string {
+    if (this.scoringMode() === 'EXACT_SCORE') {
+      if (prediction.predictedHomeScore == null || prediction.predictedAwayScore == null) return '?';
+      return `${prediction.predictedHomeScore}-${prediction.predictedAwayScore}`;
+    }
     if (prediction.doubleChanceOption) {
       return { HOME_OR_DRAW: '1X', DRAW_OR_AWAY: 'X2', HOME_OR_AWAY: '12' }[prediction.doubleChanceOption];
     }

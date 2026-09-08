@@ -66,6 +66,12 @@ enum DoubleChanceOption {
   HOME_OR_AWAY
 }
 
+/// Modo de puntuacion de un grupo, fijado al crearlo. Sin migracion entre modos.
+enum ScoringMode {
+  ONE_X_TWO
+  EXACT_SCORE
+}
+
 // ---------------------------------------------------------------------------
 // Identidad
 // ---------------------------------------------------------------------------
@@ -134,18 +140,20 @@ model NotificationToken {
 // ---------------------------------------------------------------------------
 
 model Group {
-  id                     String   @id @default(cuid())
+  id                     String      @id @default(cuid())
   name                   String
   description            String?
-  isPublic               Boolean  @default(false)
-  inviteCode             String   @unique
+  isPublic               Boolean     @default(false)
+  inviteCode             String      @unique
   /// Comodin de remontada (doble oportunidad): activable/desactivable por grupo.
-  comebackEnabled        Boolean  @default(true)
+  comebackEnabled        Boolean     @default(true)
   /// Cada N puntos de diferencia con el lider del grupo dan derecho a 1 uso
   /// mas del comodin de remontada esa jornada (ver WildcardsService).
-  comebackPointsPerBonus Int      @default(6)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  comebackPointsPerBonus Int         @default(6)
+  /// Modo de puntuacion del grupo, fijado al crearlo. Sin migracion entre modos.
+  scoringMode            ScoringMode @default(ONE_X_TWO)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
 
   memberships       GroupMembership[]
   groupCompetitions GroupCompetition[]
@@ -285,6 +293,10 @@ model Prediction {
   /// Solo se rellena cuando se usa el comodin de remontada; en ese caso
   /// sustituye a `choice` como fuente de verdad para puntuar.
   doubleChanceOption DoubleChanceOption?
+  /// Solo se rellenan si el grupo juega en modo EXACT_SCORE; en ese caso
+  /// sustituyen a choice/doubleChanceOption como fuente de verdad para puntuar.
+  predictedHomeScore Int?
+  predictedAwayScore Int?
   pointsEarned       Int?
   submittedAt        DateTime            @default(now())
   updatedAt          DateTime            @updatedAt

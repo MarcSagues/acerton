@@ -1,5 +1,7 @@
 import { GroupCompetition } from './competition.model';
 
+export type ScoringMode = 'ONE_X_TWO' | 'EXACT_SCORE';
+
 export interface Group {
   id: string;
   name: string;
@@ -8,6 +10,8 @@ export interface Group {
   inviteCode: string;
   comebackEnabled: boolean;
   comebackPointsPerBonus: number;
+  /** Fijado al crear el grupo, no se puede cambiar despues. */
+  scoringMode: ScoringMode;
   createdAt: string;
   updatedAt: string;
   _count?: { memberships: number };

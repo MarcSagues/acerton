@@ -9,7 +9,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Group, GroupRole } from '@prisma/client';
+import { Group, GroupRole, ScoringMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
@@ -33,6 +33,10 @@ export class GroupsService {
   async create(userId: string, dto: CreateGroupDto): Promise<Group> {
     const inviteCode = await this.generateUniqueInviteCode();
     const defaults = this.configService.get('comeback', { infer: true });
+    const scoringMode = dto.scoringMode ?? 'ONE_X_TWO';
+    // El comodin de remontada es un concepto 1X2 (doble oportunidad); en modo
+    // resultado exacto se fuerza desactivado pase lo que llegue en el DTO.
+    const isExactScore = scoringMode === 'EXACT_SCORE';
 
     return this.prisma.group.create({
       data: {
@@ -40,7 +44,8 @@ export class GroupsService {
         description: dto.description,
         isPublic: dto.isPublic ?? false,
         inviteCode,
-        comebackEnabled: dto.comebackEnabled ?? defaults.enabled,
+        scoringMode,
+        comebackEnabled: isExactScore ? false : (dto.comebackEnabled ?? defaults.enabled),
         comebackPointsPerBonus: dto.comebackPointsPerBonus ?? defaults.pointsPerBonus,
         memberships: {
           create: { userId, role: GroupRole.ADMIN },
@@ -49,12 +54,36 @@ export class GroupsService {
     });
   }
 
+  /** Solo se usa para decidir la validacion del pronostico (ver PredictionsService.submit). */
+  async getScoringMode(groupId: string): Promise<ScoringMode> {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { scoringMode: true },
+    });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    return group.scoringMode;
+  }
+
   /** Solo el admin puede tocar las reglas del grupo; se editan por separado de las competiciones. */
   async updateRules(groupId: string, dto: UpdateGroupRulesDto): Promise<Group> {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { scoringMode: true },
+    });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    // El comodin de remontada no existe en modo resultado exacto: se ignora
+    // cualquier intento de reactivarlo aunque se llame al endpoint directamente.
+    if (group.scoringMode === 'EXACT_SCORE' && dto.comebackEnabled === true) {
+      throw new BadRequestException('El comodin de remontada no esta disponible en grupos de resultado exacto');
+    }
     return this.prisma.group.update({
       where: { id: groupId },
       data: {
-        comebackEnabled: dto.comebackEnabled,
+        comebackEnabled: group.scoringMode === 'EXACT_SCORE' ? false : dto.comebackEnabled,
         comebackPointsPerBonus: dto.comebackPointsPerBonus,
         isPublic: dto.isPublic,
       },
