@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { ErrorCode } from '@capawesome/capacitor-google-sign-in';
 import { AuthService } from '../../../core/services/auth.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
 
@@ -28,6 +29,7 @@ export class AuthPageComponent implements OnInit {
   readonly errorMessage = signal<string | null>(null);
   readonly passwordVisible = signal(false);
   readonly googleLoginUrl = this.authService.googleLoginUrl;
+  readonly isNativePlatform = this.authService.isNativePlatform;
 
   readonly form = this.fb.nonNullable.group({
     name: [''],
@@ -63,6 +65,23 @@ export class AuthPageComponent implements OnInit {
 
   togglePasswordVisibility(): void {
     this.passwordVisible.update((v) => !v);
+  }
+
+  loginWithGoogleNative(): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.authService.loginWithGoogleNative().subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.router.navigate(['/matchday']);
+      },
+      error: (error) => {
+        this.loading.set(false);
+        // El usuario simplemente cerro el selector de cuenta: no es un fallo que mostrar.
+        if (error?.code === ErrorCode.SignInCanceled) return;
+        this.errorMessage.set('No se pudo iniciar sesion con Google');
+      },
+    });
   }
 
   submit(): void {

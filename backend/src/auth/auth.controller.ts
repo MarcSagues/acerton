@@ -17,6 +17,7 @@ import { Public } from '../common/decorators/public.decorator';
 import { AuthService, GoogleProfileInput } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleTokenDto } from './dto/google-token.dto';
 import { PublicUser } from './auth.types';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 
@@ -57,6 +58,19 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   googleLogin(): void {
     // El guard redirige a Google; este metodo no se ejecuta.
+  }
+
+  /** Login con Google desde la app nativa (Capacitor) — ver AuthService.loginWithGoogleIdToken. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('google/token')
+  async googleToken(
+    @Body() dto: GoogleTokenDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: PublicUser; accessToken: string }> {
+    const { user, tokens } = await this.authService.loginWithGoogleIdToken(dto.idToken);
+    this.setRefreshCookie(res, tokens.refreshToken);
+    return { user, accessToken: tokens.accessToken };
   }
 
   @Public()

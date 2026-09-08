@@ -89,6 +89,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'matchday/:matchdayId/results/:userId',
+        loadComponent: () =>
+          import('./features/matchday/matchday-results/matchday-results.component').then(
+            (m) => m.MatchdayResultsComponent,
+          ),
+      },
+      {
         path: 'rankings',
         loadComponent: () =>
           import('./features/rankings/rankings-page/rankings-page.component').then(

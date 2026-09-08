@@ -53,6 +53,8 @@ export class CurrentMatchdayComponent {
   readonly activeTabIndex = signal(0);
   readonly now = signal(new Date());
   readonly navigating = signal(false);
+  /** Se pone a true cuando "siguiente" ya devolvio null para la jornada mostrada; se resetea al cambiar de jornada o de pestana. */
+  readonly noNextAvailable = signal(false);
   /** Id de la jornada "en vivo" de cada pestana (competicion), tal como se cargo al entrar — para saber si te has alejado navegando y poder volver. */
   private readonly liveMatchdayIds = signal<Record<number, string>>({});
 
@@ -161,6 +163,7 @@ export class CurrentMatchdayComponent {
 
   selectTab(index: number): void {
     this.activeTabIndex.set(index);
+    this.noNextAvailable.set(false);
     const groupId = this.activeGroupService.activeId();
     if (groupId) {
       this.refreshComeback(groupId);
@@ -185,6 +188,7 @@ export class CurrentMatchdayComponent {
     this.matchdaysService.getById(liveId).subscribe({
       next: (matchday) => {
         this.navigating.set(false);
+        this.noNextAvailable.set(false);
         this.applyMatchdayToActiveTab(matchday, groupId);
       },
       error: () => {
@@ -204,6 +208,9 @@ export class CurrentMatchdayComponent {
       next: (matchday) => {
         this.navigating.set(false);
         if (!matchday) {
+          if (direction === 'next') {
+            this.noNextAvailable.set(true);
+          }
           this.snackBar.open(
             direction === 'previous' ? 'No hay jornada anterior' : 'Todavia no hay jornada siguiente',
             'Cerrar',
@@ -211,6 +218,7 @@ export class CurrentMatchdayComponent {
           );
           return;
         }
+        this.noNextAvailable.set(false);
         this.applyMatchdayToActiveTab(matchday, groupId);
       },
       error: () => {

@@ -1,36 +1,44 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from './profile.service';
 
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
 /**
- * Notificaciones push via Firebase Cloud Messaging. El SDK y el service
- * worker de Firebase se cargan solo cuando el usuario activa las
- * notificaciones (import dinamico), para no pesar en el bundle inicial de
- * quien no las usa. El service worker de FCM se registra en un scope propio
- * para no chocar con el de Angular (ngsw-worker.js, que controla '/').
+ * Notificaciones push. En web via Firebase Cloud Messaging (SDK y service
+ * worker cargados solo al activar, para no pesar en el bundle de quien no
+ * las usa). En la app nativa (Capacitor) via @capacitor/push-notifications,
+ * que envuelve FCM nativo en Android y APNs en iOS directamente — el token
+ * que devuelve se manda al mismo endpoint que en web
+ * (ProfileService.registerNotificationToken), ya que el backend solo
+ * necesita un token de FCM valido para enviar, le de igual si vino de un
+ * navegador o de una app nativa.
  */
 @Injectable({ providedIn: 'root' })
 export class PushNotificationsService {
   private readonly profileService = inject(ProfileService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly isNative = Capacitor.isNativePlatform();
 
-  readonly supported = typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
-  readonly configured = !!environment.firebase.vapidKey;
+  readonly supported =
+    this.isNative || (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator);
+  readonly configured = this.isNative || !!environment.firebase.vapidKey;
   readonly permission = signal<NotificationPermission>(this.readPermission());
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
   private readPermission(): NotificationPermission {
+    if (this.isNative) return 'default'; // se resuelve al llamar a enable(); no hay forma de consultarlo sin pedirlo
     return this.supported ? Notification.permission : 'denied';
   }
 
   async enable(): Promise<boolean> {
     if (!this.supported) {
-      this.error.set('Este navegador no soporta notificaciones push.');
+      this.error.set('Este dispositivo no soporta notificaciones push.');
       return false;
     }
     if (!this.configured) {
@@ -42,47 +50,79 @@ export class PushNotificationsService {
     this.error.set(null);
 
     try {
-      const permission = await Notification.requestPermission();
-      this.permission.set(permission);
-      if (permission !== 'granted') {
-        this.error.set('Has bloqueado los permisos de notificacion.');
-        return false;
-      }
-
-      const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
-        import('firebase/app'),
-        import('firebase/messaging'),
-      ]);
-
-      const app = initializeApp(environment.firebase);
-      const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js', {
-        scope: SW_SCOPE,
-      });
-      const messaging = getMessaging(app);
-
-      const token = await getToken(messaging, {
-        vapidKey: environment.firebase.vapidKey,
-        serviceWorkerRegistration: registration,
-      });
-      if (!token) {
-        this.error.set('No se pudo obtener el token de notificaciones.');
-        return false;
-      }
-
-      await firstValueFrom(this.profileService.registerNotificationToken(token));
-
-      onMessage(messaging, (payload) => {
-        const title = payload.notification?.title ?? 'Quiniela';
-        const body = payload.notification?.body ?? '';
-        this.snackBar.open(`${title}: ${body}`, 'Cerrar', { duration: 5000 });
-      });
-
-      return true;
+      return this.isNative ? await this.enableNative() : await this.enableWeb();
     } catch {
       this.error.set('No se pudieron activar las notificaciones.');
       return false;
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private async enableNative(): Promise<boolean> {
+    const permStatus = await PushNotifications.requestPermissions();
+    if (permStatus.receive !== 'granted') {
+      this.permission.set('denied');
+      this.error.set('Has bloqueado los permisos de notificacion.');
+      return false;
+    }
+    this.permission.set('granted');
+
+    return new Promise<boolean>((resolve) => {
+      PushNotifications.addListener('registration', (token) => {
+        this.profileService
+          .registerNotificationToken(token.value)
+          .subscribe({ next: () => resolve(true), error: () => resolve(false) });
+      });
+      PushNotifications.addListener('registrationError', () => {
+        this.error.set('No se pudo obtener el token de notificaciones.');
+        resolve(false);
+      });
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        const title = notification.title ?? 'Quiniela';
+        const body = notification.body ?? '';
+        this.snackBar.open(`${title}: ${body}`, 'Cerrar', { duration: 5000 });
+      });
+      PushNotifications.register();
+    });
+  }
+
+  private async enableWeb(): Promise<boolean> {
+    const permission = await Notification.requestPermission();
+    this.permission.set(permission);
+    if (permission !== 'granted') {
+      this.error.set('Has bloqueado los permisos de notificacion.');
+      return false;
+    }
+
+    const [{ initializeApp }, { getMessaging, getToken, onMessage }] = await Promise.all([
+      import('firebase/app'),
+      import('firebase/messaging'),
+    ]);
+
+    const app = initializeApp(environment.firebase);
+    const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js', {
+      scope: SW_SCOPE,
+    });
+    const messaging = getMessaging(app);
+
+    const token = await getToken(messaging, {
+      vapidKey: environment.firebase.vapidKey,
+      serviceWorkerRegistration: registration,
+    });
+    if (!token) {
+      this.error.set('No se pudo obtener el token de notificaciones.');
+      return false;
+    }
+
+    await firstValueFrom(this.profileService.registerNotificationToken(token));
+
+    onMessage(messaging, (payload) => {
+      const title = payload.notification?.title ?? 'Quiniela';
+      const body = payload.notification?.body ?? '';
+      this.snackBar.open(`${title}: ${body}`, 'Cerrar', { duration: 5000 });
+    });
+
+    return true;
   }
 }

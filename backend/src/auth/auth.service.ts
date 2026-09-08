@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
@@ -21,11 +22,15 @@ export interface GoogleProfileInput {
 
 @Injectable()
 export class AuthService {
+  private readonly googleOAuthClient: OAuth2Client;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
-  ) {}
+  ) {
+    this.googleOAuthClient = new OAuth2Client(this.configService.get('google.clientId', { infer: true }));
+  }
 
   async register(dto: RegisterDto): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
@@ -87,6 +92,37 @@ export class AuthService {
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
     return { user: toPublicUser(user), tokens };
+  }
+
+  /**
+   * Login con Google desde la app nativa (Capacitor): a diferencia del flujo
+   * web (redireccion via passport-google-oauth20), aqui el SDK nativo de
+   * Google Sign-In ya entrega un idToken firmado directamente en el
+   * dispositivo. Se verifica su firma y audiencia contra el mismo client id
+   * "web" usado en todas las plataformas (asi lo exige el SDK nativo,
+   * pensado justo para poder verificar en un backend compartido) antes de
+   * confiar en ningun dato del payload.
+   */
+  async loginWithGoogleIdToken(idToken: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+    const clientId = this.configService.get('google.clientId', { infer: true });
+    let payload;
+    try {
+      const ticket = await this.googleOAuthClient.verifyIdToken({ idToken, audience: clientId });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Token de Google invalido');
+    }
+
+    if (!payload?.email || !payload.sub) {
+      throw new UnauthorizedException('El token de Google no incluye un email');
+    }
+
+    return this.validateOrCreateGoogleUser({
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name ?? payload.email,
+      avatarUrl: payload.picture,
+    });
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
