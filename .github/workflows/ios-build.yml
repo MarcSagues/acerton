@@ -8,9 +8,24 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Capacitor 8 (distribuido por SPM) requiere Xcode 26 / Swift 6.2: con
+      # una version mas antigua, una parte de su API queda oculta tras un
+      # feature flag experimental y los plugins oficiales no compilan
+      # (ver https://github.com/ionic-team/capacitor/issues/8333).
+      - name: Seleccionar Xcode 26
+        run: |
+          if [ -d "/Applications/Xcode_26.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer
+          else
+            echo "Xcode 26 no encontrado en este runner. Versiones disponibles:"
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          xcodebuild -version
 
       - uses: actions/setup-node@v4
         with:
