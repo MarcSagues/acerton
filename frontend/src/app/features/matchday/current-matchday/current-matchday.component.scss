@@ -162,6 +162,12 @@
   white-space: nowrap;
 }
 
+.live-points {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
 .match-list {
   padding: 4px 16px 12px;
   display: flex;

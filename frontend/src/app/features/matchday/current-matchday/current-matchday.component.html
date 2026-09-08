@@ -70,6 +70,11 @@
             <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
           </div>
         }
+        @if (!isLocked(entry) && anyMatchFinished()) {
+          <div class="live-points mono">
+            Llevas {{ totalPoints() }} {{ totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
+          </div>
+        }
       </div>
 
       <div class="match-list">
@@ -93,8 +98,8 @@
                   <span class="badge pick" [class.hit]="isPickHit(match) === true" [class.miss]="isPickHit(match) === false">
                     {{ pickLabel(match.id) ?? 'N/A' }}
                   </span>
-                  <span class="badge points" [class.earned]="pointsFor(match.id) > 0">
-                    {{ pointsFor(match.id) > 0 ? '+' : '' }}{{ pointsFor(match.id) }}
+                  <span class="badge points" [class.earned]="pointsFor(match) > 0">
+                    {{ pointsFor(match) > 0 ? '+' : '' }}{{ pointsFor(match) }}
                   </span>
                 </div>
               </div>

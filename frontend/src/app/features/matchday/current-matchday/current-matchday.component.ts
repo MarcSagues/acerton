@@ -309,16 +309,37 @@ export class CurrentMatchdayComponent {
     return state.choice === match.result;
   }
 
-  /** Puntos ganados en este partido, o 0 si no se envio pronostico (o todavia no se ha puntuado). */
-  pointsFor(matchId: string): number {
-    return this.predictionState.get(matchId)?.pointsEarned ?? 0;
+  /**
+   * Puntos de este partido. El backend puntua toda la jornada de golpe al
+   * terminar (ver PredictionsService.scoreFinishedMatchday), no partido a
+   * partido, asi que pointsEarned sigue siendo null aunque este partido
+   * concreto ya haya acabado y el acierto ya se sepa — en ese hueco se
+   * calcula aqui mismo (1 punto si acertaste, 0 si no) para no obligar a
+   * esperar a que cierre el resto de la jornada. Una vez el backend puntua
+   * de verdad, ese valor manda siempre.
+   */
+  pointsFor(match: Match): number {
+    const stored = this.predictionState.get(match.id)?.pointsEarned;
+    if (stored != null) {
+      return stored;
+    }
+    if (match.status !== 'FINISHED') {
+      return 0;
+    }
+    return this.isPickHit(match) === true ? 1 : 0;
   }
 
-  /** Suma de puntos de toda la jornada activa, para mostrar junto a "Cerrada" al navegar a jornadas anteriores. */
+  /** true si al menos un partido de la jornada activa ya ha terminado, aunque la jornada siga abierta. */
+  anyMatchFinished(): boolean {
+    const entry = this.activeEntry();
+    return entry ? entry.matchday.matches.some((m) => m.status === 'FINISHED') : false;
+  }
+
+  /** Suma de puntos de toda la jornada activa (en vivo o ya cerrada). */
   totalPoints(): number {
     const entry = this.activeEntry();
     if (!entry) return 0;
-    return entry.matchday.matches.reduce((sum, m) => sum + this.pointsFor(m.id), 0);
+    return entry.matchday.matches.reduce((sum, m) => sum + this.pointsFor(m), 0);
   }
 
   matchLockedLabel(match: Match): string {
