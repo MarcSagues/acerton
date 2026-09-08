@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { map, switchMap, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CurrentMatchdayEntry, Matchday } from '../models/matchday.model';
+
+const LOCKED_STATUSES = ['CLOSED', 'FINISHED'];
 
 @Injectable({ providedIn: 'root' })
 export class MatchdaysService {
@@ -22,5 +25,23 @@ export class MatchdaysService {
     return this.http.get<Matchday | null>(`${environment.apiUrl}/matchdays/${matchdayId}/adjacent`, {
       params: { direction },
     });
+  }
+
+  /**
+   * Jornada cerrada/finalizada mas reciente de una competicion dentro de un
+   * grupo: la "en vivo" si ya cerro, o la anterior si todavia esta abierta.
+   * Usado para poder ver las quinielas de otro miembro (nunca se muestra una
+   * jornada sin cerrar, ver getGroupPredictionsForMatchday en el backend).
+   */
+  getLatestLockedMatchday(groupId: string, competitionId: string) {
+    return this.getCurrentForGroup(groupId).pipe(
+      switchMap((entries) => {
+        const entry = entries.find((e) => e.competition.id === competitionId);
+        if (!entry) return of(null);
+        if (LOCKED_STATUSES.includes(entry.matchday.status)) return of(entry.matchday);
+        return this.getAdjacent(entry.matchday.id, 'previous');
+      }),
+      map((matchday) => (matchday && LOCKED_STATUSES.includes(matchday.status) ? matchday : null)),
+    );
   }
 }
