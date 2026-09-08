@@ -280,6 +280,42 @@
   }
 }
 
+.exact-score-inputs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-input {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-primary);
+  font: 600 13px/1 var(--font-ui);
+  text-align: center;
+  padding: 0;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+
+  /* Oculta las flechas de incremento/decremento del input numerico nativo. */
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  appearance: textfield;
+}
+
+.score-sep {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .choice-btn {
   border-radius: 8px;
   border: 1px solid var(--border-strong);

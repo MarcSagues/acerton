@@ -9,6 +9,9 @@ export interface Prediction {
   matchId: string;
   choice: PredictionChoice | null;
   doubleChanceOption: DoubleChanceOption | null;
+  /** Solo en grupos de modo EXACT_SCORE. */
+  predictedHomeScore: number | null;
+  predictedAwayScore: number | null;
   pointsEarned: number | null;
   submittedAt: string;
   user?: { id: string; name: string; avatarUrl: string | null };
@@ -18,4 +21,6 @@ export interface SubmitPredictionPayload {
   matchId: string;
   choice?: PredictionChoice;
   doubleChanceOption?: DoubleChanceOption;
+  predictedHomeScore?: number;
+  predictedAwayScore?: number;
 }

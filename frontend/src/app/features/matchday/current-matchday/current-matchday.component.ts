@@ -19,6 +19,9 @@ import { formatCountdown } from '../../../shared/countdown.util';
 interface MatchPredictionState {
   choice: PredictionChoice | null;
   doubleChanceOption: DoubleChanceOption | null;
+  /** Solo en grupos de modo EXACT_SCORE. */
+  predictedHomeScore: number | null;
+  predictedAwayScore: number | null;
   saving: boolean;
   saved: boolean;
   /** Solo se rellena una vez el partido termina y se puntua; null mientras tanto. */
@@ -61,6 +64,7 @@ export class CurrentMatchdayComponent {
   readonly predictionState = new Map<string, MatchPredictionState>();
 
   readonly activeEntry = computed(() => this.entries()[this.activeTabIndex()] ?? null);
+  readonly isExactScore = computed(() => this.activeGroupService.activeGroup()?.scoringMode === 'EXACT_SCORE');
   /**
    * Proximo partido todavia predecible de la jornada activa (el mas cercano
    * de los que no han empezado). No usamos matchday.closesAt para esto: ese
@@ -119,8 +123,12 @@ export class CurrentMatchdayComponent {
   doneCount(): number {
     const entry = this.activeEntry();
     if (!entry) return 0;
+    const exact = this.isExactScore();
     return entry.matchday.matches.filter((m) => {
       const state = this.predictionState.get(m.id);
+      if (exact) {
+        return state?.predictedHomeScore != null && state?.predictedAwayScore != null;
+      }
       return !!(state?.choice || state?.doubleChanceOption);
     }).length;
   }
@@ -252,6 +260,8 @@ export class CurrentMatchdayComponent {
           this.predictionState.set(prediction.matchId, {
             choice: prediction.choice,
             doubleChanceOption: prediction.doubleChanceOption,
+            predictedHomeScore: prediction.predictedHomeScore,
+            predictedAwayScore: prediction.predictedAwayScore,
             saving: false,
             saved: true,
             pointsEarned: prediction.pointsEarned,
@@ -288,10 +298,14 @@ export class CurrentMatchdayComponent {
     return !this.isMatchPredictable(match);
   }
 
-  /** Tu pronostico en formato corto (1/X/2 o 1X/X2/12), o null si no enviaste ninguno. */
+  /** Tu pronostico en formato corto (1/X/2, 1X/X2/12, o "H-A" en modo resultado exacto), o null si no enviaste ninguno. */
   pickLabel(matchId: string): string | null {
     const state = this.predictionState.get(matchId);
     if (!state) return null;
+    if (this.isExactScore()) {
+      if (state.predictedHomeScore == null || state.predictedAwayScore == null) return null;
+      return `${state.predictedHomeScore}-${state.predictedAwayScore}`;
+    }
     if (state.doubleChanceOption) {
       return { HOME_OR_DRAW: '1X', DRAW_OR_AWAY: 'X2', HOME_OR_AWAY: '12' }[state.doubleChanceOption];
     }
@@ -301,10 +315,42 @@ export class CurrentMatchdayComponent {
     return null;
   }
 
+  /** HOME/DRAW/AWAY a partir de un marcador, igual que matchday.util.ts computeMatchResult en el backend. */
+  private outcomeOf(home: number, away: number): PredictionChoice {
+    if (home > away) return 'HOME';
+    if (home < away) return 'AWAY';
+    return 'DRAW';
+  }
+
+  /**
+   * En modo resultado exacto: 5 si el marcador previsto es exacto, 2 si solo
+   * acierta el ganador/empate, 0 en otro caso. Null si falta algun dato.
+   */
+  private localExactScorePoints(match: Match, state: MatchPredictionState): number | null {
+    if (
+      state.predictedHomeScore == null ||
+      state.predictedAwayScore == null ||
+      match.homeScore == null ||
+      match.awayScore == null
+    ) {
+      return null;
+    }
+    if (state.predictedHomeScore === match.homeScore && state.predictedAwayScore === match.awayScore) {
+      return 5;
+    }
+    const predicted = this.outcomeOf(state.predictedHomeScore, state.predictedAwayScore);
+    const actual = this.outcomeOf(match.homeScore, match.awayScore);
+    return predicted === actual ? 2 : 0;
+  }
+
   /** null si el partido no ha terminado o no enviaste pronostico. */
   isPickHit(match: Match): boolean | null {
     const state = this.predictionState.get(match.id);
     if (!state || !match.result) return null;
+    if (this.isExactScore()) {
+      const points = this.localExactScorePoints(match, state);
+      return points == null ? null : points > 0;
+    }
     if (state.doubleChanceOption) {
       const coverage: Record<DoubleChanceOption, PredictionChoice[]> = {
         HOME_OR_DRAW: ['HOME', 'DRAW'],
@@ -322,9 +368,9 @@ export class CurrentMatchdayComponent {
    * terminar (ver PredictionsService.scoreFinishedMatchday), no partido a
    * partido, asi que pointsEarned sigue siendo null aunque este partido
    * concreto ya haya acabado y el acierto ya se sepa — en ese hueco se
-   * calcula aqui mismo (1 punto si acertaste, 0 si no) para no obligar a
-   * esperar a que cierre el resto de la jornada. Una vez el backend puntua
-   * de verdad, ese valor manda siempre.
+   * calcula aqui mismo (1/0, o 5/2/0 en modo resultado exacto) para no
+   * obligar a esperar a que cierre el resto de la jornada. Una vez el
+   * backend puntua de verdad, ese valor manda siempre.
    */
   pointsFor(match: Match): number {
     const stored = this.predictionState.get(match.id)?.pointsEarned;
@@ -333,6 +379,11 @@ export class CurrentMatchdayComponent {
     }
     if (match.status !== 'FINISHED') {
       return 0;
+    }
+    if (this.isExactScore()) {
+      const state = this.predictionState.get(match.id);
+      if (!state) return 0;
+      return this.localExactScorePoints(match, state) ?? 0;
     }
     return this.isPickHit(match) === true ? 1 : 0;
   }
@@ -378,10 +429,30 @@ export class CurrentMatchdayComponent {
   stateFor(matchId: string): MatchPredictionState {
     let state = this.predictionState.get(matchId);
     if (!state) {
-      state = { choice: null, doubleChanceOption: null, saving: false, saved: false, pointsEarned: null };
+      state = {
+        choice: null,
+        doubleChanceOption: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        saving: false,
+        saved: false,
+        pointsEarned: null,
+      };
       this.predictionState.set(matchId, state);
     }
     return state;
+  }
+
+  /** Actualiza el marcador previsto (modo resultado exacto) y guarda si ya hay ambos valores. */
+  updatePredictedScore(match: Match, field: 'home' | 'away', rawValue: string): void {
+    if (this.isMatchLocked(match)) return;
+    const state = this.stateFor(match.id);
+    const value = rawValue === '' ? null : Number(rawValue);
+    if (field === 'home') {
+      state.predictedHomeScore = value;
+    } else {
+      state.predictedAwayScore = value;
+    }
   }
 
   selectChoice(match: Match, choice: PredictionChoice): void {
@@ -427,25 +498,37 @@ export class CurrentMatchdayComponent {
     this.save(match.id, state);
   }
 
-  private save(matchId: string, state: MatchPredictionState): void {
+  save(matchId: string, state: MatchPredictionState): void {
     const groupId = this.activeGroupService.activeId();
     if (!groupId) return;
-    if (!state.choice && !state.doubleChanceOption) return;
+    const exact = this.isExactScore();
+    if (exact) {
+      if (state.predictedHomeScore == null || state.predictedAwayScore == null) return;
+    } else if (!state.choice && !state.doubleChanceOption) {
+      return;
+    }
 
     state.saving = true;
     state.saved = false;
 
     this.predictionsService
-      .submit(groupId, {
-        matchId,
-        choice: state.doubleChanceOption ? undefined : (state.choice ?? undefined),
-        doubleChanceOption: state.doubleChanceOption ?? undefined,
-      })
+      .submit(
+        groupId,
+        exact
+          ? { matchId, predictedHomeScore: state.predictedHomeScore!, predictedAwayScore: state.predictedAwayScore! }
+          : {
+              matchId,
+              choice: state.doubleChanceOption ? undefined : (state.choice ?? undefined),
+              doubleChanceOption: state.doubleChanceOption ?? undefined,
+            },
+      )
       .subscribe({
         next: () => {
           state.saving = false;
           state.saved = true;
-          this.refreshComeback(groupId);
+          if (!exact) {
+            this.refreshComeback(groupId);
+          }
         },
         error: (error: HttpErrorResponse) => {
           state.saving = false;

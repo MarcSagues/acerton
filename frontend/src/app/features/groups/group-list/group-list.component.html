@@ -89,6 +89,35 @@
             <span class="field-label">Descripcion (opcional)</span>
             <input class="field-input" formControlName="description" />
           </label>
+          <div class="field">
+            <span class="field-label">Modo de puntuacion</span>
+            <div class="tabs mode-tabs">
+              <button
+                type="button"
+                class="tab"
+                [class.active]="createForm.value.scoringMode === 'ONE_X_TWO'"
+                (click)="setScoringMode('ONE_X_TWO')"
+              >
+                Quiniela 1X2
+              </button>
+              <button
+                type="button"
+                class="tab"
+                [class.active]="createForm.value.scoringMode === 'EXACT_SCORE'"
+                (click)="setScoringMode('EXACT_SCORE')"
+              >
+                Resultado exacto
+              </button>
+            </div>
+            <p class="sheet-desc mono">
+              @if (createForm.value.scoringMode === 'EXACT_SCORE') {
+                5 puntos por marcador exacto, 2 por acertar solo el resultado. Sin comodin de remontada.
+              } @else {
+                1 punto por acertar 1X2. Incluye comodin de remontada.
+              }
+            </p>
+            <p class="sheet-desc mono">No podras cambiar el modo despues de crear el grupo.</p>
+          </div>
           <label class="checkbox-row">
             <input type="checkbox" formControlName="isPublic" />
             <span>Grupo publico (visible para cualquiera)</span>

@@ -11,14 +11,17 @@ function buildPrismaMock(predictions: unknown[]) {
 
 function buildSubmitDeps(
   match: { status: string; kickoff: Date; matchdayId?: string },
-  options: { canAcceptPredictions?: boolean } = {},
+  options: { canAcceptPredictions?: boolean; scoringMode?: 'ONE_X_TWO' | 'EXACT_SCORE' } = {},
 ) {
   const prisma = {
     match: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', matchdayId: 'md1', ...match }) },
     prediction: { upsert: jest.fn().mockResolvedValue({ id: 'p1' }) },
   };
   const wildcardsService = { assertCanUseDoubleChance: jest.fn().mockResolvedValue(undefined) };
-  const groupsService = { assertIsMember: jest.fn().mockResolvedValue(undefined) };
+  const groupsService = {
+    assertIsMember: jest.fn().mockResolvedValue(undefined),
+    getScoringMode: jest.fn().mockResolvedValue(options.scoringMode ?? 'ONE_X_TWO'),
+  };
   const matchdaysService = {
     canAcceptPredictions: jest.fn().mockResolvedValue(options.canAcceptPredictions ?? true),
   };
@@ -38,24 +41,28 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
         id: 'p1',
         choice: 'HOME',
         doubleChanceOption: null,
+        group: { scoringMode: 'ONE_X_TWO' },
         match: { status: 'FINISHED', result: 'HOME' },
       },
       {
         id: 'p2',
         choice: 'AWAY',
         doubleChanceOption: null,
+        group: { scoringMode: 'ONE_X_TWO' },
         match: { status: 'FINISHED', result: 'HOME' },
       },
       {
         id: 'p3',
         choice: null,
         doubleChanceOption: 'DRAW_OR_AWAY',
+        group: { scoringMode: 'ONE_X_TWO' },
         match: { status: 'FINISHED', result: 'DRAW' },
       },
       {
         id: 'p4',
         choice: 'HOME',
         doubleChanceOption: null,
+        group: { scoringMode: 'ONE_X_TWO' },
         match: { status: 'LIVE', result: null },
       },
     ]);
@@ -87,6 +94,7 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
         id: 'p1',
         choice: 'HOME',
         doubleChanceOption: null,
+        group: { scoringMode: 'ONE_X_TWO' },
         match: { status: 'FINISHED', result: 'AWAY' },
       },
     ]);
@@ -100,6 +108,47 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       where: { id: 'p1' },
       data: { pointsEarned: 0 },
     });
+  });
+
+  it('puntua cada prediccion segun el modo de su propio grupo, en una misma jornada con grupos mixtos', async () => {
+    const prisma = buildPrismaMock([
+      {
+        id: 'p1',
+        choice: 'HOME',
+        doubleChanceOption: null,
+        group: { scoringMode: 'ONE_X_TWO' },
+        match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
+      },
+      {
+        id: 'p2',
+        predictedHomeScore: 2,
+        predictedAwayScore: 0,
+        group: { scoringMode: 'EXACT_SCORE' },
+        match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
+      },
+      {
+        id: 'p3',
+        predictedHomeScore: 1,
+        predictedAwayScore: 0,
+        group: { scoringMode: 'EXACT_SCORE' },
+        match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
+      },
+      {
+        id: 'p4',
+        predictedHomeScore: 0,
+        predictedAwayScore: 1,
+        group: { scoringMode: 'EXACT_SCORE' },
+        match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
+      },
+    ]);
+
+    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never);
+    await service.scoreFinishedMatchday('matchday-1');
+
+    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { pointsEarned: 1 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p2' }, data: { pointsEarned: 5 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p3' }, data: { pointsEarned: 2 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p4' }, data: { pointsEarned: 0 } });
   });
 });
 
@@ -146,5 +195,51 @@ describe('PredictionsService.submit', () => {
 
     await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).rejects.toThrow();
     expect(prisma.prediction.upsert).not.toHaveBeenCalled();
+  });
+
+  describe('grupos en modo resultado exacto', () => {
+    it('rechaza un pronostico 1X2 en un grupo de resultado exacto', async () => {
+      const { service } = buildSubmitDeps(
+        { status: 'SCHEDULED', kickoff: future },
+        { scoringMode: 'EXACT_SCORE' },
+      );
+
+      await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).rejects.toThrow();
+    });
+
+    it('rechaza un resultado exacto incompleto', async () => {
+      const { service } = buildSubmitDeps(
+        { status: 'SCHEDULED', kickoff: future },
+        { scoringMode: 'EXACT_SCORE' },
+      );
+
+      await expect(
+        service.submit('u1', 'g1', { matchId: 'm1', predictedHomeScore: 2 }),
+      ).rejects.toThrow();
+    });
+
+    it('acepta un resultado exacto completo y limpia choice/doubleChanceOption', async () => {
+      const { service, prisma } = buildSubmitDeps(
+        { status: 'SCHEDULED', kickoff: future },
+        { scoringMode: 'EXACT_SCORE' },
+      );
+
+      await service.submit('u1', 'g1', { matchId: 'm1', predictedHomeScore: 2, predictedAwayScore: 1 });
+
+      expect(prisma.prediction.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: { predictedHomeScore: 2, predictedAwayScore: 1, choice: null, doubleChanceOption: null },
+          create: expect.objectContaining({ predictedHomeScore: 2, predictedAwayScore: 1 }),
+        }),
+      );
+    });
+
+    it('rechaza un resultado exacto en un grupo 1X2', async () => {
+      const { service } = buildSubmitDeps({ status: 'SCHEDULED', kickoff: future });
+
+      await expect(
+        service.submit('u1', 'g1', { matchId: 'm1', predictedHomeScore: 2, predictedAwayScore: 1 }),
+      ).rejects.toThrow();
+    });
   });
 });

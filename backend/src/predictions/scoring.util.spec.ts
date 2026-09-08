@@ -1,4 +1,4 @@
-import { calculatePoints, ScorablePrediction } from './scoring.util';
+import { calculateExactScorePoints, calculatePoints, ScorablePrediction } from './scoring.util';
 
 function prediction(overrides: Partial<ScorablePrediction>): ScorablePrediction {
   return { choice: null, doubleChanceOption: null, ...overrides };
@@ -45,5 +45,33 @@ describe('calculatePoints', () => {
     it('devuelve 0 si el partido no ha terminado, aunque cubra el resultado', () => {
       expect(calculatePoints(prediction({ doubleChanceOption: 'HOME_OR_AWAY' }), null)).toBe(0);
     });
+  });
+});
+
+describe('calculateExactScorePoints', () => {
+  it('otorga 5 puntos por marcador exacto', () => {
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 2, 0)).toBe(5);
+  });
+
+  it('otorga 2 puntos por acertar solo el ganador', () => {
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 3, 1)).toBe(2);
+  });
+
+  it('un empate previsto vale 2 puntos si el resultado real tambien es empate, aunque el marcador no coincida', () => {
+    expect(calculateExactScorePoints({ predictedHomeScore: 1, predictedAwayScore: 1 }, 2, 2)).toBe(2);
+  });
+
+  it('otorga 0 puntos si falla el ganador', () => {
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 0, 1)).toBe(0);
+    expect(calculateExactScorePoints({ predictedHomeScore: 1, predictedAwayScore: 1 }, 2, 0)).toBe(0);
+  });
+
+  it('devuelve 0 si el partido todavia no tiene resultado', () => {
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, null, null)).toBe(0);
+  });
+
+  it('devuelve 0 si falta la prediccion', () => {
+    expect(calculateExactScorePoints({ predictedHomeScore: null, predictedAwayScore: null }, 2, 0)).toBe(0);
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: null }, 2, 0)).toBe(0);
   });
 });

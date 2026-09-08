@@ -57,7 +57,7 @@
         </div>
         <div class="breakdown">
           <div class="line">
-            <span>Aciertos 1X2</span>
+            <span>{{ scoringMode() === 'EXACT_SCORE' ? 'Aciertos' : 'Aciertos 1X2' }}</span>
             <span class="mono">{{ hits() }} / {{ predictions().length }}</span>
           </div>
           @if (rescueHits() > 0) {
@@ -99,8 +99,12 @@
               <div class="pred-meta">
                 <div class="pred-match">{{ matchLabel(prediction, md) }}</div>
                 <div class="pred-sub mono">
-                  {{ scoreLabel(prediction, md) }} · {{ viewingSelf ? 'tu' : 'su' }} {{ pickLabel(prediction) }} · real
-                  {{ realLabel(prediction, md) }}
+                  @if (scoringMode() === 'EXACT_SCORE') {
+                    {{ scoreLabel(prediction, md) }} · {{ viewingSelf ? 'tu' : 'su' }} pronostico {{ pickLabel(prediction) }}
+                  } @else {
+                    {{ scoreLabel(prediction, md) }} · {{ viewingSelf ? 'tu' : 'su' }} {{ pickLabel(prediction) }} · real
+                    {{ realLabel(prediction, md) }}
+                  }
                 </div>
               </div>
               @if (prediction.doubleChanceOption) {
