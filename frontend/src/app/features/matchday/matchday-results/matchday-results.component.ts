@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { RankingsService } from '../../../core/services/rankings.service';
@@ -22,6 +23,7 @@ import { UserBadge } from '../../../core/models/profile.model';
 })
 export class MatchdayResultsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly predictionsService = inject(PredictionsService);
   private readonly rankingsService = inject(RankingsService);
@@ -29,31 +31,91 @@ export class MatchdayResultsComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly authService = inject(AuthService);
+  private readonly snackBar = inject(MatSnackBar);
 
-  readonly matchdayId = this.route.snapshot.paramMap.get('matchdayId')!;
+  /** Si viene en la ruta, estamos viendo las quinielas de otro miembro del grupo en vez de las propias. */
+  private readonly routeUserId = this.route.snapshot.paramMap.get('userId');
+  private readonly currentUserId = this.authService.currentUser()?.id ?? null;
+  readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
 
   readonly loading = signal(true);
+  readonly navigating = signal(false);
   readonly locked = signal(false);
   readonly matchday = signal<Matchday | null>(null);
-  readonly myPredictions = signal<Prediction[]>([]);
+  readonly predictions = signal<Prediction[]>([]);
+  readonly targetUserName = signal<string | null>(null);
   readonly position = signal<{ pos: number; total: number } | null>(null);
   readonly currentStreak = signal(0);
   readonly newBadges = signal<UserBadge[]>([]);
+  /** Se pone a true cuando "siguiente"/"anterior" ya devolvio null o una jornada aun no cerrada. */
+  readonly noNextAvailable = signal(false);
+  readonly noPreviousAvailable = signal(false);
 
-  readonly totalPoints = computed(() => this.myPredictions().reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0));
-  readonly hits = computed(() => this.myPredictions().filter((p) => (p.pointsEarned ?? 0) > 0).length);
+  readonly totalPoints = computed(() => this.predictions().reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0));
+  readonly hits = computed(() => this.predictions().filter((p) => (p.pointsEarned ?? 0) > 0).length);
   readonly rescueHits = computed(
-    () => this.myPredictions().filter((p) => p.doubleChanceOption && (p.pointsEarned ?? 0) > 0).length,
+    () => this.predictions().filter((p) => p.doubleChanceOption && (p.pointsEarned ?? 0) > 0).length,
   );
 
   ngOnInit(): void {
+    const matchdayId = this.route.snapshot.paramMap.get('matchdayId')!;
+    this.loadMatchday(matchdayId);
+  }
+
+  navigatePrevious(): void {
+    this.navigate('previous');
+  }
+
+  navigateNext(): void {
+    this.navigate('next');
+  }
+
+  private navigate(direction: 'previous' | 'next'): void {
+    const current = this.matchday();
+    if (!current || this.navigating()) return;
+
+    this.navigating.set(true);
+    this.matchdaysService.getAdjacent(current.id, direction).subscribe({
+      next: (next) => {
+        this.navigating.set(false);
+        if (!next || (next.status !== 'CLOSED' && next.status !== 'FINISHED')) {
+          if (direction === 'next') {
+            this.noNextAvailable.set(true);
+          } else {
+            this.noPreviousAvailable.set(true);
+          }
+          this.snackBar.open(
+            direction === 'previous' ? 'No hay jornada anterior cerrada' : 'La siguiente jornada todavia no ha cerrado',
+            'Cerrar',
+            { duration: 2500 },
+          );
+          return;
+        }
+        this.noNextAvailable.set(false);
+        this.noPreviousAvailable.set(false);
+        // Mantiene la URL sincronizada (compartible / recargable) sin recrear el componente.
+        const path = this.viewingSelf
+          ? ['/matchday', next.id, 'results']
+          : ['/matchday', next.id, 'results', this.routeUserId!];
+        this.router.navigate(path, { replaceUrl: true });
+        this.loadMatchday(next.id);
+      },
+      error: () => {
+        this.navigating.set(false);
+        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  private loadMatchday(matchdayId: string): void {
+    this.loading.set(true);
     const groupId = this.activeGroupService.activeId();
     if (!groupId) {
       this.loading.set(false);
       return;
     }
 
-    this.matchdaysService.getById(this.matchdayId).subscribe((matchday) => {
+    this.matchdaysService.getById(matchdayId).subscribe((matchday) => {
       this.matchday.set(matchday);
 
       if (matchday.status !== 'CLOSED' && matchday.status !== 'FINISHED') {
@@ -61,29 +123,29 @@ export class MatchdayResultsComponent implements OnInit {
         this.loading.set(false);
         return;
       }
+      this.locked.set(false);
 
-      const userId = this.authService.currentUser()?.id;
+      const targetUserId = this.routeUserId ?? this.currentUserId;
 
       forkJoin({
-        predictions: this.predictionsService.getGroupPredictionsForMatchday(groupId, this.matchdayId),
-        ranking: this.rankingsService.getRankingForMatchday(
-          groupId,
-          'WEEKLY',
-          matchday.competitionId,
-          this.matchdayId,
-        ),
-        streak: this.streaksService.getForUserInGroup(groupId),
-        profile: this.profileService.getMyProfile(),
+        predictions: this.predictionsService.getGroupPredictionsForMatchday(groupId, matchdayId),
+        ranking: this.rankingsService.getRankingForMatchday(groupId, 'WEEKLY', matchday.competitionId, matchdayId),
+        streak: this.viewingSelf ? this.streaksService.getForUserInGroup(groupId) : of(null),
+        profile: this.viewingSelf ? this.profileService.getMyProfile() : of(null),
       }).subscribe(({ predictions, ranking, streak, profile }) => {
-        this.myPredictions.set(predictions.filter((p) => p.userId === userId));
+        const targetPredictions = predictions.filter((p) => p.userId === targetUserId);
+        this.predictions.set(targetPredictions);
+        this.targetUserName.set(targetPredictions[0]?.user?.name ?? null);
 
-        const myRow = ranking.find((r) => r.userId === userId);
-        if (myRow) {
-          this.position.set({ pos: myRow.position, total: ranking.length });
+        const targetRow = ranking.find((r) => r.userId === targetUserId);
+        this.position.set(targetRow ? { pos: targetRow.position, total: ranking.length } : null);
+
+        if (streak) {
+          this.currentStreak.set(streak.currentStreak);
         }
-
-        this.currentStreak.set(streak.currentStreak);
-        this.newBadges.set(profile.badges.filter((b) => b.matchdayId === this.matchdayId));
+        if (profile) {
+          this.newBadges.set(profile.badges.filter((b) => b.matchdayId === matchdayId));
+        }
 
         this.loading.set(false);
       });

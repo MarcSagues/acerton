@@ -26,7 +26,7 @@
     </div>
 
     @if (myRow(); as mine) {
-      <div class="my-row">
+      <div class="my-row" (click)="viewUserPicks(mine.userId)">
         <div class="my-pos mono">{{ mine.position }}</div>
         <div class="my-meta">
           <div class="my-name">Tu · {{ mine.user.name }}</div>
@@ -55,7 +55,7 @@
     } @else {
       <div class="rows">
         @for (row of rows(); track row.userId) {
-          <div class="row" [class.me]="row.userId === currentUserId">
+          <div class="row" [class.me]="row.userId === currentUserId" (click)="viewUserPicks(row.userId)">
             <div class="col-pos mono">{{ row.position }}</div>
             <div class="col-delta mono" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
               {{ deltaLabel(row.positionDelta) }}

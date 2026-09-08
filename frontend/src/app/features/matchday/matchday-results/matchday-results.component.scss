@@ -17,6 +17,48 @@
   border-bottom: 1px solid var(--border);
 }
 
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.chevron {
+  width: 6px;
+  height: 6px;
+  border-top: 1.5px solid currentColor;
+  border-left: 1.5px solid currentColor;
+}
+
+.chevron-left {
+  transform: rotate(-45deg);
+  margin-left: 2px;
+}
+
+.chevron-right {
+  transform: rotate(135deg);
+  margin-right: 2px;
+}
+
 .title {
   font: 700 18px/1.1 var(--font-ui);
 }

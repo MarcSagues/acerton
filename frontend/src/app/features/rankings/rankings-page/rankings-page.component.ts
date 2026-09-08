@@ -1,12 +1,16 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { GroupsService } from '../../../core/services/groups.service';
 import { RankingsService } from '../../../core/services/rankings.service';
+import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-switcher.component';
 import { Group } from '../../../core/models/group.model';
 import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
+import { Matchday } from '../../../core/models/matchday.model';
 
 @Component({
   selector: 'app-rankings-page',
@@ -18,11 +22,15 @@ import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
 export class RankingsPageComponent {
   private readonly groupsService = inject(GroupsService);
   private readonly rankingsService = inject(RankingsService);
+  private readonly matchdaysService = inject(MatchdaysService);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
   readonly activeGroupService = inject(ActiveGroupService);
 
   readonly loading = signal(true);
   readonly loadingRanking = signal(false);
+  readonly resolvingUserId = signal<string | null>(null);
   readonly groupDetail = signal<Group | null>(null);
   readonly period = signal<RankingPeriod>('TOTAL');
   readonly scope = signal<string>('general');
@@ -89,6 +97,67 @@ export class RankingsPageComponent {
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? '')
       .join('');
+  }
+
+  /**
+   * Abre las quinielas de un jugador para la jornada cerrada mas reciente de
+   * la competicion seleccionada (o de la primera activa si la vista es
+   * "general"). Si la jornada "en vivo" de esa competicion todavia esta
+   * abierta, retrocede a la anterior — nunca se navega a una jornada sin
+   * cerrar (el backend lo rechazaria igualmente, ver getGroupPredictionsForMatchday).
+   */
+  viewUserPicks(userId: string): void {
+    const groupId = this.activeGroupService.activeId();
+    if (!groupId || this.resolvingUserId()) return;
+
+    const scope = this.scope();
+    const competitionId = scope !== 'general' ? scope : this.activeCompetitions()[0]?.id;
+    if (!competitionId) return;
+
+    this.resolvingUserId.set(userId);
+    this.matchdaysService.getCurrentForGroup(groupId).subscribe({
+      next: (entries) => {
+        const entry = entries.find((e) => e.competition.id === competitionId);
+        if (!entry) {
+          this.resolvingUserId.set(null);
+          this.snackBar.open('No se encontro la jornada de esta competicion', 'Cerrar', { duration: 2500 });
+          return;
+        }
+        this.resolveLockedMatchday(entry.matchday, userId);
+      },
+      error: () => {
+        this.resolvingUserId.set(null);
+        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  private resolveLockedMatchday(matchday: Matchday, userId: string): void {
+    if (matchday.status === 'CLOSED' || matchday.status === 'FINISHED') {
+      this.resolvingUserId.set(null);
+      this.goToResults(matchday.id, userId);
+      return;
+    }
+    this.matchdaysService.getAdjacent(matchday.id, 'previous').subscribe({
+      next: (previous) => {
+        this.resolvingUserId.set(null);
+        if (!previous) {
+          this.snackBar.open('Todavia no hay jornadas cerradas para ver quinielas', 'Cerrar', { duration: 2500 });
+          return;
+        }
+        this.goToResults(previous.id, userId);
+      },
+      error: () => {
+        this.resolvingUserId.set(null);
+        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  private goToResults(matchdayId: string, userId: string): void {
+    const path =
+      userId === this.currentUserId ? ['/matchday', matchdayId, 'results'] : ['/matchday', matchdayId, 'results', userId];
+    this.router.navigate(path);
   }
 
   private fetchRanking(groupId: string): void {
