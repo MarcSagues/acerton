@@ -176,12 +176,20 @@ h1 {
   height: 52px;
   border-radius: 14px;
   border: 1px solid var(--border-strong);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 11px;
   font: 500 14px/1 var(--font-ui);
   color: var(--text-primary);
+  cursor: pointer;
+  width: 100%;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
 }
 
 .google-dot {

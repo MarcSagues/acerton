@@ -3,6 +3,11 @@ export const environment = {
   // Frontend (Cloudflare Pages) y backend (Render) van en subdominios distintos
   // del mismo dominio, no en el mismo origen, asi que hace falta la URL completa.
   apiUrl: 'https://api.acerton.app/api',
+  googleWebClientId: '533114077011-hgob253v538oejkoq6p99mepu1vlp9i0.apps.googleusercontent.com',
+  admob: {
+    android: { appId: 'ca-app-pub-1185144357301303~6197649742', bannerAdUnitId: 'ca-app-pub-1185144357301303/4884568079' },
+    ios: { appId: 'ca-app-pub-1185144357301303~8853049890', bannerAdUnitId: 'ca-app-pub-1185144357301303/1167694667' },
+  },
   firebase: {
     apiKey: 'AIzaSyCbYMyNUeENK5PfohH_NX1CuxvKgG6k11Y',
     authDomain: 'acerton-39f07.firebaseapp.com',

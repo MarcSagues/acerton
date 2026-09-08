@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { BottomNavComponent } from './bottom-nav.component';
 import { NotificationPromptComponent } from './notification-prompt.component';
+import { AdsService } from '../../core/services/ads.service';
 
 @Component({
   selector: 'app-shell',
@@ -31,4 +32,10 @@ import { NotificationPromptComponent } from './notification-prompt.component';
     `,
   ],
 })
-export class ShellComponent {}
+export class ShellComponent implements OnInit {
+  private readonly ads = inject(AdsService);
+
+  ngOnInit(): void {
+    this.ads.showBanner();
+  }
+}

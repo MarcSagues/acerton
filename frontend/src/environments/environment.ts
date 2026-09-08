@@ -1,6 +1,18 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:3000/api',
+  // Mismo client id "web" que el backend (GOOGLE_CLIENT_ID en .env) — el
+  // plugin nativo de Google Sign-In lo exige en todas las plataformas para
+  // que el idToken resultante se pueda verificar en un backend compartido.
+  googleWebClientId: '533114077011-hgob253v538oejkoq6p99mepu1vlp9i0.apps.googleusercontent.com',
+  // AdMob (apps nativas; la web sigue usando AdSense). En desarrollo se usan
+  // los ad unit ids de prueba oficiales de Google en vez de los reales, para
+  // no generar impresiones/clics automatizados contra la cuenta real durante
+  // las pruebas — ver AdsService.
+  admob: {
+    android: { appId: 'ca-app-pub-3940256099942544~3347511713', bannerAdUnitId: 'ca-app-pub-3940256099942544/6300978111' },
+    ios: { appId: 'ca-app-pub-3940256099942544~1458002511', bannerAdUnitId: 'ca-app-pub-3940256099942544/2934735716' },
+  },
   // Config publica del proyecto Firebase (no son secretos: se protegen con
   // las reglas de seguridad de Firebase, no ocultandolas). Rellena con los
   // valores de Project settings > General > "Your apps" (Web) y

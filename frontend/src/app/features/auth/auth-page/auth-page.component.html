@@ -75,10 +75,17 @@
       <span></span>
     </div>
 
-    <a class="google-btn" [href]="googleLoginUrl">
-      <span class="google-dot">G</span>
-      Continuar con Google
-    </a>
+    @if (isNativePlatform) {
+      <button type="button" class="google-btn" [disabled]="loading()" (click)="loginWithGoogleNative()">
+        <span class="google-dot">G</span>
+        Continuar con Google
+      </button>
+    } @else {
+      <a class="google-btn" [href]="googleLoginUrl">
+        <span class="google-dot">G</span>
+        Continuar con Google
+      </a>
+    }
 
     <p class="legal">Al continuar aceptas los terminos<br />y la <a routerLink="/privacy">politica de privacidad</a>.</p>
   </div>

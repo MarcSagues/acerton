@@ -1,10 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 import { PushNotificationsService } from '../../core/services/push-notifications.service';
 
 const DISMISSED_KEY = 'quiniela.notifPromptDismissed';
 
-/** El permiso nativo solo tiene sentido pedirlo cuando la app corre instalada (PWA), no en una pestana suelta del navegador. */
+/** El permiso nativo solo tiene sentido pedirlo en la app instalada (PWA en standalone, o la app nativa), no en una pestana suelta del navegador. */
 function isStandaloneApp(): boolean {
+  if (Capacitor.isNativePlatform()) return true;
   if (typeof window === 'undefined') return false;
   const nav = window.navigator as Navigator & { standalone?: boolean };
   return window.matchMedia?.('(display-mode: standalone)').matches === true || nav.standalone === true;

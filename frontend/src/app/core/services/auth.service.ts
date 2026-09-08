@@ -1,6 +1,8 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, firstValueFrom, from, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
+import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -32,6 +34,9 @@ export class AuthService {
   readonly bootstrapped = this.bootstrappedSignal.asReadonly();
 
   readonly googleLoginUrl = `${environment.apiUrl}/auth/google`;
+  /** En la app nativa (Capacitor) el login con Google usa el SDK del dispositivo en vez de la redireccion web — ver loginWithGoogleNative. */
+  readonly isNativePlatform = Capacitor.isNativePlatform();
+  private googleSignInInitialized = false;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -86,6 +91,31 @@ export class AuthService {
         this.clearSession();
         return throwError(() => error);
       }),
+    );
+  }
+
+  /**
+   * Login con Google en la app nativa: el SDK on-device (Credential Manager
+   * en Android, Google Sign-In SDK en iOS) entrega un idToken ya firmado sin
+   * necesidad de redirigir a un navegador — se manda tal cual al backend
+   * (ver AuthController.googleToken), que es quien de verdad lo verifica.
+   */
+  loginWithGoogleNative(): Observable<AuthResponse> {
+    return from(this.performGoogleNativeSignIn()).pipe(tap((res) => this.setSession(res)));
+  }
+
+  private async performGoogleNativeSignIn(): Promise<AuthResponse> {
+    if (!this.googleSignInInitialized) {
+      await GoogleSignIn.initialize({ clientId: environment.googleWebClientId });
+      this.googleSignInInitialized = true;
+    }
+    const result = await GoogleSignIn.signIn();
+    return firstValueFrom(
+      this.http.post<AuthResponse>(
+        `${environment.apiUrl}/auth/google/token`,
+        { idToken: result.idToken },
+        { withCredentials: true },
+      ),
     );
   }
 

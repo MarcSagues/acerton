@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Quiniela</string>
+    <string name="title_activity_main">Quiniela</string>
+    <string name="package_name">app.acerton.quiniela</string>
+    <string name="custom_url_scheme">app.acerton.quiniela</string>
+    <!-- Id real de AdMob (produccion). Los builds debug lo sobrescriben con
+         el de pruebas de Google via src/debug/res/values/strings.xml, para
+         no generar impresiones/clics reales contra la cuenta durante el
+         desarrollo. -->
+    <string name="admob_app_id">ca-app-pub-1185144357301303~6197649742</string>
+</resources>
