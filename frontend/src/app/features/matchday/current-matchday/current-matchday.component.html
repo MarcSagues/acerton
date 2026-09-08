@@ -33,11 +33,21 @@
     @if (activeEntry(); as entry) {
       <div class="summary">
         <div class="eyebrow-row">
-          <button class="nav-btn" [disabled]="navigating()" (click)="navigatePrevious()" title="Jornada anterior">
+          <button
+            class="nav-btn"
+            [disabled]="navigating() || entry.matchday.order <= 1"
+            (click)="navigatePrevious()"
+            title="Jornada anterior"
+          >
             <span class="chevron chevron-left"></span>
           </button>
           <div class="eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</div>
-          <button class="nav-btn" [disabled]="navigating()" (click)="navigateNext()" title="Jornada siguiente">
+          <button
+            class="nav-btn"
+            [disabled]="navigating() || noNextAvailable()"
+            (click)="navigateNext()"
+            title="Jornada siguiente"
+          >
             <span class="chevron chevron-right"></span>
           </button>
         </div>
