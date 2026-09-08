@@ -16,7 +16,10 @@
             <span class="avatar">{{ initials(group.name) }}</span>
             <div class="meta">
               <div class="name">{{ group.name }}</div>
-              <div class="sub mono">{{ group.isPublic ? 'publico' : 'privado' }} · {{ group._count?.memberships ?? 0 }} miembros</div>
+              <div class="sub mono">
+                {{ group.isPublic ? 'publico' : 'privado' }} · {{ group._count?.memberships ?? 0 }} miembros ·
+                {{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}
+              </div>
             </div>
           </div>
 

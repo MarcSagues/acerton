@@ -55,7 +55,7 @@
           <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
         }
         <div class="summary-top">
-          <div class="headline">
+          <div class="headline" [class.pending]="!isLocked(entry) && !isMatchdayOpenByTime()">
             @if (isLocked(entry)) {
               Cerrada
             } @else if (!isMatchdayOpenByTime()) {
@@ -67,19 +67,17 @@
           @if (isLocked(entry)) {
             <div class="countdown mono">{{ totalPoints() }} pts</div>
           } @else if (!isMatchdayOpenByTime()) {
-            <div class="countdown mono">{{ opensInLabel() }}</div>
+            <div class="countdown mono pending">{{ opensInLabel() }}</div>
           } @else {
             <div class="countdown mono">{{ countdownLabel() }}</div>
           }
         </div>
-        @if (!isLocked(entry)) {
-          <div class="progress-row">
-            <div class="progress-track">
-              <div class="progress-fill" [style.width]="progressPct()"></div>
-            </div>
-            <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+        <div class="progress-row">
+          <div class="progress-track">
+            <div class="progress-fill" [style.width]="progressPct()"></div>
           </div>
-        }
+          <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+        </div>
         @if (!isLocked(entry) && anyMatchFinished()) {
           <div class="live-points mono">
             Llevas {{ totalPoints() }} {{ totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
@@ -119,6 +117,13 @@
               <div class="result mono dim">Aun no</div>
             } @else if (isExactScore()) {
               <div class="exact-score-inputs">
+                <span class="exact-score-status">
+                  @if (stateFor(match.id).saving) {
+                    <mat-spinner diameter="12"></mat-spinner>
+                  } @else if (stateFor(match.id).saved) {
+                    <mat-icon class="saved-icon" inline>check_circle</mat-icon>
+                  }
+                </span>
                 <input
                   class="score-input mono"
                   type="number"
@@ -142,11 +147,6 @@
                   (input)="updatePredictedScore(match, 'away', $any($event.target).value)"
                   (blur)="save(match.id, stateFor(match.id))"
                 />
-                @if (stateFor(match.id).saving) {
-                  <mat-spinner diameter="12"></mat-spinner>
-                } @else if (stateFor(match.id).saved) {
-                  <mat-icon class="saved-icon" inline>check_circle</mat-icon>
-                }
               </div>
             } @else {
               <div class="wc-icons">

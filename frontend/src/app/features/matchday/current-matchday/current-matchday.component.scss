@@ -127,12 +127,23 @@
 .headline {
   font: 700 24px/1 var(--font-ui);
   letter-spacing: -0.01em;
+
+  /* "Se abre en": todavia no se puede predecir, se distingue en gris de
+     "Cierra en" (accion posible ahora) para no confundir una cuenta atras
+     con la otra. */
+  &.pending {
+    color: var(--text-secondary);
+  }
 }
 
 .countdown {
   font: 700 24px/1 var(--font-mono);
   color: var(--accent);
   white-space: nowrap;
+
+  &.pending {
+    color: var(--text-secondary);
+  }
 }
 
 .progress-row {
@@ -285,6 +296,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Ancho fijo aunque este vacio: que el spinner/check aparezca y desaparezca
+   no debe cambiar el ancho total de .exact-score-inputs, o el bloque de
+   nombres de equipo (flex:1) se encoge/expande y las casillas se desplazan. */
+.exact-score-status {
+  flex: none;
+  width: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
 }
 
 .score-input {
