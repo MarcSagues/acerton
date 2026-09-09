@@ -88,5 +88,14 @@
     }
 
     <p class="legal">Al continuar aceptas los terminos<br />y la <a routerLink="/privacy">politica de privacidad</a>.</p>
+
+    @if (isNativePlatform) {
+      <button type="button" class="ghost-link" [disabled]="runningDiagnostics()" (click)="runDiagnostics()">
+        {{ runningDiagnostics() ? 'Probando...' : 'Diagnostico de red' }}
+      </button>
+      @if (diagnostics(); as result) {
+        <pre class="diagnostics">{{ result }}</pre>
+      }
+    }
   </div>
 </div>
