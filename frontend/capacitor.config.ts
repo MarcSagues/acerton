@@ -20,6 +20,13 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'banner', 'list'],
     },
+    // El fetch/XHR normal del WKWebView esta fallando en iOS con "Load
+    // failed" para cualquier peticion, incluso al propio origen local. Esto
+    // hace que fetch/XHR pasen por codigo nativo (URLSession) en vez de por
+    // el motor de red del WebView, que es el que esta fallando.
+    CapacitorHttp: {
+      enabled: true,
+    },
   },
 };
 
