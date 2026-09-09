@@ -27,7 +27,8 @@ import { AdsService } from '../../core/services/ads.service';
       }
       .shell-content {
         flex: 1;
-        padding-bottom: 72px;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: calc(84px + env(safe-area-inset-bottom));
       }
     `,
   ],
