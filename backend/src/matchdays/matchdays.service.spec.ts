@@ -402,7 +402,7 @@ describe('MatchdaysService.syncResultsForClosedMatchdays (una sola tanda de peti
     const service = new MatchdaysService(prisma as never, footballProvider as never);
     const result = await service.syncResultsForClosedMatchdays();
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ newlyFinished: [], inProgress: [] });
     expect(footballProvider.getFixturesByIds).not.toHaveBeenCalled();
   });
 
@@ -500,7 +500,7 @@ describe('MatchdaysService.syncResultsForClosedMatchdays (una sola tanda de peti
     const service = new MatchdaysService(prisma as never, footballProvider as never);
     const finished = await service.syncResultsForClosedMatchdays();
 
-    expect(finished).toEqual(['md-1']);
+    expect(finished).toEqual({ newlyFinished: ['md-1'], inProgress: ['md-2'] });
     expect(prisma.matchday.update).toHaveBeenCalledWith({
       where: { id: 'md-1' },
       data: { status: 'FINISHED' },
