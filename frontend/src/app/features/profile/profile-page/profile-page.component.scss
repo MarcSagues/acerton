@@ -1,6 +1,8 @@
 .loading {
-  padding: 24px 16px;
-  color: var(--text-secondary);
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .head {

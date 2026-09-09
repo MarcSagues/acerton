@@ -5,7 +5,7 @@
   </div>
 
   @if (loading()) {
-    <div class="loading"><span class="mono">Cargando...</span></div>
+    <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
   } @else if (groups().length === 0) {
     <p class="empty">Todavia no perteneces a ningun grupo. ¡Crea uno o unete con un codigo!</p>
   } @else {

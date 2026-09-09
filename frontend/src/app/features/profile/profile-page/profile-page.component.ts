@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -14,7 +15,7 @@ import { usernameHint, validateUsername } from '../../../shared/username.util';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule],
   templateUrl: './profile-page.component.html',
   styleUrl: './profile-page.component.scss',
 })

@@ -2,6 +2,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GroupsService } from '../../../core/services/groups.service';
 import { RankingsService } from '../../../core/services/rankings.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
@@ -14,7 +15,7 @@ import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
 @Component({
   selector: 'app-rankings-page',
   standalone: true,
-  imports: [CommonModule, GroupSwitcherComponent],
+  imports: [CommonModule, GroupSwitcherComponent, MatProgressSpinnerModule],
   templateUrl: './rankings-page.component.html',
   styleUrl: './rankings-page.component.scss',
 })
