@@ -17,8 +17,11 @@ const config: CapacitorConfig = {
     iosScheme: 'https',
   },
   plugins: {
+    // Sin 'banner'/'list': el banner deslizante del sistema queda
+    // desactivado en primer plano, y en su lugar mostramos una alerta
+    // nativa centrada (ver PushNotificationsService) para no duplicar UI.
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'banner', 'list'],
+      presentationOptions: ['badge', 'sound'],
     },
     // El fetch/XHR normal del WKWebView esta fallando en iOS con "Load
     // failed" para cualquier peticion, incluso al propio origen local. Esto

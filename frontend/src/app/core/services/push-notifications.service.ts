@@ -3,6 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Dialog } from '@capacitor/dialog';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from './profile.service';
 
@@ -81,7 +82,9 @@ export class PushNotificationsService {
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
         const title = notification.title ?? 'Quiniela';
         const body = notification.body ?? '';
-        this.snackBar.open(`${title}: ${body}`, 'Cerrar', { duration: 5000 });
+        // Alerta nativa centrada en vez del banner del sistema (desactivado
+        // en capacitor.config.ts) para que no compita con el nuestro.
+        void Dialog.alert({ title, message: body });
       });
       PushNotifications.register();
     });

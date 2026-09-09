@@ -137,8 +137,9 @@ export class JobsService {
   @Cron(CronExpression.EVERY_10_MINUTES)
   async syncResultsAndFinalize(): Promise<void> {
     let newlyFinished: string[] = [];
+    let inProgress: string[] = [];
     try {
-      newlyFinished = await this.matchdaysService.syncResultsForClosedMatchdays();
+      ({ newlyFinished, inProgress } = await this.matchdaysService.syncResultsForClosedMatchdays());
     } catch (error) {
       this.logger.error('Error sincronizando resultados', error as Error);
       return;
@@ -147,6 +148,22 @@ export class JobsService {
     for (const matchdayId of newlyFinished) {
       await this.finalizeMatchday(matchdayId);
     }
+    for (const matchdayId of inProgress) {
+      await this.updateProvisionalScores(matchdayId);
+    }
+  }
+
+  /**
+   * Jornada cerrada pero todavia no terminada del todo: puntua y recalcula
+   * clasificacion solo con los partidos ya decididos, para que la Tabla no
+   * tenga que esperar al ultimo partido de la jornada (ver
+   * PredictionsService.scoreFinishedMatchday, que ya ignora los partidos
+   * pendientes). Sin rachas/insignias/notificacion de cierre: esos son
+   * eventos de jornada terminada del todo, no de progreso parcial.
+   */
+  private async updateProvisionalScores(matchdayId: string): Promise<void> {
+    await this.predictionsService.scoreFinishedMatchday(matchdayId);
+    await this.rankingsService.computeForFinishedMatchday(matchdayId);
   }
 
   private async finalizeMatchday(matchdayId: string): Promise<void> {

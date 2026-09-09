@@ -10,12 +10,18 @@ export class RankingsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Recalcula clasificaciones tras finalizar y puntuar una jornada: semanal
-   * y total de la competicion de esa jornada, y total general combinado
-   * para los grupos que tengan mas de una competicion activa. La semanal
-   * "general" no se calcula: al ser competiciones con calendarios
-   * independientes, no existe una nocion de "misma jornada" compartida
-   * entre ellas.
+   * Recalcula clasificaciones tras puntuar una jornada: semanal y total de
+   * la competicion de esa jornada, y total general combinado para los
+   * grupos que tengan mas de una competicion activa. La semanal "general"
+   * no se calcula: al ser competiciones con calendarios independientes, no
+   * existe una nocion de "misma jornada" compartida entre ellas.
+   *
+   * No exige que la jornada haya terminado del todo pese al nombre: JobsService
+   * tambien la llama para jornadas cerradas con solo parte de sus partidos
+   * decididos (puntuacion/clasificacion "en vivo"), reutilizando el mismo
+   * calculo — solo suma el pointsEarned que ya haya en cada prediccion, que
+   * PredictionsService.scoreFinishedMatchday ya deja en null para los
+   * partidos todavia sin terminar.
    */
   async computeForFinishedMatchday(matchdayId: string): Promise<void> {
     const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });

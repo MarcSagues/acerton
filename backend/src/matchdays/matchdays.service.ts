@@ -11,6 +11,13 @@ import { computeMatchResult, parseRoundOrder, shouldCloseMatchday } from './matc
 /** Las predicciones de una jornada se abren como mucho 4 dias antes de su primer partido, no en cuanto termina la anterior. */
 export const PREDICTIONS_OPEN_BEFORE_MS = 4 * 24 * 60 * 60 * 1000;
 
+export interface SyncResultsOutcome {
+  /** Jornadas CLOSED cuyos partidos han terminado todos en esta tanda: listas para puntuar del todo (rachas, insignias, notificacion de cierre incluidas). */
+  newlyFinished: string[];
+  /** Resto de jornadas CLOSED evaluadas esta tanda (algun partido acabado o ninguno todavia): solo puntuacion/clasificacion provisional, sin rachas/insignias/notificaciones. */
+  inProgress: string[];
+}
+
 @Injectable()
 export class MatchdaysService {
   private readonly logger = new Logger(MatchdaysService.name);
@@ -245,13 +252,13 @@ export class MatchdaysService {
    * Tambien se salta partidos cuyo kickoff todavia no ha llegado, para no
    * gastar cupo preguntando por algo que seguro sigue "programado".
    */
-  async syncResultsForClosedMatchdays(): Promise<string[]> {
+  async syncResultsForClosedMatchdays(): Promise<SyncResultsOutcome> {
     const closedMatchdays = await this.prisma.matchday.findMany({
       where: { status: 'CLOSED' },
       include: { matches: true },
     });
     if (closedMatchdays.length === 0) {
-      return [];
+      return { newlyFinished: [], inProgress: [] };
     }
 
     const now = new Date();
@@ -266,6 +273,7 @@ export class MatchdaysService {
     }
 
     const newlyFinished: string[] = [];
+    const inProgress: string[] = [];
     for (const matchday of closedMatchdays) {
       const refreshedMatches = await this.prisma.match.findMany({
         where: { matchdayId: matchday.id },
@@ -278,10 +286,12 @@ export class MatchdaysService {
           data: { status: 'FINISHED' },
         });
         newlyFinished.push(matchday.id);
+      } else {
+        inProgress.push(matchday.id);
       }
     }
 
-    return newlyFinished;
+    return { newlyFinished, inProgress };
   }
 
   async getMatchdayWithMatches(matchdayId: string) {
