@@ -79,7 +79,16 @@ export class AuthPageComponent implements OnInit {
         this.loading.set(false);
         // El usuario simplemente cerro el selector de cuenta: no es un fallo que mostrar.
         if (error?.code === ErrorCode.SignInCanceled) return;
-        this.errorMessage.set('No se pudo iniciar sesion con Google');
+        // Temporal: mostrar el detalle real del fallo para poder diagnosticarlo en TestFlight.
+        if (error instanceof HttpErrorResponse) {
+          this.errorMessage.set(
+            `No se pudo iniciar sesion con Google (backend ${error.status}): ${JSON.stringify(error.error)}`,
+          );
+        } else {
+          this.errorMessage.set(
+            `No se pudo iniciar sesion con Google (${error?.code ?? 'sin codigo'}): ${error?.message ?? JSON.stringify(error)}`,
+          );
+        }
       },
     });
   }
