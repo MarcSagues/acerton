@@ -22,6 +22,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'soporte',
+    loadComponent: () =>
+      import('./features/legal/soporte/soporte.component').then((m) => m.SoporteComponent),
+  },
+  {
     path: 'auth/callback',
     loadComponent: () =>
       import('./features/auth/auth-callback/auth-callback.component').then(
