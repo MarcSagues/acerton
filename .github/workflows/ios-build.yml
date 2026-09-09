@@ -137,3 +137,26 @@ jobs:
           name: Quiniela-ios-${{ github.run_number }}
           path: ${{ runner.temp }}/export/*.ipa
           retention-days: 30
+
+      # ntfy.sh: gratis, sin registro. El topic actua como "contraseña" del
+      # canal — no es privado de verdad (cualquiera que lo adivine puede
+      # suscribirse), pero al ser aleatorio es suficiente para un aviso
+      # personal sin datos sensibles.
+      - name: Avisar por movil (ntfy.sh)
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            TITLE="iOS Build #${{ github.run_number }} completado"
+            TAGS="white_check_mark"
+            PRIORITY="default"
+          else
+            TITLE="iOS Build #${{ github.run_number }} fallo"
+            TAGS="x"
+            PRIORITY="high"
+          fi
+          curl -s \
+            -H "Title: $TITLE" \
+            -H "Priority: $PRIORITY" \
+            -H "Tags: $TAGS" \
+            -d "Estado: ${{ job.status }} - https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            https://ntfy.sh/acerton-ios-4bf21f2b
