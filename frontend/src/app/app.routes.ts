@@ -60,11 +60,21 @@ export const routes: Routes = [
       ),
   },
   {
+    // Home publica: si ya has iniciado sesion te manda dentro de la app
+    // (ver LandingPageComponent), si no, es lo que ve cualquiera (incluidos
+    // rastreadores como el de Google) sin necesidad de acceder.
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/landing/landing-page/landing-page.component').then(
+        (m) => m.LandingPageComponent,
+      ),
+  },
+  {
     path: '',
     canActivate: [authGuard, usernameGuard, hasGroupGuard],
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
     children: [
-      { path: '', redirectTo: 'matchday', pathMatch: 'full' },
       {
         path: 'groups',
         loadComponent: () =>
