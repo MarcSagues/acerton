@@ -1,5 +1,5 @@
 @if (loading()) {
-  <div class="loading"><span class="mono">Cargando...</span></div>
+  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
 } @else if (locked()) {
   <div class="page">
     <p class="empty">Esta jornada todavia esta abierta; los pronosticos del grupo se veran al cerrar.</p>
@@ -94,12 +94,15 @@
               <div
                 class="bar"
                 [class.hit]="(prediction.pointsEarned ?? 0) > 0"
-                [class.miss]="(prediction.pointsEarned ?? 0) === 0"
+                [class.miss]="prediction.pointsEarned === 0"
+                [class.pending]="prediction.pointsEarned == null"
               ></div>
               <div class="pred-meta">
                 <div class="pred-match">{{ matchLabel(prediction, md) }}</div>
                 <div class="pred-sub mono">
-                  @if (scoringMode() === 'EXACT_SCORE') {
+                  @if (isMatchPending(prediction, md)) {
+                    Partido todavia sin acabar
+                  } @else if (scoringMode() === 'EXACT_SCORE') {
                     {{ scoreLabel(prediction, md) }} · {{ viewingSelf ? 'tu' : 'su' }} pronostico {{ pickLabel(prediction) }}
                   } @else {
                     {{ scoreLabel(prediction, md) }} · {{ viewingSelf ? 'tu' : 'su' }} {{ pickLabel(prediction) }} · real
@@ -111,7 +114,7 @@
                 <span class="wc-tag wc-tag-rescue mono">SOS</span>
               }
               <span class="pred-pts mono" [class.accent]="(prediction.pointsEarned ?? 0) > 0">
-                {{ prediction.pointsEarned }}
+                {{ prediction.pointsEarned ?? '-' }}
               </span>
             </div>
           }
