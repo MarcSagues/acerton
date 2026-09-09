@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
@@ -30,7 +30,7 @@ const REMINDER_TIERS: ReminderTier[] = [
 ];
 
 @Injectable()
-export class JobsService {
+export class JobsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(JobsService.name);
 
   constructor(
@@ -42,6 +42,19 @@ export class JobsService {
     private readonly badgesService: BadgesService,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  /**
+   * El servicio esta en el plan gratuito de Render, que se duerme sin
+   * trafico — mientras duerme, ningun @Cron corre, asi que tras un arranque
+   * en frio los resultados/puntos podian quedarse hasta 10 min desfasados
+   * esperando al siguiente tick programado. Ejecutar esto una vez al
+   * arrancar el proceso (ademas del cron normal) hace que el primer usuario
+   * que despierta el servicio no tenga que esperar ese margen.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    await this.matchdaysService.closeDueMatchdays();
+    await this.syncResultsAndFinalize();
+  }
 
   /**
    * Trae la jornada en curso de cada competicion usada por al menos un

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { RankingsService } from '../../../core/services/rankings.service';
@@ -15,11 +16,12 @@ import { Matchday } from '../../../core/models/matchday.model';
 import { Prediction } from '../../../core/models/prediction.model';
 import { UserBadge } from '../../../core/models/profile.model';
 import { Competition } from '../../../core/models/competition.model';
+import { ScoringMode } from '../../../core/models/group.model';
 
 @Component({
   selector: 'app-matchday-results',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MatProgressSpinnerModule],
   templateUrl: './matchday-results.component.html',
   styleUrl: './matchday-results.component.scss',
 })
@@ -57,7 +59,15 @@ export class MatchdayResultsComponent implements OnInit {
   readonly noPreviousAvailable = signal(false);
 
   readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
-  readonly scoringMode = computed(() => this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO');
+  /**
+   * Del grupo cargado directamente en ngOnInit (getById), no del
+   * ActiveGroupService compartido: ese depende de una lista de grupos
+   * cargada en otra pantalla, que puede no estar lista todavia si se entra
+   * aqui directamente — con esto se evitaba tratar por error un grupo de
+   * resultado exacto como 1X2 (predicciones que sí tenian marcador exacto
+   * se veian como "?"/N/A).
+   */
+  readonly scoringMode = signal<ScoringMode>('ONE_X_TWO');
   readonly totalPoints = computed(() => this.predictions().reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0));
   readonly hits = computed(() => this.predictions().filter((p) => (p.pointsEarned ?? 0) > 0).length);
   readonly rescueHits = computed(
@@ -74,6 +84,7 @@ export class MatchdayResultsComponent implements OnInit {
         this.activeCompetitions.set(
           (group.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competition),
         );
+        this.scoringMode.set(group.scoringMode);
       });
     }
   }
@@ -216,6 +227,12 @@ export class MatchdayResultsComponent implements OnInit {
   matchLabel(prediction: Prediction, matchday: Matchday): string {
     const match = matchday.matches.find((m) => m.id === prediction.matchId);
     return match ? `${match.homeTeam} - ${match.awayTeam}` : '';
+  }
+
+  /** La jornada puede estar cerrada sin haber terminado del todo (ver puntuacion en vivo): este partido concreto puede seguir sin jugarse. */
+  isMatchPending(prediction: Prediction, matchday: Matchday): boolean {
+    const match = matchday.matches.find((m) => m.id === prediction.matchId);
+    return match ? match.status !== 'FINISHED' : false;
   }
 
   scoreLabel(prediction: Prediction, matchday: Matchday): string {

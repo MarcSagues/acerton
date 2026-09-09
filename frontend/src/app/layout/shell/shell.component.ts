@@ -1,16 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { BottomNavComponent } from './bottom-nav.component';
-import { NotificationPromptComponent } from './notification-prompt.component';
 import { AdsService } from '../../core/services/ads.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, BottomNavComponent, NotificationPromptComponent],
+  imports: [RouterOutlet, BottomNavComponent],
   template: `
     <div class="shell">
-      <app-notification-prompt></app-notification-prompt>
       <div class="shell-content">
         <router-outlet></router-outlet>
       </div>
@@ -28,7 +26,7 @@ import { AdsService } from '../../core/services/ads.service';
       .shell-content {
         flex: 1;
         padding-top: env(safe-area-inset-top);
-        padding-bottom: calc(84px + env(safe-area-inset-bottom));
+        padding-bottom: calc(76px + env(safe-area-inset-bottom));
       }
     `,
   ],

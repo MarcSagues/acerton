@@ -38,6 +38,24 @@ function buildDeps() {
   };
 }
 
+describe('JobsService.onApplicationBootstrap', () => {
+  it('cierra jornadas vencidas y sincroniza resultados al arrancar, sin esperar al primer tick del cron', async () => {
+    const { service, matchdaysService, predictionsService, rankingsService } = buildDeps();
+    matchdaysService.closeDueMatchdays.mockResolvedValue([]);
+    matchdaysService.syncResultsForClosedMatchdays.mockResolvedValue({
+      newlyFinished: [],
+      inProgress: ['md-live'],
+    });
+
+    await service.onApplicationBootstrap();
+
+    expect(matchdaysService.closeDueMatchdays).toHaveBeenCalled();
+    expect(matchdaysService.syncResultsForClosedMatchdays).toHaveBeenCalled();
+    expect(predictionsService.scoreFinishedMatchday).toHaveBeenCalledWith('md-live');
+    expect(rankingsService.computeForFinishedMatchday).toHaveBeenCalledWith('md-live');
+  });
+});
+
 describe('JobsService.syncResultsAndFinalize', () => {
   it('puntua y recalcula clasificacion para jornadas en curso sin tocar rachas/insignias/notificaciones', async () => {
     const { service, matchdaysService, predictionsService, rankingsService, streaksService, badgesService, notificationsService } =
