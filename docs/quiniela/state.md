@@ -34,7 +34,9 @@ relevante:
   reglas juntas en un solo click (ya no hay un botón por sección), y
   además ahora flota fijo encima de la barra de navegación, apareciendo
   solo cuando hay un cambio pendiente (antes vivía al final del todo, tras
-  Miembros).
+  Miembros). "Grupo privado" y "Comodín de remontada" ya no guardan al
+  toque (petición inmediata) — ahora también quedan pendientes y se
+  guardan junto a todo lo demás con "Guardar cambios".
 
 Sin verificar todavía: iOS/Android (solo web).
 
