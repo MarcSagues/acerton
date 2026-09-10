@@ -75,9 +75,6 @@
       <div class="section">
         <div class="section-head">
           <span class="eyebrow">REGLAS</span>
-          @if (isAdmin() && !editingRules() && g.scoringMode === 'ONE_X_TWO') {
-            <button class="edit-link mono" (click)="startEditingRules()">Editar</button>
-          }
         </div>
         <div class="rules">
           <div class="rule-card">
@@ -163,6 +160,8 @@
             <button class="btn ghost" [disabled]="savingRules()" (click)="cancelEditingRules()">Cancelar</button>
             <button class="btn primary" [disabled]="savingRules() || !hasRuleChanges()" (click)="saveRules()">Guardar reglas</button>
           </div>
+        } @else if (isAdmin() && g.scoringMode === 'ONE_X_TWO') {
+          <button class="edit-rules-btn mono" (click)="startEditingRules()">Editar reglas</button>
         }
       </div>
 

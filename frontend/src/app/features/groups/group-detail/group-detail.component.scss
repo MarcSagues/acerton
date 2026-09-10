@@ -254,14 +254,16 @@
   font: 700 14px/1 var(--font-mono);
 }
 
-.edit-link {
-  font-size: 10px;
-  color: var(--accent);
-  background: none;
-  border: none;
+.edit-rules-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 16px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font: 600 12px/1 var(--font-ui);
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .rules-actions {
