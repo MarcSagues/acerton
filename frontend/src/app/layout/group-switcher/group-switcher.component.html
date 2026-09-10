@@ -12,7 +12,12 @@
 
   <mat-menu #menu="matMenu">
     @for (group of activeGroupService.groups(); track group.id) {
-      <button mat-menu-item (click)="select(group.id)">{{ group.name }}</button>
+      <button mat-menu-item class="group-menu-item" [class.active]="group.id === g.id" (click)="select(group.id)">
+        <span>{{ group.name }}</span>
+        @if (group.id === g.id) {
+          <mat-icon inline>check</mat-icon>
+        }
+      </button>
     }
     <a mat-menu-item routerLink="/groups">Ver todos los grupos</a>
   </mat-menu>

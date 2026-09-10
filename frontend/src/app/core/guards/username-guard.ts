@@ -8,7 +8,7 @@ import { AuthService } from '../services/auth.service';
  * dejarlas pasar al shell con la barra de navegacion (igual que hasGroupGuard
  * hace con "sin grupo todavia").
  */
-export const usernameGuard: CanActivateFn = () => {
+export const usernameGuard: CanActivateFn = (_route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -16,5 +16,5 @@ export const usernameGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.createUrlTree(['/onboarding/username']);
+  return router.createUrlTree(['/onboarding/username'], { queryParams: { returnUrl: state.url } });
 };

@@ -81,7 +81,7 @@
         Continuar con Google
       </button>
     } @else {
-      <a class="google-btn" [href]="googleLoginUrl">
+      <a class="google-btn" [href]="googleLoginUrl" (click)="saveReturnUrlForGoogleRedirect()">
         <span class="google-dot">G</span>
         Continuar con Google
       </a>
