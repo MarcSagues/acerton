@@ -116,38 +116,27 @@ todavía en iOS/Android.
 Validar también: enlaces directos (invitación, deep link) y estados
 vacíos (sin grupos, grupo sin competiciones activas).
 
-## Sprint 3 — Roles y membresías 🔒
+## Sprint 3 — Roles y membresías ✅ (web)
 
-**Bloqueado por una decisión de modelo de datos**: hoy `GroupRole` solo
-tiene `ADMIN` y `MEMBER` (`schema.prisma`) — no existe el concepto de
-"creador/propietario" como algo distinto de administrador, ni un campo de
-propietario en `Group`. Ver `backlog.md` para la pregunta concreta antes
-de tocar schema.
-
-También bloqueado en parte por el borrado de grupo: hoy `Group` tiene
-`onDelete: Cascade` hacia `GroupMembership`, `GroupCompetition`,
-`Prediction`, `RankingSnapshot`, `Streak` y `UserBadge` — es decir, borrar
-un grupo hoy borra físicamente todo su historial, lo contrario de "eliminar
-retira de vistas activas, conservando historia y trofeos". Hace falta
-introducir borrado lógico (p. ej. `deletedAt` en `Group`) antes de
-implementar esta regla. Ver `backlog.md`.
+Decisiones de schema tomadas el 2026-09-10 (ver `decisions.md`): `Group`
+tiene ahora `ownerId` (campo directo, no un rol nuevo en `GroupRole`) y
+`deletedAt` (borrado lógico).
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Rol de creador/propietario distinto de admin | 🔒 | No existe. Requiere decisión de schema (ver backlog). |
-| Permisos de creador (nombrar/quitar admins, transferir, eliminar) | ⬜ | No hay endpoints: `groups.controller.ts` no tiene `leave`, `kick`, `transfer` ni `delete`. |
-| Permisos de admin (editar ajustes, expulsar miembros normales) | 🟡 | Editar ajustes ya existe y respeta `isAdmin()` en frontend (`toggleCompetition`, `toggleComebackEnabled`, etc.) — verificar que el backend también lo exige, no solo el frontend. Expulsar no existe. |
-| Admins no pueden expulsar/degradar a otros admins o al creador | ⬜ | No implementado (no existe expulsión todavía). |
-| Miembros ven opciones deshabilitadas, no ocultas | 🟡 | Ya es el patrón visual actual en `group-detail` (`class.disabled`) para competiciones/reglas — extender al resto de acciones nuevas. |
-| Permisos aplicados en backend, no solo interfaz | ⬜ | A verificar/reforzar caso por caso al añadir cada endpoint nuevo. |
-| Salir del grupo con confirmación | ⬜ | No existe endpoint ni UI. |
-| Creador debe transferir o eliminar antes de salir | ⬜ | Depende de que exista transferencia y borrado lógico. |
-| Eliminar grupo conservando historia y trofeos | 🔒 | Bloqueado por el cascade delete actual — ver arriba. |
-| Salir/expulsión conserva resultados | 🟡 | Las predicciones/rachas/insignias cuelgan de `userId`+`groupId` directamente, no de `GroupMembership`, así que borrar la membresía (si se implementa así) no debería arrastrar el historial — a confirmar al implementar. |
-| Reincorporación no reinicia fecha de participación | ⬜ | Depende del modelo de temporadas (Sprint 5) para tener algo que "reiniciar o no". |
+| Rol de creador/propietario distinto de admin | ✅ | `Group.ownerId`, distinto de `GroupRole.ADMIN`. El propietario mantiene además `role=ADMIN` en su membership. Migración con backfill: el propietario de cada grupo ya existente es su admin más antiguo. |
+| Permisos de creador (nombrar/quitar admins, transferir, eliminar) | ✅ | Endpoints `PATCH /groups/:id/members/:userId/role`, `POST /groups/:id/transfer-ownership`, `DELETE /groups/:id`, todos exclusivos del propietario (`assertIsOwner`). |
+| Permisos de admin (editar ajustes, expulsar miembros normales) | ✅ | Ya existía para ajustes; añadido `DELETE /groups/:id/members/:userId` (expulsar), exclusivo de admin (`assertIsAdmin`). |
+| Admins no pueden expulsar/degradar a otros admins o al creador | ✅ | `kickMember` rechaza si el objetivo tiene `role=ADMIN` (incluye al propietario, que siempre es admin) — para quitarle el rol a un admin hace falta `updateMemberRole`, exclusivo del propietario. |
+| Miembros ven opciones deshabilitadas, no ocultas | ✅ | "Salir del grupo" siempre visible, deshabilitado + texto de ayuda para el propietario. El menú de acciones por miembro (`more_vert`) solo aparece cuando el usuario actual tiene alguna acción disponible sobre esa fila. |
+| Permisos aplicados en backend, no solo interfaz | ✅ | Verificado con peticiones HTTP directas (17 casos), no solo desde la interfaz — ver criterio de verificación abajo. |
+| Salir del grupo con confirmación | ✅ | `POST /groups/:id/leave` + diálogo de confirmación en frontend. |
+| Creador debe transferir o eliminar antes de salir | ✅ | Backend rechaza (400) si el propietario intenta salir sin transferir/eliminar antes; frontend deshabilita el botón directamente para el propietario. |
+| Eliminar grupo conservando historia y trofeos | ✅ | Borrado lógico (`deletedAt`): el grupo deja de aparecer en `mine`/`public`/`findOne`/unirse por invitación, pero la fila y su historial (predicciones, rachas, insignias, clasificaciones) no se tocan. |
+| Salir/expulsión conserva resultados | ✅ | Confirmado por esquema: `Prediction`, `Streak`, `UserBadge`, `RankingSnapshot` cuelgan de `userId`+`groupId` directamente, no de `GroupMembership.id` — borrar la membresía no arrastra nada de eso. |
+| Reincorporación no reinicia fecha de participación | 🔒 | Sigue dependiendo del modelo de temporadas (Sprint 5) para tener algo que "reiniciar o no". |
 
-Probar permisos mediante peticiones directas al backend, no solo a través
-de la interfaz.
+**Verificado**: 17 comprobaciones de permisos por HTTP directo (owner/admin/miembro/ajeno intentando cada operación, incluyendo los casos que deben fallar) + flujo completo en navegador con dos sesiones reales simultáneas (propietario y miembro): insignias Creador/Admin, contenido exacto del menú de acciones según rol del objetivo, promover, degradar, transferir propiedad, salir, eliminar grupo y comprobación de que desaparece de "Mis grupos". Sin verificar todavía: iOS/Android (solo web).
 
 ## Sprint 4 — Tutorial ⬜
 

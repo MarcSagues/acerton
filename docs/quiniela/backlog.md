@@ -6,19 +6,6 @@ marcarla resuelta) de aquí.
 
 ## Preguntas que hay que resolver con el usuario antes de cada sprint afectado
 
-- **Sprint 3 (roles)**: ¿cómo se modela el "creador"? Opciones vistas:
-  (a) añadir `OWNER` al enum `GroupRole` como un tercer nivel por encima de
-  `ADMIN`, o (b) añadir un campo `ownerId` directo en `Group` y dejar
-  `GroupRole` como está para el resto de permisos. (b) hace trivial "el
-  creador nunca puede ser expulsado ni degradado"; (a) es más uniforme con
-  el resto del sistema de roles. A decidir antes de tocar schema.
-- **Sprint 3 (borrado de grupo)**: ¿se implementa como borrado lógico
-  (`deletedAt` en `Group`, se sigue pudiendo consultar para historia y
-  trofeos pero desaparece de listados activos) o se separa el historial a
-  otra tabla antes de borrar físicamente? El borrado lógico es más simple
-  y menos arriesgado (no toca las relaciones `onDelete: Cascade`
-  existentes); a confirmar que no hay objeción de negocio a "conservar
-  datos de un grupo borrado indefinidamente".
 - **Sprint 5 (temporadas)**: el encargo pide "orden estable de jornadas
   por cierre de pronósticos, independiente de la llegada de resultados" y
   explícitamente pide **explicar y resolver antes de implementar** los

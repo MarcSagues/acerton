@@ -1,95 +1,90 @@
 # Estado actual
 
-_Última actualización: 2026-09-10 (Sprint 2 completo y verificado en web, más un ajuste de UX posterior en Ajustes del grupo — botón "Guardar cambios" unificado — pendiente de que el usuario lo pruebe en dev.acerton.app antes de mergear a main — sesión todavía abierta, no cerrada con `/quiniela cerrar`)._
+_Última actualización: 2026-09-10 (Sprint 2 mergeado a `main`, confirmado por
+el usuario — issue #7 cerrado y en Status "Done" en GitHub Project. Sprint 3
+completo en `dev`, verificado en web, pendiente de que el usuario lo pruebe
+antes de mergear a `main` — sesión todavía abierta, no cerrada con
+`/quiniela cerrar`)._
 
 ## Sprint activo
 
 **Sprint 1 — Interfaz de juego**: cerrado, mergeado a `main`, confirmado
-funcionando en `dev.acerton.app`.
+funcionando en producción.
 
-**Sprint 2 — Grupos y navegación**: **completo**, las 11 tareas
-implementadas y verificadas en web (navegador real, no solo capturas).
-Ver `roadmap.md` Sprint 2 para el detalle de cada una. Resumen de lo más
-relevante:
-- Selector Público/Privado de dos opciones + detalle ampliable del
-  comodín de remontada, en el formulario de creación.
-- `GroupsService.postLoginRoute()`: con 1 grupo entras en Jornada, con
-  varios en Grupos (antes siempre Jornada).
-- Pulsar un grupo en la lista lleva a su Tabla (antes a Jornada).
-- Preview de cada grupo con tu posición general real (backend nuevo:
-  `myPosition` en `/groups/mine`, mismo criterio de scope que Tabla) —
-  de paso arregló que los chips de competiciones nunca se mostraban.
-- Grupo activo marcado con un check en el selector desplegable.
-- **Enlaces directos respetados**: `authGuard`/`usernameGuard` guardan la
-  URL original (`returnUrl`) y los 4 flujos de login (+ confirmación de
-  nombre de cuentas nuevas de Google) vuelven ahí — antes, un enlace de
-  invitación pulsado sin sesión iniciada se perdía sin más. Verificado
-  con datos reales: un usuario sin cuenta que entra por un link de
-  invitación acaba siendo miembro real del grupo tras registrarse.
-- "Guardar reglas" ahora también exige un cambio real, igual que ya
-  pasaba con competiciones.
-- Ajustes del grupo: el botón "Editar" de Reglas se movió al final de la
-  lista de reglas (antes salía arriba, junto al título). Y se unificó el
-  guardado: un único botón "Guardar cambios" que guarda competiciones y
-  reglas juntas en un solo click (ya no hay un botón por sección), y
-  además ahora flota fijo encima de la barra de navegación, apareciendo
-  solo cuando hay un cambio pendiente (antes vivía al final del todo, tras
-  Miembros). "Grupo privado" y "Comodín de remontada" ya no guardan al
-  toque (petición inmediata) — ahora también quedan pendientes y se
-  guardan junto a todo lo demás con "Guardar cambios".
-- La lista "Mis grupos" ahora marca visualmente la tarjeta del grupo
-  activo (fondo + borde verdes, insignia "Activo") — antes solo se veía
-  en el desplegable superior (`group-switcher`), no al entrar en la
-  pestaña Grupos.
+**Sprint 2 — Grupos y navegación**: cerrado. Mergeado a `main` y desplegado
+a producción. El usuario cerró el issue #7 en GitHub manualmente (confirma
+que funciona) — la automatización del Project lo movió a Status "Done".
+Ver `roadmap.md` Sprint 2 para el detalle.
 
-Sin verificar todavía: iOS/Android (solo web).
+**Sprint 3 — Roles y membresías**: **completo en `dev`**, verificado en
+web (no solo capturas: peticiones HTTP directas + navegador con dos
+sesiones reales). Resumen:
+- Decisiones de schema tomadas con el usuario (ver `decisions.md`):
+  `Group.ownerId` (campo directo, no rol nuevo) y `Group.deletedAt`
+  (borrado lógico).
+- Backend: `leave`, `kick` (expulsar), `updateMemberRole`
+  (promover/degradar admin, exclusivo del propietario),
+  `transferOwnership`, `deleteGroup` (borrado lógico). Todo el resto de
+  lecturas de grupo (`mine`, `public`, `findOne`, unirse por invitación)
+  excluye grupos eliminados.
+- Reglas de `product-rules.md` verificadas exactamente por HTTP directo
+  (17 casos: quién puede/no puede hacer cada operación, incluyendo los
+  que deben fallar con 403/400) — no solo desde la interfaz.
+- Frontend (`group-detail`): insignia "Creador" distinta de "Admin",
+  menú de acciones por miembro (solo visible si el usuario actual tiene
+  alguna acción disponible sobre esa fila), "Salir del grupo" (deshabilitado
+  + texto de ayuda para el propietario), "Eliminar grupo" (solo
+  propietario). Verificado con dos sesiones de navegador simultáneas
+  (propietario + miembro) todo el flujo: promover, degradar, transferir,
+  salir, eliminar, y que el grupo desaparece de "Mis grupos" tras
+  eliminarlo.
+- Migración con backfill: los 14 grupos ya existentes en la base de datos
+  local recibieron `ownerId` = su admin más antiguo (único camino posible
+  para ser admin antes de este sprint).
 
-**Infraestructura — entorno dev/pre**: sigue como en el cierre anterior
-— `dev.acerton.app` funcionando (login incluido), pendiente subir
-producción a Render Starter y Cloudflare Access. Ver issue #16.
+Sin verificar todavía: iOS/Android (solo web). Pendiente del roadmap:
+"Reincorporación no reinicia fecha de participación" sigue bloqueado por
+el modelo de temporadas (Sprint 5).
+
+**Infraestructura — entorno dev/pre**: sigue como en el cierre anterior —
+`dev.acerton.app` funcionando (login incluido), pendiente subir producción
+a Render Starter y Cloudflare Access. Ver issue #16.
 
 ## Último trabajo verificado
 
-- Sprint 2 completo: 4 commits en `dev` (privacidad+rutas de login,
-  posición en la tarjeta de grupo, grupo activo+enlaces directos, guardar
-  reglas), todo con evidencia real de navegador (no solo build):
-  - Registro→0 grupos→`/welcome`; 2 grupos→reingreso→`/groups`; pulsar
-    una tarjeta→`/rankings`.
-  - Posición real leída de `ranking_snapshots` generados por los crons de
-    fondo durante la propia sesión de pruebas (no solo datos sintéticos).
-  - Usuario sin cuenta previa que entra por `/groups/join/TUWA8P8Q`
-    estando desconectado acaba siendo miembro real del grupo tras
-    registrarse — confirmado directamente en la base de datos.
-- Sprint 1 (ver entradas anteriores).
-- Entorno de desarrollo local: se cayó una vez durante esta sesión (al
-  correr `nest build` mientras `nest start --watch` seguía activo) y se
-  reinició sin problema — sigue corriendo en segundo plano.
+- Sprint 3 completo: migración de schema (`ownerId`, `deletedAt` con
+  backfill), 5 endpoints nuevos, 17 comprobaciones de permisos por HTTP
+  directo, flujo completo de UI con dos sesiones de navegador reales.
+- Sprint 2: mergeado a `main`, push a `origin/main` sin conflictos,
+  confirmado por el usuario (issue #7 cerrado manualmente).
+- Refinamientos de Ajustes del grupo posteriores al cierre de Sprint 2
+  (botón "Editar reglas" reordenado, guardado unificado y flotante,
+  toggles de privacidad/comodín integrados en el guardado): todos
+  incluidos en el merge a `main`.
 
 ## Siguiente paso concreto
 
-**Inmediato, del usuario**: probar el Sprint 2 completo (en local o en
-`dev.acerton.app`, una vez el commit llegue ahí) antes de decidir si se
+**Inmediato, del usuario**: probar el Sprint 3 completo (roles,
+expulsión, transferencia, salir, eliminar grupo) en local o en
+`dev.acerton.app` una vez el commit llegue ahí, antes de decidir si se
 mergea a `main`. Todo está en `dev`, empujado a `origin/dev`, **no
-mergeado a `main` todavía** — a la espera de que se pruebe primero.
+mergeado a `main` todavía**.
 
-El issue #7 (Sprint 2) ya está en Status "Test" en el GitHub Project
-(corregido 2026-09-10: la regla de la skill pasa a moverlo a Test al
-subir a `dev`, no al mergear a `main` — ver `decisions.md`). Cuando el
-usuario confirme que funciona: mergear a `main` (con autorización
-explícita, como siempre); el paso de Test a Done lo decide el usuario
-explícitamente después.
+Cuando el usuario confirme que funciona: mergear a `main` (con
+autorización explícita, como siempre). El issue #8 (Sprint 3) ya está en
+Status "Test" en el GitHub Project (aplicando la regla corregida: se
+movió al completarse en `dev`, no se esperó al merge a `main`).
 
-Después, Sprint 3 (Roles y membresías, issue #8) está bloqueado por
-decisiones de modelo de datos — ver `backlog.md` — o seguir con
-infraestructura pendiente (issue #16).
+Después, Sprint 4 (Tutorial, issue #9) no tiene bloqueos de datos
+pendientes — o seguir con infraestructura pendiente (issue #16).
 
 ## Bloqueos y preguntas pendientes
 
-Ver `backlog.md`. Sin cambios.
+Ver `backlog.md`. Las dos preguntas de Sprint 3 (modelo de propietario,
+borrado de grupo) se resolvieron con el usuario y están en `decisions.md`.
 
 ## Cambios sin commit
 
-No — los 4 commits del Sprint 2 están hechos localmente en `dev`.
-**Pendiente de `git push origin dev`** (se hace junto con este commit de
-documentación). El entorno local (Docker + backend + frontend) sigue
+No — todo el trabajo de Sprint 3 está commiteado y empujado a
+`origin/dev`. El entorno local (Docker + backend + frontend) sigue
 corriendo en segundo plano.

@@ -4,6 +4,38 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-10 — Sprint 3 (roles y membresías)
+
+- **Propietario como campo (`Group.ownerId`), no como rol nuevo.** Entre
+  añadir `OWNER` a `GroupRole` o un campo `ownerId` directo en `Group`, el
+  usuario eligió `ownerId` (opción recomendada): hace trivial "el creador
+  nunca puede ser expulsado ni degradado" (comparar contra `ownerId`) sin
+  tocar el enum de roles ni los sitios que ya distinguen ADMIN/MEMBER. El
+  propietario mantiene además `role=ADMIN` en su `GroupMembership`, para
+  que los chequeos de admin existentes (`assertIsAdmin`) seguían
+  cubriéndolo sin cambios.
+- **Borrado lógico (`Group.deletedAt`), no separar historial a otra
+  tabla.** El usuario eligió borrado lógico (opción recomendada): cambio
+  pequeño y de bajo riesgo, no toca las relaciones `onDelete: Cascade`
+  existentes. Un grupo eliminado desaparece de `mine`/`public`/`findOne`/
+  unirse por invitación, pero la fila y su historial (predicciones,
+  rachas, insignias, clasificaciones) se conservan indefinidamente.
+- **Backfill de `ownerId` para grupos existentes**: el admin más antiguo
+  de cada grupo (`ORDER BY joinedAt ASC` entre sus `GroupMembership` con
+  `role=ADMIN`). Válido porque hoy el único camino para ser ADMIN es
+  haber creado el grupo (`GroupsService.create`) — no existía todavía
+  forma de promover a nadie antes de este sprint. Verificado que las 14
+  filas de `groups` en la base de datos local tenían exactamente un admin
+  cada una antes de aplicar la migración.
+- **Expulsar un admin no es una operación directa**: ni un admin ni el
+  propio propietario pueden expulsar (`kickMember`) a otro admin o al
+  propietario en un solo paso — hay que quitarle antes el rol de admin
+  (`updateMemberRole`, exclusivo del propietario) y expulsarlo después
+  como miembro normal. Motivo: `product-rules.md` da al creador
+  "nombrar/quitar administradores" como potestad explícita, pero no dice
+  en ningún sitio que el creador pueda expulsar directamente a un admin —
+  separar ambos pasos evita inventarse un permiso no pedido.
+
 ## 2026-09-10 — Sprint 2 (corrección de la regla de Seguimiento en GitHub)
 
 - **Sustituye la decisión de Sprint 0/1** sobre cuándo mover un issue a
