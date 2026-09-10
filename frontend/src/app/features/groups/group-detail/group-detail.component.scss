@@ -83,6 +83,21 @@
   color: var(--text-primary);
   font: 600 11px/1 var(--font-ui);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &:disabled {
+    color: var(--accent);
+    border-color: var(--accent-border);
+    cursor: default;
+  }
 }
 
 .invite-url {

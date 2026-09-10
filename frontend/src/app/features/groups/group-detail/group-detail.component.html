@@ -16,7 +16,13 @@
           <div class="eyebrow">LINK DE INVITACION</div>
           <div class="invite-row">
             <div class="invite-code mono">{{ g.inviteCode }}</div>
-            <button class="copy-btn" (click)="copyInviteLink()">Copiar link</button>
+            <button class="copy-btn" [disabled]="justCopiedInviteLink()" (click)="copyInviteLink()">
+              @if (justCopiedInviteLink()) {
+                <mat-icon inline>check</mat-icon> Copiado
+              } @else {
+                <mat-icon inline>content_copy</mat-icon> Copiar link
+              }
+            </button>
           </div>
           <div class="invite-url mono">{{ inviteLink() }}</div>
         </div>
