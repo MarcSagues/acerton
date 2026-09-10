@@ -162,12 +162,48 @@
             <div class="member-row">
               <span class="avatar">{{ member.user.name.slice(0, 2).toUpperCase() }}</span>
               <span class="member-name">{{ member.user.name }}</span>
-              @if (member.role === 'ADMIN') {
+              @if (isOwnerRow(member)) {
+                <span class="owner-badge">Creador</span>
+              } @else if (member.role === 'ADMIN') {
                 <span class="admin-badge">Admin</span>
+              }
+              @if (hasMemberActions(member)) {
+                <button class="member-menu-btn" [matMenuTriggerFor]="memberMenu" [disabled]="savingMembership()">
+                  <mat-icon inline>more_vert</mat-icon>
+                </button>
+                <mat-menu #memberMenu="matMenu">
+                  @if (canPromote(member)) {
+                    <button mat-menu-item (click)="promoteMember(member)">Hacer administrador</button>
+                  }
+                  @if (canDemote(member)) {
+                    <button mat-menu-item (click)="demoteMember(member)">Quitar administrador</button>
+                  }
+                  @if (canTransferTo(member)) {
+                    <button mat-menu-item (click)="transferOwnershipPrompt(member)">Hacer propietario</button>
+                  }
+                  @if (canKick(member)) {
+                    <button mat-menu-item class="danger" (click)="kickMemberPrompt(member)">Expulsar del grupo</button>
+                  }
+                </mat-menu>
               }
             </div>
           }
         </div>
+      </div>
+
+      <div class="section">
+        <div class="eyebrow">TU PARTICIPACION</div>
+        <button class="leave-btn mono" [disabled]="isOwner() || savingMembership()" (click)="leaveGroupPrompt()">
+          Salir del grupo
+        </button>
+        @if (isOwner()) {
+          <p class="hint mono">Transfiere la propiedad o elimina el grupo antes de salir.</p>
+        }
+        @if (isOwner()) {
+          <button class="delete-group-btn mono" [disabled]="savingMembership()" (click)="deleteGroupPrompt()">
+            Eliminar grupo
+          </button>
+        }
       </div>
     </div>
 

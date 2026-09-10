@@ -366,3 +366,82 @@
   background: var(--accent-bg);
   color: var(--accent);
 }
+
+.owner-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-on);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.member-menu-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+::ng-deep .mat-mdc-menu-item.danger .mdc-list-item__primary-text {
+  color: var(--danger);
+}
+
+.hint {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 8px 0 0;
+}
+
+.leave-btn {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.delete-group-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 16px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}

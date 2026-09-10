@@ -12,6 +12,8 @@ export interface Group {
   comebackPointsPerBonus: number;
   /** Fijado al crear el grupo, no se puede cambiar despues. */
   scoringMode: ScoringMode;
+  /** Creador del grupo: control total, distinto de GroupRole.ADMIN. */
+  ownerId: string;
   createdAt: string;
   updatedAt: string;
   _count?: { memberships: number };

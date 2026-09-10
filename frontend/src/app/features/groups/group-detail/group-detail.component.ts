@@ -1,8 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -17,12 +18,13 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, MatIconModule, MatMenuModule, MatProgressSpinnerModule],
   templateUrl: './group-detail.component.html',
   styleUrl: './group-detail.component.scss',
 })
 export class GroupDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly groupsService = inject(GroupsService);
   private readonly competitionsService = inject(CompetitionsService);
   private readonly authService = inject(AuthService);
@@ -49,10 +51,20 @@ export class GroupDetailComponent implements OnInit {
   readonly selectedComebackEnabled = signal(false);
   readonly selectedIsPublic = signal(false);
 
+  readonly myUserId = computed(() => this.authService.currentUser()?.id ?? null);
+
   readonly isAdmin = computed(() => {
-    const userId = this.authService.currentUser()?.id;
+    const userId = this.myUserId();
     return this.members().some((m) => m.userId === userId && m.role === 'ADMIN');
   });
+
+  /** El creador tiene control total: nombrar/quitar admins, transferir propiedad, eliminar el grupo. */
+  readonly isOwner = computed(() => {
+    const group = this.group();
+    return !!group && group.ownerId === this.myUserId();
+  });
+
+  readonly savingMembership = signal(false);
 
   readonly hasCompetitionChanges = computed(() => {
     const active = this.activeCompetitionIds();
@@ -252,6 +264,165 @@ export class GroupDetailComponent implements OnInit {
       return;
     }
     this.selectedIsPublic.update((value) => !value);
+  }
+
+  isOwnerRow(member: GroupMember): boolean {
+    return member.userId === this.group()?.ownerId;
+  }
+
+  /** Solo el creador puede nombrar/quitar administradores o transferir la propiedad. */
+  canPromote(member: GroupMember): boolean {
+    return this.isOwner() && member.role === 'MEMBER' && !this.isOwnerRow(member);
+  }
+
+  canDemote(member: GroupMember): boolean {
+    return this.isOwner() && member.role === 'ADMIN' && !this.isOwnerRow(member);
+  }
+
+  canTransferTo(member: GroupMember): boolean {
+    return this.isOwner() && !this.isOwnerRow(member);
+  }
+
+  /** Ni un admin ni el propio creador pueden expulsar a otro admin o al creador (hay que quitarle antes el rol). */
+  canKick(member: GroupMember): boolean {
+    return this.isAdmin() && member.role === 'MEMBER' && !this.isOwnerRow(member);
+  }
+
+  hasMemberActions(member: GroupMember): boolean {
+    return (
+      member.userId !== this.myUserId() &&
+      (this.canPromote(member) || this.canDemote(member) || this.canTransferTo(member) || this.canKick(member))
+    );
+  }
+
+  promoteMember(member: GroupMember): void {
+    this.setMemberRole(member, 'ADMIN');
+  }
+
+  demoteMember(member: GroupMember): void {
+    this.setMemberRole(member, 'MEMBER');
+  }
+
+  private setMemberRole(member: GroupMember, role: 'ADMIN' | 'MEMBER'): void {
+    if (this.savingMembership()) return;
+    this.savingMembership.set(true);
+    this.groupsService.updateMemberRole(this.groupId, member.userId, role).subscribe({
+      next: (members) => {
+        this.members.set(members);
+        this.savingMembership.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.savingMembership.set(false);
+        this.snackBar.open(error.error?.message ?? 'No se pudo cambiar el rol', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  kickMemberPrompt(member: GroupMember): void {
+    if (this.savingMembership()) return;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Expulsar del grupo',
+        message: `¿Seguro que quieres expulsar a ${member.user.name} de este grupo? Sus pronosticos y puntos ya conseguidos se conservan.`,
+        confirmLabel: 'Expulsar',
+      },
+    });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.savingMembership.set(true);
+      this.groupsService.kickMember(this.groupId, member.userId).subscribe({
+        next: () => {
+          this.members.update((members) => members.filter((m) => m.userId !== member.userId));
+          this.savingMembership.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.savingMembership.set(false);
+          this.snackBar.open(error.error?.message ?? 'No se pudo expulsar', 'Cerrar', { duration: 3000 });
+        },
+      });
+    });
+  }
+
+  transferOwnershipPrompt(member: GroupMember): void {
+    if (this.savingMembership()) return;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Transferir propiedad',
+        message: `¿Transferir la propiedad del grupo a ${member.user.name}? Pasaras a ser administrador y ya no podras nombrar o quitar administradores, transferir la propiedad ni eliminar el grupo.`,
+        confirmLabel: 'Transferir',
+      },
+    });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.savingMembership.set(true);
+      this.groupsService.transferOwnership(this.groupId, member.userId).subscribe({
+        next: (group) => {
+          this.group.set(group);
+          this.members.update((members) =>
+            members.map((m) => (m.userId === member.userId ? { ...m, role: 'ADMIN' } : m)),
+          );
+          this.savingMembership.set(false);
+          this.snackBar.open('Propiedad transferida', 'Cerrar', { duration: 2500 });
+        },
+        error: (error: HttpErrorResponse) => {
+          this.savingMembership.set(false);
+          this.snackBar.open(error.error?.message ?? 'No se pudo transferir la propiedad', 'Cerrar', {
+            duration: 3000,
+          });
+        },
+      });
+    });
+  }
+
+  leaveGroupPrompt(): void {
+    if (this.savingMembership()) return;
+    if (this.isOwner()) {
+      this.snackBar.open('Transfiere la propiedad o elimina el grupo antes de salir', 'Cerrar', {
+        duration: 3500,
+      });
+      return;
+    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Salir del grupo',
+        message: '¿Seguro que quieres salir de este grupo? Podras volver a entrar con el link de invitacion.',
+        confirmLabel: 'Salir',
+      },
+    });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.savingMembership.set(true);
+      this.groupsService.leaveGroup(this.groupId).subscribe({
+        next: () => this.router.navigate(['/groups']),
+        error: (error: HttpErrorResponse) => {
+          this.savingMembership.set(false);
+          this.snackBar.open(error.error?.message ?? 'No se pudo salir del grupo', 'Cerrar', { duration: 3000 });
+        },
+      });
+    });
+  }
+
+  deleteGroupPrompt(): void {
+    if (this.savingMembership()) return;
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Eliminar grupo',
+        message:
+          'El grupo desaparecera de todos los listados y nadie podra seguir jugando en el. El historial y los trofeos ya conseguidos se conservan. Esta accion no se puede deshacer desde la app.',
+        confirmLabel: 'Eliminar',
+      },
+    });
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.savingMembership.set(true);
+      this.groupsService.deleteGroup(this.groupId).subscribe({
+        next: () => this.router.navigate(['/groups']),
+        error: (error: HttpErrorResponse) => {
+          this.savingMembership.set(false);
+          this.snackBar.open(error.error?.message ?? 'No se pudo eliminar el grupo', 'Cerrar', { duration: 3000 });
+        },
+      });
+    });
   }
 
   copyInviteLink(): void {
