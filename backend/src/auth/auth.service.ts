@@ -98,11 +98,16 @@ export class AuthService {
    * Login con Google desde la app nativa (Capacitor): a diferencia del flujo
    * web (redireccion via passport-google-oauth20), aqui el SDK nativo de
    * Google Sign-In ya entrega un idToken firmado directamente en el
-   * dispositivo. Se verifica su firma y audiencia contra el client id
-   * grabado en el binario de la app (el mismo en todos los builds nativos,
-   * vease `google.nativeClientId`) ademas del propio de este backend, antes
-   * de confiar en ningun dato del payload — asi un backend de pre/dev con un
-   * client id "web" distinto tambien puede verificar tokens nativos.
+   * dispositivo. Se verifica su firma y audiencia contra el client id que el
+   * frontend le pasa a `GoogleSignIn.initialize({ clientId })`
+   * (`environment.googleWebClientId` — hoy igual en todos los `environment.*.ts`,
+   * asi que es el mismo pase lo que pase con la API a la que apunte el build;
+   * OJO: no es el `GIDClientID` de Info.plist, que es un id de app iOS
+   * distinto usado solo para el flujo nativo con Google, no para la
+   * audiencia del idToken) ademas del propio de este backend
+   * (`google.nativeClientId`), antes de confiar en ningun dato del payload —
+   * asi un backend de pre/dev con un client id "web" distinto tambien puede
+   * verificar tokens nativos.
    */
   async loginWithGoogleIdToken(idToken: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const clientId = this.configService.get('google.clientId', { infer: true });

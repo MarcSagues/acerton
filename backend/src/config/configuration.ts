@@ -13,13 +13,16 @@ export interface AppConfig {
     clientSecret: string;
     callbackUrl: string;
     /**
-     * Client id que ve el SDK nativo (iOS/Android) al firmar su idToken —
-     * grabado en el propio binario de la app (Info.plist `GIDClientID`), asi
-     * que es el mismo en todos los builds pase lo que pase con la API a la
-     * que apuntan. En produccion coincide con `clientId`; en un backend de
-     * pre/dev que use un client id distinto para el flujo web, hay que
-     * declarar aqui el de produccion para poder verificar tambien esos
-     * tokens nativos.
+     * Client id que ve el SDK nativo (iOS/Android) al firmar su idToken — el
+     * que el frontend pasa a `GoogleSignIn.initialize({ clientId })`, es
+     * decir `environment.googleWebClientId` (hoy igual en todos los
+     * `environment.*.ts`, asi que es el mismo pase lo que pase con la API a
+     * la que apunte el build). NO es el `GIDClientID` de Info.plist (ese es
+     * un id de app iOS distinto, para el flujo nativo con Google, no para la
+     * audiencia del idToken). En produccion coincide con `clientId`; en un
+     * backend de pre/dev que use un client id distinto para el flujo web,
+     * hay que declarar aqui el valor de `environment.googleWebClientId`
+     * (producción) para poder verificar tambien esos tokens nativos.
      */
     nativeClientId?: string;
   };
