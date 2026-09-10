@@ -18,6 +18,9 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { generateInviteCode } from './invite-code.util';
 
+/** Todo lo publicado por debajo debe excluir grupos eliminados (borrado logico). */
+const NOT_DELETED = { deletedAt: null } as const;
+
 @Injectable()
 export class GroupsService {
   private readonly logger = new Logger(GroupsService.name);
@@ -47,6 +50,7 @@ export class GroupsService {
         scoringMode,
         comebackEnabled: isExactScore ? false : (dto.comebackEnabled ?? defaults.enabled),
         comebackPointsPerBonus: dto.comebackPointsPerBonus ?? defaults.pointsPerBonus,
+        ownerId: userId,
         memberships: {
           create: { userId, role: GroupRole.ADMIN },
         },
@@ -100,7 +104,7 @@ export class GroupsService {
    */
   async findMineForUser(userId: string) {
     const groups = await this.prisma.group.findMany({
-      where: { memberships: { some: { userId } } },
+      where: { ...NOT_DELETED, memberships: { some: { userId } } },
       include: {
         _count: { select: { memberships: true } },
         groupCompetitions: { include: { competition: true } },
@@ -131,15 +135,20 @@ export class GroupsService {
 
   findPublicGroups() {
     return this.prisma.group.findMany({
-      where: { isPublic: true },
+      where: { ...NOT_DELETED, isPublic: true },
       include: { _count: { select: { memberships: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
 
+  /**
+   * Un grupo eliminado (borrado logico) se trata como inexistente para
+   * cualquier acceso normal — su historial sigue en base de datos para
+   * temporadas/trofeos, pero deja de resolverse por esta via.
+   */
   async findByIdForMember(groupId: string, userId: string) {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
+    const group = await this.prisma.group.findFirst({
+      where: { id: groupId, ...NOT_DELETED },
       include: {
         groupCompetitions: { include: { competition: true } },
         _count: { select: { memberships: true } },
@@ -157,7 +166,7 @@ export class GroupsService {
   }
 
   async joinByInviteCode(inviteCode: string, userId: string): Promise<Group> {
-    const group = await this.prisma.group.findUnique({ where: { inviteCode } });
+    const group = await this.prisma.group.findFirst({ where: { inviteCode, ...NOT_DELETED } });
     if (!group) {
       throw new NotFoundException('Codigo de invitacion invalido');
     }
@@ -166,7 +175,7 @@ export class GroupsService {
   }
 
   async joinPublicGroup(groupId: string, userId: string): Promise<Group> {
-    const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+    const group = await this.prisma.group.findFirst({ where: { id: groupId, ...NOT_DELETED } });
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
     }
@@ -201,6 +210,114 @@ export class GroupsService {
     if (!membership || membership.role !== GroupRole.ADMIN) {
       throw new ForbiddenException('Solo un administrador del grupo puede hacer esto');
     }
+  }
+
+  /** El creador tiene control total: nombrar/quitar admins, transferir propiedad, eliminar el grupo. */
+  async assertIsOwner(groupId: string, userId: string): Promise<void> {
+    const group = await this.prisma.group.findUnique({ where: { id: groupId }, select: { ownerId: true } });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    if (group.ownerId !== userId) {
+      throw new ForbiddenException('Solo el creador del grupo puede hacer esto');
+    }
+  }
+
+  /** El creador debe transferir la propiedad o eliminar el grupo antes de poder salir. */
+  async leaveGroup(groupId: string, userId: string): Promise<void> {
+    const group = await this.prisma.group.findFirst({ where: { id: groupId, ...NOT_DELETED } });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    if (group.ownerId === userId) {
+      throw new BadRequestException(
+        'El creador debe transferir la propiedad o eliminar el grupo antes de salir',
+      );
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('No perteneces a este grupo');
+    }
+    // Predicciones, rachas e insignias cuelgan de userId+groupId directamente,
+    // no de esta membership, asi que salir no arrastra el historial.
+    await this.prisma.groupMembership.delete({ where: { id: membership.id } });
+  }
+
+  /**
+   * Expulsa a un miembro normal. Ni un admin ni el propio creador pueden
+   * expulsar a otro admin o al creador por esta via: primero hay que quitarle
+   * el rol de admin (updateMemberRole), que es una operacion exclusiva del
+   * creador.
+   */
+  async kickMember(groupId: string, requesterId: string, targetUserId: string): Promise<void> {
+    await this.assertIsAdmin(groupId, requesterId);
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId: targetUserId, groupId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Ese usuario no es miembro del grupo');
+    }
+    if (membership.role === GroupRole.ADMIN) {
+      throw new ForbiddenException('No se puede expulsar a un administrador ni al creador del grupo');
+    }
+    await this.prisma.groupMembership.delete({ where: { id: membership.id } });
+  }
+
+  /** Nombrar o quitar administradores es una potestad exclusiva del creador. */
+  async updateMemberRole(
+    groupId: string,
+    requesterId: string,
+    targetUserId: string,
+    role: GroupRole,
+  ): Promise<void> {
+    await this.assertIsOwner(groupId, requesterId);
+    const group = await this.prisma.group.findUniqueOrThrow({ where: { id: groupId } });
+    if (targetUserId === group.ownerId) {
+      throw new ForbiddenException(
+        'El creador siempre es administrador; transfiere la propiedad para cambiar esto',
+      );
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId: targetUserId, groupId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Ese usuario no es miembro del grupo');
+    }
+    await this.prisma.groupMembership.update({ where: { id: membership.id }, data: { role } });
+  }
+
+  /** El nuevo propietario debe ser ya miembro del grupo; queda como admin. */
+  async transferOwnership(groupId: string, requesterId: string, newOwnerUserId: string): Promise<Group> {
+    await this.assertIsOwner(groupId, requesterId);
+    if (newOwnerUserId === requesterId) {
+      throw new BadRequestException('Ya eres el propietario de este grupo');
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId: newOwnerUserId, groupId } },
+    });
+    if (!membership) {
+      throw new BadRequestException('El nuevo propietario debe ser ya miembro del grupo');
+    }
+    const [, , group] = await this.prisma.$transaction([
+      this.prisma.groupMembership.update({
+        where: { id: membership.id },
+        data: { role: GroupRole.ADMIN },
+      }),
+      this.prisma.groupMembership.update({
+        where: { userId_groupId: { userId: requesterId, groupId } },
+        data: { role: GroupRole.ADMIN },
+      }),
+      this.prisma.group.update({ where: { id: groupId }, data: { ownerId: newOwnerUserId } }),
+    ]);
+    return group;
+  }
+
+  /** Borrado logico: el grupo desaparece de vistas activas pero conserva su historial. */
+  async deleteGroup(groupId: string, requesterId: string): Promise<void> {
+    await this.assertIsOwner(groupId, requesterId);
+    await this.prisma.group.update({ where: { id: groupId }, data: { deletedAt: new Date() } });
   }
 
   /**

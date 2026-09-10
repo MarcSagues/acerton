@@ -97,6 +97,7 @@ model User {
   updatedAt         DateTime  @updatedAt
 
   memberships        GroupMembership[]
+  ownedGroups        Group[]
   predictions        Prediction[]
   userBadges         UserBadge[]
   streaks            Streak[]
@@ -152,9 +153,18 @@ model Group {
   comebackPointsPerBonus Int         @default(6)
   /// Modo de puntuacion del grupo, fijado al crearlo. Sin migracion entre modos.
   scoringMode            ScoringMode @default(ONE_X_TWO)
+  /// Creador del grupo: control total (nombrar/quitar admins, transferir
+  /// propiedad, eliminar el grupo), distinto de GroupRole.ADMIN. El
+  /// propietario mantiene ademas role=ADMIN en su membership.
+  ownerId                String
+  /// Borrado logico: un grupo eliminado desaparece de listados activos pero
+  /// conserva su historial (predicciones, rachas, insignias, clasificaciones)
+  /// para no perder trofeos ya concedidos. Nunca se borra fisicamente.
+  deletedAt              DateTime?
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 
+  owner             User               @relation(fields: [ownerId], references: [id])
   memberships       GroupMembership[]
   groupCompetitions GroupCompetition[]
   predictions       Prediction[]

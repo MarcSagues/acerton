@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupCompetitionsDto } from './dto/update-group-competitions.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
+import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
+import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 
 @Controller('groups')
 export class GroupsController {
@@ -68,5 +70,48 @@ export class GroupsController {
     await this.groupsService.assertIsAdmin(id, user.id);
     await this.groupsService.updateRules(id, dto);
     return this.groupsService.findByIdForMember(id, user.id);
+  }
+
+  @Post(':id/leave')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async leave(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.groupsService.leaveGroup(id, user.id);
+  }
+
+  @Delete(':id/members/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async kickMember(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.groupsService.kickMember(id, user.id, targetUserId);
+  }
+
+  @Patch(':id/members/:userId/role')
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
+    await this.groupsService.updateMemberRole(id, user.id, targetUserId, dto.role);
+    return this.groupsService.listMembers(id);
+  }
+
+  @Post(':id/transfer-ownership')
+  async transferOwnership(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: TransferOwnershipDto,
+  ) {
+    await this.groupsService.transferOwnership(id, user.id, dto.newOwnerUserId);
+    return this.groupsService.findByIdForMember(id, user.id);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteGroup(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    await this.groupsService.deleteGroup(id, user.id);
   }
 }
