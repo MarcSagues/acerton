@@ -156,18 +156,20 @@ tiene ahora `ownerId` (campo directo, no un rol nuevo en `GroupRole`) y
 
 Verificado en navegador (cuentas nuevas, no solo capturas, incluyendo la posición real del resaltado sobre cada elemento vía `getBoundingClientRect`): aparece al entrar por primera vez en Tabla tras crear un grupo; el paso "Jornada" no tiene botón propio y avanza solo al pulsar de verdad ese enlace del menú (navegación real a `/matchday` confirmada); el paso de partidos muestra el texto correcto tanto para modo 1X2 como para resultado exacto; recargar la página no lo vuelve a mostrar (persistido en servidor); desde Perfil, "Ver tutorial de nuevo" navega a Tabla y lo reabre desde el paso 1. Sin verificar: el caso de "sin partidos disponibles" (salto automático revisado en código, no provocado en navegador) e iOS/Android.
 
-## Sprint 5 — Temporadas, estadísticas y rachas 🔒
+## Sprint 5 — Temporadas, estadísticas y rachas 🟡 en curso
 
-**Bloqueado por modelo de datos**: no existe ningún concepto de
-"temporada" en el schema — `Competition.currentSeason` es un único `Int`
-por competición, sin historial ni ventana de fechas, y no hay relación
-grupo↔temporada. Toda la sección de "Temporadas y participación" de
-`product-rules.md` requiere diseño de schema nuevo antes de tocar UI. Ver
-`backlog.md`.
+**Decisión de modelo tomada con el usuario 2026-09-10** (ver
+`decisions.md`): la temporada de un grupo termina cuando se cuenta el
+último partido de todas sus competiciones activas (no una fecha fija) —
+se puede dar un preview de cuándo, pero el cierre es definitivo solo tras
+el recuento; si un partido se aplaza, se recalcula. Modelo nuevo
+`GroupSeason` (por grupo, no global). Alcance de este sprint dividido en
+incrementos por tamaño: primero la base de temporada, después
+elegibilidad, racha global y estadísticas.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Modelo y migración de temporadas | 🔒 | No existe nada que migrar; es diseño desde cero. |
+| Modelo y migración de temporadas | 🟡 | Diseño decidido (`GroupSeason` + `Competition.seasonEndPreviewAt`, ver `decisions.md`) — implementación en curso. |
 | Añadir competiciones durante la temporada sin retroactividad | 🟡 | El toggle de competiciones activas ya existe (`GroupCompetition.isActive`), pero no hay noción de "desde qué jornada cuenta" ligada a temporada. |
 | Elegibilidad de participación (50 %, jornadas ya cerradas al incorporarse) | ⬜ | No existe ningún cálculo de elegibilidad hoy. |
 | Racha global (todas las competiciones, deduplicando jornadas repetidas entre grupos) | 🔒 | El modelo `Streak` actual es único por `(userId, groupId)` — no hay agregación entre grupos ni deduplicación de jornadas repetidas. Requiere lógica y probablemente modelo nuevos. |

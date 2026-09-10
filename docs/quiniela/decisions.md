@@ -4,6 +4,55 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-10 — Sprint 5 (fin de temporada) — sustituye la decisión anterior
+
+- **Sustituye la respuesta inicial** ("fecha fija configurable, ej. 1 de
+  julio") dada a la pregunta "¿cómo detectamos que ha terminado la
+  temporada de un grupo?". El usuario la corrigió con la regla real:
+
+  > El final de temporada se tiene que calcular: cada liga termina una
+  > fecha u otra. Si el grupo tiene Champions y Liga, el final de
+  > temporada es el último partido que se juega entre las dos
+  > competiciones; si solo tiene Champions, es la final de Champions. Si
+  > ese partido se aplaza, tiene que poder recalcularse — se puede dar un
+  > preview de cuándo termina, pero no se da por finalizada hasta hacer
+  > el recuento del último partido; si ya no quedan más, se cierra la
+  > temporada.
+
+- **Diseño resultante** (por grupo, no global — cada grupo tiene sus
+  propias competiciones activas y por tanto su propia fecha):
+  - **Preview** (estimación, puede cambiar): para cada competición activa
+    del grupo, se pide al proveedor el calendario completo de la
+    temporada (`/competitions/{id}/matches?season=N`, sin filtrar por
+    jornada — una sola petición, no una por jornada) y se guarda la fecha
+    del partido más tardío conocido (`Competition.seasonEndPreviewAt`,
+    refrescado periódicamente, no en cada petición, para no gastar cupo
+    del plan gratuito). El preview del grupo es el máximo de esa fecha
+    entre sus competiciones activas.
+  - **Cierre real** (definitivo, no se reabre): se comprueba como parte
+    del flujo que ya existe al finalizar una jornada
+    (`MatchdaysService.syncResultsForClosedMatchdays` →
+    `newlyFinished`). Cuando una jornada pasa a `FINISHED`, si su partido
+    es (o iguala) el último conocido para su competición, se vuelve a
+    consultar el calendario completo una vez más (por si se aplazó o
+    añadió algo) antes de dar la competición por terminada. Cuando todas
+    las competiciones activas del grupo están así de terminadas, se cierra
+    la temporada del grupo (`GroupSeason.endedAt`).
+  - Modelo nuevo `GroupSeason` (una fila por grupo y temporada, con
+    `endedAt` null mientras está en curso) en vez de una tabla `Season`
+    global: cada grupo puede tener conjuntos de competiciones distintos y
+    por tanto fechas de cierre distintas. `RankingSnapshot` (y, en
+    incrementos posteriores de este sprint, `Streak`/elegibilidad) se
+    vincula a la temporada abierta del grupo en el momento de guardarse.
+  - Añadir una competición nueva a un grupo sin temporada abierta (la
+    anterior ya cerró) abre una temporada nueva en ese momento.
+
+- **Alcance de este incremento del Sprint 5**: solo la base de temporada
+  (modelo + detección de cierre + preview + `RankingSnapshot` vinculado).
+  Elegibilidad, racha global y estadísticas agregadas quedan para
+  incrementos posteriores del mismo sprint — decisión tomada por tamaño,
+  confirmada con el usuario ("vamos por sprint 5 aunque sea más largo").
+
 ## 2026-09-10 — Sprint 4 (tutorial)
 
 - **Sustituye la primera implementación del tutorial** (modal centrado de
