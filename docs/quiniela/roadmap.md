@@ -92,24 +92,26 @@ correctamente) y no lo causó ningún cambio de este sprint — parece un
 intento de refresco de token que coincide con el cierre de sesión. Ver
 `backlog.md`.
 
-## Sprint 2 — Grupos y navegación
+## Sprint 2 — Grupos y navegación ✅ web / ⬜ iOS / ⬜ Android (2026-09-10)
 
 Depende de: nada, pero conviene después del Sprint 1 (mismo terreno de UI).
+Las 11 tareas están implementadas y verificadas en web. Sin verificar
+todavía en iOS/Android.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Formulario único de creación de grupo | 🟡 | Ya existe (`group-list.component.html`, bottom sheet `sheet-form`): nombre, descripción, modo de puntuación (tabs), checkbox público, botón al final. Falta ajustar el resto de puntos de esta tabla. |
-| Selector Público/Privado de dos opciones | ⬜ | Hoy es un `checkbox` "Grupo público", no un selector de dos opciones explícito. |
-| Privado por defecto | 🟡 | Probablemente ya lo es (`isPublic` de Prisma tiene `@default(false)`) — verificar que el form de creación no lo marque true por defecto. |
-| Comodín con resumen + detalle ampliable | ⬜ | Hoy solo hay un resumen fijo de una línea (`sheet-desc`), sin detalle ampliable ni coherencia explícita con el cálculo real (`WildcardsService.getComebackStatus`). |
+| Formulario único de creación de grupo | ✅ web | `group-list.component.html`, bottom sheet `sheet-form`: nombre, descripción, modo de puntuación, privacidad, comodín, botón al final — todo en un único paso, sin distinguir cuenta nueva/existente. |
+| Selector Público/Privado de dos opciones | ✅ web | Cambiado el checkbox por un selector de dos botones (mismo patrón visual que el de modo de puntuación), con descripción de lo que implica cada opción y nota de que se puede cambiar después. Verificado en navegador: alterna correctamente entre los dos estados. |
+| Privado por defecto | ✅ | Confirmado: `isPublic` en Prisma tiene `@default(false)`, y el form de creación arranca con "Privado" marcado. |
+| Comodín con resumen + detalle ampliable | ✅ web | Añadido un enlace "¿Cómo funciona el comodín?" (solo visible en modo 1X2) que despliega un párrafo explicando la doble oportunidad y el recálculo semanal según la diferencia de puntos con el líder, coherente con `WildcardsService.getComebackStatus`. Verificado en navegador: se expande y contrae correctamente. |
 | Botón "Crear grupo"/"Guardar cambios" al final, no fijo | ✅ (creación) / ✅ (ajustes) | Ya es así en ambos formularios actuales. |
-| Guardar deshabilitado sin cambios válidos o con guardado en curso | ✅ (competiciones) | `group-detail.component.html`: `[disabled]="savingCompetitions() || !hasCompetitionChanges()"`. Verificar que el resto de ajustes (reglas) siga el mismo patrón. |
-| Rueda de ajustes para acceder | 🟡 | Hoy hay un icono de "sliders" en la fila de cada grupo (`settings-link`), no una rueda literal — funcionalmente ya cumple el propósito, decidir si hace falta cambiar el icono. |
-| Entrada según nº de grupos (0 → crear/unirse, 1 → Jornada, varios → Grupos) | ⬜ | No verificado: revisar guards (`has-group.guard.ts`) y ruta por defecto del shell. |
-| Pulsar un grupo lleva a su Tabla | ⬜ | Comportamiento actual no confirmado con precisión; a revisar en `group-list.component.ts`. |
-| Preview del grupo con posición general del usuario | ⬜ | La card de grupo actual no muestra posición, solo miembros/modo. |
-| Grupo activo diferenciado en el selector | ⬜ | Revisar `group-switcher` — hoy no se ha visto marcado visual de "activo" en el menú desplegable, solo el nombre mostrado. |
-| Respetar destinos de enlaces directos | ⬜ | No verificado explícitamente. |
+| Guardar deshabilitado sin cambios válidos o con guardado en curso | ✅ | Competiciones ya lo tenía. Añadido el mismo patrón a "Guardar reglas": nuevo `hasRuleChanges` (valor dentro de 1-50 y distinto del actual) — antes se podía guardar sin haber cambiado nada. |
+| Rueda de ajustes para acceder | ✅ | Decisión: se mantiene el icono de "sliders" actual (`settings-link`) — cumple el mismo propósito que una rueda literal, cambiarlo sería puramente cosmético y no lo pidió el usuario al revisar el sprint completo. |
+| Entrada según nº de grupos (0 → crear/unirse, 1 → Jornada, varios → Grupos) | ✅ web | 0 grupos ya funcionaba (`hasGroupGuard` manda a `/welcome`). Añadido `GroupsService.postLoginRoute()`, usado en los 3 sitios donde se navega tras iniciar sesión (login/registro, Google nativo, callback de Google web): con 1 grupo va a Jornada, con varios a Grupos. Verificado en navegador: registro→0 grupos→`/welcome`; con 2 grupos ya unidos, reingresar lleva a `/groups`. |
+| Pulsar un grupo lleva a su Tabla | ✅ web | `goToGroup()` en `group-list.component.ts` navegaba a `/matchday`, ahora navega a `/rankings`. Verificado en navegador. |
+| Preview del grupo con posición general del usuario | ✅ web | Backend: `GroupsService.findMineForUser` adjunta ahora `myPosition` (posición + puntos de la última clasificación TOTAL), con el mismo criterio de scope que usa Tabla (competición única vs. general si hay varias activas). Frontend: la tarjeta de grupo muestra "Vas N.º · P pts" en vez del texto genérico cuando ya hay clasificación. Verificado con datos reales (no solo capturas): se comprobó que el endpoint recoge la clasificación más reciente generada por los crons de fondo. Efecto colateral bueno: de paso se corrigió que los chips de competiciones de la tarjeta nunca se mostraban (la consulta no incluía esa relación). |
+| Grupo activo diferenciado en el selector | ✅ web | El menú desplegable de `group-switcher` marca ahora el grupo activo en verde con un check, el resto en gris. Verificado en navegador. |
+| Respetar destinos de enlaces directos | ✅ web | `authGuard` y `usernameGuard` ahora guardan la URL original como `returnUrl` (query param, o `sessionStorage` para el login de Google en web, que hace una redirección completa fuera de la app) y se vuelve ahí tras iniciar sesión, en los 4 flujos de login (email/password, registro, Google nativo, Google web) y en la confirmación de nombre de cuentas nuevas de Google. Antes, un enlace de invitación pulsado sin sesión iniciada se perdía sin más. Corregido de paso un bug real que rompía esto: `auth-page` renavegaba a `/login` sin conservar query params nada más cargar. Verificado con datos reales: un usuario sin cuenta que entra por un link de invitación acaba siendo miembro real del grupo tras registrarse. **Límite conocido, no cubierto**: si `hasGroupGuard` interrumpe (0 grupos, en una ruta que si lo exige) no se conserva el destino — caso raro, un link a algo de un grupo concreto no tiene mucho sentido sin pertenecer ya a él. |
 
 Validar también: enlaces directos (invitación, deep link) y estados
 vacíos (sin grupos, grupo sin competiciones activas).
