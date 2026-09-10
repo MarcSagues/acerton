@@ -15,6 +15,7 @@ import { PredictionsModule } from './predictions/predictions.module';
 import { WildcardsModule } from './wildcards/wildcards.module';
 import { RankingsModule } from './rankings/rankings.module';
 import { SeasonsModule } from './seasons/seasons.module';
+import { EligibilityModule } from './eligibility/eligibility.module';
 import { StreaksModule } from './streaks/streaks.module';
 import { BadgesModule } from './badges/badges.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -36,6 +37,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     WildcardsModule,
     RankingsModule,
     SeasonsModule,
+    EligibilityModule,
     StreaksModule,
     BadgesModule,
     NotificationsModule,
