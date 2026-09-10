@@ -12,6 +12,16 @@ export interface AppConfig {
     clientId: string;
     clientSecret: string;
     callbackUrl: string;
+    /**
+     * Client id que ve el SDK nativo (iOS/Android) al firmar su idToken —
+     * grabado en el propio binario de la app (Info.plist `GIDClientID`), asi
+     * que es el mismo en todos los builds pase lo que pase con la API a la
+     * que apuntan. En produccion coincide con `clientId`; en un backend de
+     * pre/dev que use un client id distinto para el flujo web, hay que
+     * declarar aqui el de produccion para poder verificar tambien esos
+     * tokens nativos.
+     */
+    nativeClientId?: string;
   };
   footballData: {
     baseUrl: string;
@@ -46,6 +56,7 @@ export default (): AppConfig => ({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'not-configured',
     callbackUrl:
       process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback',
+    nativeClientId: process.env.GOOGLE_NATIVE_CLIENT_ID || undefined,
   },
   footballData: {
     baseUrl: process.env.FOOTBALL_DATA_BASE_URL ?? 'https://api.football-data.org/v4',

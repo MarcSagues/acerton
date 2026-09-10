@@ -98,16 +98,19 @@ export class AuthService {
    * Login con Google desde la app nativa (Capacitor): a diferencia del flujo
    * web (redireccion via passport-google-oauth20), aqui el SDK nativo de
    * Google Sign-In ya entrega un idToken firmado directamente en el
-   * dispositivo. Se verifica su firma y audiencia contra el mismo client id
-   * "web" usado en todas las plataformas (asi lo exige el SDK nativo,
-   * pensado justo para poder verificar en un backend compartido) antes de
-   * confiar en ningun dato del payload.
+   * dispositivo. Se verifica su firma y audiencia contra el client id
+   * grabado en el binario de la app (el mismo en todos los builds nativos,
+   * vease `google.nativeClientId`) ademas del propio de este backend, antes
+   * de confiar en ningun dato del payload — asi un backend de pre/dev con un
+   * client id "web" distinto tambien puede verificar tokens nativos.
    */
   async loginWithGoogleIdToken(idToken: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const clientId = this.configService.get('google.clientId', { infer: true });
+    const nativeClientId = this.configService.get('google.nativeClientId', { infer: true });
+    const audience = [...new Set([clientId, nativeClientId].filter((id): id is string => !!id))];
     let payload;
     try {
-      const ticket = await this.googleOAuthClient.verifyIdToken({ idToken, audience: clientId });
+      const ticket = await this.googleOAuthClient.verifyIdToken({ idToken, audience });
       payload = ticket.getPayload();
     } catch {
       throw new UnauthorizedException('Token de Google invalido');
