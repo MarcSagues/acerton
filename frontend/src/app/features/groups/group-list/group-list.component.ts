@@ -23,6 +23,7 @@ export class GroupListComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly groups = this.groupsService.myGroups;
+  readonly activeGroupId = this.activeGroupService.activeId;
   readonly loading = signal(true);
 
   readonly publicGroups = signal<Group[]>([]);

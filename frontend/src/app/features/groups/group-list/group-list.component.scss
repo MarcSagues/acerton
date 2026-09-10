@@ -39,6 +39,11 @@
   border: 1px solid var(--border);
   padding: 14px;
   cursor: pointer;
+
+  &.active {
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+  }
 }
 
 .group-top {
@@ -66,8 +71,35 @@
   min-width: 0;
 }
 
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .name {
   font: 600 15px/1.2 var(--font-ui);
+}
+
+.active-badge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  mat-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+  }
 }
 
 .chips {
