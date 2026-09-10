@@ -105,7 +105,7 @@
               </div>
               <span
                 class="toggle"
-                [class.on]="g.comebackEnabled"
+                [class.on]="selectedComebackEnabled()"
                 [class.disabled]="!isAdmin()"
                 (click)="toggleComebackEnabled()"
               >
@@ -138,7 +138,7 @@
             </div>
             <span
               class="toggle"
-              [class.on]="!g.isPublic"
+              [class.on]="!selectedIsPublic()"
               [class.disabled]="!isAdmin()"
               (click)="togglePrivacy()"
             >
