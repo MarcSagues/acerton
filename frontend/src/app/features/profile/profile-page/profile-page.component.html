@@ -13,14 +13,18 @@
 
     <div class="stats">
       <div class="stat-tile">
-        <div class="stat-value mono accent">{{ bestCurrentStreak() }}</div>
-        <div class="stat-label mono">RACHA ACTUAL</div>
+        <div class="stat-value mono accent">{{ globalCurrentStreak() }}</div>
+        <div class="stat-label mono">RACHA GLOBAL ACTUAL</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-value mono">{{ bestLongestStreak() }}</div>
-        <div class="stat-label mono">MEJOR RACHA</div>
+        <div class="stat-value mono">{{ globalLongestStreak() }}</div>
+        <div class="stat-label mono">MEJOR RACHA GLOBAL</div>
       </div>
     </div>
+    <p class="global-streak-hint mono">
+      La racha global cuenta cada jornada de cada competicion de tus grupos una sola vez: participar en
+      cualquiera de tus grupos cuenta, pero dejar pasar una jornada la rompe aunque participes en otra.
+    </p>
 
     <div class="section">
       <div class="card">

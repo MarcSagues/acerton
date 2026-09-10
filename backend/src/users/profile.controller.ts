@@ -21,7 +21,7 @@ export class ProfileController {
       include: { group: { select: { id: true, name: true } } },
     });
 
-    const [badges, groupsSummary] = await Promise.all([
+    const [badges, groupsSummary, globalStreak] = await Promise.all([
       this.badgesService.getForUser(user.id),
       Promise.all(
         memberships.map(async (membership) => {
@@ -36,8 +36,13 @@ export class ProfileController {
           };
         }),
       ),
+      this.streaksService.getGlobalForUser(user.id),
     ]);
 
-    return { badges, groups: groupsSummary };
+    return {
+      badges,
+      groups: groupsSummary,
+      globalStreak: { currentStreak: globalStreak.currentStreak, longestStreak: globalStreak.longestStreak },
+    };
   }
 }

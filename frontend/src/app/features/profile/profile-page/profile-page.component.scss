@@ -41,6 +41,13 @@
   gap: 9px;
 }
 
+.global-streak-hint {
+  margin: -8px 16px 16px;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-tertiary);
+}
+
 .stat-tile {
   flex: 1;
   border-radius: var(--radius-md);

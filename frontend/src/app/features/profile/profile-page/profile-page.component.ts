@@ -37,12 +37,14 @@ export class ProfilePageComponent implements OnInit {
   readonly profile = signal<UserProfile | null>(null);
   readonly catalog = signal<Badge[]>([]);
 
-  readonly bestCurrentStreak = computed(() =>
-    Math.max(0, ...(this.profile()?.groups.map((g) => g.streak.currentStreak) ?? [0])),
-  );
-  readonly bestLongestStreak = computed(() =>
-    Math.max(0, ...(this.profile()?.groups.map((g) => g.streak.longestStreak) ?? [0])),
-  );
+  /**
+   * Racha global (product-rules.md § "Rachas y estadisticas"): cada jornada
+   * de cada competicion presente en los grupos del usuario cuenta una vez,
+   * sin duplicar entre grupos — distinta de la racha por grupo (mas abajo,
+   * una por grupo por separado).
+   */
+  readonly globalCurrentStreak = computed(() => this.profile()?.globalStreak.currentStreak ?? 0);
+  readonly globalLongestStreak = computed(() => this.profile()?.globalStreak.longestStreak ?? 0);
   readonly badgeStates = computed(() => {
     const earnedCodes = new Set((this.profile()?.badges ?? []).map((b) => b.badge.code));
     return this.catalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));

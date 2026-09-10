@@ -105,6 +105,7 @@ model User {
   predictions        Prediction[]
   userBadges         UserBadge[]
   streaks            Streak[]
+  globalStreak       GlobalStreak?
   rankingSnapshots   RankingSnapshot[]
   refreshTokens      RefreshToken[]
   notificationTokens NotificationToken[]
@@ -285,10 +286,11 @@ model Matchday {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  competition       Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  matches           Match[]
-  rankingSnapshots  RankingSnapshot[]
-  streaksLastPlayed Streak[]          @relation("StreakLastMatchday")
+  competition             Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  matches                 Match[]
+  rankingSnapshots        RankingSnapshot[]
+  streaksLastPlayed       Streak[]          @relation("StreakLastMatchday")
+  globalStreaksLastPlayed GlobalStreak[]    @relation("GlobalStreakLastMatchday")
 
   @@unique([competitionId, season, name])
   @@index([competitionId, status])
@@ -455,4 +457,23 @@ model Streak {
 
   @@unique([userId, groupId])
   @@map("streaks")
+}
+
+/// Racha global (todas las competiciones presentes en los grupos del
+/// usuario, no una por grupo): cada jornada de cada competicion cuenta una
+/// vez, aunque este repetida en varios de sus grupos — ver
+/// StreaksService.updateAfterMatchdayClose y decisions.md "Sprint 5 (racha
+/// global)". Una fila por usuario (no por userId+groupId como Streak).
+model GlobalStreak {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastMatchdayId String?
+  updatedAt      DateTime @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastMatchday Matchday? @relation("GlobalStreakLastMatchday", fields: [lastMatchdayId], references: [id])
+
+  @@map("global_streaks")
 }
