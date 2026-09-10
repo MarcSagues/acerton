@@ -40,9 +40,15 @@ termina pronto). Issue #10 actualizado con las casillas hechas, **sigue
 en Status "New features"** (el sprint no está completo, solo su primer
 incremento — no aplica la regla de mover a Test todavía).
 
-Pendiente del mismo sprint, en incrementos siguientes: elegibilidad de
-participación (50%), racha global entre competiciones, estadísticas
-agregadas. Ver `roadmap.md` Sprint 5 para el detalle exacto de cada tarea.
+Incremento 2 (completo): elegibilidad de participación (50% inclusive de
+jornadas disponibles desde la incorporación, un pronóstico basta por
+jornada, deduplicado). `EligibilityService` + `GET /groups/:id/eligibility`
+— 8 tests unitarios + verificado en vivo. Base para el mínimo de 3
+candidatos válidos que necesitará el Sprint 6.
+
+Pendiente del mismo sprint, en incrementos siguientes: racha global entre
+competiciones, estadísticas agregadas. Ver `roadmap.md` Sprint 5 para el
+detalle exacto de cada tarea.
 
 Sin verificar en Sprint 3/4: iOS/Android (solo web).
 
@@ -75,7 +81,10 @@ el login de Google ya funciona en el build de dev tras el redeploy.
   recarga completa (persistido en servidor).
 - Sprint 5 (incremento 1): `GroupSeason` + `Competition.seasonEndPreviewAt`
   + `SeasonsService` (preview, cierre real, 9 tests) + etiqueta de
-  temporada en Tabla. Ver detalle arriba.
+  temporada en Tabla.
+- Sprint 5 (incremento 2): `EligibilityService` (50% inclusive, exclusión
+  por fecha de incorporación, deduplicación por jornada) + endpoint, 8
+  tests unitarios + verificado en vivo.
 - Issue #18 (mejora de tarjeta de grupo: posición a la izquierda + liga
   obligatoria al crear grupo) completo y cerrando su causa raíz.
 
