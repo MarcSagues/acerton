@@ -1,9 +1,9 @@
 # Estado actual
 
 _Última actualización: 2026-09-10 (Sprint 3 y Sprint 4 completos en `dev`,
-verificados en web, pendiente de que el usuario los pruebe antes de
-mergear a `main` — sesión todavía abierta, no cerrada con `/quiniela
-cerrar`)._
+Sprint 5 con su primer incremento (base de temporadas) en `dev` —
+pendiente de que el usuario los pruebe antes de mergear a `main`. Sesión
+todavía abierta, no cerrada con `/quiniela cerrar`)._
 
 ## Sprint activo
 
@@ -24,7 +24,27 @@ del grupo, persistido por cuenta (`User.tutorialCompletedAt`),
 repetible desde Perfil sin resetear el flag. Ver `roadmap.md` Sprint 4.
 Issue #9 en Status "Test".
 
-Sin verificar en ambos sprints: iOS/Android (solo web).
+**Sprint 5 — Temporadas, estadísticas y rachas**: **en curso**, primer
+incremento (base de temporada) completo en `dev`. Decisión de modelo
+tomada con el usuario (ver `decisions.md`): una temporada de grupo
+termina cuando se cuenta el último partido de TODAS sus competiciones
+activas — no una fecha fija. Se puede dar un preview de cuándo, pero el
+cierre es definitivo solo tras el recuento; un aplazamiento recalcula en
+vez de cerrar. Implementado: `GroupSeason` (por grupo), detección real de
+cierre enganchada al flujo existente de finalización de jornada,
+`RankingSnapshot` vinculado a su temporada, etiqueta "Temporada 2026/27"
+visible en Tabla. Verificado en vivo contra la base de datos real
+(creación automática al puntuar) + 9 tests unitarios de la lógica de
+cierre (no se puede provocar un cierre real esta sesión: ninguna liga
+termina pronto). Issue #10 actualizado con las casillas hechas, **sigue
+en Status "New features"** (el sprint no está completo, solo su primer
+incremento — no aplica la regla de mover a Test todavía).
+
+Pendiente del mismo sprint, en incrementos siguientes: elegibilidad de
+participación (50%), racha global entre competiciones, estadísticas
+agregadas. Ver `roadmap.md` Sprint 5 para el detalle exacto de cada tarea.
+
+Sin verificar en Sprint 3/4: iOS/Android (solo web).
 
 **Infraestructura — entorno dev/pre**: sigue como en el cierre anterior —
 `dev.acerton.app` funcionando (login incluido), pendiente subir producción
@@ -33,9 +53,11 @@ añadió `GOOGLE_NATIVE_CLIENT_ID` al backend (para que el login nativo de
 Google funcione también contra un backend con `GOOGLE_CLIENT_ID` propio) y
 un input `environment: production|dev` al workflow de iOS
 (`ios-build.yml`) para poder generar builds de TestFlight que apunten a
-dev — **pendiente**: el usuario tiene que añadir esa variable al servicio
-de dev en Render (valor exacto en el historial de esta sesión), esta
-sesión no tiene acceso al dashboard.
+dev. El usuario ya confirmó que puso la variable en Render (valor
+correcto: `environment.googleWebClientId` de producción, NO el
+`GIDClientID` de Info.plist — hubo una corrección a mitad de sesión, ver
+`decisions.md` si hace falta el detalle) — pendiente de que confirme si
+el login de Google ya funciona en el build de dev tras el redeploy.
 
 ## Último trabajo verificado
 
@@ -51,36 +73,41 @@ sesión no tiene acceso al dashboard.
   elemento, el avance automático al pulsar el botón Jornada de verdad, el
   texto adaptado a ambos modos de puntuación, y que sobrevive a una
   recarga completa (persistido en servidor).
+- Sprint 5 (incremento 1): `GroupSeason` + `Competition.seasonEndPreviewAt`
+  + `SeasonsService` (preview, cierre real, 9 tests) + etiqueta de
+  temporada en Tabla. Ver detalle arriba.
 - Issue #18 (mejora de tarjeta de grupo: posición a la izquierda + liga
   obligatoria al crear grupo) completo y cerrando su causa raíz.
 
 ## Siguiente paso concreto
 
-**Inmediato, del usuario**: probar Sprint 3 y Sprint 4 en local o en
-`dev.acerton.app` antes de decidir si se mergea a `main`. Todo está en
-`dev`, empujado a `origin/dev`, **no mergeado a `main` todavía**.
+**Inmediato, del usuario**: probar Sprint 3, Sprint 4 y el incremento 1
+del Sprint 5 en local o en `dev.acerton.app` antes de decidir si se
+mergea a `main`. Todo está en `dev`, empujado a `origin/dev`, **no
+mergeado a `main` todavía**.
 
 Cuando el usuario confirme que funciona: mergear a `main` (con
 autorización explícita, como siempre). Los issues #8 y #9 ya están en
-Status "Test" en el GitHub Project (regla corregida: se movieron al
-completarse en `dev`, no se espera al merge).
+Status "Test"; el #10 (Sprint 5) se queda en "New features" hasta que el
+sprint entero esté completo (regla de la skill: solo se mueve a Test
+cuando el issue queda completo con esa subida).
 
-Después, Sprint 5 (Temporadas, estadísticas y rachas, issue #10) sigue
-bloqueado por diseño de modelo de datos — ver `backlog.md` — o seguir con
-infraestructura pendiente (issue #16, más la nueva variable de Google en
-Render mencionada arriba).
+Después, seguir con los siguientes incrementos del Sprint 5 (elegibilidad,
+racha global, estadísticas) — ver `roadmap.md` — o con infraestructura
+pendiente (issue #16).
 
 ## Bloqueos y preguntas pendientes
 
 Ver `backlog.md`. Sin cambios nuevos desde el cierre de las preguntas de
-Sprint 3.
+Sprint 3 y la decisión de fin de temporada del Sprint 5.
 
 ## Cambios sin commit
 
-No — todo el trabajo de Sprint 3, Sprint 4, la mejora de tarjeta de grupo
-(issue #18) y el arreglo de Google auth/workflow de iOS está commiteado y
-empujado a `origin/dev`. El entorno local (Docker + backend + frontend)
-sigue corriendo en segundo plano. Se limpiaron los grupos de prueba
-creados durante esta sesión (por ID exacto, dentro de transacciones
-explícitas — ver `decisions.md`/memoria de sesión sobre el incidente de
-borrado accidental).
+No — todo el trabajo de Sprint 3, Sprint 4, el incremento 1 del Sprint 5,
+la mejora de tarjeta de grupo (issue #18) y el arreglo de Google
+auth/workflow de iOS está commiteado y empujado a `origin/dev`. El
+entorno local (Docker + backend + frontend) sigue corriendo en segundo
+plano. Se limpiaron todos los grupos de prueba creados durante esta
+sesión (por ID exacto, dentro de transacciones explícitas — ver
+`decisions.md`/memoria de sesión sobre el incidente de borrado
+accidental).
