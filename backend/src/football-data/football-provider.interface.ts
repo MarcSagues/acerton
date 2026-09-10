@@ -38,6 +38,14 @@ export interface FootballProvider {
 
   /** Estado/resultado actualizado de un conjunto de fixtures por su id externo. */
   getFixturesByIds(fixtureIds: number[]): Promise<ProviderFixture[]>;
+
+  /**
+   * Calendario completo de una liga+temporada, sin filtrar por jornada —
+   * una sola peticion. Usado solo por SeasonsService (preview y cierre de
+   * temporada), no por la sincronizacion normal de jornadas: llamarlo en
+   * cada jornada agotaria el cupo del plan gratuito sin necesidad.
+   */
+  getFullSeasonMatches(leagueId: number, season: number): Promise<ProviderFixture[]>;
 }
 
 export const FOOTBALL_PROVIDER = Symbol('FOOTBALL_PROVIDER');

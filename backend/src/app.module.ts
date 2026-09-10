@@ -14,6 +14,7 @@ import { MatchdaysModule } from './matchdays/matchdays.module';
 import { PredictionsModule } from './predictions/predictions.module';
 import { WildcardsModule } from './wildcards/wildcards.module';
 import { RankingsModule } from './rankings/rankings.module';
+import { SeasonsModule } from './seasons/seasons.module';
 import { StreaksModule } from './streaks/streaks.module';
 import { BadgesModule } from './badges/badges.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -34,6 +35,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     PredictionsModule,
     WildcardsModule,
     RankingsModule,
+    SeasonsModule,
     StreaksModule,
     BadgesModule,
     NotificationsModule,

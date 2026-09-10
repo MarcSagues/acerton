@@ -17,6 +17,12 @@
     font: 700 20px/1.1 var(--font-ui);
     margin: 0;
   }
+
+  .season-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin: 3px 0 0;
+  }
 }
 
 .tabs {

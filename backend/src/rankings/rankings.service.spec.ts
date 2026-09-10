@@ -23,7 +23,7 @@ describe('RankingsService.getLatestRanking (positionDelta)', () => {
       { userId: 'u2', position: 2, points: 1, user: {} },
     ]);
 
-    const service = new RankingsService(prisma as never);
+    const service = new RankingsService(prisma as never, {} as never);
     const result = await service.getLatestRanking('g1', 'TOTAL', null);
 
     expect(result).toEqual([
@@ -47,7 +47,7 @@ describe('RankingsService.getLatestRanking (positionDelta)', () => {
         { userId: 'u2', position: 2, points: 2 },
       ]);
 
-    const service = new RankingsService(prisma as never);
+    const service = new RankingsService(prisma as never, {} as never);
     const result = await service.getLatestRanking('g1', 'TOTAL', null);
 
     expect(result).toEqual([

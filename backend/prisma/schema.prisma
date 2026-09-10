@@ -175,8 +175,32 @@ model Group {
   rankingSnapshots  RankingSnapshot[]
   streaks           Streak[]
   userBadges        UserBadge[]
+  seasons           GroupSeason[]
 
   @@map("groups")
+}
+
+/// Una temporada de un grupo concreto (no global: cada grupo tiene sus
+/// propias competiciones activas y por tanto puede terminar en fechas
+/// distintas a las de otro grupo). Termina cuando se cuenta el ultimo
+/// partido de todas las competiciones activas del grupo en ese momento —
+/// ver decisions.md "Sprint 5 (fin de temporada)". `endedAt` null mientras
+/// esta en curso; solo puede haber una fila abierta por grupo.
+model GroupSeason {
+  id        String    @id @default(cuid())
+  groupId   String
+  /// Etiqueta "2026/27" derivada del currentSeason de las competiciones
+  /// activas al abrirse esta temporada — solo para mostrar, no se usa para
+  /// calcular nada.
+  label     String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  group            Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rankingSnapshots RankingSnapshot[]
+
+  @@index([groupId, endedAt])
+  @@map("group_seasons")
 }
 
 model GroupMembership {
@@ -199,15 +223,24 @@ model GroupMembership {
 // ---------------------------------------------------------------------------
 
 model Competition {
-  id            String          @id @default(cuid())
-  code          CompetitionCode @unique
-  name          String
+  id                 String          @id @default(cuid())
+  code               CompetitionCode @unique
+  name               String
   /// Id de la competicion en el proveedor de datos activo (ver FootballProvider).
   /// No es especifico de ningun proveedor concreto pese al nombre generico:
   /// cambiar de proveedor implica volver a poblar este campo via seed.
-  externalId    Int             @unique
-  logoUrl       String?
-  currentSeason Int
+  externalId         Int             @unique
+  logoUrl            String?
+  currentSeason      Int
+  /// Estimacion de cuando termina la temporada en curso: fecha del partido
+  /// mas tardio conocido en el calendario completo (ver
+  /// FootballProvider.getFullSeasonMatches), refrescada periodicamente, no
+  /// en cada peticion (limite del plan gratuito). Es solo un preview: puede
+  /// cambiar si el proveedor anade/reprograma partidos (fases de
+  /// eliminatoria cuya fecha final no se conoce hasta jugarse rondas
+  /// previas). El cierre real de temporada de un grupo no depende de esta
+  /// fecha, depende de jornadas FINISHED — ver GroupSeason.
+  seasonEndPreviewAt DateTime?
 
   groupCompetitions GroupCompetition[]
   matchdays         Matchday[]
@@ -344,11 +377,17 @@ model RankingSnapshot {
   points        Int
   position      Int
   createdAt     DateTime      @default(now())
+  /// Temporada del grupo a la que pertenece esta clasificacion. Null en
+  /// filas anteriores a que existiera este concepto (no se han
+  /// reatribuido retroactivamente); las nuevas siempre lo llevan — ver
+  /// RankingsService.
+  groupSeasonId String?
 
   group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   competition Competition? @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupSeason GroupSeason? @relation(fields: [groupSeasonId], references: [id], onDelete: SetNull)
 
   @@unique([groupId, competitionId, matchdayId, period, userId])
   @@index([groupId, period, competitionId])

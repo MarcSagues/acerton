@@ -6,6 +6,7 @@ import { RankingsModule } from '../rankings/rankings.module';
 import { StreaksModule } from '../streaks/streaks.module';
 import { BadgesModule } from '../badges/badges.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { SeasonsModule } from '../seasons/seasons.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     StreaksModule,
     BadgesModule,
     NotificationsModule,
+    SeasonsModule,
   ],
   providers: [JobsService],
 })

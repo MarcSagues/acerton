@@ -9,6 +9,7 @@ import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { SeasonsService } from '../../../core/services/seasons.service';
 import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-switcher.component';
 import { Group } from '../../../core/models/group.model';
 import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
@@ -26,6 +27,7 @@ export class RankingsPageComponent {
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly authService = inject(AuthService);
   private readonly tutorialService = inject(TutorialService);
+  private readonly seasonsService = inject(SeasonsService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   readonly activeGroupService = inject(ActiveGroupService);
@@ -41,6 +43,8 @@ export class RankingsPageComponent {
   readonly scope = signal<string>('general');
   readonly rows = signal<RankingRow[]>([]);
   readonly currentUserId = this.authService.currentUser()?.id;
+  /** Etiqueta de la temporada abierta del grupo ("2026/27"), o null si todavia no se ha puntuado ninguna jornada. */
+  readonly currentSeasonLabel = signal<string | null>(null);
 
   readonly activeCompetitions = computed(
     () => (this.groupDetail()?.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competition),
@@ -68,6 +72,10 @@ export class RankingsPageComponent {
       this.scope.set(active.length > 1 ? 'general' : (active[0]?.competitionId ?? 'general'));
       this.loading.set(false);
       this.fetchRanking(groupId);
+      this.seasonsService.listSeasons(groupId).subscribe({
+        next: (seasons) => this.currentSeasonLabel.set(seasons.find((s) => !s.endedAt)?.label ?? null),
+        error: () => this.currentSeasonLabel.set(null),
+      });
 
       if (!this.tutorialHandledThisSession && !this.authService.currentUser()?.tutorialCompleted) {
         this.tutorialHandledThisSession = true;

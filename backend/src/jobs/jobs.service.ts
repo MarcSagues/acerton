@@ -7,6 +7,7 @@ import { RankingsService } from '../rankings/rankings.service';
 import { StreaksService } from '../streaks/streaks.service';
 import { BadgesService } from '../badges/badges.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SeasonsService } from '../seasons/seasons.service';
 import { shouldSendReminder } from '../matchdays/matchday.util';
 
 type ReminderField = 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
@@ -41,6 +42,7 @@ export class JobsService implements OnApplicationBootstrap {
     private readonly streaksService: StreaksService,
     private readonly badgesService: BadgesService,
     private readonly notificationsService: NotificationsService,
+    private readonly seasonsService: SeasonsService,
   ) {}
 
   /**
@@ -189,6 +191,15 @@ export class JobsService implements OnApplicationBootstrap {
     await this.rankingsService.computeForFinishedMatchday(matchdayId);
     await this.streaksService.updateAfterMatchdayClose(matchdayId);
     await this.badgesEvaluateAndNotify(matchday.competitionId, matchdayId, matchday.name);
+
+    try {
+      await this.seasonsService.checkSeasonClosureAfterMatchdayFinished(
+        matchday.competitionId,
+        matchday.closesAt,
+      );
+    } catch (error) {
+      this.logger.error(`Error comprobando cierre de temporada para ${matchday.competitionId}`, error as Error);
+    }
 
     this.logger.log(`Jornada ${matchdayId} finalizada y procesada por completo`);
   }

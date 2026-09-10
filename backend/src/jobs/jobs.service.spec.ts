@@ -15,6 +15,7 @@ function buildDeps() {
   const streaksService = { updateAfterMatchdayClose: jest.fn() };
   const badgesService = { evaluateAfterMatchdayClose: jest.fn() };
   const notificationsService = { notifyMatchdayClosingSoon: jest.fn(), notifyMatchdayFinished: jest.fn() };
+  const seasonsService = { checkSeasonClosureAfterMatchdayFinished: jest.fn() };
 
   const service = new JobsService(
     prisma as never,
@@ -24,6 +25,7 @@ function buildDeps() {
     streaksService as never,
     badgesService as never,
     notificationsService as never,
+    seasonsService as never,
   );
 
   return {
@@ -35,6 +37,7 @@ function buildDeps() {
     streaksService,
     badgesService,
     notificationsService,
+    seasonsService,
   };
 }
 

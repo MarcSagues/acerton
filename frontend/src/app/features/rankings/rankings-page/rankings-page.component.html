@@ -3,7 +3,12 @@
 } @else {
   <div class="page">
     <div class="head" data-tutorial="rankings-head">
-      <h1>Clasificacion</h1>
+      <div>
+        <h1>Clasificacion</h1>
+        @if (currentSeasonLabel(); as label) {
+          <p class="season-label mono">Temporada {{ label }}</p>
+        }
+      </div>
       <app-group-switcher></app-group-switcher>
     </div>
 

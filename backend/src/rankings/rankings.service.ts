@@ -1,13 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RankingPeriod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SeasonsService } from '../seasons/seasons.service';
 import { rankEntries, ScoredEntry } from './rank-entries.util';
 
 @Injectable()
 export class RankingsService {
   private readonly logger = new Logger(RankingsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly seasonsService: SeasonsService,
+  ) {}
 
   /**
    * Recalcula clasificaciones tras puntuar una jornada: semanal y total de
@@ -136,6 +140,7 @@ export class RankingsService {
     entries: ScoredEntry[],
   ): Promise<void> {
     const ranked = rankEntries(entries);
+    const groupSeason = await this.seasonsService.getOpenSeason(groupId);
     await this.prisma.$transaction([
       this.prisma.rankingSnapshot.deleteMany({
         where: { groupId, competitionId, matchdayId, period },
@@ -149,6 +154,7 @@ export class RankingsService {
           userId: entry.userId,
           points: entry.points,
           position: entry.position,
+          groupSeasonId: groupSeason.id,
         })),
       }),
     ]);
