@@ -51,13 +51,7 @@
 
             <div class="divider"></div>
             <div class="footer">
-              <span class="footer-label mono">
-                @if (group.myPosition) {
-                  Vas {{ group.myPosition.position }}.&#186; &middot; {{ group.myPosition.points }} pts
-                } @else {
-                  Ver jornada y clasificacion
-                }
-              </span>
+              <span class="footer-label mono">Ver jornada y clasificacion</span>
               <a class="settings-link" [routerLink]="['/groups', group.id, 'settings']" (click)="$event.stopPropagation()">
                 <mat-icon inline>tune</mat-icon>
               </a>
@@ -106,7 +100,37 @@
 
       @if (showCreateSheet()) {
         <h2>Crear grupo</h2>
-        <form [formGroup]="createForm" (ngSubmit)="createGroup()" class="sheet-form">
+
+        @if (createStep() === 'competitions') {
+          <p class="sheet-desc mono">
+            Elige al menos una liga para el grupo. Podras anadir mas despues, pero no quitar estas.
+          </p>
+          <div class="comp-list">
+            @for (competition of catalog(); track competition.id) {
+              <div
+                class="comp-row"
+                [class.active]="createSelectedCompetitionIds().has(competition.id)"
+                (click)="toggleCreateCompetition(competition.id)"
+              >
+                <span class="comp-abbr mono">{{ competition.name.slice(0, 3).toUpperCase() }}</span>
+                <div class="comp-meta">
+                  <div class="comp-name">{{ competition.name }}</div>
+                  <div class="comp-code mono">{{ competition.code }}</div>
+                </div>
+                <span class="toggle" [class.on]="createSelectedCompetitionIds().has(competition.id)">
+                  <span class="knob"></span>
+                </span>
+              </div>
+            }
+          </div>
+          <button type="button" class="cta" [disabled]="createSelectedCompetitionIds().size === 0" (click)="goToCreateDetails()">
+            Continuar ({{ createSelectedCompetitionIds().size }})
+          </button>
+        } @else {
+          <button type="button" class="back-link mono" (click)="backToCreateCompetitions()">
+            &lt; {{ createSelectedCompetitionIds().size }} liga(s) elegida(s)
+          </button>
+          <form [formGroup]="createForm" (ngSubmit)="createGroup()" class="sheet-form">
           <label class="field">
             <span class="field-label">Nombre del grupo</span>
             <input class="field-input" formControlName="name" />
@@ -190,7 +214,8 @@
             <p class="error">{{ errorMessage() }}</p>
           }
           <button type="submit" class="cta" [disabled]="formLoading()">Crear</button>
-        </form>
+          </form>
+        }
       }
 
       @if (showJoinSheet()) {

@@ -9,6 +9,8 @@ export interface CreateGroupPayload {
   description?: string;
   isPublic?: boolean;
   scoringMode?: ScoringMode;
+  /** Al menos una: sin competicion activa un grupo nunca llega a tener clasificacion. */
+  competitionIds: string[];
 }
 
 @Injectable({ providedIn: 'root' })

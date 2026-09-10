@@ -1,4 +1,16 @@
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { ScoringMode } from '@prisma/client';
 
 export class CreateGroupDto {
@@ -6,6 +18,12 @@ export class CreateGroupDto {
   @MinLength(3)
   @MaxLength(60)
   name!: string;
+
+  /** Obligatorio: sin al menos una competicion activa un grupo nunca llega a tener clasificacion. */
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  competitionIds!: string[];
 
   @IsOptional()
   @IsString()

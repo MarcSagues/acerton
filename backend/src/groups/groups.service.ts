@@ -41,7 +41,7 @@ export class GroupsService {
     // resultado exacto se fuerza desactivado pase lo que llegue en el DTO.
     const isExactScore = scoringMode === 'EXACT_SCORE';
 
-    return this.prisma.group.create({
+    const group = await this.prisma.group.create({
       data: {
         name: dto.name,
         description: dto.description,
@@ -56,6 +56,11 @@ export class GroupsService {
         },
       },
     });
+    // Sin al menos una competicion activa un grupo nunca llega a tener
+    // clasificacion (ver GroupsService.findMineForUser) — se obliga a elegir
+    // desde la propia creacion en vez de dejarlo como paso opcional posterior.
+    await this.setCompetitions(group.id, dto.competitionIds);
+    return this.findByIdForMember(group.id, userId);
   }
 
   /** Solo se usa para decidir la validacion del pronostico (ver PredictionsService.submit). */

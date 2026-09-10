@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { CompetitionsService } from '../../../core/services/competitions.service';
 import { Group, ScoringMode } from '../../../core/models/group.model';
 
 @Component({
@@ -19,6 +20,7 @@ import { Group, ScoringMode } from '../../../core/models/group.model';
 export class GroupListComponent implements OnInit {
   private readonly groupsService = inject(GroupsService);
   private readonly activeGroupService = inject(ActiveGroupService);
+  private readonly competitionsService = inject(CompetitionsService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
@@ -40,6 +42,11 @@ export class GroupListComponent implements OnInit {
   readonly showJoinSheet = signal(false);
   readonly formLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+
+  readonly catalog = this.competitionsService.catalog;
+  /** Elegir al menos una liga es un paso obligatorio antes de poder tocar el resto del formulario. */
+  readonly createStep = signal<'competitions' | 'details'>('competitions');
+  readonly createSelectedCompetitionIds = signal<Set<string>>(new Set());
 
   readonly createForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
@@ -69,6 +76,28 @@ export class GroupListComponent implements OnInit {
       error: () => this.loading.set(false),
     });
     this.groupsService.loadPublicGroups().subscribe((groups) => this.publicGroups.set(groups));
+    this.competitionsService.loadCatalog().subscribe();
+  }
+
+  toggleCreateCompetition(competitionId: string): void {
+    this.createSelectedCompetitionIds.update((current) => {
+      const next = new Set(current);
+      if (next.has(competitionId)) {
+        next.delete(competitionId);
+      } else {
+        next.add(competitionId);
+      }
+      return next;
+    });
+  }
+
+  goToCreateDetails(): void {
+    if (this.createSelectedCompetitionIds().size === 0) return;
+    this.createStep.set('details');
+  }
+
+  backToCreateCompetitions(): void {
+    this.createStep.set('competitions');
   }
 
   joinPublicGroup(groupId: string): void {
@@ -96,6 +125,8 @@ export class GroupListComponent implements OnInit {
     this.showJoinSheet.set(false);
     this.errorMessage.set(null);
     this.showComebackDetail.set(false);
+    this.createStep.set('competitions');
+    this.createSelectedCompetitionIds.set(new Set());
   }
 
   openJoinSheet(): void {
@@ -115,7 +146,7 @@ export class GroupListComponent implements OnInit {
   }
 
   createGroup(): void {
-    if (this.createForm.invalid) {
+    if (this.createForm.invalid || this.createSelectedCompetitionIds().size === 0) {
       this.createForm.markAllAsTouched();
       return;
     }
@@ -128,6 +159,7 @@ export class GroupListComponent implements OnInit {
         description: value.description || undefined,
         isPublic: value.isPublic,
         scoringMode: value.scoringMode,
+        competitionIds: [...this.createSelectedCompetitionIds()],
       })
       .subscribe({
         next: (group) => {
