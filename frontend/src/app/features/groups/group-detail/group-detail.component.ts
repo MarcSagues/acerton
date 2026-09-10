@@ -208,7 +208,12 @@ export class GroupDetailComponent implements OnInit {
   }
 
   copyInviteLink(): void {
-    navigator.clipboard?.writeText(this.inviteLink());
-    this.snackBar.open('Link copiado', 'Cerrar', { duration: 2000 });
+    // Solo se confirma si la copia funciona de verdad: sin fallback ni
+    // comprobacion posterior del portapapeles, nos limitamos a reaccionar
+    // al resultado de esta escritura concreta.
+    navigator.clipboard
+      ?.writeText(this.inviteLink())
+      .then(() => this.snackBar.open('Copiado', 'Cerrar', { duration: 2000 }))
+      .catch(() => undefined);
   }
 }

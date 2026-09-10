@@ -59,9 +59,9 @@
             @if (isLocked(entry)) {
               Cerrada
             } @else if (!isMatchdayOpenByTime()) {
-              Se abre en
+              La jornada se abre en
             } @else {
-              Cierra en
+              La jornada cierra en
             }
           </div>
           @if (isLocked(entry)) {
@@ -85,6 +85,15 @@
         }
       </div>
 
+      @if (isExactScore()) {
+        <div class="exact-score-columns">
+          <div class="exact-score-columns-fields">
+            <span class="exact-score-columns-label">L</span>
+            <span class="exact-score-columns-sepspace"></span>
+            <span class="exact-score-columns-label">V</span>
+          </div>
+        </div>
+      }
       <div class="match-list">
         @for (match of entry.matchday.matches; track match.id) {
           <div class="match-row">
@@ -116,45 +125,53 @@
             } @else if (!pickingAllowed()) {
               <div class="result mono dim">Aun no</div>
             } @else if (isExactScore()) {
-              <div class="exact-score-inputs">
-                <span class="exact-score-status">
-                  @if (stateFor(match.id).saving) {
-                    <mat-spinner diameter="12"></mat-spinner>
-                  } @else if (stateFor(match.id).saved) {
-                    <mat-icon class="saved-icon" inline>check_circle</mat-icon>
-                  }
-                </span>
-                <input
-                  class="score-input mono"
-                  type="number"
-                  min="0"
-                  max="20"
-                  inputmode="numeric"
-                  [disabled]="isMatchLocked(match)"
-                  [value]="stateFor(match.id).predictedHomeScore"
-                  (input)="updatePredictedScore(match, 'home', $any($event.target).value)"
-                  (blur)="save(match.id, stateFor(match.id))"
-                />
+              <div
+                class="exact-score-box"
+                [class.pending]="stateFor(match.id).saving"
+                [class.confirmed]="stateFor(match.id).saved && !stateFor(match.id).saving"
+                [class.error]="stateFor(match.id).error"
+              >
+                <svg class="choice-progress" viewBox="0 0 112 38" aria-hidden="true">
+                  <rect
+                    x="1"
+                    y="1"
+                    width="110"
+                    height="36"
+                    rx="9"
+                    pathLength="100"
+                    [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                  ></rect>
+                </svg>
+                <div class="exact-score-field">
+                  <input
+                    class="score-input mono"
+                    type="number"
+                    min="0"
+                    max="20"
+                    inputmode="numeric"
+                    [disabled]="isMatchLocked(match)"
+                    [value]="stateFor(match.id).predictedHomeScore"
+                    (input)="updatePredictedScore(match, 'home', $any($event.target).value)"
+                    (blur)="save(match.id, stateFor(match.id))"
+                  />
+                </div>
                 <span class="score-sep mono">-</span>
-                <input
-                  class="score-input mono"
-                  type="number"
-                  min="0"
-                  max="20"
-                  inputmode="numeric"
-                  [disabled]="isMatchLocked(match)"
-                  [value]="stateFor(match.id).predictedAwayScore"
-                  (input)="updatePredictedScore(match, 'away', $any($event.target).value)"
-                  (blur)="save(match.id, stateFor(match.id))"
-                />
+                <div class="exact-score-field">
+                  <input
+                    class="score-input mono"
+                    type="number"
+                    min="0"
+                    max="20"
+                    inputmode="numeric"
+                    [disabled]="isMatchLocked(match)"
+                    [value]="stateFor(match.id).predictedAwayScore"
+                    (input)="updatePredictedScore(match, 'away', $any($event.target).value)"
+                    (blur)="save(match.id, stateFor(match.id))"
+                  />
+                </div>
               </div>
             } @else {
               <div class="wc-icons">
-                @if (stateFor(match.id).saving) {
-                  <mat-spinner diameter="12"></mat-spinner>
-                } @else if (stateFor(match.id).saved) {
-                  <mat-icon class="saved-icon" inline>check_circle</mat-icon>
-                }
                 @if ((comeback()?.enabled && (comeback()?.remaining ?? 0) > 0) || stateFor(match.id).doubleChanceOption) {
                   <button
                     class="wc-icon-btn rescue"
@@ -172,22 +189,64 @@
                   <button
                     class="choice-btn"
                     [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW'"
+                    [class.pending]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).saving"
+                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).saved && !stateFor(match.id).saving"
+                    [class.error]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).error"
                     (click)="selectDoubleChance(match, 'HOME_OR_DRAW')"
                   >
+                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="1"
+                        width="28"
+                        height="28"
+                        rx="7"
+                        pathLength="100"
+                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                      ></rect>
+                    </svg>
                     1X
                   </button>
                   <button
                     class="choice-btn"
                     [class.selected]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY'"
+                    [class.pending]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).saving"
+                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
+                    [class.error]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).error"
                     (click)="selectDoubleChance(match, 'DRAW_OR_AWAY')"
                   >
+                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="1"
+                        width="28"
+                        height="28"
+                        rx="7"
+                        pathLength="100"
+                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                      ></rect>
+                    </svg>
                     X2
                   </button>
                   <button
                     class="choice-btn"
                     [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY'"
+                    [class.pending]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).saving"
+                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
+                    [class.error]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).error"
                     (click)="selectDoubleChance(match, 'HOME_OR_AWAY')"
                   >
+                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="1"
+                        width="28"
+                        height="28"
+                        rx="7"
+                        pathLength="100"
+                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                      ></rect>
+                    </svg>
                     12
                   </button>
                 </div>
@@ -196,22 +255,64 @@
                   <button
                     class="choice-btn"
                     [class.selected]="stateFor(match.id).choice === 'HOME'"
+                    [class.pending]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).saving"
+                    [class.confirmed]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).saved && !stateFor(match.id).saving"
+                    [class.error]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).error"
                     (click)="selectChoice(match, 'HOME')"
                   >
+                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="1"
+                        width="28"
+                        height="28"
+                        rx="7"
+                        pathLength="100"
+                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                      ></rect>
+                    </svg>
                     1
                   </button>
                   <button
                     class="choice-btn"
                     [class.selected]="stateFor(match.id).choice === 'DRAW'"
+                    [class.pending]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).saving"
+                    [class.confirmed]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).saved && !stateFor(match.id).saving"
+                    [class.error]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).error"
                     (click)="selectChoice(match, 'DRAW')"
                   >
+                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="1"
+                        width="28"
+                        height="28"
+                        rx="7"
+                        pathLength="100"
+                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                      ></rect>
+                    </svg>
                     X
                   </button>
                   <button
                     class="choice-btn"
                     [class.selected]="stateFor(match.id).choice === 'AWAY'"
+                    [class.pending]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).saving"
+                    [class.confirmed]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
+                    [class.error]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).error"
                     (click)="selectChoice(match, 'AWAY')"
                   >
+                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
+                      <rect
+                        x="1"
+                        y="1"
+                        width="28"
+                        height="28"
+                        rx="7"
+                        pathLength="100"
+                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                      ></rect>
+                    </svg>
                     2
                   </button>
                 </div>
