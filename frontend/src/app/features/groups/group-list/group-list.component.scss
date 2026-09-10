@@ -39,6 +39,11 @@
   border: 1px solid var(--border);
   padding: 14px;
   cursor: pointer;
+
+  &.active {
+    background: var(--accent-bg);
+    border-color: var(--accent-border);
+  }
 }
 
 .group-top {
@@ -66,8 +71,35 @@
   min-width: 0;
 }
 
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .name {
   font: 600 15px/1.2 var(--font-ui);
+}
+
+.active-badge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  mat-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+  }
 }
 
 .chips {
@@ -213,6 +245,24 @@
   margin: 0 0 16px;
 }
 
+.comeback-toggle {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: -10px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.comeback-detail {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+}
+
 .sheet-form {
   display: flex;
   flex-direction: column;
@@ -278,14 +328,6 @@
   font-size: 20px;
   letter-spacing: 0.15em;
   font-weight: 700;
-}
-
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font: 400 13px/1.4 var(--font-ui);
-  color: var(--text-secondary);
 }
 
 .error {

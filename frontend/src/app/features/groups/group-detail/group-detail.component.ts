@@ -45,8 +45,9 @@ export class GroupDetailComponent implements OnInit {
   readonly editingRules = signal(false);
   readonly savingRules = signal(false);
   readonly comebackPointsPerBonusInput = signal(10);
-  /** Toggles de guardado inmediato (comodin / privacidad): sin modo edicion, se aplican al toque. */
-  readonly togglingRule = signal(false);
+  /** Comodin y privacidad: el toque solo cambia el valor pendiente, se guardan con "Guardar cambios". */
+  readonly selectedComebackEnabled = signal(false);
+  readonly selectedIsPublic = signal(false);
 
   readonly isAdmin = computed(() => {
     const userId = this.authService.currentUser()?.id;
@@ -64,6 +65,28 @@ export class GroupDetailComponent implements OnInit {
     return [...this.selectedCompetitionIds()].filter((id) => !active.has(id)).length;
   });
 
+  readonly hasRuleChanges = computed(() => {
+    const value = this.comebackPointsPerBonusInput();
+    const current = this.group()?.comebackPointsPerBonus;
+    return value >= 1 && value <= 50 && value !== current;
+  });
+
+  readonly hasToggleChanges = computed(() => {
+    const group = this.group();
+    if (!group) {
+      return false;
+    }
+    return this.selectedComebackEnabled() !== group.comebackEnabled || this.selectedIsPublic() !== group.isPublic;
+  });
+
+  /** Un unico botón "Guardar cambios" cubre competiciones, reglas y los toggles: no hay un botón por sección. */
+  readonly hasAnyChanges = computed(
+    () =>
+      this.hasCompetitionChanges() || (this.editingRules() && this.hasRuleChanges()) || this.hasToggleChanges(),
+  );
+
+  readonly saving = computed(() => this.savingCompetitions() || this.savingRules());
+
   readonly inviteLink = computed(() => {
     const group = this.group();
     return group ? `${window.location.origin}/groups/join/${group.inviteCode}` : '';
@@ -80,6 +103,8 @@ export class GroupDetailComponent implements OnInit {
         this.members.set(members);
         this.catalog.set(this.competitionsService.catalog());
         this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
+        this.selectedComebackEnabled.set(group.comebackEnabled);
+        this.selectedIsPublic.set(group.isPublic);
         const active = new Set(
           (group.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competitionId),
         );
@@ -110,7 +135,21 @@ export class GroupDetailComponent implements OnInit {
     });
   }
 
-  saveCompetitions(): void {
+  /** Un unico punto de guardado para todo lo editable en esta pantalla (competiciones + reglas + toggles). */
+  saveChanges(): void {
+    const competitionsChanged = this.hasCompetitionChanges();
+    const rulesChanged = (this.editingRules() && this.hasRuleChanges()) || this.hasToggleChanges();
+    if (!competitionsChanged && !rulesChanged) {
+      return;
+    }
+    if (!competitionsChanged) {
+      this.saveRules();
+      return;
+    }
+    this.saveCompetitions(rulesChanged);
+  }
+
+  private saveCompetitions(alsoSaveRules: boolean): void {
     const competitionIds = [...this.selectedCompetitionIds()];
     if (competitionIds.length === 0) {
       this.snackBar.open('Selecciona al menos una competicion', 'Cerrar', { duration: 3000 });
@@ -135,7 +174,11 @@ export class GroupDetailComponent implements OnInit {
           this.group.set(group);
           this.activeCompetitionIds.set(new Set(competitionIds));
           this.savingCompetitions.set(false);
-          this.snackBar.open('Competiciones actualizadas', 'Cerrar', { duration: 2500 });
+          if (alsoSaveRules) {
+            this.saveRules();
+          } else {
+            this.snackBar.open('Cambios guardados', 'Cerrar', { duration: 2500 });
+          }
         },
         error: (error: HttpErrorResponse) => {
           this.savingCompetitions.set(false);
@@ -161,52 +204,54 @@ export class GroupDetailComponent implements OnInit {
   }
 
   saveRules(): void {
-    this.savingRules.set(true);
-    this.groupsService
-      .updateRules(this.groupId, { comebackPointsPerBonus: this.comebackPointsPerBonusInput() })
-      .subscribe({
-        next: (group) => {
-          this.group.set(group);
-          this.savingRules.set(false);
-          this.editingRules.set(false);
-          this.snackBar.open('Reglas actualizadas', 'Cerrar', { duration: 2500 });
-        },
-        error: (error: HttpErrorResponse) => {
-          this.savingRules.set(false);
-          this.snackBar.open(error.error?.message ?? 'No se pudo guardar', 'Cerrar', { duration: 3000 });
-        },
-      });
-  }
-
-  /** Comodin y privacidad se guardan al toque, sin pasar por el modo "Editar". */
-  toggleComebackEnabled(): void {
     const group = this.group();
-    if (!this.isAdmin() || !group || this.togglingRule()) {
+    if (!group) {
       return;
     }
-    this.applyToggle({ comebackEnabled: !group.comebackEnabled });
+    const payload: { comebackPointsPerBonus?: number; comebackEnabled?: boolean; isPublic?: boolean } = {};
+    if (this.editingRules() && this.hasRuleChanges()) {
+      payload.comebackPointsPerBonus = this.comebackPointsPerBonusInput();
+    }
+    if (this.selectedComebackEnabled() !== group.comebackEnabled) {
+      payload.comebackEnabled = this.selectedComebackEnabled();
+    }
+    if (this.selectedIsPublic() !== group.isPublic) {
+      payload.isPublic = this.selectedIsPublic();
+    }
+    if (Object.keys(payload).length === 0) {
+      return;
+    }
+
+    this.savingRules.set(true);
+    this.groupsService.updateRules(this.groupId, payload).subscribe({
+      next: (updated) => {
+        this.group.set(updated);
+        this.selectedComebackEnabled.set(updated.comebackEnabled);
+        this.selectedIsPublic.set(updated.isPublic);
+        this.savingRules.set(false);
+        this.editingRules.set(false);
+        this.snackBar.open('Cambios guardados', 'Cerrar', { duration: 2500 });
+      },
+      error: (error: HttpErrorResponse) => {
+        this.savingRules.set(false);
+        this.snackBar.open(error.error?.message ?? 'No se pudo guardar', 'Cerrar', { duration: 3000 });
+      },
+    });
+  }
+
+  /** Comodin y privacidad: solo cambian el valor pendiente, se guardan con "Guardar cambios". */
+  toggleComebackEnabled(): void {
+    if (!this.isAdmin()) {
+      return;
+    }
+    this.selectedComebackEnabled.update((value) => !value);
   }
 
   togglePrivacy(): void {
-    const group = this.group();
-    if (!this.isAdmin() || !group || this.togglingRule()) {
+    if (!this.isAdmin()) {
       return;
     }
-    this.applyToggle({ isPublic: !group.isPublic });
-  }
-
-  private applyToggle(change: { comebackEnabled?: boolean; isPublic?: boolean }): void {
-    this.togglingRule.set(true);
-    this.groupsService.updateRules(this.groupId, change).subscribe({
-      next: (group) => {
-        this.group.set(group);
-        this.togglingRule.set(false);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.togglingRule.set(false);
-        this.snackBar.open(error.error?.message ?? 'No se pudo actualizar', 'Cerrar', { duration: 3000 });
-      },
-    });
+    this.selectedIsPublic.update((value) => !value);
   }
 
   copyInviteLink(): void {

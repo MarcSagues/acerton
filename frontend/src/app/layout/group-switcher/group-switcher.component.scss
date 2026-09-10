@@ -50,3 +50,22 @@
   font: 500 13px/1.2 var(--font-ui);
   color: var(--accent);
 }
+
+.group-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  &.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+  }
+}

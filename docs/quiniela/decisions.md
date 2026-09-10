@@ -4,6 +4,21 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-10 — Sprint 2 (corrección de la regla de Seguimiento en GitHub)
+
+- **Sustituye la decisión de Sprint 0/1** sobre cuándo mover un issue a
+  Status "Test" en el Project. Antes: al hacer merge de `dev` a `main`.
+  Ahora: al subir algo implementado a `dev`. Motivo dado por el usuario:
+  se había entendido que la regla debía aplicarse siempre que se
+  implementa algo, no solo al mergear a main — y en la práctica `dev` (
+  `dev.acerton.app`) es el entorno donde él prueba, así que es ahí donde
+  algo pasa a estar "listo para probar", no en el merge a producción.
+  Efecto inmediato: el issue #7 (Sprint 2), completo en `dev` desde hace
+  varios commits pero todavía en "New features" porque no se había
+  mergeado a `main`, se movió a "Test" retroactivamente. Ver
+  `.claude/skills/quiniela/SKILL.md` § Seguimiento en GitHub para el
+  texto actualizado de la regla.
+
 ## 2026-09-10 — Sprint 0
 
 - **Skill de proyecto, no global.** `/quiniela` vive en
@@ -180,6 +195,45 @@ roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
   sesión — el usuario lo concedió con `gh auth refresh -s project`
   (acción suya, requiere navegador). Si una sesión futura no lo tiene,
   hay que pedírselo de la misma forma, nunca intentar sortearlo.
+
+## 2026-09-10 — Sprint 2 (grupos y navegación)
+
+- **`postLoginRoute()` centralizado en `GroupsService`**, usado en los 4
+  sitios donde termina un login (email, registro, Google nativo, Google
+  web) en vez de duplicar la lógica de "cuántos grupos tengo" en cada
+  componente.
+- **`returnUrl` vía query param para login normal, vía `sessionStorage`
+  para Google web.** El login de Google en web sale completamente de la
+  app (redirección a Google y vuelta a través del backend) — un query
+  param no sobrevive ese viaje porque el backend no lo conoce. Se decidió
+  `sessionStorage` (mismo origen antes y después) en vez de tocar el
+  backend para que reenvíe un parámetro `state` de OAuth, por ser un
+  cambio mucho más pequeño y sin tocar el flujo de Passport.
+- **Bug encontrado y corregido en el camino**: `auth-page`
+  (`setMode()`) renavegaba a `/login`/`/register` sin `queryParamsHandling:
+  'preserve'`, así que cualquier `returnUrl` puesto por el guard se
+  borraba nada más cargar la página (se ejecuta desde `ngOnInit`). Sin
+  este fix, la función de enlaces directos no habría funcionado nunca.
+- **`myPosition` en `/groups/mine` reutiliza el mismo criterio de scope
+  que la pantalla de Tabla** (competición única vs. combinada si hay
+  varias activas) en vez de inventar uno nuevo — implementado como un
+  `findFirst` adicional por grupo (N+1 aceptado: la lista de grupos de un
+  usuario es pequeña). Efecto colateral positivo detectado y corregido de
+  paso: los chips de competiciones de la tarjeta de grupo nunca se
+  mostraban porque la consulta original no incluía esa relación.
+- **Alcance de "respetar enlaces directos" limitado a `authGuard` y
+  `usernameGuard`.** `hasGroupGuard` (0 grupos) se dejó fuera a propósito
+  — encadenar un `returnUrl` a través de "crea o únete a un grupo primero"
+  es un caso mucho más raro (un enlace a algo de un grupo concreto no
+  tiene sentido para alguien que no pertenece a ninguno) y habría añadido
+  complejidad desproporcionada para el beneficio.
+- **"Rueda de ajustes" se deja como está** (icono de "sliders", no una
+  rueda literal) — decisión explícita al cerrar el sprint, no un olvido:
+  cumple el mismo propósito y cambiarlo sería puramente estético.
+- **Sprint 2 no se mergea a `main` en la misma sesión que se implementa**,
+  a diferencia del Sprint 1 — el usuario pidió explícitamente probarlo
+  primero. Documentado para que quede claro que "implementado y
+  verificado en web" no significa "ya en producción" en este caso.
 
 ## Hallazgos técnicos que condicionan sprints futuros (no son decisiones de producto, pero hay que decidir antes de implementar)
 

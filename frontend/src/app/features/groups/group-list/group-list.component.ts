@@ -23,6 +23,7 @@ export class GroupListComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly groups = this.groupsService.myGroups;
+  readonly activeGroupId = this.activeGroupService.activeId;
   readonly loading = signal(true);
 
   readonly publicGroups = signal<Group[]>([]);
@@ -32,6 +33,8 @@ export class GroupListComponent implements OnInit {
     const myIds = new Set(this.groups().map((g) => g.id));
     return this.publicGroups().filter((g) => !myIds.has(g.id));
   });
+
+  readonly showComebackDetail = signal(false);
 
   readonly showCreateSheet = signal(false);
   readonly showJoinSheet = signal(false);
@@ -47,6 +50,10 @@ export class GroupListComponent implements OnInit {
 
   setScoringMode(mode: ScoringMode): void {
     this.createForm.patchValue({ scoringMode: mode });
+  }
+
+  setPrivacy(isPublic: boolean): void {
+    this.createForm.patchValue({ isPublic });
   }
 
   readonly joinForm = this.fb.nonNullable.group({
@@ -88,6 +95,7 @@ export class GroupListComponent implements OnInit {
     this.showCreateSheet.set(true);
     this.showJoinSheet.set(false);
     this.errorMessage.set(null);
+    this.showComebackDetail.set(false);
   }
 
   openJoinSheet(): void {
@@ -103,7 +111,7 @@ export class GroupListComponent implements OnInit {
 
   goToGroup(groupId: string): void {
     this.activeGroupService.setActive(groupId);
-    this.router.navigate(['/matchday']);
+    this.router.navigate(['/rankings']);
   }
 
   createGroup(): void {

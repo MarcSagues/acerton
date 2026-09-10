@@ -16,6 +16,8 @@ export interface Group {
   updatedAt: string;
   _count?: { memberships: number };
   groupCompetitions?: GroupCompetition[];
+  /** Tu posicion en la clasificacion general (TOTAL) de este grupo, o null si todavia no hay ninguna calculada. Solo viene informado en /groups/mine. */
+  myPosition?: { position: number; points: number } | null;
 }
 
 export type GroupRole = 'ADMIN' | 'MEMBER';

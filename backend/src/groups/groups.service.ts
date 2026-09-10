@@ -90,12 +90,43 @@ export class GroupsService {
     });
   }
 
-  findMineForUser(userId: string) {
-    return this.prisma.group.findMany({
+  /**
+   * Ademas de los datos propios del grupo, adjunta la posicion general
+   * (clasificacion TOTAL) del usuario en cada uno, para la preview de la
+   * lista "Mis grupos" — mismo criterio de scope que usa la pantalla de
+   * Tabla: si el grupo tiene mas de una competicion activa se usa la
+   * clasificacion combinada (competitionId null), si tiene exactamente
+   * una se usa la suya, y si no tiene ninguna todavia no hay posicion.
+   */
+  async findMineForUser(userId: string) {
+    const groups = await this.prisma.group.findMany({
       where: { memberships: { some: { userId } } },
-      include: { _count: { select: { memberships: true } } },
+      include: {
+        _count: { select: { memberships: true } },
+        groupCompetitions: { include: { competition: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
+
+    return Promise.all(
+      groups.map(async (group) => {
+        const activeCompetitionIds = group.groupCompetitions
+          .filter((gc) => gc.isActive)
+          .map((gc) => gc.competitionId);
+        if (activeCompetitionIds.length === 0) {
+          return { ...group, myPosition: null };
+        }
+        const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;
+        const snapshot = await this.prisma.rankingSnapshot.findFirst({
+          where: { groupId: group.id, userId, period: 'TOTAL', competitionId },
+          orderBy: { createdAt: 'desc' },
+        });
+        return {
+          ...group,
+          myPosition: snapshot ? { position: snapshot.position, points: snapshot.points } : null,
+        };
+      }),
+    );
   }
 
   findPublicGroups() {

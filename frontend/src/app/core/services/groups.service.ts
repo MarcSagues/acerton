@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Group, GroupMember, ScoringMode } from '../models/group.model';
 
@@ -22,6 +22,15 @@ export class GroupsService {
     return this.http
       .get<Group[]>(`${environment.apiUrl}/groups/mine`)
       .pipe(tap((groups) => this.myGroupsSignal.set(groups)));
+  }
+
+  /**
+   * A donde navegar justo despues de iniciar sesion: sin grupos da igual
+   * (hasGroupGuard te manda a /welcome de todas formas), con uno vas
+   * directo a Jornada, con varios entras en Grupos a elegir cual ver.
+   */
+  postLoginRoute() {
+    return this.loadMyGroups().pipe(map((groups) => (groups.length > 1 ? ['/groups'] : ['/matchday'])));
   }
 
   loadPublicGroups() {
