@@ -153,9 +153,6 @@
         } @else if (isAdmin() && g.scoringMode === 'ONE_X_TWO') {
           <button class="edit-rules-btn mono" (click)="startEditingRules()">Editar reglas</button>
         }
-        @if (isAdmin() && hasAnyChanges()) {
-          <button class="cta" [disabled]="saving()" (click)="saveChanges()">Guardar cambios</button>
-        }
       </div>
 
       <div class="section">
@@ -172,6 +169,10 @@
           }
         </div>
       </div>
+    </div>
+
+    <div class="floating-save" [class.visible]="isAdmin() && hasAnyChanges()">
+      <button class="cta" [disabled]="saving()" (click)="saveChanges()">Guardar cambios</button>
     </div>
   }
 }
