@@ -12,47 +12,56 @@
     <div class="groups">
       @for (group of groups(); track group.id) {
         <div class="group-card" [class.active]="group.id === activeGroupId()" (click)="goToGroup(group.id)">
-          <div class="group-top">
-            <span class="avatar">{{ initials(group.name) }}</span>
-            <div class="meta">
-              <div class="name-row">
-                <div class="name">{{ group.name }}</div>
-                @if (group.id === activeGroupId()) {
-                  <span class="active-badge mono">
-                    <mat-icon inline>check</mat-icon>
-                    activo
-                  </span>
-                }
-              </div>
-              <div class="sub mono">
-                {{ group.isPublic ? 'publico' : 'privado' }} · {{ group._count?.memberships ?? 0 }} miembros ·
-                {{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}
-              </div>
+          @if (group.myPosition; as position) {
+            <div class="group-rank">
+              <span class="rank-position mono">{{ position.position }}&#186;</span>
+              <span class="rank-points mono">{{ position.points }}pts</span>
             </div>
-          </div>
-
-          @if (group.groupCompetitions && group.groupCompetitions.length > 0) {
-            <div class="chips">
-              @for (gc of group.groupCompetitions; track gc.id) {
-                @if (gc.isActive) {
-                  <span class="chip mono">{{ gc.competition.name }}</span>
-                }
-              }
-            </div>
+            <div class="rank-divider"></div>
           }
+          <div class="group-main">
+            <div class="group-top">
+              <span class="avatar">{{ initials(group.name) }}</span>
+              <div class="meta">
+                <div class="name-row">
+                  <div class="name">{{ group.name }}</div>
+                  @if (group.id === activeGroupId()) {
+                    <span class="active-badge mono">
+                      <mat-icon inline>check</mat-icon>
+                      activo
+                    </span>
+                  }
+                </div>
+                <div class="sub mono">
+                  {{ group.isPublic ? 'publico' : 'privado' }} · {{ group._count?.memberships ?? 0 }} miembros ·
+                  {{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}
+                </div>
+              </div>
+            </div>
 
-          <div class="divider"></div>
-          <div class="footer">
-            <span class="footer-label mono">
-              @if (group.myPosition) {
-                Vas {{ group.myPosition.position }}.&#186; &middot; {{ group.myPosition.points }} pts
-              } @else {
-                Ver jornada y clasificacion
-              }
-            </span>
-            <a class="settings-link" [routerLink]="['/groups', group.id, 'settings']" (click)="$event.stopPropagation()">
-              <mat-icon inline>tune</mat-icon>
-            </a>
+            @if (group.groupCompetitions && group.groupCompetitions.length > 0) {
+              <div class="chips">
+                @for (gc of group.groupCompetitions; track gc.id) {
+                  @if (gc.isActive) {
+                    <span class="chip mono">{{ gc.competition.name }}</span>
+                  }
+                }
+              </div>
+            }
+
+            <div class="divider"></div>
+            <div class="footer">
+              <span class="footer-label mono">
+                @if (group.myPosition) {
+                  Vas {{ group.myPosition.position }}.&#186; &middot; {{ group.myPosition.points }} pts
+                } @else {
+                  Ver jornada y clasificacion
+                }
+              </span>
+              <a class="settings-link" [routerLink]="['/groups', group.id, 'settings']" (click)="$event.stopPropagation()">
+                <mat-icon inline>tune</mat-icon>
+              </a>
+            </div>
           </div>
         </div>
       }
