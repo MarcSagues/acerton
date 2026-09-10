@@ -57,7 +57,7 @@ en esta sesión) — pendiente antes de dar el sprint por "Hecho" del todo.
 | Contorno animado también en resultado exacto (ampliación no pedida en el encargo original, añadida por feedback directo del usuario) | ✅ web | Mismo mecanismo que en 1X2 (`drawOffset` ligado a la duración real de la petición), aplicado a la caja combinada de L/V. Sin relleno de fondo al confirmar (rellenar taparía los números escritos) — solo cambia el color del borde. Sustituye al spinner/tick que este modo conservaba desde la primera versión del sprint. |
 | Texto «La jornada se abre en» / «La jornada cierra en» | ✅ web | Confirmado el texto exacto en el DOM, y en viewport de 375px (iPhone SE) **cabe en una sola línea** sin partirse — el riesgo que se había anotado no se materializó con los datos de prueba usados. |
 | Quitar fondo de «Faltan X por enviar» | ✅ web | Confirmado por estilo computado: `background-color: rgba(0,0,0,0)`. |
-| Confirmación «Copiado» al copiar enlace de invitación | ✅ web | Confirmado: snackbar "Copiado" tras conceder permiso de portapapeles y pulsar el botón real. |
+| Confirmación «Copiado» al copiar enlace de invitación | ✅ web | Iterado tras probar en `dev.acerton.app`: en vez de un snackbar, el propio icono del botón cambia de "copiar" a un tick durante 2s (botón deshabilitado ese rato, para no poder volver a pulsar), y vuelve solo al pasar el tiempo. Verificado leyendo el estado real del botón en varios instantes (antes, a los 500ms, a los ~2.2s). |
 | Modal único de confirmación al cerrar sesión | ✅ web | Confirmado: aparece el diálogo, "Cancelar" mantiene la sesión, confirmar cierra sesión y navega a `/login`. |
 
 **Bug encontrado y corregido durante esta verificación (no era parte de

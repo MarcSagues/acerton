@@ -26,6 +26,15 @@ La skill que gestiona todo esto es `/quiniela` (definida en
   red de seguridad: los documentos también se actualizan durante el
   trabajo, por si la sesión se corta antes de poder cerrarla.
 
+## El roadmap también vive en GitHub
+
+Además de estos documentos, cada sprint tiene su issue en
+`MarcSagues/acerton` y aparece en el Project **"Quiniela"** (columnas
+Bugs / New features / Test / In review / Done). Al hacer merge a `main`,
+la skill mueve a "Test" lo que se acaba de implementar o arreglar — el
+detalle completo (IDs, comandos) está en `SKILL.md` § "Seguimiento en
+GitHub".
+
 ## Qué hay en cada documento
 
 | Documento | Para qué sirve |

@@ -1,103 +1,91 @@
 # Estado actual
 
-_Última actualización: 2026-09-10 (Sprint 1 cerrado con varias rondas de feedback; entorno dev/pre documentado como tarea de infraestructura — sesión en curso, todavía no cerrada con `/quiniela cerrar`)._
+_Última actualización: 2026-09-10 (Sprint 1 cerrado; roadmap completo volcado a GitHub Issues/Project; puesta en marcha de dev.acerton.app en curso — sesión todavía abierta, no cerrada con `/quiniela cerrar`)._
 
 ## Sprint activo
 
-**Sprint 1 — Interfaz de juego**: las 10 tareas originales están
-implementadas y verificadas en web, más varias iteraciones de ajuste fino
-pedidas directamente por el usuario tras verlas funcionar (ver
-`decisions.md` para el detalle de cada iteración):
+**Sprint 1 — Interfaz de juego**: cerrado, verificado en web (ver
+`roadmap.md` y `decisions.md` para el detalle de las iteraciones de
+feedback). Pendiente: iOS/Android, y forzar un fallo real de red.
 
-- El efecto de "guardando" pasó de un pulso en bucle → crecimiento radial
-  → trazo direccional con duración fija → **trazo direccional cuya
-  duración la marca la propia petición de red** (versión final), sin
-  ningún borde verde estático de fondo.
-- Resultado exacto: los dos inputs + separador ahora son una sola caja con
-  un único borde, reciben el mismo efecto de trazo (sin relleno de fondo),
-  y las etiquetas L/V se muestran una vez como cabecera de columna, no por
-  fila.
+**Infraestructura — entorno dev/pre**: en curso, más avanzado que
+documentado la última vez. Decidido y ejecutado: rama `dev` de Neon
+(datos de prueba), configuración de build `dev` del frontend. El usuario
+ha ido creando en tiempo real, con indicaciones paso a paso: Web Service
+de Render para dev, proyecto de Cloudflare Pages con dominio
+`dev.acerton.app`, cliente OAuth de Google dedicado (`acerton-dev`, un
+proyecto de Google Cloud propio, no el de producción).
 
-Sigue pendiente (no forzado en esta sesión): verificación en iOS/Android,
-y forzar deliberadamente un fallo real de red (solo se probó con retrasos
-artificiales, no con una petición que realmente falle).
-
-Además, en esta misma sesión se avanzó bastante una **tarea de
-infraestructura fuera de la numeración de sprints**: entorno dev/pre en
-`dev.acerton.app` (ver `roadmap.md` § Infraestructura). Decidido:
-producción a Render Starter (~7$/mes), dev en plan free; datos de prueba
-(no copia de producción); acceso solo para el usuario y su compañero.
-
-Ejecutado en esta sesión:
-- **Neon**: rama `dev` creada a partir de `production` y purgada de datos
-  reales de usuario (con confirmación explícita del usuario, ver
-  `decisions.md`) — catálogo (competiciones/partidos/insignias) intacto.
-- **Frontend**: nueva configuración de build `dev` (`environment.dev.ts`,
-  configuración `dev` en `angular.json`, script `build:dev`) apuntando a
-  `https://api-dev.acerton.app/api` — sin esto el build por defecto
-  usaba la configuración de producción y el login de Google en
-  `dev.acerton.app` autenticaba contra producción (bug real, encontrado
-  y corregido en esta sesión).
-- **Cloudflare Pages + Google Cloud Console**: el usuario fue creando el
-  proyecto de Pages y el redirect URI de Google en tiempo real durante la
-  conversación, con indicaciones paso a paso (sin acceso directo de esta
-  sesión a esos paneles). Quedó pendiente confirmar, tras cambiar el
-  build command de Cloudflare a `npm run build:dev` y redesplegar, que el
-  login ya autentica contra `api-dev.acerton.app` — **verificar esto es
-  el primer paso al retomar**.
-
-Pendiente todavía: subir el backend de **producción** a Render Starter,
-crear el Web Service de **dev** en Render con las variables de entorno ya
-dadas al usuario en el chat, y Cloudflare Access para restringir el
-acceso a los dos emails decididos.
+**Bloqueador actual (a medio resolver)**: el login en `dev.acerton.app`
+todavía no funciona del todo. Encontrados y explicados tres fallos
+sucesivos del despliegue de Render, cada uno resuelto encontrando el
+siguiente debajo:
+1. Start Command usaba `npm run start:dev` (modo watch, compila TS en
+   caliente) en vez de `start:prod` → el proceso reventaba por falta de
+   memoria (plan free, 512MB). Arreglado indicando cambiar a
+   `npm run start:prod`.
+2. `DATABASE_URL` con comillas coladas al pegar el valor en Render →
+   Prisma rechazaba la URL al arrancar ("must start with protocol").
+3. `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` en Render apuntaban al
+   cliente OAuth de **producción**, pero el redirect URI de dev se había
+   registrado en un cliente OAuth **distinto** (`acerton-dev`, proyecto
+   de Google Cloud propio para dev) → `redirect_uri_mismatch`. Se le
+   pidió al usuario cambiar `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` en
+   Render para que coincidan con el cliente de `acerton-dev`
+   (`533114077011-2879726g3d1npjn4e7f9jqme8ls8abjv.apps.googleusercontent.com`)
+   — **sin confirmar todavía si ya funciona tras este último cambio**.
 
 ## Último trabajo verificado
 
-- Sprint 1 (10 tareas + iteraciones de feedback), todo verificado con un
-  navegador real (no solo build): capturas, lectura de `stroke-dashoffset`/
-  `border-color`/`background-color` computados en varios instantes, con
-  peticiones de red retardadas artificialmente para separar las fases.
-- Bug de fuga de estado entre grupos (pre-existente) encontrado y
-  corregido durante la verificación — ver `decisions.md`.
-- Entorno de desarrollo local sigue corriendo (Docker + backend + frontend
-  en segundo plano de esta sesión) para que el usuario pueda probar sin
-  montarlo de nuevo.
+- Sprint 1 (10 tareas + iteraciones de feedback) verificado con navegador
+  real — ver entradas anteriores de `history.md`.
+- Bug de fuga de estado entre grupos (pre-existente) corregido.
+- **Roadmap completo volcado a GitHub**: 16 issues creados en
+  `MarcSagues/acerton`, todos en el Project "Quiniela" (número 4):
+  - 6 issues de tareas del Sprint 1, columna **Test** (ya implementadas,
+    a falta de que el usuario las prueba él mismo).
+  - 9 issues, uno por sprint pendiente (2 al 10), columna **New
+    features**, con las tareas de `roadmap.md` como checklist.
+  - 1 issue de infraestructura dev/pre pendiente, columna **New
+    features**.
+  - Regla nueva guardada en `SKILL.md` § "Seguimiento en GitHub": al
+    hacer merge a `main`, mover a Status "Test" lo implementado/arreglado
+    en ese merge. Requiere que el token de `gh` tenga el scope `project`
+    (ya concedido por el usuario en esta sesión).
+- Entorno de desarrollo local sigue corriendo (Docker + backend +
+  frontend en segundo plano de esta sesión).
 
 ## Siguiente paso concreto
 
-**Inmediato**: confirmar que, tras cambiar el build command de Cloudflare
-Pages a `npm run build:dev` y redesplegar, el login con Google en
-`dev.acerton.app` ya autentica contra `api-dev.acerton.app` (no contra
-producción) y la sesión persiste al volver a `dev.acerton.app`.
+**Inmediato**: confirmar con el usuario si el login en `dev.acerton.app`
+ya funciona tras corregir `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` en
+Render. Si sigue fallando, seguir depurando desde ahí (siguiente
+sospechoso: que Render no haya terminado de redesplegar con las
+variables nuevas, o algún otro campo de esas credenciales mal copiado).
+
+Cuando dev.acerton.app funcione de punta a punta: actualizar el issue de
+infraestructura (#16) marcando sus checkboxes y moverlo a Test si queda
+completo, y actualizar `roadmap.md`/`decisions.md` con el cierre de esta
+puesta en marcha.
 
 Después, dos caminos posibles, a elegir por el usuario:
 
-**A) Seguir con producto — Sprint 2 (Grupos y navegación)**:
-1. Selector Público/Privado de dos opciones en vez de checkbox:
-   `frontend/src/app/features/groups/group-list/group-list.component.html`
-   (línea ~124-127, `formControlName="isPublic"`).
-2. Detalle ampliable del comodín de remontada en el mismo formulario.
-3. Confirmar comportamiento de entrada según nº de grupos y destino al
-   pulsar un grupo (→ Tabla) — no verificado todavía. Ver `roadmap.md`
-   Sprint 2 para la tabla completa.
+**A) Seguir con producto — Sprint 2 (Grupos y navegación)**, issue #7 en
+GitHub. Primeros pasos concretos en `roadmap.md` Sprint 2.
 
-**B) Entorno dev/pre**: pasos 2-6 de `roadmap.md` § Infraestructura
-(subir producción a Render Starter, crear el Web Service de dev, conectar
-Cloudflare Pages + Access) — el usuario tiene que hacerlos él mismo desde
-los paneles, o compartir acceso/tokens en una sesión futura. La connection
-string de la rama `dev` de Neon ya se le entregó en el chat para cuando
-configure las variables de entorno del backend de dev.
+**B) Terminar infraestructura pendiente** (issue #16): subir producción a
+Render Starter, Cloudflare Access.
 
 ## Bloqueos y preguntas pendientes
 
-Ver `backlog.md`. Sin cambios en los bloqueos de sprints de producto
-(Sprint 3 necesita decidir roles/borrado de grupo; Sprint 5/6 necesitan
-diseño de temporadas; Sprint 8 necesita decidir deduplicación de
-insignias). Ninguno bloquea el Sprint 2 ni el entorno dev/pre.
+Ver `backlog.md`. Sin cambios en los bloqueos de sprints de producto.
+Nuevo: confirmar que el login de dev funciona (ver arriba).
 
 ## Cambios sin commit
 
-No — el usuario pidió explícitamente subirlo todo ("sí, súbelo") y se
-commiteó y empujó a `origin/dev` en esta misma sesión. El entorno local
-(Docker + backend + frontend) sigue corriendo en segundo plano por si
-hace falta seguir probando.
+Sí — los cambios de esta última tanda (`SKILL.md` con la sección de
+seguimiento en GitHub, y las actualizaciones de `README.md`/
+`decisions.md`/`state.md`/este archivo) todavía no se han commiteado. Los
+issues y el Project de GitHub SÍ están creados de verdad (no dependen de
+comitear nada, se hicieron directamente vía API). El entorno local
+(Docker + backend + frontend) sigue corriendo en segundo plano.

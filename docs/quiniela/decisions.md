@@ -159,6 +159,28 @@ roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
   lo que evita que desaparezca sola, aunque no evita un borrado manual
   accidental.
 
+## 2026-09-10 — Seguimiento del roadmap en GitHub
+
+- **El roadmap se refleja también como issues + Project de GitHub**, a
+  petición explícita del usuario, no solo en `docs/quiniela/`. Un issue
+  por sprint (2 al 10, más uno de infraestructura) con las tareas de su
+  tabla como checklist, label `enhancement`, en el Project **"Quiniela"**
+  (número 4, `MarcSagues`), columna "New features". Las 6 tareas del
+  Sprint 1 ya tenían issue propio (creados antes de esta decisión) en
+  columna "Test", porque ya estaban implementadas y solo faltaba
+  verificarlas — no se tocaron.
+- **Regla permanente aceptada y guardada en `SKILL.md`**: cada merge a
+  `main` mueve a Status "Test" las funcionalidades/bugs que entren en ese
+  merge. Documentado con los IDs exactos (project, campo Status, cada
+  opción) para no tener que redescubrirlos cada sesión. El propio merge
+  sigue necesitando autorización explícita, como cualquier otro; lo único
+  que pasa a ser automático es la actualización del Project una vez el
+  merge ya está autorizado y hecho.
+- El token de `gh` no tenía el scope `project` al principio de esta
+  sesión — el usuario lo concedió con `gh auth refresh -s project`
+  (acción suya, requiere navegador). Si una sesión futura no lo tiene,
+  hay que pedírselo de la misma forma, nunca intentar sortearlo.
+
 ## Hallazgos técnicos que condicionan sprints futuros (no son decisiones de producto, pero hay que decidir antes de implementar)
 
 Estos son hechos comprobados en el código, no interpretaciones. Las

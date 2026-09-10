@@ -88,6 +88,10 @@ Igual que el paso anterior, y además:
    estos documentos, no de la memoria de la conversación.
 10. No hagas commit, push, despliegue ni ninguna operación destructiva sin
     autorización explícita para esa acción concreta en esta sesión.
+11. Si en esta sesión se hace merge a `main` (autorizado explícitamente,
+    como dice el punto anterior), aplica la regla de "Seguimiento en
+    GitHub" más abajo: mueve a Status "Test" los issues de las
+    funcionalidades/bugs que entren en ese merge.
 
 ### `estado` — `/quiniela estado`
 
@@ -124,6 +128,76 @@ Antes de terminar la sesión:
 5. Indica explícitamente si quedan cambios sin commit en el repositorio.
 6. No hagas commit/push como parte de este cierre salvo que el usuario lo
    pida en esta misma sesión.
+7. Si durante la sesión hubo un merge a `main`, comprueba que se aplicó
+   la regla de "Seguimiento en GitHub" (issues movidos a Status "Test")
+   — si se te olvidó hacerlo en su momento, hazlo ahora antes de cerrar.
+
+## Seguimiento en GitHub (issues + Project "Quiniela")
+
+Además de los documentos de `docs/quiniela/`, el roadmap se refleja en
+GitHub para que el usuario pueda verlo como tablero: repo
+`MarcSagues/acerton`, Project **"Quiniela"** (número 4, propietario
+`MarcSagues`). Su campo Status tiene estas columnas fijas: `Bugs`,
+`New features`, `Test`, `In review`, `Done`.
+
+IDs ya conocidos (evita tener que redescubrirlos con `gh project
+field-list` cada vez — solo vuelve a consultarlos si alguno de estos
+comandos falla porque ya no existen):
+
+```
+Project ID:      PVT_kwHOA2H8HM4BjDEp
+Status field ID: PVTSSF_lAHOA2H8HM4BjDEpzhh44QY
+Bugs:            f75ad846
+New features:    47fc9ee4
+Test:            e18bf179
+In review:       aba860b9
+Done:            98236657
+```
+
+**Requisito técnico**: el token de `gh` necesita el scope `project`.
+Compruébalo con `gh auth status`. Si falta, pide al usuario que ejecute
+él mismo `gh auth refresh -s project` (abre el navegador, no se puede
+hacer sin su interacción) — no lo des por hecho ni lo intentes rodear.
+
+### Cómo se refleja cada cosa
+
+- **Cada sprint/tarea grande del roadmap** tiene (o debería tener) un
+  issue en GitHub con las tareas de su tabla de `roadmap.md` como
+  checklist Markdown (`- [ ] tarea`), label `enhancement`, en Status
+  **"New features"** mientras está pendiente. Si al tocar un sprint no
+  existe todavía su issue, créalo con ese mismo formato y añádelo al
+  proyecto antes de seguir.
+- **Bugs encontrados** (no forman parte de una tarea del roadmap, se
+  descubren al implementar o verificar algo) van en su propio issue,
+  label `bug` (créala en el repo si no existe todavía), Status
+  **"Bugs"** mientras están sin arreglar.
+- **Regla de trabajo permanente — mover a "Test" al hacer merge a
+  `main`**: cada vez que se hace merge de `dev` a `main` (el merge en sí
+  sigue necesitando autorización explícita del usuario en esa sesión,
+  como cualquier operación así), las funcionalidades implementadas y los
+  bugs arreglados que entren en ese merge pasan su Status a **"Test"**
+  — es la señal de "esto ya está en el código que se va a desplegar,
+  falta que alguien lo pruebe". Como parte de ese mismo merge:
+  1. Identifica qué issues cubre lo que se acaba de mergear (por sprint,
+     por tarea concreta dentro de un sprint, o por bug).
+  2. Si el issue no estaba todavía en el proyecto, añádelo:
+     `gh project item-add 4 --owner MarcSagues --url <issue-url>`
+     (devuelve un item id; pide `--format json` para capturarlo).
+  3. Cambia su Status a Test:
+     `gh project item-edit --project-id PVT_kwHOA2H8HM4BjDEp --id <item-id> --field-id PVTSSF_lAHOA2H8HM4BjDEpzhh44QY --single-select-option-id e18bf179`
+  4. Si un issue de sprint con checklist solo se completó parcialmente en
+     ese merge, marca en el cuerpo del issue (`gh issue edit`) solo las
+     casillas concretas que ya están hechas — no muevas todo el issue a
+     Test hasta que el sprint entero esté implementado.
+  5. Si el merge sube trabajo intermedio no verificable todavía (p. ej.
+     infraestructura a medio configurar, o una tarea a la que le falta
+     una parte para poder probarse de verdad), **no** lo muevas a Test
+     — esa columna significa "ya lo puedes probar", no "se está
+     trabajando en ello".
+- Cuando el usuario (o una sesión futura, tras que él lo pruebe) confirme
+  que algo funciona, el paso de Test a Done (o de vuelta a Bugs/New
+  features si falla) lo decide el usuario explícitamente — no lo hagas
+  sin que te lo pida.
 
 ## Reglas generales (aplican siempre)
 
