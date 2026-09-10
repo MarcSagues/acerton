@@ -161,7 +161,7 @@
         @if (editingRules()) {
           <div class="rules-actions">
             <button class="btn ghost" [disabled]="savingRules()" (click)="cancelEditingRules()">Cancelar</button>
-            <button class="btn primary" [disabled]="savingRules()" (click)="saveRules()">Guardar reglas</button>
+            <button class="btn primary" [disabled]="savingRules() || !hasRuleChanges()" (click)="saveRules()">Guardar reglas</button>
           </div>
         }
       </div>

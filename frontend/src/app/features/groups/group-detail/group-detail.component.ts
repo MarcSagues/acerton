@@ -64,6 +64,12 @@ export class GroupDetailComponent implements OnInit {
     return [...this.selectedCompetitionIds()].filter((id) => !active.has(id)).length;
   });
 
+  readonly hasRuleChanges = computed(() => {
+    const value = this.comebackPointsPerBonusInput();
+    const current = this.group()?.comebackPointsPerBonus;
+    return value >= 1 && value <= 50 && value !== current;
+  });
+
   readonly inviteLink = computed(() => {
     const group = this.group();
     return group ? `${window.location.origin}/groups/join/${group.inviteCode}` : '';
