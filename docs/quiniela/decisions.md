@@ -4,6 +4,21 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-10 — Sprint 2 (corrección de la regla de Seguimiento en GitHub)
+
+- **Sustituye la decisión de Sprint 0/1** sobre cuándo mover un issue a
+  Status "Test" en el Project. Antes: al hacer merge de `dev` a `main`.
+  Ahora: al subir algo implementado a `dev`. Motivo dado por el usuario:
+  se había entendido que la regla debía aplicarse siempre que se
+  implementa algo, no solo al mergear a main — y en la práctica `dev` (
+  `dev.acerton.app`) es el entorno donde él prueba, así que es ahí donde
+  algo pasa a estar "listo para probar", no en el merge a producción.
+  Efecto inmediato: el issue #7 (Sprint 2), completo en `dev` desde hace
+  varios commits pero todavía en "New features" porque no se había
+  mergeado a `main`, se movió a "Test" retroactivamente. Ver
+  `.claude/skills/quiniela/SKILL.md` § Seguimiento en GitHub para el
+  texto actualizado de la regla.
+
 ## 2026-09-10 — Sprint 0
 
 - **Skill de proyecto, no global.** `/quiniela` vive en

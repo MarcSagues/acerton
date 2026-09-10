@@ -66,10 +66,12 @@ producción a Render Starter y Cloudflare Access. Ver issue #16.
 mergea a `main`. Todo está en `dev`, empujado a `origin/dev`, **no
 mergeado a `main` todavía** — a la espera de que se pruebe primero.
 
-Cuando el usuario confirme que funciona: mergear a `main` (con
-autorización explícita, como siempre) y, como parte de ese merge, mover
-a Status "Test" en GitHub Project el issue #7 (Sprint 2) y marcar sus
-checkboxes.
+El issue #7 (Sprint 2) ya está en Status "Test" en el GitHub Project
+(corregido 2026-09-10: la regla de la skill pasa a moverlo a Test al
+subir a `dev`, no al mergear a `main` — ver `decisions.md`). Cuando el
+usuario confirme que funciona: mergear a `main` (con autorización
+explícita, como siempre); el paso de Test a Done lo decide el usuario
+explícitamente después.
 
 Después, Sprint 3 (Roles y membresías, issue #8) está bloqueado por
 decisiones de modelo de datos — ver `backlog.md` — o seguir con

@@ -88,10 +88,13 @@ Igual que el paso anterior, y además:
    estos documentos, no de la memoria de la conversación.
 10. No hagas commit, push, despliegue ni ninguna operación destructiva sin
     autorización explícita para esa acción concreta en esta sesión.
-11. Si en esta sesión se hace merge a `main` (autorizado explícitamente,
-    como dice el punto anterior), aplica la regla de "Seguimiento en
-    GitHub" más abajo: mueve a Status "Test" los issues de las
-    funcionalidades/bugs que entren en ese merge.
+11. Cada vez que en esta sesión se suba algo implementado a `dev` (con
+    autorización, como dice el punto anterior), aplica la regla de
+    "Seguimiento en GitHub" más abajo: refleja ese avance en el Project
+    (checkbox marcada en el issue del sprint, issue de bug creado, o el
+    sprint entero pasado a Status "Test" si con esa subida ya queda
+    completo en dev). `dev` es el entorno de pruebas — es la subida a
+    `dev`, no el merge a `main`, lo que dispara este paso.
 
 ### `estado` — `/quiniela estado`
 
@@ -128,9 +131,10 @@ Antes de terminar la sesión:
 5. Indica explícitamente si quedan cambios sin commit en el repositorio.
 6. No hagas commit/push como parte de este cierre salvo que el usuario lo
    pida en esta misma sesión.
-7. Si durante la sesión hubo un merge a `main`, comprueba que se aplicó
-   la regla de "Seguimiento en GitHub" (issues movidos a Status "Test")
-   — si se te olvidó hacerlo en su momento, hazlo ahora antes de cerrar.
+7. Si durante la sesión se subió algo a `dev` (o se hizo merge a `main`),
+   comprueba que se aplicó la regla de "Seguimiento en GitHub" (checkbox
+   marcada, issue de bug creado, o Status "Test") — si se te olvidó
+   hacerlo en su momento, hazlo ahora antes de cerrar.
 
 ## Seguimiento en GitHub (issues + Project "Quiniela")
 
@@ -171,33 +175,37 @@ hacer sin su interacción) — no lo des por hecho ni lo intentes rodear.
   descubren al implementar o verificar algo) van en su propio issue,
   label `bug` (créala en el repo si no existe todavía), Status
   **"Bugs"** mientras están sin arreglar.
-- **Regla de trabajo permanente — mover a "Test" al hacer merge a
-  `main`**: cada vez que se hace merge de `dev` a `main` (el merge en sí
-  sigue necesitando autorización explícita del usuario en esa sesión,
-  como cualquier operación así), las funcionalidades implementadas y los
-  bugs arreglados que entren en ese merge pasan su Status a **"Test"**
-  — es la señal de "esto ya está en el código que se va a desplegar,
-  falta que alguien lo pruebe". Como parte de ese mismo merge:
-  1. Identifica qué issues cubre lo que se acaba de mergear (por sprint,
+- **Regla de trabajo permanente — mover a "Test" al subir a `dev`**:
+  `dev` es el entorno de pruebas (se despliega en `dev.acerton.app`); es
+  ahí, no en el merge a `main`, donde el usuario prueba lo que se ha
+  implementado. Por eso, cada vez que se hace push a `dev` de algo
+  implementado (con la autorización de esa sesión, como cualquier push),
+  se refleja en el Project en ese mismo momento — no se espera a un
+  merge a `main` posterior:
+  1. Identifica qué issues cubre lo que se acaba de subir (por sprint,
      por tarea concreta dentro de un sprint, o por bug).
   2. Si el issue no estaba todavía en el proyecto, añádelo:
      `gh project item-add 4 --owner MarcSagues --url <issue-url>`
      (devuelve un item id; pide `--format json` para capturarlo).
-  3. Cambia su Status a Test:
+  3. Si un issue de sprint tiene checklist, marca (`gh issue edit`) las
+     casillas concretas ya implementadas y verificadas en dev.
+  4. Cambia su Status a Test **solo cuando, con esa subida, el issue
+     queda completo** (sprint entero implementado, o bug arreglado del
+     todo) y ya es algo que el usuario puede probar de verdad en dev:
      `gh project item-edit --project-id PVT_kwHOA2H8HM4BjDEp --id <item-id> --field-id PVTSSF_lAHOA2H8HM4BjDEpzhh44QY --single-select-option-id e18bf179`
-  4. Si un issue de sprint con checklist solo se completó parcialmente en
-     ese merge, marca en el cuerpo del issue (`gh issue edit`) solo las
-     casillas concretas que ya están hechas — no muevas todo el issue a
-     Test hasta que el sprint entero esté implementado.
-  5. Si el merge sube trabajo intermedio no verificable todavía (p. ej.
-     infraestructura a medio configurar, o una tarea a la que le falta
-     una parte para poder probarse de verdad), **no** lo muevas a Test
-     — esa columna significa "ya lo puedes probar", no "se está
-     trabajando en ello".
-- Cuando el usuario (o una sesión futura, tras que él lo pruebe) confirme
-  que algo funciona, el paso de Test a Done (o de vuelta a Bugs/New
-  features si falla) lo decide el usuario explícitamente — no lo hagas
-  sin que te lo pida.
+  5. Si lo que se sube es trabajo intermedio no verificable todavía (p.
+     ej. infraestructura a medio configurar, o una tarea a la que le
+     falta una parte para poder probarse de verdad), **no** lo muevas a
+     Test — esa columna significa "ya lo puedes probar en dev", no "se
+     está trabajando en ello". Deja las casillas ya hechas marcadas y el
+     Status donde estaba.
+- El merge a `main` (autorizado aparte, como cualquier operación así) es
+  el paso a producción — no cambia el Status por sí mismo, porque la
+  señal de "esto se puede probar" ya se dio al subirlo a dev.
+- Cuando el usuario (o una sesión futura, tras que él lo pruebe, en dev o
+  ya en producción) confirme que algo funciona, el paso de Test a Done
+  (o de vuelta a Bugs/New features si falla) lo decide el usuario
+  explícitamente — no lo hagas sin que te lo pida.
 
 ## Reglas generales (aplican siempre)
 
