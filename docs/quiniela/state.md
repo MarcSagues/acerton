@@ -37,6 +37,10 @@ relevante:
   Miembros). "Grupo privado" y "Comodín de remontada" ya no guardan al
   toque (petición inmediata) — ahora también quedan pendientes y se
   guardan junto a todo lo demás con "Guardar cambios".
+- La lista "Mis grupos" ahora marca visualmente la tarjeta del grupo
+  activo (fondo + borde verdes, insignia "Activo") — antes solo se veía
+  en el desplegable superior (`group-switcher`), no al entrar en la
+  pestaña Grupos.
 
 Sin verificar todavía: iOS/Android (solo web).
 
