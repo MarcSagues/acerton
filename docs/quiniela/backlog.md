@@ -83,6 +83,15 @@ hacer desde esta sesión en cuanto el usuario confirme que se ejecute.
   de alcance del roadmap de producto, pero merece un vistazo rápido en
   algún momento por higiene (evitar ruido de errores en consola/Sentry si
   hubiera).
+- El backend local se cayó una vez (proceso terminado, no solo un 500)
+  durante esta sesión en `rankings.service.ts`: `createMany` de
+  `RankingSnapshot` violó su restricción única
+  `(groupId, competitionId, matchdayId, period, userId)` — probablemente
+  una carrera entre dos ejecuciones del cron de recálculo, agravada por
+  el volumen inusual de grupos de prueba creados en esta sesión (QA de
+  Sprint 2/3). No se ha investigado la causa raíz ni tocado ese servicio;
+  no relacionado con el trabajo de esta sesión, pero conviene revisarlo
+  antes de que un patrón similar ocurra en producción con datos reales.
 
 ## Ampliaciones futuras (no forman parte del roadmap actual)
 
