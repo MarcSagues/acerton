@@ -61,15 +61,6 @@
             </div>
           }
         </div>
-        @if (isAdmin()) {
-          <button
-            class="cta"
-            [disabled]="savingCompetitions() || !hasCompetitionChanges()"
-            (click)="saveCompetitions()"
-          >
-            Guardar cambios
-          </button>
-        }
       </div>
 
       <div class="section">
@@ -158,10 +149,12 @@
         @if (editingRules()) {
           <div class="rules-actions">
             <button class="btn ghost" [disabled]="savingRules()" (click)="cancelEditingRules()">Cancelar</button>
-            <button class="btn primary" [disabled]="savingRules() || !hasRuleChanges()" (click)="saveRules()">Guardar reglas</button>
           </div>
         } @else if (isAdmin() && g.scoringMode === 'ONE_X_TWO') {
           <button class="edit-rules-btn mono" (click)="startEditingRules()">Editar reglas</button>
+        }
+        @if (isAdmin() && hasAnyChanges()) {
+          <button class="cta" [disabled]="saving()" (click)="saveChanges()">Guardar cambios</button>
         }
       </div>
 

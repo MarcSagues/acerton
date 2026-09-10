@@ -1,6 +1,6 @@
 # Estado actual
 
-_Última actualización: 2026-09-10 (Sprint 2 completo y verificado en web, pendiente de que el usuario lo pruebe en dev.acerton.app antes de mergear a main — sesión todavía abierta, no cerrada con `/quiniela cerrar`)._
+_Última actualización: 2026-09-10 (Sprint 2 completo y verificado en web, más un ajuste de UX posterior en Ajustes del grupo — botón "Guardar cambios" unificado — pendiente de que el usuario lo pruebe en dev.acerton.app antes de mergear a main — sesión todavía abierta, no cerrada con `/quiniela cerrar`)._
 
 ## Sprint activo
 
@@ -28,6 +28,11 @@ relevante:
   invitación acaba siendo miembro real del grupo tras registrarse.
 - "Guardar reglas" ahora también exige un cambio real, igual que ya
   pasaba con competiciones.
+- Ajustes del grupo: el botón "Editar" de Reglas se movió al final de la
+  lista de reglas (antes salía arriba, junto al título). Y se unificó el
+  guardado: un único botón "Guardar cambios" al final de toda la pantalla
+  (ya no hay un botón por sección) que guarda competiciones y reglas
+  juntas en un solo click.
 
 Sin verificar todavía: iOS/Android (solo web).
 

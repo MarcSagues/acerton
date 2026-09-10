@@ -70,6 +70,13 @@ export class GroupDetailComponent implements OnInit {
     return value >= 1 && value <= 50 && value !== current;
   });
 
+  /** Un unico botón "Guardar cambios" cubre competiciones y reglas: no hay un botón por sección. */
+  readonly hasAnyChanges = computed(
+    () => this.hasCompetitionChanges() || (this.editingRules() && this.hasRuleChanges()),
+  );
+
+  readonly saving = computed(() => this.savingCompetitions() || this.savingRules());
+
   readonly inviteLink = computed(() => {
     const group = this.group();
     return group ? `${window.location.origin}/groups/join/${group.inviteCode}` : '';
@@ -116,7 +123,21 @@ export class GroupDetailComponent implements OnInit {
     });
   }
 
-  saveCompetitions(): void {
+  /** Un unico punto de guardado para todo lo editable en esta pantalla (competiciones + reglas). */
+  saveChanges(): void {
+    const competitionsChanged = this.hasCompetitionChanges();
+    const rulesChanged = this.editingRules() && this.hasRuleChanges();
+    if (!competitionsChanged && !rulesChanged) {
+      return;
+    }
+    if (!competitionsChanged) {
+      this.saveRules();
+      return;
+    }
+    this.saveCompetitions(rulesChanged);
+  }
+
+  private saveCompetitions(alsoSaveRules: boolean): void {
     const competitionIds = [...this.selectedCompetitionIds()];
     if (competitionIds.length === 0) {
       this.snackBar.open('Selecciona al menos una competicion', 'Cerrar', { duration: 3000 });
@@ -141,7 +162,11 @@ export class GroupDetailComponent implements OnInit {
           this.group.set(group);
           this.activeCompetitionIds.set(new Set(competitionIds));
           this.savingCompetitions.set(false);
-          this.snackBar.open('Competiciones actualizadas', 'Cerrar', { duration: 2500 });
+          if (alsoSaveRules) {
+            this.saveRules();
+          } else {
+            this.snackBar.open('Cambios guardados', 'Cerrar', { duration: 2500 });
+          }
         },
         error: (error: HttpErrorResponse) => {
           this.savingCompetitions.set(false);
@@ -175,7 +200,7 @@ export class GroupDetailComponent implements OnInit {
           this.group.set(group);
           this.savingRules.set(false);
           this.editingRules.set(false);
-          this.snackBar.open('Reglas actualizadas', 'Cerrar', { duration: 2500 });
+          this.snackBar.open('Cambios guardados', 'Cerrar', { duration: 2500 });
         },
         error: (error: HttpErrorResponse) => {
           this.savingRules.set(false);
