@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog } from '@angular/material/dialog';
 import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -11,6 +12,7 @@ import { PushNotificationsService } from '../../../core/services/push-notificati
 import { UserProfile } from '../../../core/models/profile.model';
 import { Badge } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-profile-page',
@@ -23,6 +25,7 @@ export class ProfilePageComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly badgesService = inject(BadgesService);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
   readonly authService = inject(AuthService);
   readonly pushNotifications = inject(PushNotificationsService);
 
@@ -95,7 +98,20 @@ export class ProfilePageComponent implements OnInit {
   }
 
   logout(): void {
-    this.authService.logout().subscribe(() => this.router.navigate(['/login']));
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Cerrar sesion',
+        message: 'Vas a cerrar sesion en este dispositivo. ¿Confirmas?',
+        confirmLabel: 'Cerrar sesion',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) {
+        return;
+      }
+      this.authService.logout().subscribe(() => this.router.navigate(['/login']));
+    });
   }
 
   initials(name: string): string {

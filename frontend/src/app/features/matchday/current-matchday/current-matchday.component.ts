@@ -24,6 +24,26 @@ interface MatchPredictionState {
   predictedAwayScore: number | null;
   saving: boolean;
   saved: boolean;
+  /** true si el ultimo intento de guardado fallo y no se ha reintentado todavia. */
+  error: boolean;
+  /**
+   * Se incrementa en cada llamada a save() para este partido. La respuesta
+   * de una llamada solo puede tocar saving/saved/error si su numero sigue
+   * siendo el mas reciente al llegar — evita que una respuesta antigua
+   * (fuera de orden) pise el estado de una seleccion mas nueva.
+   */
+  requestSeq: number;
+  /**
+   * 100 = nada dibujado, 0 = contorno completo (mismas unidades que
+   * pathLength="100" en el <rect> del SVG). Avanza mientras se espera la
+   * respuesta del servidor (sin saber cuanto va a tardar, se acerca a un
+   * limite asintotico sin llegar nunca del todo) y solo llega a 0 de
+   * verdad cuando la respuesta ya esta aqui — la duracion real del efecto
+   * la marca la petencion, no un tiempo fijo.
+   */
+  drawOffset: number;
+  /** requestAnimationFrame en curso para animar drawOffset, si hay alguno. */
+  progressFrame: number | null;
   /** Solo se rellena una vez el partido termina y se puntua; null mientras tanto. */
   pointsEarned: number | null;
 }
@@ -151,11 +171,28 @@ export class CurrentMatchdayComponent {
     );
 
     const interval = setInterval(() => this.now.set(new Date()), 1000);
-    this.destroyRef.onDestroy(() => clearInterval(interval));
+    this.destroyRef.onDestroy(() => {
+      clearInterval(interval);
+      // Sin esto, el requestAnimationFrame de un guardado todavia en curso al
+      // salir de la pantalla seguiria llamandose a si mismo indefinidamente
+      // (solo se para comparando requestSeq, que ya no cambia si el
+      // componente ha desaparecido).
+      for (const state of this.predictionState.values()) {
+        if (state.progressFrame != null) {
+          cancelAnimationFrame(state.progressFrame);
+        }
+      }
+    });
   }
 
   private load(groupId: string): void {
     this.loading.set(true);
+    // Las mismas competiciones (y por tanto los mismos partidos) pueden estar
+    // activas en varios grupos del usuario a la vez: sin limpiar aqui, el
+    // estado de guardado de un partido en el grupo anterior se quedaba
+    // visible al cambiar de grupo activo, aunque en el nuevo grupo no se
+    // hubiera enviado ningun pronostico todavia.
+    this.predictionState.clear();
     this.matchdaysService.getCurrentForGroup(groupId).subscribe({
       next: (entries) => {
         this.entries.set(entries);
@@ -264,6 +301,10 @@ export class CurrentMatchdayComponent {
             predictedAwayScore: prediction.predictedAwayScore,
             saving: false,
             saved: true,
+            error: false,
+            requestSeq: 0,
+            drawOffset: 0,
+            progressFrame: null,
             pointsEarned: prediction.pointsEarned,
           });
         }
@@ -436,6 +477,10 @@ export class CurrentMatchdayComponent {
         predictedAwayScore: null,
         saving: false,
         saved: false,
+        error: false,
+        requestSeq: 0,
+        drawOffset: 100,
+        progressFrame: null,
         pointsEarned: null,
       };
       this.predictionState.set(matchId, state);
@@ -510,6 +555,9 @@ export class CurrentMatchdayComponent {
 
     state.saving = true;
     state.saved = false;
+    state.error = false;
+    const seq = ++state.requestSeq;
+    this.startDrawProgress(state, seq);
 
     this.predictionsService
       .submit(
@@ -524,18 +572,80 @@ export class CurrentMatchdayComponent {
       )
       .subscribe({
         next: () => {
-          state.saving = false;
-          state.saved = true;
-          if (!exact) {
-            this.refreshComeback(groupId);
-          }
+          // Si ya se ha lanzado una seleccion mas nueva para este partido,
+          // esta respuesta va con retraso: dejamos que sea la respuesta de
+          // esa seleccion mas nueva la que decida el estado final.
+          if (state.requestSeq !== seq) return;
+          this.finishDrawProgress(state, seq, () => {
+            state.saving = false;
+            state.saved = true;
+            if (!exact) {
+              this.refreshComeback(groupId);
+            }
+          });
         },
         error: (error: HttpErrorResponse) => {
-          state.saving = false;
-          this.snackBar.open(error.error?.message ?? 'No se pudo guardar el pronostico', 'Cerrar', {
-            duration: 3000,
+          if (state.requestSeq !== seq) return;
+          this.finishDrawProgress(state, seq, () => {
+            state.saving = false;
+            state.error = true;
+            this.snackBar.open(error.error?.message ?? 'No se pudo guardar el pronostico', 'Cerrar', {
+              duration: 3000,
+            });
           });
         },
       });
+  }
+
+  /**
+   * El contorno avanza hacia un limite (nunca llega del todo) mientras se
+   * espera: no podemos saber de antemano cuanto va a tardar la peticion, asi
+   * que en vez de fijar una duracion de antemano dejamos que la velocidad
+   * real de "recorrer todo el borde" la marque la respuesta del servidor
+   * (ver finishDrawProgress) — una peticion mas lenta simplemente pasa mas
+   * tiempo acercandose al limite antes del remate final.
+   */
+  private startDrawProgress(state: MatchPredictionState, seq: number): void {
+    state.drawOffset = 100;
+    const start = performance.now();
+    const asymptote = 12;
+    const timeConstant = 450;
+    const step = () => {
+      if (state.requestSeq !== seq) return;
+      const elapsed = performance.now() - start;
+      state.drawOffset = asymptote + (100 - asymptote) * Math.exp(-elapsed / timeConstant);
+      state.progressFrame = requestAnimationFrame(step);
+    };
+    state.progressFrame = requestAnimationFrame(step);
+  }
+
+  /**
+   * Ya ha llegado la respuesta real: remata rapido el tramo de contorno que
+   * faltaba (para que se vea completo, nunca a medias) y solo entonces
+   * ejecuta onDone, que es quien aplica saved/error — el relleno verde (o el
+   * borde de error) nunca puede adelantarse a que el contorno se haya
+   * cerrado del todo.
+   */
+  private finishDrawProgress(state: MatchPredictionState, seq: number, onDone: () => void): void {
+    if (state.progressFrame != null) {
+      cancelAnimationFrame(state.progressFrame);
+      state.progressFrame = null;
+    }
+    const from = state.drawOffset;
+    const start = performance.now();
+    const duration = 180;
+    const step = () => {
+      if (state.requestSeq !== seq) return;
+      const t = Math.min(1, (performance.now() - start) / duration);
+      state.drawOffset = from * (1 - t);
+      if (t < 1) {
+        state.progressFrame = requestAnimationFrame(step);
+      } else {
+        state.drawOffset = 0;
+        state.progressFrame = null;
+        onDone();
+      }
+    };
+    state.progressFrame = requestAnimationFrame(step);
   }
 }
