@@ -47,6 +47,26 @@ export class UsersService {
     return toPublicUser(updated);
   }
 
+  /**
+   * Marca el tutorial como visto (terminado u omitido) por primera vez.
+   * Idempotente: repetirlo no adelanta ni cambia la fecha ya guardada, para
+   * que "repetir el tutorial" desde Perfil no reinicie nada por si solo.
+   */
+  async completeTutorial(userId: string): Promise<PublicUser> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    if (user.tutorialCompletedAt) {
+      return toPublicUser(user);
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { tutorialCompletedAt: new Date() },
+    });
+    return toPublicUser(updated);
+  }
+
   async registerNotificationToken(userId: string, token: string): Promise<void> {
     await this.prisma.notificationToken.upsert({
       where: { token },

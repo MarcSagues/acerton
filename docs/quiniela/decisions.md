@@ -4,6 +4,20 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-10 — Sprint 4 (tutorial)
+
+- **Sustituye la primera implementación del tutorial** (modal centrado de
+  texto, `TutorialOverlayComponent`) por un recorrido guiado tipo
+  "coach mark": cada paso resalta (spotlight) el elemento real de la
+  interfaz al que se refiere, con una burbuja anclada junto a él, en vez
+  de describirlo en texto suelto dentro de un cuadro genérico. Motivo
+  (feedback explícito del usuario): "el tutorial debe ser dinámico sobre
+  las opciones que hay, no solo texto". El paso que señala el botón
+  "Jornada" avanza al detectar la navegación real a esa pantalla (el
+  usuario pulsa el botón real), no con un botón "Siguiente" propio —
+  sigue sin obligar a enviar ningún pronóstico real, que es lo único que
+  `product-rules.md` prohíbe explícitamente.
+
 ## 2026-09-10 — Sprint 3 (roles y membresías)
 
 - **Propietario como campo (`Group.ownerId`), no como rol nuevo.** Entre

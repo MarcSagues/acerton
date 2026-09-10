@@ -96,7 +96,7 @@
       }
       <div class="match-list">
         @for (match of entry.matchday.matches; track match.id) {
-          <div class="match-row">
+          <div class="match-row" [attr.data-tutorial]="$first ? 'first-match' : null">
             <div class="kickoff mono">
               <span>{{ matchDayLabel(match.kickoff) }}</span>
               <span>{{ match.kickoff | date: 'HH:mm' }}</span>

@@ -1,0 +1,72 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.spotlight {
+  position: fixed;
+  border-radius: 14px;
+  outline: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+  transition:
+    top 0.2s ease,
+    left 0.2s ease,
+    width 0.2s ease,
+    height 0.2s ease;
+}
+
+.bubble {
+  position: fixed;
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+  transition:
+    top 0.2s ease,
+    bottom 0.2s ease,
+    left 0.2s ease;
+}
+
+h2 {
+  font: 700 15px/1.2 var(--font-ui);
+  margin: 0 0 6px;
+}
+
+p {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.bubble-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.skip {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font: 500 11px/1 var(--font-ui);
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.next {
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-on);
+  border: none;
+  font: 600 12px/1 var(--font-ui);
+  cursor: pointer;
+}

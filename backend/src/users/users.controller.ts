@@ -18,6 +18,11 @@ export class UsersController {
     return this.usersService.updateName(user.id, dto.name);
   }
 
+  @Patch('me/tutorial-completed')
+  completeTutorial(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.completeTutorial(user.id);
+  }
+
   @Post('me/notification-tokens')
   registerToken(@CurrentUser() user: AuthenticatedUser, @Body() dto: RegisterNotificationTokenDto) {
     return this.usersService.registerNotificationToken(user.id, dto.token);

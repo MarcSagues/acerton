@@ -7,6 +7,7 @@ import { GroupsService } from '../../../core/services/groups.service';
 import { RankingsService } from '../../../core/services/rankings.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { TutorialService } from '../../../core/services/tutorial.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-switcher.component';
 import { Group } from '../../../core/models/group.model';
@@ -24,9 +25,13 @@ export class RankingsPageComponent {
   private readonly rankingsService = inject(RankingsService);
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly authService = inject(AuthService);
+  private readonly tutorialService = inject(TutorialService);
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
   readonly activeGroupService = inject(ActiveGroupService);
+
+  /** Se inicia al entrar por primera vez en un grupo (Tabla es donde se aterriza al elegirlo). */
+  private tutorialHandledThisSession = false;
 
   readonly loading = signal(true);
   readonly loadingRanking = signal(false);
@@ -63,6 +68,11 @@ export class RankingsPageComponent {
       this.scope.set(active.length > 1 ? 'general' : (active[0]?.competitionId ?? 'general'));
       this.loading.set(false);
       this.fetchRanking(groupId);
+
+      if (!this.tutorialHandledThisSession && !this.authService.currentUser()?.tutorialCompleted) {
+        this.tutorialHandledThisSession = true;
+        this.tutorialService.start(group.scoringMode);
+      }
     });
   }
 

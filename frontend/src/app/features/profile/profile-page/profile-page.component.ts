@@ -9,6 +9,8 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PushNotificationsService } from '../../../core/services/push-notifications.service';
+import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { TutorialService } from '../../../core/services/tutorial.service';
 import { UserProfile } from '../../../core/models/profile.model';
 import { Badge } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
@@ -28,6 +30,8 @@ export class ProfilePageComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   readonly authService = inject(AuthService);
   readonly pushNotifications = inject(PushNotificationsService);
+  private readonly activeGroupService = inject(ActiveGroupService);
+  private readonly tutorialService = inject(TutorialService);
 
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);
@@ -74,6 +78,13 @@ export class ProfilePageComponent implements OnInit {
 
   enablePushNotifications(): void {
     this.pushNotifications.enable();
+  }
+
+  /** Repetir el tutorial no reinicia el flag del backend, solo lo vuelve a mostrar desde Tabla. */
+  replayTutorial(): void {
+    const scoringMode = this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO';
+    this.tutorialService.start(scoringMode);
+    this.router.navigate(['/rankings']);
   }
 
   saveName(): void {

@@ -138,21 +138,23 @@ tiene ahora `ownerId` (campo directo, no un rol nuevo en `GroupRole`) y
 
 **Verificado**: 17 comprobaciones de permisos por HTTP directo (owner/admin/miembro/ajeno intentando cada operación, incluyendo los casos que deben fallar) + flujo completo en navegador con dos sesiones reales simultáneas (propietario y miembro): insignias Creador/Admin, contenido exacto del menú de acciones según rol del objetivo, promover, degradar, transferir propiedad, salir, eliminar grupo y comprobación de que desaparece de "Mis grupos". Sin verificar todavía: iOS/Android (solo web).
 
-## Sprint 4 — Tutorial ⬜
+## Sprint 4 — Tutorial ✅ (web)
 
-No existe ningún componente de tutorial/onboarding de producto hoy (solo
-`onboarding/username`, que es para confirmar el nombre de cuentas de
-Google, no un tutorial de la app).
+**Diseño (corregido tras feedback del usuario)**: no es un modal centrado con texto suelto, es un recorrido guiado real — cada paso resalta (spotlight) un elemento de verdad en pantalla (`data-tutorial="..."` en la plantilla) con una burbuja anclada junto a él. `TutorialService` (global) lleva el estado; `TutorialCoachMarkComponent` (montado una vez en `app.component.html`, como el aviso de "sin dinero real") lo dibuja. El paso que señala el botón "Jornada" no tiene botón "Siguiente": avanza solo cuando el usuario pulsa de verdad ese botón (navegación real detectada por `Router`, no una pulsación interceptada), así que ese paso concreto sí depende de una acción real del usuario — pero nunca una que envíe un pronóstico.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Guía breve adaptada al modo (1X2 / resultado exacto) | ⬜ | — |
-| Se inicia en la primera entrada a un grupo | ⬜ | — |
-| Omitir, finalizar y repetir desde Perfil | ⬜ | — |
-| Persistencia por cuenta (no solo dispositivo) | ⬜ | Requiere guardar un flag en el backend (`User` no tiene campo para esto hoy). |
-| No obliga a enviar un pronóstico real | ⬜ | — |
+| Guía breve de botones principales | ✅ | `TutorialCoachMarkComponent` + `TutorialService`, 4 pasos: Tabla, botón Jornada, cómo puntuar, Grupos/Perfil — cada uno señalando el elemento real correspondiente. |
+| Se inicia en la primera entrada a un grupo | ✅ | Se dispara desde `RankingsPageComponent` (Tabla, donde se aterriza al elegir un grupo) la primera vez que `user.tutorialCompleted` es `false`, sea cual sea el grupo. |
+| Empieza en Tabla y explica el acceso a Jornada | ✅ | Paso 1 señala la cabecera de Tabla, paso 2 señala el botón "Jornada" del menú inferior — orden pedido por `product-rules.md`. |
+| Adaptada al modo (1X2 / resultado exacto) | ✅ | Paso 3 (señala el primer partido de Jornada) cambia de contenido según `group.scoringMode` (elegir 1/X/2 + comodín vs. escribir marcador exacto). |
+| Omitir, finalizar y repetir desde Perfil | ✅ | "Saltar tutorial" en cualquier paso; último paso dice "Empezar" en vez de "Siguiente". Perfil tiene "Ver tutorial de nuevo", que navega a Tabla y lo reabre desde el principio sin tocar el flag del backend (repetirlo no lo "des-completa"). |
+| Persistencia por cuenta (no solo dispositivo) | ✅ | `User.tutorialCompletedAt` (migración `add_user_tutorial_completed_at`), `PATCH /users/me/tutorial-completed` (idempotente: no adelanta la fecha si ya estaba completado). |
+| No reaparece en cada grupo | ✅ | La condición de disparo es el flag de cuenta, no algo por grupo — entrar a un segundo grupo no lo vuelve a mostrar. |
+| No obliga a enviar un pronóstico real | ✅ | El único paso disparado por una acción real es pulsar el botón de navegación "Jornada" (no envía nada); el paso sobre elegir 1/X/2 o marcador exacto es solo explicativo, se avanza con "Siguiente" sin tocar ningún partido real. |
+| Sin objetivo en pantalla (grupo sin partidos todavía) | ✅ | Si el elemento señalado no aparece en ~3s (sondeo cada 150ms), el paso se salta solo en vez de dejar el tutorial bloqueado con un hueco resaltando nada. |
 
-Validar: grupos sin partidos disponibles todavía, y pantallas pequeñas.
+Verificado en navegador (cuentas nuevas, no solo capturas, incluyendo la posición real del resaltado sobre cada elemento vía `getBoundingClientRect`): aparece al entrar por primera vez en Tabla tras crear un grupo; el paso "Jornada" no tiene botón propio y avanza solo al pulsar de verdad ese enlace del menú (navegación real a `/matchday` confirmada); el paso de partidos muestra el texto correcto tanto para modo 1X2 como para resultado exacto; recargar la página no lo vuelve a mostrar (persistido en servidor); desde Perfil, "Ver tutorial de nuevo" navega a Tabla y lo reabre desde el paso 1. Sin verificar: el caso de "sin partidos disponibles" (salto automático revisado en código, no provocado en navegador) e iOS/Android.
 
 ## Sprint 5 — Temporadas, estadísticas y rachas 🔒
 

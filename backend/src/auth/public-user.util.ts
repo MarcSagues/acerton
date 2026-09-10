@@ -10,6 +10,7 @@ type UserForPublic = {
   avatarUrl: string | null;
   usernameConfirmed: boolean;
   nameChangedAt: Date | null;
+  tutorialCompletedAt: Date | null;
 };
 
 export function toPublicUser(user: UserForPublic): PublicUser {
@@ -27,5 +28,6 @@ export function toPublicUser(user: UserForPublic): PublicUser {
       nameChangeAvailableAt && nameChangeAvailableAt.getTime() > Date.now()
         ? nameChangeAvailableAt.toISOString()
         : null,
+    tutorialCompleted: user.tutorialCompletedAt !== null,
   };
 }

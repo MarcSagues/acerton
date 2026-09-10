@@ -77,24 +77,28 @@ enum ScoringMode {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  passwordHash      String? // null cuando el usuario solo usa Google OAuth
-  googleId          String?   @unique
-  name              String
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String? // null cuando el usuario solo usa Google OAuth
+  googleId            String?   @unique
+  name                String
   /// false solo para cuentas de Google recien creadas, cuyo nombre viene
   /// del perfil de Google sin que el usuario lo haya elegido — se les pide
   /// confirmarlo/cambiarlo en el onboarding antes de entrar a la app. Las
   /// cuentas registradas con email ya piden el nombre en el propio
   /// formulario, asi que nacen con esto en true.
-  usernameConfirmed Boolean   @default(true)
+  usernameConfirmed   Boolean   @default(true)
   /// Ultima vez que se cambio `name` tras el onboarding — limita la
   /// frecuencia de cambio (ver UsersService.updateName) para que no se use
   /// como forma de troll en las clasificaciones del grupo.
-  nameChangedAt     DateTime?
-  avatarUrl         String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  nameChangedAt       DateTime?
+  avatarUrl           String?
+  /// Cuando el usuario termino u omitio el tutorial por primera vez — no se
+  /// reinicia al repetirlo manualmente desde Perfil (ver TutorialService),
+  /// solo marca que ya no debe aparecer solo al entrar a un grupo.
+  tutorialCompletedAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   memberships        GroupMembership[]
   ownedGroups        Group[]

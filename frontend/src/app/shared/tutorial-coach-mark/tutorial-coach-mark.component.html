@@ -1,0 +1,31 @@
+@if (tutorialService.currentStep(); as step) {
+  @if (rect(); as r) {
+    <div
+      class="spotlight"
+      [style.top.px]="r.top - 6"
+      [style.left.px]="r.left - 6"
+      [style.width.px]="r.width + 12"
+      [style.height.px]="r.height + 12"
+    ></div>
+
+    <div
+      class="bubble"
+      [class.placement-top]="step.placement === 'top'"
+      [class.placement-bottom]="step.placement === 'bottom'"
+      [style.top.px]="step.placement === 'bottom' ? r.top + r.height + 14 : null"
+      [style.bottom.px]="step.placement === 'top' ? viewportHeight - r.top + 14 : null"
+      [style.left.px]="bubbleLeft(r)"
+    >
+      <h2>{{ step.title }}</h2>
+      <p>{{ step.body }}</p>
+      <div class="bubble-actions">
+        <button class="skip" (click)="tutorialService.skip()">Saltar tutorial</button>
+        @if (step.advanceOn === 'manual') {
+          <button class="next" (click)="tutorialService.next()">
+            {{ tutorialService.isLastStep() ? 'Empezar' : 'Siguiente' }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+}

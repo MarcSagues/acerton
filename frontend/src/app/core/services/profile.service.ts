@@ -16,6 +16,10 @@ export class ProfileService {
     return this.http.patch<User>(`${environment.apiUrl}/users/me/name`, { name });
   }
 
+  completeTutorial() {
+    return this.http.patch<User>(`${environment.apiUrl}/users/me/tutorial-completed`, {});
+  }
+
   registerNotificationToken(token: string) {
     return this.http.post(`${environment.apiUrl}/users/me/notification-tokens`, { token });
   }
