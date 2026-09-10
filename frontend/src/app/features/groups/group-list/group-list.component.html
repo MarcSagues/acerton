@@ -35,7 +35,13 @@
 
           <div class="divider"></div>
           <div class="footer">
-            <span class="footer-label mono">Ver jornada y clasificacion</span>
+            <span class="footer-label mono">
+              @if (group.myPosition) {
+                Vas {{ group.myPosition.position }}.&#186; &middot; {{ group.myPosition.points }} pts
+              } @else {
+                Ver jornada y clasificacion
+              }
+            </span>
             <a class="settings-link" [routerLink]="['/groups', group.id, 'settings']" (click)="$event.stopPropagation()">
               <mat-icon inline>tune</mat-icon>
             </a>
@@ -119,12 +125,50 @@
                 1 punto por acertar 1X2. Incluye comodin de remontada.
               }
             </p>
+            @if (createForm.value.scoringMode === 'ONE_X_TWO') {
+              <button type="button" class="comeback-toggle mono" (click)="showComebackDetail.set(!showComebackDetail())">
+                {{ showComebackDetail() ? 'Ocultar' : '¿Como funciona el comodin?' }}
+              </button>
+              @if (showComebackDetail()) {
+                <p class="sheet-desc comeback-detail">
+                  Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronostico normal.
+                  Los usos disponibles se recalculan cada semana segun tu diferencia de puntos con quien vaya
+                  primero en el grupo: cada varios puntos de distancia dan derecho a un uso mas esa jornada. El
+                  admin del grupo puede desactivarlo o ajustar ese numero de puntos despues, desde los ajustes.
+                </p>
+              }
+            }
             <p class="sheet-desc mono">No podras cambiar el modo despues de crear el grupo.</p>
           </div>
-          <label class="checkbox-row">
-            <input type="checkbox" formControlName="isPublic" />
-            <span>Grupo publico (visible para cualquiera)</span>
-          </label>
+          <div class="field">
+            <span class="field-label">Privacidad</span>
+            <div class="tabs mode-tabs">
+              <button
+                type="button"
+                class="tab"
+                [class.active]="!createForm.value.isPublic"
+                (click)="setPrivacy(false)"
+              >
+                Privado
+              </button>
+              <button
+                type="button"
+                class="tab"
+                [class.active]="createForm.value.isPublic"
+                (click)="setPrivacy(true)"
+              >
+                Publico
+              </button>
+            </div>
+            <p class="sheet-desc mono">
+              @if (createForm.value.isPublic) {
+                Cualquiera puede verlo y unirse sin invitacion.
+              } @else {
+                Solo se puede entrar con el enlace o codigo de invitacion.
+              }
+            </p>
+            <p class="sheet-desc mono">Podras cambiarlo despues desde los ajustes del grupo.</p>
+          </div>
           @if (errorMessage()) {
             <p class="error">{{ errorMessage() }}</p>
           }

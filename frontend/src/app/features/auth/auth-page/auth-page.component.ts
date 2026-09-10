@@ -6,10 +6,20 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ErrorCode } from '@capawesome/capacitor-google-sign-in';
 import { AuthService } from '../../../core/services/auth.service';
+import { GroupsService } from '../../../core/services/groups.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
 import { environment } from '../../../../environments/environment';
 
 type AuthMode = 'login' | 'register';
+
+/**
+ * El login de Google en web es una redireccion completa fuera de la app
+ * (a Google y de vuelta a nuestro backend, que redirige a /auth/callback):
+ * un query param no sobrevive ese viaje porque el backend no lo conoce ni
+ * lo reenvia. sessionStorage si sobrevive, al ser el mismo origen antes y
+ * despues del viaje.
+ */
+export const GOOGLE_RETURN_URL_KEY = 'quiniela.googleReturnUrl';
 
 @Component({
   selector: 'app-auth-page',
@@ -23,6 +33,7 @@ export class AuthPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly groupsService = inject(GroupsService);
 
   readonly mode = signal<AuthMode>('login');
   readonly isRegister = computed(() => this.mode() === 'register');
@@ -55,7 +66,10 @@ export class AuthPageComponent implements OnInit {
       nameControl.clearValidators();
     }
     nameControl.updateValueAndValidity();
-    this.router.navigate([mode === 'register' ? '/register' : '/login']);
+    // preserve: cambiar de pestana (o el redirect inicial de ngOnInit) no
+    // debe perder un ?returnUrl= que auth.guard haya puesto ahi para volver
+    // al enlace directo original tras iniciar sesion.
+    this.router.navigate([mode === 'register' ? '/register' : '/login'], { queryParamsHandling: 'preserve' });
   }
 
   /** Feedback en vivo mientras se escribe, sin esperar a que se toque el campo o se intente enviar. */
@@ -70,13 +84,40 @@ export class AuthPageComponent implements OnInit {
     this.passwordVisible.update((v) => !v);
   }
 
+  /**
+   * Si se llego aqui porque auth.guard interrumpio una ruta concreta (ej. un
+   * enlace de invitacion a un grupo), vuelve ahi mismo tras iniciar sesion en
+   * vez de mandar siempre al destino generico segun numero de grupos.
+   */
+  private navigateAfterLogin(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
+    }
+    this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route));
+  }
+
+  saveReturnUrlForGoogleRedirect(): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    try {
+      if (returnUrl) {
+        sessionStorage.setItem(GOOGLE_RETURN_URL_KEY, returnUrl);
+      } else {
+        sessionStorage.removeItem(GOOGLE_RETURN_URL_KEY);
+      }
+    } catch {
+      /* sessionStorage no disponible: se pierde el destino, cae al genérico tras el login */
+    }
+  }
+
   loginWithGoogleNative(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
     this.authService.loginWithGoogleNative().subscribe({
       next: () => {
         this.loading.set(false);
-        this.router.navigate(['/matchday']);
+        this.navigateAfterLogin();
       },
       error: (error) => {
         this.loading.set(false);
@@ -140,7 +181,7 @@ export class AuthPageComponent implements OnInit {
     request.subscribe({
       next: () => {
         this.loading.set(false);
-        this.router.navigate(['/matchday']);
+        this.navigateAfterLogin();
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
