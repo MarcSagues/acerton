@@ -30,9 +30,11 @@ relevante:
   pasaba con competiciones.
 - Ajustes del grupo: el botón "Editar" de Reglas se movió al final de la
   lista de reglas (antes salía arriba, junto al título). Y se unificó el
-  guardado: un único botón "Guardar cambios" al final de toda la pantalla
-  (ya no hay un botón por sección) que guarda competiciones y reglas
-  juntas en un solo click.
+  guardado: un único botón "Guardar cambios" que guarda competiciones y
+  reglas juntas en un solo click (ya no hay un botón por sección), y
+  además ahora flota fijo encima de la barra de navegación, apareciendo
+  solo cuando hay un cambio pendiente (antes vivía al final del todo, tras
+  Miembros).
 
 Sin verificar todavía: iOS/Android (solo web).
 
