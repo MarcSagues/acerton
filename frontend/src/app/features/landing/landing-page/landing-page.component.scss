@@ -73,7 +73,7 @@
 
 .orbit {
   position: absolute;
-  border: 1px solid rgba(210, 190, 148, 0.18);
+  border: 1px solid var(--accent-on-dark-border);
   border-radius: 50%;
 }
 
@@ -92,7 +92,7 @@
   justify-content: center;
   gap: 20px;
   transform: rotate(-4deg);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-brand);
 
   span { font: 700 38px/1 var(--font-display); }
   i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.45; }
@@ -100,9 +100,9 @@
 
 .score-card-back {
   transform: translate(45px, -52px) rotate(9deg);
-  background: rgba(241, 240, 234, 0.1);
+  background: var(--surface-on-dark-raised);
   color: var(--text-on-dark);
-  border: 1px solid rgba(241, 240, 234, 0.12);
+  border: 1px solid var(--border-on-dark);
 }
 
 .crown {
@@ -129,8 +129,8 @@
 }
 
 .mode-card {
-  border: 1px solid rgba(241, 240, 234, 0.14);
-  background: rgba(241, 240, 234, 0.07);
+  border: 1px solid var(--border-on-dark-medium);
+  background: var(--surface-on-dark);
   border-radius: 22px;
   padding: 18px;
 
@@ -153,7 +153,7 @@
     display: grid;
     place-items: center;
     border-radius: 13px;
-    background: rgba(241, 240, 234, 0.08);
+    background: var(--surface-on-dark-hover);
     font: 700 18px/1 var(--font-display);
 
     &:first-child { background: var(--accent); color: var(--accent-on); }
@@ -190,7 +190,7 @@
   place-items: center;
   font: 800 47px/1 var(--font-display);
   letter-spacing: -5px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-brand);
   transform: rotate(-3deg);
 }
 
@@ -206,7 +206,7 @@
     height: 34px;
     display: grid;
     place-items: center;
-    background: rgba(241, 240, 234, 0.1);
+    background: var(--surface-on-dark-raised);
     color: var(--text-on-dark-secondary);
     font: 600 11px/1 var(--font-mono);
     border-radius: 8px 8px 0 0;
@@ -265,7 +265,7 @@ h1 {
     padding: 0;
     border: 0;
     border-radius: 20px;
-    background: rgba(241, 240, 234, 0.24);
+    background: var(--on-dark-disabled);
     transition: width 160ms ease, background 160ms ease;
     cursor: pointer;
 
