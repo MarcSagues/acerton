@@ -1,13 +1,13 @@
 <main class="onboarding">
   <header class="topbar">
     <a class="wordmark" routerLink="/" aria-label="Piqo, inicio"><span>pq</span> Piqo</a>
-    @if (currentStep() < steps.length - 1) {
-      <button type="button" class="skip" (click)="goTo(steps.length - 1)">Saltar</button>
+    @if (page.currentStep() < page.steps.length - 1) {
+      <button type="button" class="skip" (click)="page.goTo(page.steps.length - 1)">Saltar</button>
     }
   </header>
 
   <section class="stage" aria-live="polite">
-    @switch (currentStep()) {
+    @switch (page.currentStep()) {
       @case (0) {
         <div class="visual visual-table" aria-hidden="true">
           <div class="orbit orbit-one"></div>
@@ -41,27 +41,27 @@
     }
 
     <div class="copy">
-      <p class="eyebrow">{{ steps[currentStep()].eyebrow }}</p>
-      <h1>{{ steps[currentStep()].title }}</h1>
-      <p class="body-copy">{{ steps[currentStep()].body }}</p>
+      <p class="eyebrow">{{ page.steps[page.currentStep()].eyebrow }}</p>
+      <h1>{{ page.steps[page.currentStep()].title }}</h1>
+      <p class="body-copy">{{ page.steps[page.currentStep()].body }}</p>
     </div>
   </section>
 
   <footer class="actions">
     <div class="dots" aria-label="Paso del carrusel">
-      @for (step of steps; track $index) {
+      @for (step of page.steps; track $index) {
         <button
           type="button"
-          [class.active]="$index === currentStep()"
+          [class.active]="$index === page.currentStep()"
           [attr.aria-label]="'Ir al paso ' + ($index + 1)"
-          [attr.aria-current]="$index === currentStep() ? 'step' : null"
-          (click)="goTo($index)"
+          [attr.aria-current]="$index === page.currentStep() ? 'step' : null"
+          (click)="page.goTo($index)"
         ></button>
       }
     </div>
 
-    @if (currentStep() < steps.length - 1) {
-      <button type="button" class="primary" (click)="next()">Siguiente <span aria-hidden="true">→</span></button>
+    @if (page.currentStep() < page.steps.length - 1) {
+      <button type="button" class="primary" (click)="page.next()">Siguiente <span aria-hidden="true">→</span></button>
     } @else {
       <a routerLink="/register" class="primary">Crear cuenta <span aria-hidden="true">→</span></a>
       <a routerLink="/login" class="login-link">Ya tengo cuenta</a>
