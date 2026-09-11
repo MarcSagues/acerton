@@ -1,14 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AuthPageFacade } from './auth-page.facade';
 
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
+  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [AuthPageFacade],
   templateUrl: './auth-page.component.html',
   styleUrl: './auth-page.component.scss',

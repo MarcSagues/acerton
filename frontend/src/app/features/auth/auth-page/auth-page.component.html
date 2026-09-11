@@ -1,26 +1,12 @@
 <div class="auth-page">
   <div class="auth-content">
-    <div class="brand">pq</div>
-    <h1>Entra al<br />vestuario</h1>
-    <p class="tagline">Pronostica con tu grupo cada jornada, gana puntos y pica a tus amigos en la tabla.</p>
+    <piqo-svg logo size="140"></piqo-svg>
+    <h1>Mismos partidos.<br />Distintas lecturas.<br />Nuestro pique.</h1>
+    <p class="tagline">Pronostica con tu grupo, jornada a jornada. Se guarda al elegir.</p>
 
     <div class="tabs">
-      <button
-        type="button"
-        class="tab"
-        [class.active]="!page.isRegister()"
-        (click)="page.setMode('login')"
-      >
-        Entrar
-      </button>
-      <button
-        type="button"
-        class="tab"
-        [class.active]="page.isRegister()"
-        (click)="page.setMode('register')"
-      >
-        Crear cuenta
-      </button>
+      <button type="button" class="tab" [class.active]="!page.isRegister()" (click)="page.setMode('login')">Entrar</button>
+      <button type="button" class="tab" [class.active]="page.isRegister()" (click)="page.setMode('register')">Crear cuenta</button>
     </div>
 
     <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
@@ -40,7 +26,7 @@
       </label>
 
       <label class="field">
-        <span class="field-label">Contrasena</span>
+        <span class="field-label">Contraseña</span>
         <div class="field-input password-input">
           <input
             [type]="page.passwordVisible() ? 'text' : 'password'"
@@ -53,16 +39,16 @@
         </div>
       </label>
       @if (page.isRegister()) {
-        <div class="hint">Minimo 8 caracteres.</div>
+        <p class="hint">Mínimo 8 caracteres.</p>
       }
 
       @if (page.errorMessage()) {
         <p class="error">{{ page.errorMessage() }}</p>
       }
 
-      <button type="submit" class="cta" [disabled]="page.loading()">
+      <button type="submit" class="piqo-primary cta" [disabled]="page.loading()">
         @if (page.loading()) {
-          <mat-spinner diameter="20"></mat-spinner>
+          <app-spinner [size]="20"></app-spinner>
         } @else {
           {{ page.isRegister() ? 'Crear cuenta' : 'Entrar' }}
         }
@@ -87,11 +73,11 @@
       </a>
     }
 
-    <p class="legal">Al continuar aceptas los terminos<br />y la <a routerLink="/privacy">politica de privacidad</a>.</p>
+    <p class="legal">Al continuar aceptas los términos<br />y la <a routerLink="/privacy">política de privacidad</a>.</p>
 
     @if (page.isNativePlatform) {
       <button type="button" class="ghost-link" [disabled]="page.runningDiagnostics()" (click)="page.runDiagnostics()">
-        {{ page.runningDiagnostics() ? 'Probando...' : 'Diagnostico de red' }}
+        {{ page.runningDiagnostics() ? 'Probando...' : 'Diagnóstico de red' }}
       </button>
       @if (page.diagnostics(); as result) {
         <pre class="diagnostics">{{ result }}</pre>

@@ -1,11 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { GroupJoinFacade } from './group-join.facade';
 
 @Component({
   selector: 'app-group-join',
   standalone: true,
-  imports: [MatProgressSpinnerModule],
+  imports: [SpinnerComponent],
   providers: [GroupJoinFacade],
   template: `
     <div class="join-page">
@@ -13,8 +13,8 @@ import { GroupJoinFacade } from './group-join.facade';
         <p>{{ page.errorMessage() }}</p>
         <button class="cta" (click)="page.goToGroups()">Ir a mis grupos</button>
       } @else {
-        <mat-spinner diameter="32"></mat-spinner>
-        <p>Uniendote al grupo...</p>
+        <app-spinner [size]="32"></app-spinner>
+        <p>Uniéndote al grupo...</p>
       }
     </div>
   `,
@@ -22,9 +22,9 @@ import { GroupJoinFacade } from './group-join.facade';
     `
       .join-page {
         min-height: 100vh;
-        background: var(--bg);
-        color: var(--text-primary);
-        font-family: var(--font-ui);
+        background: var(--p4-bg);
+        color: var(--p4-text);
+        font-family: var(--p4-font-ui);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -37,11 +37,10 @@ import { GroupJoinFacade } from './group-join.facade';
         height: 48px;
         padding: 0 20px;
         border-radius: 14px;
-        background: var(--accent);
-        color: var(--accent-on);
+        background: var(--p4-accent);
+        color: var(--p4-on-accent);
         border: none;
-        font: 600 14px/1 var(--font-ui);
-        cursor: pointer;
+        font: 600 14px/1 var(--p4-font-ui);
       }
     `,
   ],
