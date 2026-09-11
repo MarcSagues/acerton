@@ -209,23 +209,27 @@ h1 {
 }
 
 .rows {
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
 .row {
   width: 100%;
-  padding: 11px 20px;
+  min-height: 48px;
+  padding: 8px 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--p4-border);
-  background: none;
+  background: var(--p4-surface);
   color: var(--p4-text);
   text-align: left;
 
   &.me {
     background: var(--p4-soft);
+    border: 1px solid var(--p4-accent);
   }
 }
 
@@ -287,6 +291,12 @@ h1 {
   padding: 0 20px;
   color: var(--p4-muted);
   font-size: 13px;
+}
+
+.footnote {
+  margin: 14px 20px 0;
+  font: 400 11px/16px var(--p4-font-ui);
+  color: var(--p4-muted);
 }
 
 @media (prefers-reduced-motion: reduce) {

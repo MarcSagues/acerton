@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
+import { badgeArtId } from '../../../shared/utils/badge-art';
 
 export interface BadgeState {
   badge: Badge;
@@ -28,6 +29,10 @@ export class ProfileBadgesFacade {
 
   goBack(): void {
     this.router.navigate(['/profile']);
+  }
+
+  artId(code: string): string | null {
+    return badgeArtId(code);
   }
 
   init(): void {

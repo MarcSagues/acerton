@@ -1,5 +1,7 @@
 .shell {
   min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   background: var(--p4-bg);

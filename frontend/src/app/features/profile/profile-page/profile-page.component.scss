@@ -112,6 +112,25 @@ h2 {
   color: var(--p4-muted);
 }
 
+.trophies-row {
+  padding: 14px 20px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trophy-btn {
+  width: var(--p4-touch);
+  height: var(--p4-touch);
+  border-radius: 12px;
+  background: var(--p4-surface);
+  border: 1px solid var(--p4-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--p4-disabled);
+}
+
 .section {
   padding: 14px 20px 0;
 }

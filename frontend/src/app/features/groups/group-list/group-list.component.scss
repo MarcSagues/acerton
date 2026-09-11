@@ -37,25 +37,25 @@ h1 {
 .group-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  border-radius: 16px;
+  background: var(--p4-surface);
+  border: 1px solid transparent;
+  padding-right: 8px;
+
+  &.active {
+    border-color: var(--p4-accent);
+  }
 }
 
 .group-main {
   flex: 1;
   min-width: 0;
-  border-radius: 16px;
-  background: var(--p4-surface);
   padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--p4-text);
   text-align: left;
-  border: 1px solid transparent;
-}
-
-.group-row.active .group-main {
-  border-color: var(--p4-accent);
 }
 
 .avatar {

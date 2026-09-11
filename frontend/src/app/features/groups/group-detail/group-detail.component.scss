@@ -240,15 +240,17 @@ h2 {
 .members {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .member-row {
   min-height: 52px;
+  border-radius: 12px;
+  background: var(--p4-surface);
+  padding: 0 14px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--p4-border);
 }
 
 .avatar {

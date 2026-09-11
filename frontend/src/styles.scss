@@ -203,6 +203,36 @@
   --shadow-dialog-strong: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
+/* ---- Piqo 4.0: compatibilidad de nombres para <piqo-svg> --------------
+   El arte importado del kit (assets/art.js, insignias/trofeos/logo) trae
+   horneados var(--accent), var(--text), var(--muted), etc. — los nombres
+   exactos de tema.css, sin prefijo. Esos nombres ya estan tomados por el
+   sistema de alias antiguo (--accent fijo en champan, --border, --bg...)
+   con semantica distinta, asi que en vez de redefinirlos globalmente
+   (rompería componentes aun no migrados) se definen SOLO sobre el propio
+   elemento <piqo-svg>: sus hijos en shadow DOM heredan estos valores sin
+   afectar a nada mas del arbol. */
+piqo-svg {
+  --bg: var(--p4-bg);
+  --surface: var(--p4-surface);
+  --text: var(--p4-text);
+  --muted: var(--p4-muted);
+  --accent: var(--p4-accent);
+  --onAccent: var(--p4-on-accent);
+  --border: var(--p4-border);
+  --soft: var(--p4-soft);
+  --success: var(--p4-success);
+  --successBg: var(--p4-success-bg);
+  --error: var(--p4-error);
+  --errorBg: var(--p4-error-bg);
+  --warning: var(--p4-warning);
+  --warningBg: var(--p4-warning-bg);
+  --info: var(--p4-info);
+  --infoBg: var(--p4-info-bg);
+  --disabled: var(--p4-disabled);
+  --disabledBg: var(--p4-disabled-bg);
+}
+
 html,
 body {
   height: 100%;
@@ -210,9 +240,9 @@ body {
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
+  background: var(--p4-bg);
+  color: var(--p4-text);
+  font-family: var(--p4-font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -223,6 +253,22 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Reset de <button>: sin este reset, un boton que solo define
+   border-bottom (filas/tarjetas clicables) conserva el border-top/
+   left/right nativo del navegador en el color del tema del SO, que en
+   modo oscuro se ve como una linea blanca no deseada. */
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mono {

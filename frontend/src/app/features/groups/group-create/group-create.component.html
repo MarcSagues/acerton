@@ -107,6 +107,14 @@
         </p>
       </div>
 
+      <div class="callout warning">
+        <piqo-svg icon="alerta" size="20"></piqo-svg>
+        <span>
+          El modo {{ page.form.value.scoringMode === 'EXACT_SCORE' ? 'resultado exacto' : '1X2' }} queda fijado al
+          crear el grupo. No podrás cambiarlo más adelante.
+        </span>
+      </div>
+
       @if (page.errorMessage()) {
         <p class="error">{{ page.errorMessage() }}</p>
       }

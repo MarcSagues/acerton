@@ -16,5 +16,10 @@
     <button type="submit" class="piqo-primary cta" [disabled]="page.formLoading()">
       {{ page.formLoading() ? 'Uniendo…' : 'Unirse' }}
     </button>
+
+    <div class="callout info">
+      <piqo-svg icon="info" size="20"></piqo-svg>
+      <span>Los grupos públicos se pueden encontrar sin código. Este acceso es solo para grupos privados.</span>
+    </div>
   </form>
 </div>

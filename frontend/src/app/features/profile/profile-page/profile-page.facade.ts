@@ -11,6 +11,23 @@ import { UserProfile } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
 import { initials } from '../../../shared/utils/initials';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
+
+/**
+ * Vitrina de trofeos (HANDOFF §13/§18): 7 disenos fijos del kit. Piqo aun
+ * no tiene un modelo de datos real para trofeos ("Para Copa Piqo falta
+ * fijar el criterio"), asi que se muestran todos honestamente como no
+ * conseguidos en vez de inventar datos de competiciones ganadas.
+ */
+const TROPHIES: TrophyDetailData[] = [
+  { id: 'piqo', name: 'Copa Piqo' },
+  { id: 'champions', name: 'Champions League' },
+  { id: 'laliga', name: 'LaLiga' },
+  { id: 'bundesliga', name: 'Bundesliga' },
+  { id: 'ligue1', name: 'Ligue 1' },
+  { id: 'europa', name: 'Europa League' },
+  { id: 'seriea', name: 'Serie A' },
+];
 
 @Injectable()
 export class ProfilePageFacade {
@@ -34,6 +51,13 @@ export class ProfilePageFacade {
   readonly globalCurrentStreak = computed(() => this.profile()?.globalStreak.currentStreak ?? 0);
   readonly globalLongestStreak = computed(() => this.profile()?.globalStreak.longestStreak ?? 0);
   readonly badgeCount = computed(() => this.profile()?.badges.length ?? 0);
+  readonly trophies = TROPHIES;
+
+  openTrophy(trophy: TrophyDetailData): void {
+    this.dialog.open<TrophyDetailDialogComponent, void, TrophyDetailData>(TrophyDetailDialogComponent, {
+      data: trophy,
+    });
+  }
 
   readonly nameInput = signal('');
   readonly nameSaving = signal(false);

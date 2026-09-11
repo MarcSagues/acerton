@@ -189,3 +189,21 @@ h1 {
   color: var(--p4-error);
   font-size: 12px;
 }
+
+.callout {
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font: 400 12px/17px var(--p4-font-ui);
+
+  &.warning {
+    background: var(--p4-warning-bg);
+    color: var(--p4-warning);
+  }
+
+  piqo-svg {
+    flex: none;
+  }
+}

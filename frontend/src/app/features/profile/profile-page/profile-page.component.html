@@ -36,6 +36,18 @@
     </div>
     <p class="section-hint">{{ page.badgeCount() }} conseguidas hasta ahora.</p>
 
+    <div class="section-head">
+      <h2>Vitrina</h2>
+    </div>
+    <p class="section-hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
+    <div class="trophies-row">
+      @for (trophy of page.trophies; track trophy.id) {
+        <button type="button" class="trophy-btn" [attr.aria-label]="trophy.name + ', sin conseguir'" (click)="page.openTrophy(trophy)">
+          <piqo-svg [attr.trophy]="trophy.id" variant="mini" size="26"></piqo-svg>
+        </button>
+      }
+    </div>
+
     @if (p.groups.length > 0) {
       <div class="section">
         <div class="card">

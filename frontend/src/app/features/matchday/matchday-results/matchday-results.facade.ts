@@ -15,6 +15,7 @@ import { Prediction } from '../../../core/models/prediction.model';
 import { UserBadge } from '../../../core/models/profile.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ScoringMode } from '../../../core/models/group.model';
+import { badgeArtId } from '../../../shared/utils/badge-art';
 
 @Injectable()
 export class MatchdayResultsFacade {
@@ -257,6 +258,10 @@ export class MatchdayResultsFacade {
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? '')
       .join('');
+  }
+
+  artId(code: string): string | null {
+    return badgeArtId(code);
   }
 
   predictionFor(matchId: string, userId: string): Prediction | undefined {

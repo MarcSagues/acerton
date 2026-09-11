@@ -64,39 +64,41 @@
         </div>
       }
 
-      <div class="summary">
-        <div class="points-ring">
-          <span class="points-value mono">{{ page.totalPoints() }}</span>
-          <span class="points-label mono">PUNTOS</span>
+      <div class="stats-row">
+        <div class="stat-card">
+          <p class="stat-label">{{ page.viewingSelf ? 'Tus puntos' : 'Sus puntos' }}</p>
+          <p class="stat-value mono">{{ page.totalPoints() }}</p>
         </div>
-        <div class="breakdown">
-          <div class="line">
-            <span>{{ page.scoringMode() === 'EXACT_SCORE' ? 'Aciertos' : 'Aciertos 1X2' }}</span>
-            <span class="mono">{{ page.hits() }} / {{ page.predictions().length }}</span>
+        <div class="stat-card">
+          <p class="stat-label">{{ page.scoringMode() === 'EXACT_SCORE' ? 'Aciertos' : 'Aciertos 1X2' }}</p>
+          <p class="stat-value mono">{{ page.hits() }}/{{ page.predictions().length }}</p>
+        </div>
+        @if (page.position(); as p) {
+          <div class="stat-card">
+            <p class="stat-label">Puesto</p>
+            <p class="stat-value mono">{{ p.pos }}º</p>
           </div>
+        }
+      </div>
+
+      @if (page.rescueHits() > 0 || (page.viewingSelf && page.currentStreak() > 0)) {
+        <div class="extra-lines">
           @if (page.rescueHits() > 0) {
             <div class="line">
               <span>Doble oportunidad acertada</span>
               <span class="mono accent">{{ page.rescueHits() }}</span>
             </div>
           }
-          @if (page.position(); as p) {
+          @if (page.viewingSelf && page.currentStreak() > 0) {
             <div class="line">
-              <span>Puesto de la jornada</span>
-              <span class="mono">{{ p.pos }}.º de {{ p.total }}</span>
-            </div>
-          }
-          @if (page.viewingSelf) {
-            <div class="rule"></div>
-            <div class="line strong">
               <span>Racha de participación</span>
               <span class="mono accent">{{ page.currentStreak() }} jornadas</span>
             </div>
           }
         </div>
-      </div>
+      }
 
-      <p class="section-title mono">{{ page.viewingSelf ? 'TUS PRONÓSTICOS' : 'SUS PRONÓSTICOS' }}</p>
+      <h2 class="section-title">Desglose por partido</h2>
       @if (page.predictions().length === 0) {
         <p class="empty">
           {{ page.viewingSelf ? 'No enviaste pronósticos en esta jornada.' : 'No envió pronósticos en esta jornada.' }}
@@ -104,39 +106,41 @@
       } @else {
         <div class="predictions">
           @for (prediction of page.predictions(); track prediction.id) {
-            <div class="pred-row">
-              <div
-                class="bar"
-                [class.hit]="(prediction.pointsEarned ?? 0) > 0"
-                [class.miss]="prediction.pointsEarned === 0"
-                [class.pending]="prediction.pointsEarned == null"
-              ></div>
-              <div class="pred-meta">
-                <p class="pred-match">{{ page.matchLabel(prediction, md) }}</p>
-                <p class="pred-sub mono">
-                  @if (page.isMatchPending(prediction, md)) {
-                    Partido todavía sin acabar
-                  } @else if (page.scoringMode() === 'EXACT_SCORE') {
-                    {{ page.scoreLabel(prediction, md) }} · {{ page.viewingSelf ? 'tu' : 'su' }} pronóstico {{ page.pickLabel(prediction) }}
-                  } @else {
-                    {{ page.scoreLabel(prediction, md) }} · {{ page.viewingSelf ? 'tu' : 'su' }} {{ page.pickLabel(prediction) }} · real
-                    {{ page.realLabel(prediction, md) }}
-                  }
-                </p>
+            <div class="pred-card">
+              <div class="pred-top">
+                <span class="pred-match">{{ page.matchLabel(prediction, md) }}</span>
+                <span class="pred-score mono">{{ page.scoreLabel(prediction, md) }}</span>
               </div>
-              @if (prediction.doubleChanceOption) {
-                <span class="wc-tag mono">SOS</span>
-              }
-              <span class="pred-pts mono" [class.accent]="(prediction.pointsEarned ?? 0) > 0">
-                {{ prediction.pointsEarned ?? '-' }}
-              </span>
+              <div class="pred-bottom">
+                @if (page.isMatchPending(prediction, md)) {
+                  <span class="pred-pending mono">Partido todavía sin acabar</span>
+                } @else {
+                  <span class="pred-label">{{ page.viewingSelf ? 'Tu elección' : 'Su elección' }}</span>
+                  <span class="pred-chip mono">{{ page.pickLabel(prediction) }}</span>
+                  @if (page.scoringMode() !== 'EXACT_SCORE') {
+                    <span class="pred-label">· Resultado</span>
+                    <span class="pred-chip pred-chip-real mono">{{ page.realLabel(prediction, md) }}</span>
+                  }
+                  @if (prediction.doubleChanceOption) {
+                    <span class="wc-tag mono">SOS</span>
+                  }
+                  <span
+                    class="pred-result mono"
+                    [class.hit]="(prediction.pointsEarned ?? 0) > 0"
+                    [class.miss]="prediction.pointsEarned === 0"
+                  >
+                    {{ prediction.pointsEarned == null ? '-' : (prediction.pointsEarned > 0 ? '+' + prediction.pointsEarned : prediction.pointsEarned) }}
+                  </span>
+                }
+              </div>
             </div>
           }
         </div>
+        <p class="footnote">Las elecciones de otros jugadores se muestran según las reglas de visibilidad del grupo tras el cierre.</p>
       }
 
       @if (page.comparisonMembers().length > 1) {
-        <p class="section-title mono">COMPARATIVA DEL GRUPO</p>
+        <h2 class="section-title">Comparativa del grupo</h2>
         <div class="comparison-scroll">
           <table class="comparison">
             <thead>
@@ -173,7 +177,11 @@
         <div class="section">
           @for (userBadge of page.newBadges(); track userBadge.id) {
             <div class="badge-card">
-              <piqo-svg icon="medalla" size="22"></piqo-svg>
+              @if (page.artId(userBadge.badge.code); as artId) {
+                <piqo-svg [attr.badge]="artId" state="conseguida" variant="mini" size="28"></piqo-svg>
+              } @else {
+                <piqo-svg icon="medalla" size="22"></piqo-svg>
+              }
               <div>
                 <p class="badge-title">Insignia desbloqueada</p>
                 <p class="badge-desc mono">{{ userBadge.badge.name }} · {{ userBadge.badge.description }}</p>
