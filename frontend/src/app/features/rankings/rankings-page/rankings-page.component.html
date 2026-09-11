@@ -1,4 +1,4 @@
-@if (loading()) {
+@if (page.loading()) {
   <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
 } @else {
   <div class="page">
@@ -6,7 +6,7 @@
       <div class="head" data-tutorial="rankings-head">
         <div>
           <h1>Clasificacion</h1>
-          @if (currentSeasonLabel(); as label) {
+          @if (page.currentSeasonLabel(); as label) {
             <p class="season-label mono">Temporada {{ label }}</p>
           }
         </div>
@@ -14,17 +14,17 @@
       </div>
 
       <div class="tabs">
-        <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
-        <button class="tab" [class.active]="period() === 'TOTAL'" (click)="setPeriod('TOTAL')">Total</button>
+        <button class="tab" [class.active]="page.period() === 'WEEKLY'" (click)="page.setPeriod('WEEKLY')">Semanal</button>
+        <button class="tab" [class.active]="page.period() === 'TOTAL'" (click)="page.setPeriod('TOTAL')">Total</button>
       </div>
 
-      @if (hasMultipleCompetitions()) {
+      @if (page.hasMultipleCompetitions()) {
         <div class="comp-pills">
-          @if (period() !== 'WEEKLY') {
-            <button class="comp-pill" [class.active]="scope() === 'general'" (click)="setScope('general')">General</button>
+          @if (page.period() !== 'WEEKLY') {
+            <button class="comp-pill" [class.active]="page.scope() === 'general'" (click)="page.setScope('general')">General</button>
           }
-          @for (competition of activeCompetitions(); track competition.id) {
-            <button class="comp-pill" [class.active]="scope() === competition.id" (click)="setScope(competition.id)">
+          @for (competition of page.activeCompetitions(); track competition.id) {
+            <button class="comp-pill" [class.active]="page.scope() === competition.id" (click)="page.setScope(competition.id)">
               {{ competition.name }}
             </button>
           }
@@ -32,13 +32,13 @@
       }
     </div>
 
-    @if (myRow(); as mine) {
-      <div class="my-row" (click)="viewUserPicks(mine.userId)">
+    @if (page.myRow(); as mine) {
+      <div class="my-row" (click)="page.viewUserPicks(mine.userId)">
         <div class="my-pos mono">{{ mine.position }}</div>
         <div class="my-meta">
           <div class="my-name">Tu · {{ mine.user.name }}</div>
           <div class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
-            {{ deltaLabel(mine.positionDelta) }} esta semana
+            {{ page.deltaLabel(mine.positionDelta) }} esta semana
           </div>
         </div>
         <div class="my-pts">
@@ -48,14 +48,14 @@
       </div>
     }
 
-    @if (showEvolution() && evolutionBars().length > 0) {
+    @if (page.showEvolution() && page.evolutionBars().length > 0) {
       <div class="evolution-card">
         <div class="evolution-head">
           <span class="evolution-title">Tu evolucion</span>
-          <span class="evolution-sub mono">{{ evolutionBars()[0].label }} &rarr; {{ evolutionBars().at(-1)?.label }}</span>
+          <span class="evolution-sub mono">{{ page.evolutionBars()[0].label }} &rarr; {{ page.evolutionBars().at(-1)?.label }}</span>
         </div>
         <div class="evolution-bars">
-          @for (bar of evolutionBars(); track bar.label) {
+          @for (bar of page.evolutionBars(); track bar.label) {
             <div class="evolution-col">
               <div class="evolution-bar-track">
                 <div class="evolution-bar" [style.height.%]="bar.heightPct"></div>
@@ -74,20 +74,20 @@
       <div class="col-pts mono">PTS</div>
     </div>
 
-    @if (loadingRanking()) {
+    @if (page.loadingRanking()) {
       <div class="loading"><span class="mono">...</span></div>
-    } @else if (rows().length === 0) {
+    } @else if (page.rows().length === 0) {
       <p class="empty">Todavia no hay puntos calculados para esta vista.</p>
     } @else {
       <div class="rows">
-        @for (row of rows(); track row.userId) {
-          <div class="row" [class.me]="row.userId === currentUserId" (click)="viewUserPicks(row.userId)">
+        @for (row of page.rows(); track row.userId) {
+          <div class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
             <div class="col-pos mono">{{ row.position }}</div>
             <div class="col-delta mono" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
-              {{ deltaLabel(row.positionDelta) }}
+              {{ page.deltaLabel(row.positionDelta) }}
             </div>
             <div class="col-name">
-              <span class="avatar">{{ initials(row.user.name) }}</span>
+              <span class="avatar">{{ page.initials(row.user.name) }}</span>
               <span class="name">{{ row.user.name }}</span>
             </div>
             <div class="col-pts mono">{{ row.points }}</div>
