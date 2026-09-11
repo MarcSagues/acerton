@@ -77,6 +77,9 @@ export class CurrentMatchdayComponent {
   readonly activeTabIndex = signal(0);
   readonly now = signal(new Date());
   readonly navigating = signal(false);
+  /** Celebracion mostrada solo despues de que el ultimo pronostico haya quedado confirmado por el backend. */
+  readonly submissionConfirmed = signal(false);
+  readonly justCopiedSummary = signal(false);
   /** Se pone a true cuando "siguiente" ya devolvio null para la jornada mostrada; se resetea al cambiar de jornada o de pestana. */
   readonly noNextAvailable = signal(false);
   /** Id de la jornada "en vivo" de cada pestana (competicion), tal como se cargo al entrar — para saber si te has alejado navegando y poder volver. */
@@ -188,6 +191,7 @@ export class CurrentMatchdayComponent {
 
   private load(groupId: string): void {
     this.loading.set(true);
+    this.submissionConfirmed.set(false);
     // Las mismas competiciones (y por tanto los mismos partidos) pueden estar
     // activas en varios grupos del usuario a la vez: sin limpiar aqui, el
     // estado de guardado de un partido en el grupo anterior se quedaba
@@ -208,6 +212,7 @@ export class CurrentMatchdayComponent {
   }
 
   selectTab(index: number): void {
+    this.submissionConfirmed.set(false);
     this.activeTabIndex.set(index);
     this.noNextAvailable.set(false);
     const groupId = this.activeGroupService.activeId();
@@ -283,6 +288,7 @@ export class CurrentMatchdayComponent {
   }
 
   private applyMatchdayToActiveTab(matchday: Matchday, groupId: string): void {
+    this.submissionConfirmed.set(false);
     const idx = this.activeTabIndex();
     this.entries.update((list) => list.map((e, i) => (i === idx ? { ...e, matchday } : e)));
     const entry = this.entries()[idx];
@@ -591,6 +597,7 @@ export class CurrentMatchdayComponent {
             if (!exact) {
               this.refreshComeback(groupId);
             }
+            this.showConfirmationIfComplete();
           });
         },
         error: (error: HttpErrorResponse) => {
@@ -604,6 +611,49 @@ export class CurrentMatchdayComponent {
           });
         },
       });
+  }
+
+  private showConfirmationIfComplete(): void {
+    const entry = this.activeEntry();
+    if (!entry || this.isLocked(entry) || entry.matchday.matches.length === 0) return;
+    const allSaved = entry.matchday.matches.every((match) => {
+      const state = this.predictionState.get(match.id);
+      return !!state?.saved && !state.saving && !state.error && this.pickLabel(match.id) !== null;
+    });
+    if (allSaved) {
+      this.submissionConfirmed.set(true);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+  }
+
+  editPredictions(): void {
+    this.submissionConfirmed.set(false);
+  }
+
+  summaryText(): string {
+    const entry = this.activeEntry();
+    if (!entry) return '';
+    const lines = entry.matchday.matches.map(
+      (match) => `${match.homeTeam} - ${match.awayTeam}: ${this.pickLabel(match.id) ?? 'sin pronostico'}`,
+    );
+    return [
+      `Piqo · ${entry.competition.name} · Jornada ${entry.matchday.order}`,
+      '',
+      ...lines,
+      '',
+      'Pronosticos enviados',
+    ].join('\n');
+  }
+
+  copySummary(): void {
+    if (this.justCopiedSummary()) return;
+    navigator.clipboard
+      ?.writeText(this.summaryText())
+      .then(() => {
+        this.justCopiedSummary.set(true);
+        setTimeout(() => this.justCopiedSummary.set(false), 2000);
+      })
+      .catch(() => undefined);
   }
 
   /**

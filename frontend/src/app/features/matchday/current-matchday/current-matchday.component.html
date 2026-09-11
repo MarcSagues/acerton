@@ -7,6 +7,34 @@
       Todavia no hay jornada sincronizada para las competiciones de este grupo. Vuelve mas tarde.
     </p>
   </div>
+} @else if (submissionConfirmed()) {
+  @if (activeEntry(); as entry) {
+    <main class="sent-page">
+      <div class="sent-brand">pq</div>
+      <div class="sent-check" aria-hidden="true"><mat-icon>check</mat-icon></div>
+      <p class="sent-eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</p>
+      <h1>Enviado</h1>
+      <p class="sent-lead">Tus pronosticos estan guardados. Puedes volver a cambiarlos hasta que empiece cada partido.</p>
+
+      <section class="sent-summary" aria-label="Resumen de pronosticos">
+        @for (match of entry.matchday.matches; track match.id) {
+          <div class="sent-match">
+            <div class="sent-teams">
+              <span>{{ match.homeTeam }}</span>
+              <span>{{ match.awayTeam }}</span>
+            </div>
+            <strong class="sent-pick mono">{{ pickLabel(match.id) }}</strong>
+          </div>
+        }
+      </section>
+
+      <button type="button" class="sent-primary" [disabled]="justCopiedSummary()" (click)="copySummary()">
+        <mat-icon>{{ justCopiedSummary() ? 'check' : 'content_copy' }}</mat-icon>
+        {{ justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
+      </button>
+      <button type="button" class="sent-secondary" (click)="editPredictions()">Revisar pronosticos</button>
+    </main>
+  }
 } @else {
   <div class="page">
     <div class="dark-head">
