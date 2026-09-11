@@ -1,15 +1,17 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
 import { forkJoin } from 'rxjs';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
+import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
+import { MemberActionsSheetComponent, MemberActionsSheetData } from './member-actions-sheet.component';
 import { GroupsService } from '../../../core/services/groups.service';
 import { CompetitionsService } from '../../../core/services/competitions.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Group, GroupMember } from '../../../core/models/group.model';
 import { Competition } from '../../../core/models/competition.model';
-import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Injectable()
 export class GroupDetailFacade {
@@ -18,8 +20,14 @@ export class GroupDetailFacade {
   private readonly groupsService = inject(GroupsService);
   private readonly competitionsService = inject(CompetitionsService);
   private readonly authService = inject(AuthService);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly dialog = inject(MatDialog);
+  private readonly toast = inject(ToastService);
+  private readonly dialog = inject(PiqoDialogService);
+  private readonly sheet = inject(BottomSheetService);
+
+  private confirm(data: ConfirmDialogData) {
+    return this.dialog.open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, { data })
+      .closed;
+  }
 
   readonly groupId = this.route.snapshot.paramMap.get('groupId')!;
 
@@ -147,19 +155,15 @@ export class GroupDetailFacade {
   private saveCompetitions(alsoSaveRules: boolean): void {
     const competitionIds = [...this.selectedCompetitionIds()];
     if (competitionIds.length === 0) {
-      this.snackBar.open('Selecciona al menos una competicion', 'Cerrar', { duration: 3000 });
+      this.toast.show('Selecciona al menos una competicion');
       return;
     }
 
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Activar competiciones',
-        message: `Vas a activar ${this.newlySelectedCount()} competicion(es) nueva(s). Una vez activada una liga no se podra desactivar despues, solo anadir mas. ¿Confirmas?`,
-        confirmLabel: 'Activar',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    this.confirm({
+      title: 'Activar competiciones',
+      message: `Vas a activar ${this.newlySelectedCount()} competicion(es) nueva(s). Una vez activada una liga no se podra desactivar despues, solo anadir mas. ¿Confirmas?`,
+      confirmLabel: 'Activar',
+    }).subscribe((confirmed) => {
       if (!confirmed) {
         return;
       }
@@ -172,12 +176,12 @@ export class GroupDetailFacade {
           if (alsoSaveRules) {
             this.saveRules();
           } else {
-            this.snackBar.open('Cambios guardados', 'Cerrar', { duration: 2500 });
+            this.toast.show('Cambios guardados');
           }
         },
         error: (error: HttpErrorResponse) => {
           this.savingCompetitions.set(false);
-          this.snackBar.open(error.error?.message ?? 'No se pudo guardar', 'Cerrar', { duration: 3000 });
+          this.toast.show(error.error?.message ?? 'No se pudo guardar');
         },
       });
     });
@@ -225,11 +229,11 @@ export class GroupDetailFacade {
         this.selectedIsPublic.set(updated.isPublic);
         this.savingRules.set(false);
         this.editingRules.set(false);
-        this.snackBar.open('Cambios guardados', 'Cerrar', { duration: 2500 });
+        this.toast.show('Cambios guardados');
       },
       error: (error: HttpErrorResponse) => {
         this.savingRules.set(false);
-        this.snackBar.open(error.error?.message ?? 'No se pudo guardar', 'Cerrar', { duration: 3000 });
+        this.toast.show(error.error?.message ?? 'No se pudo guardar');
       },
     });
   }
@@ -278,6 +282,26 @@ export class GroupDetailFacade {
     );
   }
 
+  openMemberActions(member: GroupMember): void {
+    const actions: MemberActionsSheetData['actions'] = [];
+    if (this.canPromote(member)) {
+      actions.push({ label: 'Hacer administrador', run: () => this.promoteMember(member) });
+    }
+    if (this.canDemote(member)) {
+      actions.push({ label: 'Quitar administrador', run: () => this.demoteMember(member) });
+    }
+    if (this.canTransferTo(member)) {
+      actions.push({ label: 'Hacer propietario', run: () => this.transferOwnershipPrompt(member) });
+    }
+    if (this.canKick(member)) {
+      actions.push({ label: 'Expulsar del grupo', danger: true, run: () => this.kickMemberPrompt(member) });
+    }
+    if (actions.length === 0) return;
+    this.sheet.open<MemberActionsSheetComponent, void, MemberActionsSheetData>(MemberActionsSheetComponent, {
+      data: { memberName: member.user.name, actions },
+    });
+  }
+
   promoteMember(member: GroupMember): void {
     this.setMemberRole(member, 'ADMIN');
   }
@@ -296,21 +320,18 @@ export class GroupDetailFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.savingMembership.set(false);
-        this.snackBar.open(error.error?.message ?? 'No se pudo cambiar el rol', 'Cerrar', { duration: 3000 });
+        this.toast.show(error.error?.message ?? 'No se pudo cambiar el rol');
       },
     });
   }
 
   kickMemberPrompt(member: GroupMember): void {
     if (this.savingMembership()) return;
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Expulsar del grupo',
-        message: `¿Seguro que quieres expulsar a ${member.user.name} de este grupo? Sus pronosticos y puntos ya conseguidos se conservan.`,
-        confirmLabel: 'Expulsar',
-      },
-    });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    this.confirm({
+      title: 'Expulsar del grupo',
+      message: `¿Seguro que quieres expulsar a ${member.user.name} de este grupo? Sus pronosticos y puntos ya conseguidos se conservan.`,
+      confirmLabel: 'Expulsar',
+    }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
       this.groupsService.kickMember(this.groupId, member.userId).subscribe({
@@ -320,7 +341,7 @@ export class GroupDetailFacade {
         },
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.snackBar.open(error.error?.message ?? 'No se pudo expulsar', 'Cerrar', { duration: 3000 });
+          this.toast.show(error.error?.message ?? 'No se pudo expulsar');
         },
       });
     });
@@ -328,14 +349,11 @@ export class GroupDetailFacade {
 
   transferOwnershipPrompt(member: GroupMember): void {
     if (this.savingMembership()) return;
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Transferir propiedad',
-        message: `¿Transferir la propiedad del grupo a ${member.user.name}? Pasaras a ser administrador y ya no podras nombrar o quitar administradores, transferir la propiedad ni eliminar el grupo.`,
-        confirmLabel: 'Transferir',
-      },
-    });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    this.confirm({
+      title: 'Transferir propiedad',
+      message: `¿Transferir la propiedad del grupo a ${member.user.name}? Pasaras a ser administrador y ya no podras nombrar o quitar administradores, transferir la propiedad ni eliminar el grupo.`,
+      confirmLabel: 'Transferir',
+    }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
       this.groupsService.transferOwnership(this.groupId, member.userId).subscribe({
@@ -345,13 +363,11 @@ export class GroupDetailFacade {
             members.map((m) => (m.userId === member.userId ? { ...m, role: 'ADMIN' } : m)),
           );
           this.savingMembership.set(false);
-          this.snackBar.open('Propiedad transferida', 'Cerrar', { duration: 2500 });
+          this.toast.show('Propiedad transferida');
         },
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.snackBar.open(error.error?.message ?? 'No se pudo transferir la propiedad', 'Cerrar', {
-            duration: 3000,
-          });
+          this.toast.show(error.error?.message ?? 'No se pudo transferir la propiedad');
         },
       });
     });
@@ -360,26 +376,21 @@ export class GroupDetailFacade {
   leaveGroupPrompt(): void {
     if (this.savingMembership()) return;
     if (this.isOwner()) {
-      this.snackBar.open('Transfiere la propiedad o elimina el grupo antes de salir', 'Cerrar', {
-        duration: 3500,
-      });
+      this.toast.show('Transfiere la propiedad o elimina el grupo antes de salir');
       return;
     }
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Salir del grupo',
-        message: '¿Seguro que quieres salir de este grupo? Podras volver a entrar con el link de invitacion.',
-        confirmLabel: 'Salir',
-      },
-    });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    this.confirm({
+      title: 'Salir del grupo',
+      message: '¿Seguro que quieres salir de este grupo? Podras volver a entrar con el link de invitacion.',
+      confirmLabel: 'Salir',
+    }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
       this.groupsService.leaveGroup(this.groupId).subscribe({
         next: () => this.router.navigate(['/groups']),
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.snackBar.open(error.error?.message ?? 'No se pudo salir del grupo', 'Cerrar', { duration: 3000 });
+          this.toast.show(error.error?.message ?? 'No se pudo salir del grupo');
         },
       });
     });
@@ -387,22 +398,19 @@ export class GroupDetailFacade {
 
   deleteGroupPrompt(): void {
     if (this.savingMembership()) return;
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Eliminar grupo',
-        message:
-          'El grupo desaparecera de todos los listados y nadie podra seguir jugando en el. El historial y los trofeos ya conseguidos se conservan. Esta accion no se puede deshacer desde la app.',
-        confirmLabel: 'Eliminar',
-      },
-    });
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    this.confirm({
+      title: 'Eliminar grupo',
+      message:
+        'El grupo desaparecera de todos los listados y nadie podra seguir jugando en el. El historial y los trofeos ya conseguidos se conservan. Esta accion no se puede deshacer desde la app.',
+      confirmLabel: 'Eliminar',
+    }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
       this.groupsService.deleteGroup(this.groupId).subscribe({
         next: () => this.router.navigate(['/groups']),
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.snackBar.open(error.error?.message ?? 'No se pudo eliminar el grupo', 'Cerrar', { duration: 3000 });
+          this.toast.show(error.error?.message ?? 'No se pudo eliminar el grupo');
         },
       });
     });

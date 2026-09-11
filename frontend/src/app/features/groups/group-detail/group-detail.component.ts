@@ -1,15 +1,14 @@
+import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { GroupDetailFacade } from './group-detail.facade';
 
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatMenuModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, SpinnerComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupDetailFacade],
   templateUrl: './group-detail.component.html',
   styleUrl: './group-detail.component.scss',
