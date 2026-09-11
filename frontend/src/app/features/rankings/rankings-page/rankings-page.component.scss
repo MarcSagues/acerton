@@ -1,6 +1,5 @@
 .page {
   min-height: 100%;
-  background: var(--p4-bg);
   color: var(--p4-text);
   padding-bottom: 28px;
 }
@@ -65,8 +64,8 @@ h1 {
   width: calc(100% - 40px);
   margin: 20px 20px 0;
   border-radius: var(--p4-radius-md);
-  background: var(--p4-soft);
-  border: 1px solid var(--p4-accent);
+  background: linear-gradient(135deg, rgba(210, 190, 148, 0.2), transparent 70%), var(--p4-surface);
+  border: 1px solid rgba(210, 190, 148, 0.45);
   padding: 12px 13px;
   display: flex;
   align-items: center;
@@ -121,7 +120,8 @@ h1 {
 .evolution-card {
   margin: 16px 20px 0;
   border-radius: var(--p4-radius-lg);
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 14px 16px;
 }
 
@@ -213,13 +213,14 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   color: var(--p4-text);
   text-align: left;
 
   &.me {
-    background: var(--p4-soft);
-    border: 1px solid var(--p4-accent);
+    background: linear-gradient(135deg, rgba(210, 190, 148, 0.22), transparent 72%), var(--p4-surface);
+    border: 1px solid rgba(210, 190, 148, 0.45);
   }
 }
 

@@ -5,7 +5,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { CompetitionsService } from '../../../core/services/competitions.service';
+import { Competition } from '../../../core/models/competition.model';
 import { ScoringMode } from '../../../core/models/group.model';
+import { competitionTrophyId } from '../../../shared/utils/competition-trophy';
+import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
+import { InfoDialogComponent, InfoDialogData } from '../../../shared/info-dialog/info-dialog.component';
 
 @Injectable()
 export class GroupCreateFacade {
@@ -14,11 +18,11 @@ export class GroupCreateFacade {
   private readonly competitionsService = inject(CompetitionsService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly dialog = inject(PiqoDialogService);
 
   readonly catalog = this.competitionsService.catalog;
   readonly formLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly showComebackDetail = signal(false);
 
   /** Elegir al menos una liga es un paso obligatorio antes de poder tocar el resto del formulario. */
   readonly step = signal<'competitions' | 'details'>('competitions');
@@ -41,6 +45,20 @@ export class GroupCreateFacade {
 
   setPrivacy(isPublic: boolean): void {
     this.form.patchValue({ isPublic });
+  }
+
+  trophyId(competition: Competition): string | null {
+    return competitionTrophyId(competition.code);
+  }
+
+  showComebackDetail(): void {
+    this.dialog.open<InfoDialogComponent, void, InfoDialogData>(InfoDialogComponent, {
+      data: {
+        title: '¿Cómo funciona el comodín?',
+        message:
+          'Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronóstico normal. Los usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.',
+      },
+    });
   }
 
   toggleCompetition(competitionId: string): void {

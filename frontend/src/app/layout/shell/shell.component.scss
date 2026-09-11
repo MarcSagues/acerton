@@ -1,4 +1,5 @@
 .shell {
+  position: relative;
   min-height: 100vh;
   max-width: 480px;
   margin: 0 auto;
@@ -8,7 +9,55 @@
   padding-top: env(safe-area-inset-top);
 }
 
+.shell-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shell-bg-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, var(--p4-dot) 1px, transparent 0);
+  background-size: 26px 26px;
+  opacity: 0.5;
+}
+
+/* Campo de circulos/anillos generado en shell.component.ts: posicion,
+   tamano y ritmo de deriva aleatorios en cada apertura de la app (ver
+   buildBackgroundCircles), para que queden descolocados y a veces
+   cruzandose entre si en vez de una composicion simetrica y fija. */
+.shell-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  animation-name: piqoDrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.shell-bg-circle.ring {
+  border: 1px solid var(--p4-border);
+}
+
+.shell-bg-circle.orb {
+  filter: blur(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-bg-circle {
+    animation: none;
+  }
+}
+
+app-top-bar,
+.shell-content {
+  position: relative;
+  z-index: 1;
+}
+
 .shell-content {
   flex: 1;
-  padding-bottom: calc(82px + env(safe-area-inset-bottom));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }

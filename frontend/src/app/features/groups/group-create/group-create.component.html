@@ -17,17 +17,18 @@
           <button
             type="button"
             role="checkbox"
-            class="radio-card"
+            class="checkbox-card"
             [attr.aria-checked]="page.selectedCompetitionIds().has(competition.id)"
             [class.checked]="page.selectedCompetitionIds().has(competition.id)"
             (click)="page.toggleCompetition(competition.id)"
           >
-            <piqo-svg icon="trofeo" size="22"></piqo-svg>
-            <span class="radio-text">
-              <span class="radio-title">{{ competition.name }}</span>
-              <span class="radio-desc mono">{{ competition.code }}</span>
-            </span>
-            <span class="radio-outer"><span class="radio-inner"></span></span>
+            @if (page.trophyId(competition); as trophy) {
+              <piqo-svg [attr.trophy]="trophy" variant="mini" size="22"></piqo-svg>
+            } @else {
+              <piqo-svg icon="trofeo" size="22"></piqo-svg>
+            }
+            <span class="radio-title">{{ competition.name }}</span>
+            <span class="checkbox-box"><piqo-svg icon="check" size="14"></piqo-svg></span>
           </button>
         }
       </div>
@@ -91,16 +92,7 @@
           </button>
         </div>
         @if (page.form.value.scoringMode === 'ONE_X_TWO') {
-          <button type="button" class="link-btn" (click)="page.showComebackDetail.set(!page.showComebackDetail())">
-            {{ page.showComebackDetail() ? 'Ocultar' : '¿Cómo funciona el comodín?' }}
-          </button>
-          @if (page.showComebackDetail()) {
-            <p class="hint">
-              Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronóstico normal. Los
-              usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en
-              el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.
-            </p>
-          }
+          <button type="button" class="link-btn" (click)="page.showComebackDetail()">¿Cómo funciona el comodín?</button>
         }
         <p class="hint">No podrás cambiar el modo después de crear el grupo.</p>
       </div>

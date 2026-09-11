@@ -39,7 +39,7 @@
       @for (item of page.badgePreview(); track item.badge.id) {
         <span class="badge-preview" [class.earned]="item.earned" [attr.aria-label]="item.badge.name">
           @if (page.artId(item.badge.code); as artId) {
-            <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="mini" size="26"></piqo-svg>
+            <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="48"></piqo-svg>
           } @else {
             <piqo-svg icon="medalla" size="26"></piqo-svg>
           }
@@ -60,7 +60,7 @@
           [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
           (click)="page.openTrophy(trophy)"
         >
-          <piqo-svg [attr.trophy]="trophy.id" variant="mini" size="26"></piqo-svg>
+          <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
           @if (trophy.count > 1) {
             <span class="trophy-count mono">{{ trophy.count }}</span>
           }

@@ -96,19 +96,22 @@
         ></app-segmented-control>
       </div>
 
-      <div class="ciclo-row">
-        <p class="ciclo-title">{{ page.cicloTitulo(entry) }}</p>
-        <p class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</p>
-      </div>
-
-      @if (!page.isLocked(entry)) {
-        <div class="progress-row">
-          <div class="progress-track">
-            <div class="progress-fill" [style.width]="page.progressPct()"></div>
-          </div>
-          <div class="progress-label mono">{{ page.doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+      <div class="hero-card">
+        <div class="hero-glow"></div>
+        <div class="ciclo-row">
+          <p class="ciclo-title">{{ page.cicloTitulo(entry) }}</p>
+          <p class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</p>
         </div>
-      }
+
+        @if (!page.isLocked(entry)) {
+          <div class="progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" [style.width]="page.progressPct()"></div>
+            </div>
+            <div class="progress-label mono">{{ page.doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+          </div>
+        }
+      </div>
 
       @if (page.cicloAviso(entry); as aviso) {
         <div class="aviso" [class.warning]="aviso.tone === 'warning'" [class.error]="aviso.tone === 'error'" [class.info]="aviso.tone === 'info'">

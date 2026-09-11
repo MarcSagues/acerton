@@ -4,44 +4,51 @@
   right: 0;
   bottom: 0;
   z-index: 20;
+  display: flex;
+  justify-content: center;
+  padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+  pointer-events: none;
 }
 
 .bottom-nav {
-  height: 82px;
-  padding-bottom: env(safe-area-inset-bottom);
+  pointer-events: auto;
+  width: 100%;
+  max-width: 452px;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--p4-surface);
+  gap: 4px;
+  padding: 8px;
+  border-radius: 24px;
+  background: var(--p4-nav-bg);
+  backdrop-filter: blur(22px);
+  border: 1px solid var(--p4-border);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
 }
 
 .item {
   flex: 1;
+  height: 56px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 6px;
   color: var(--p4-muted);
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 
   &.active {
     color: var(--p4-accent);
+    background: linear-gradient(150deg, rgba(210, 190, 148, 0.24), rgba(120, 96, 57, 0.1));
   }
 }
 
 .pill {
-  width: 48px;
-  height: 32px;
-  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 120ms ease;
-}
-
-.item.active .pill {
-  background: var(--p4-soft);
 }
 
 .label {
@@ -50,10 +57,4 @@
 
 .item.active .label {
   font-weight: 600;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pill {
-    transition: none;
-  }
 }

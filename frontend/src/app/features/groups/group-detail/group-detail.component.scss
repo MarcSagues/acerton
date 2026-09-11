@@ -1,6 +1,5 @@
 .page {
   min-height: 100%;
-  background: var(--p4-bg);
   color: var(--p4-text);
   padding-bottom: 100px;
 }
@@ -52,7 +51,7 @@
 
 .card {
   border-radius: 16px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 16px;
 }
 
@@ -109,7 +108,7 @@
 
 .comp-row {
   border-radius: 14px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 14px;
   display: flex;
   align-items: center;
@@ -164,7 +163,7 @@
 
 .rule-card {
   border-radius: 14px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 14px;
   display: flex;
   align-items: flex-start;
@@ -265,7 +264,7 @@
 .member-row {
   min-height: 48px;
   border-radius: 12px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 10px 14px;
   display: flex;
   align-items: center;
@@ -343,7 +342,7 @@
   width: 100%;
   min-height: var(--p4-touch);
   border-radius: 12px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-error);
   color: var(--p4-error);
   font: 600 13px/1 var(--p4-font-ui);
@@ -357,7 +356,7 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(82px + env(safe-area-inset-bottom) + 12px);
+  bottom: calc(96px + env(safe-area-inset-bottom) + 12px);
   display: flex;
   justify-content: center;
   padding: 0 20px;

@@ -1,6 +1,5 @@
 .page {
   min-height: 100%;
-  background: var(--p4-bg);
   color: var(--p4-text);
   padding-bottom: 32px;
 }
@@ -29,6 +28,8 @@ h1 {
 }
 
 .avatar {
+  position: relative;
+  z-index: 0;
   width: 62px;
   height: 62px;
   border-radius: 50%;
@@ -39,6 +40,16 @@ h1 {
   align-items: center;
   justify-content: center;
   font: 600 20px/1 var(--p4-font-ui);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    z-index: -1;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #f3e6c6, #8a6e42, #d2be94, #6e5730, #f3e6c6);
+    animation: piqoSpin 12s linear infinite;
+  }
 }
 
 .meta {
@@ -66,7 +77,7 @@ h1 {
 .stat-card {
   flex: 1;
   border-radius: 16px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 14px;
 }
 
@@ -120,10 +131,10 @@ h2 {
 }
 
 .badge-preview {
-  width: var(--p4-touch);
-  height: var(--p4-touch);
-  border-radius: 12px;
-  background: var(--p4-surface);
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-border);
   display: flex;
   align-items: center;
@@ -143,10 +154,10 @@ h2 {
 
 .trophy-btn {
   position: relative;
-  width: var(--p4-touch);
-  height: var(--p4-touch);
-  border-radius: 12px;
-  background: var(--p4-surface);
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-border);
   display: flex;
   align-items: center;
@@ -185,7 +196,7 @@ h2 {
 
 .card {
   border-radius: 16px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 16px;
 }
 

@@ -1,6 +1,5 @@
 .page {
   min-height: 100%;
-  background: var(--p4-bg);
   color: var(--p4-text);
   padding-bottom: 28px;
 }
@@ -53,6 +52,45 @@ h1 {
   gap: 8px;
 }
 
+.checkbox-card {
+  border-radius: 14px;
+  background: var(--p4-surface);
+  border: 1px solid transparent;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--p4-text);
+  text-align: left;
+
+  piqo-svg {
+    flex: none;
+    color: var(--p4-accent);
+  }
+
+  &.checked {
+    border-color: var(--p4-accent);
+  }
+}
+
+.checkbox-box {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--p4-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+}
+
+.checkbox-card.checked .checkbox-box {
+  border-color: var(--p4-accent);
+  background: var(--p4-accent);
+  color: var(--p4-on-accent);
+}
+
 .radio-card {
   border-radius: 14px;
   background: var(--p4-surface);
@@ -83,6 +121,8 @@ h1 {
 }
 
 .radio-title {
+  flex: 1;
+  min-width: 0;
   font: 600 13px/1 var(--p4-font-ui);
 }
 

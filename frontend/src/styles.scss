@@ -79,14 +79,27 @@
    nuevos usan estos; los que aún no se han reconstruido siguen con los de
    arriba hasta que les toque su lote. Valores calcados de `tema.css`. */
 @mixin piqo4-claro {
-  --p4-bg: #f1f0ea;
+  --p4-bg: #f4f2ec;
   --p4-surface: #ffffff;
+  --p4-surface-2: #f7f5ef;
+  --p4-glass: rgba(18, 22, 25, 0.04);
   --p4-text: #121619;
   --p4-muted: #5f676b;
   --p4-accent: #786039;
+  --p4-accent-gradient: linear-gradient(135deg, #a98a55, #786039 55%, #4f3e22);
   --p4-on-accent: #ffffff;
-  --p4-border: #777f82;
+  --p4-border: rgba(18, 22, 25, 0.1);
   --p4-soft: #eae2d2;
+  /* Mas alta que en oscuro: un punto oscuro sobre crema necesita bastante
+     mas alpha que uno claro sobre negro para leerse igual de visible. */
+  --p4-dot: rgba(18, 22, 25, 0.32);
+  --p4-nav-bg: rgba(255, 255, 255, 0.78);
+  --p4-sheet-bg: rgba(255, 255, 255, 0.92);
+  /* Manchas/anillos del fondo del shell: en claro deben ser tonos oscuros
+     y saturados (no el champan claro de oscuro, que apenas se veria sobre
+     un fondo crema) para tener contraste real contra --p4-bg. */
+  --p4-bloom-1: 120, 96, 57;
+  --p4-bloom-2: 87, 68, 38;
   --p4-success: #236b4d;
   --p4-success-bg: #e0eee7;
   --p4-error: #a53240;
@@ -100,14 +113,22 @@
 }
 
 @mixin piqo4-oscuro {
-  --p4-bg: #121619;
-  --p4-surface: #1d2426;
+  --p4-bg: #0c0f11;
+  --p4-surface: #151a1d;
+  --p4-surface-2: #1b2125;
+  --p4-glass: rgba(241, 240, 234, 0.06);
   --p4-text: #f1f0ea;
-  --p4-muted: #adb5b5;
+  --p4-muted: #9aa0a3;
   --p4-accent: #d2be94;
+  --p4-accent-gradient: linear-gradient(135deg, #ebdcb8, #d2be94 50%, #a98a55);
   --p4-on-accent: #121619;
-  --p4-border: #7c878d;
+  --p4-border: rgba(241, 240, 234, 0.1);
   --p4-soft: #373126;
+  --p4-dot: rgba(241, 240, 234, 0.14);
+  --p4-nav-bg: rgba(12, 15, 17, 0.72);
+  --p4-sheet-bg: rgba(21, 26, 29, 0.92);
+  --p4-bloom-1: 210, 190, 148;
+  --p4-bloom-2: 120, 96, 57;
   --p4-success: #91c7ae;
   --p4-success-bg: #193c30;
   --p4-error: #f1a4aa;
@@ -382,9 +403,10 @@ button {
 
 .piqo-primary,
 .piqo-choice[aria-pressed='true'] {
-  background: var(--p4-accent);
+  background: var(--p4-accent-gradient);
   color: var(--p4-on-accent);
   border-color: var(--p4-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .piqo-secondary,
@@ -496,10 +518,92 @@ button {
   }
 }
 
+/* ---- Piqo 4.1: degradados, cristal y movimiento ------------------------
+   Calcado del proyecto de diseño "Piqo App 4.1": fondo con constelacion de
+   puntos y orbes a la deriva, tarjetas en degradado diagonal, cristal
+   esmerilado en superposiciones, y las animaciones de entrada/brillo que
+   lo acompanan. Mismo sistema de marca que Piqo 4.0, solo mas luz. */
+@keyframes piqoUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes piqoShimmer {
+  0% {
+    transform: translateX(-140%) skewX(-14deg);
+  }
+  55%,
+  100% {
+    transform: translateX(320%) skewX(-14deg);
+  }
+}
+
+@keyframes piqoDrift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(var(--dx, -18px), var(--dy, 14px)) rotate(var(--dr, 0deg));
+  }
+}
+
+@keyframes piqoBreathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes piqoHalo {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes piqoParticle {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(1);
+  }
+}
+
+/* Entrada suave de cada pantalla: .page es la clase raiz compartida por
+   (casi) todas las pantallas, asi que esta unica regla anima toda la app
+   sin tocar cada componente. */
+.page {
+  animation: piqoUp 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .piqo-choice,
   .piqo-view {
     transition: none;
+    animation: none;
+  }
+
+  .page {
     animation: none;
   }
 }
@@ -508,14 +612,17 @@ button {
    Estas clases se aplican a elementos que CDK adjunta a <body> (fuera del
    encapsulamiento de cualquier componente), asi que van globales aqui. */
 .piqo-dialog-backdrop {
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(6, 8, 9, 0.6);
+  backdrop-filter: blur(3px);
 }
 
 .piqo-dialog-panel {
   max-width: 340px;
   width: calc(100vw - 40px);
   border-radius: var(--p4-radius-lg);
-  background: var(--p4-surface);
+  background: var(--p4-sheet-bg);
+  backdrop-filter: blur(26px);
+  border: 1px solid var(--p4-border);
   color: var(--p4-text);
   padding: 20px;
   animation: piqoFade 120ms ease;
@@ -525,7 +632,10 @@ button {
   width: 100%;
   max-width: 430px;
   border-radius: 24px 24px 0 0;
-  background: var(--p4-bg);
+  background: var(--p4-sheet-bg);
+  backdrop-filter: blur(26px);
+  border: 1px solid var(--p4-border);
+  border-bottom: 0;
   color: var(--p4-text);
   padding: 20px 0 max(24px, env(safe-area-inset-bottom));
   animation: piqoSheetIn 280ms cubic-bezier(0.16, 1, 0.3, 1);

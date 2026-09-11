@@ -1,4 +1,10 @@
 <div class="shell">
+  <div class="shell-bg" aria-hidden="true">
+    <div class="shell-bg-dots"></div>
+    @for (circle of backgroundCircles; track $index) {
+      <div class="shell-bg-circle" [class.ring]="circle.kind === 'ring'" [class.orb]="circle.kind === 'orb'" [style]="circle.style"></div>
+    }
+  </div>
   <app-top-bar></app-top-bar>
   <div class="shell-content">
     <router-outlet></router-outlet>
