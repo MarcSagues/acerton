@@ -5,6 +5,13 @@
   justify-content: center;
 }
 
+.dark-head {
+  background: var(--surface-dark);
+  border-radius: 0 0 26px 26px;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: 20px;
+}
+
 .head {
   padding: 20px 16px 16px;
   display: flex;
@@ -16,33 +23,34 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: var(--surface-alt-2);
+  background: rgba(241, 240, 234, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 700 18px/1 var(--font-mono);
-  color: var(--accent);
+  font: 800 18px/1 var(--font-display);
+  color: var(--on-inverse-accent);
   flex: none;
 }
 
 .name {
-  font: 700 19px/1.15 var(--font-ui);
+  font: 700 19px/1.15 var(--font-display);
+  color: var(--text-on-dark);
 }
 
 .email {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-on-dark-secondary);
   margin-top: 3px;
 }
 
 .stats {
-  padding: 0 16px 16px;
+  padding: 0 16px;
   display: flex;
   gap: 9px;
 }
 
 .global-streak-hint {
-  margin: -8px 16px 16px;
+  margin: 12px 16px 16px;
   font-size: 10px;
   line-height: 1.5;
   color: var(--text-tertiary);
@@ -51,22 +59,22 @@
 .stat-tile {
   flex: 1;
   border-radius: var(--radius-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(241, 240, 234, 0.07);
   padding: 12px;
 }
 
 .stat-value {
   font: 700 22px/1;
+  color: var(--text-on-dark);
 
   &.accent {
-    color: var(--accent);
+    color: var(--on-inverse-accent);
   }
 }
 
 .stat-label {
   font-size: 9px;
-  color: var(--text-secondary);
+  color: var(--text-on-dark-secondary);
   margin-top: 4px;
 }
 
@@ -135,7 +143,7 @@
   outline: none;
 
   &:focus {
-    border-color: var(--accent);
+    border-color: var(--accent-secondary);
   }
 }
 
@@ -267,7 +275,7 @@
 
 .badge-tile.earned .badge-medal {
   background: var(--accent-bg);
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .badge-name {

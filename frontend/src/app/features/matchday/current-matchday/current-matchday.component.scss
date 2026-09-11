@@ -283,7 +283,7 @@
   font-size: 15px;
 
   &.active {
-    color: var(--accent);
+    color: var(--accent-secondary);
     background: var(--accent-bg);
   }
 
@@ -325,7 +325,7 @@
   transition: border-color 0.2s ease;
 
   &.confirmed {
-    border-color: var(--accent);
+    border-color: var(--accent-secondary);
   }
 
   &.error {
@@ -523,7 +523,7 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--border-strong);
   font: 600 13px/1 var(--font-ui);
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .cta-bar {
@@ -543,7 +543,7 @@
   }
 
   .cta-check {
-    color: var(--accent);
+    color: var(--accent-secondary);
     font-size: 18px;
     width: 18px;
     height: 18px;

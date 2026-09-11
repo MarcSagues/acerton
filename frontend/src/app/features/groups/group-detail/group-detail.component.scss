@@ -14,12 +14,12 @@
 }
 
 .back {
-  font: 500 16px/1 var(--font-ui);
-  color: var(--text-secondary);
+  font: 600 16px/1 var(--font-ui);
+  color: var(--accent-secondary);
 }
 
 .title {
-  font: 600 15px/1.2 var(--font-ui);
+  font: 700 15px/1.2 var(--font-display);
 }
 
 .sub {
@@ -72,7 +72,7 @@
   flex: 1;
   font: 700 18px/1 var(--font-mono);
   letter-spacing: 0.12em;
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .copy-btn {
@@ -94,7 +94,7 @@
   }
 
   &:disabled {
-    color: var(--accent);
+    color: var(--accent-secondary);
     border-color: var(--accent-border);
     cursor: default;
   }
@@ -207,7 +207,7 @@
   border: none;
   font: 600 15px/1 var(--font-ui);
   cursor: pointer;
-  box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.35);
+  box-shadow: var(--shadow-elevated);
 
   &:disabled {
     opacity: 0.7;
@@ -364,7 +364,7 @@
   padding: 3px 8px;
   border-radius: 10px;
   background: var(--accent-bg);
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .owner-badge {

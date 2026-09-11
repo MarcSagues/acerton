@@ -26,7 +26,7 @@ h1 {
 .contact {
   display: inline-block;
   font: 600 16px/1 var(--font-ui);
-  color: var(--accent);
+  color: var(--accent-secondary);
   margin-bottom: 28px;
 }
 
@@ -50,5 +50,5 @@ p {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-secondary);
 }

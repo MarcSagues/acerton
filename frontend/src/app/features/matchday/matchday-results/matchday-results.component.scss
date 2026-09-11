@@ -131,7 +131,7 @@
 
 .points-value {
   font: 700 30px/1 var(--font-mono);
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .points-label {
@@ -166,7 +166,7 @@
 }
 
 .accent {
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .rule {
@@ -234,7 +234,7 @@
   padding: 3px 6px;
   border-radius: 6px;
   background: var(--accent-bg);
-  color: var(--accent);
+  color: var(--accent-secondary);
   font-size: 9px;
   font-weight: 600;
 }
@@ -274,7 +274,7 @@
   align-items: center;
   justify-content: center;
   font: 700 13px/1;
-  color: var(--accent);
+  color: var(--accent-secondary);
   flex: none;
 }
 

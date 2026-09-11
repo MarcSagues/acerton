@@ -103,7 +103,7 @@
 
 .my-pos {
   font: 700 22px/1;
-  color: var(--accent);
+  color: var(--accent-secondary);
 }
 
 .my-meta {
@@ -120,7 +120,7 @@
   margin-top: 2px;
 
   &.up {
-    color: var(--accent);
+    color: var(--accent-secondary);
   }
 
   &.down {
@@ -223,7 +223,7 @@
   color: var(--text-tertiary);
 
   &.up {
-    color: var(--accent);
+    color: var(--accent-secondary);
   }
 
   &.down {
