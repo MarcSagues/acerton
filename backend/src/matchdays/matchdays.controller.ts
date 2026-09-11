@@ -30,6 +30,16 @@ export class MatchdaysController {
     return matchdays.filter((entry) => entry.matchday !== null);
   }
 
+  @Get('groups/:groupId/competitions/:competitionId/matchdays')
+  async listForCompetition(
+    @Param('groupId') groupId: string,
+    @Param('competitionId') competitionId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.groupsService.assertIsMember(groupId, user.id);
+    return this.matchdaysService.listForCompetitionWithUserPoints(competitionId, user.id, groupId);
+  }
+
   @Get('matchdays/:id')
   getOne(@Param('id') id: string) {
     return this.matchdaysService.getMatchdayWithMatches(id);

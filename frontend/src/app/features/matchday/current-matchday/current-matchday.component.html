@@ -32,7 +32,9 @@
             >
               <span class="chevron chevron-left"></span>
             </button>
-            <div class="eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</div>
+            <button type="button" class="eyebrow" (click)="goToCalendar()">
+              {{ entry.competition.name }} · J{{ entry.matchday.order }} ▾
+            </button>
             <button
               class="nav-btn"
               [disabled]="navigating() || noNextAvailable()"

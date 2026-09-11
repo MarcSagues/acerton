@@ -104,6 +104,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'matchday/calendar',
+        loadComponent: () =>
+          import('./features/matchday/matchday-calendar/matchday-calendar.component').then(
+            (m) => m.MatchdayCalendarComponent,
+          ),
+      },
+      {
         path: 'matchday/:matchdayId/results',
         loadComponent: () =>
           import('./features/matchday/matchday-results/matchday-results.component').then(

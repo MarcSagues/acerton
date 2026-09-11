@@ -18,6 +18,9 @@ function buildPrismaMock(overrides: Record<string, unknown> = {}) {
     competition: {
       findUnique: jest.fn(),
     },
+    prediction: {
+      findMany: jest.fn(),
+    },
     ...overrides,
   };
 }
@@ -508,5 +511,63 @@ describe('MatchdaysService.syncResultsForClosedMatchdays (una sola tanda de peti
     expect(prisma.matchday.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'md-2' } }),
     );
+  });
+});
+
+describe('MatchdaysService.listForCompetitionWithUserPoints', () => {
+  it('devuelve todas las jornadas de la competicion ordenadas, con los puntos sumados de las predicciones del usuario en ese grupo', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { id: 'md-1', order: 1, status: 'FINISHED', closesAt: new Date('2026-01-01') },
+      { id: 'md-2', order: 2, status: 'FINISHED', closesAt: new Date('2026-01-08') },
+      { id: 'md-3', order: 3, status: 'OPEN', closesAt: new Date('2026-01-15') },
+    ]);
+    prisma.prediction.findMany.mockResolvedValue([
+      { pointsEarned: 3, match: { matchdayId: 'md-1' } },
+      { pointsEarned: 0, match: { matchdayId: 'md-1' } },
+      { pointsEarned: 5, match: { matchdayId: 'md-2' } },
+    ]);
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.listForCompetitionWithUserPoints('c1', 'u1', 'g1');
+
+    expect(prisma.prediction.findMany).toHaveBeenCalledWith({
+      where: { userId: 'u1', groupId: 'g1', match: { matchdayId: { in: ['md-1', 'md-2', 'md-3'] } } },
+      select: { pointsEarned: true, match: { select: { matchdayId: true } } },
+    });
+    expect(result).toEqual([
+      { id: 'md-1', order: 1, status: 'FINISHED', closesAt: new Date('2026-01-01'), points: 3 },
+      { id: 'md-2', order: 2, status: 'FINISHED', closesAt: new Date('2026-01-08'), points: 5 },
+      { id: 'md-3', order: 3, status: 'OPEN', closesAt: new Date('2026-01-15'), points: null },
+    ]);
+  });
+
+  it('distingue una jornada sin ningun pronostico (points null) de una jugada con 0 puntos', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { id: 'md-1', order: 1, status: 'FINISHED', closesAt: new Date('2026-01-01') },
+    ]);
+    prisma.prediction.findMany.mockResolvedValue([{ pointsEarned: 0, match: { matchdayId: 'md-1' } }]);
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.listForCompetitionWithUserPoints('c1', 'u1', 'g1');
+
+    expect(result).toEqual([
+      { id: 'md-1', order: 1, status: 'FINISHED', closesAt: new Date('2026-01-01'), points: 0 },
+    ]);
+  });
+
+  it('devuelve un array vacio sin consultar predicciones si la competicion no tiene jornadas', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([]);
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.listForCompetitionWithUserPoints('c1', 'u1', 'g1');
+
+    expect(result).toEqual([]);
+    expect(prisma.prediction.findMany).not.toHaveBeenCalled();
   });
 });

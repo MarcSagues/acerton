@@ -76,6 +76,10 @@
 
 .eyebrow {
   flex: 1;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
   text-align: center;
   font: 400 10px/1 var(--font-mono);
   letter-spacing: 0.1em;

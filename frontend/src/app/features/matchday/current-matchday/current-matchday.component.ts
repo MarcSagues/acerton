@@ -1,6 +1,6 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -64,6 +64,7 @@ interface MatchPredictionState {
 })
 export class CurrentMatchdayComponent {
   private readonly activeGroupService = inject(ActiveGroupService);
+  private readonly router = inject(Router);
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly predictionsService = inject(PredictionsService);
   private readonly wildcardsService = inject(WildcardsService);
@@ -221,6 +222,14 @@ export class CurrentMatchdayComponent {
 
   navigateNext(): void {
     this.navigate('next');
+  }
+
+  goToCalendar(): void {
+    const entry = this.activeEntry();
+    if (!entry) return;
+    this.router.navigate(['/matchday/calendar'], {
+      queryParams: { competitionId: entry.competition.id, competitionName: entry.competition.name },
+    });
   }
 
   /** Vuelve a la jornada "en vivo" de la pestana activa tras haber navegado a otra. */
