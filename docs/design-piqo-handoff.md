@@ -40,10 +40,11 @@ cualquier interpretación mía):**
 > vocabulario, logo "pq"). Paleta fija por ahora; el modo oscuro se pidió
 > más adelante en la misma sesión y ya está implementado (ver abajo).
 
-## Estado: qué está hecho (Lotes 0-3, todos cerrados)
+## Estado: qué está hecho (Lotes 0-5, todos cerrados)
 
-11 commits en la rama, todos con tests en verde y verificados en navegador
-con datos reales (cuentas de prueba creadas, limpiadas después). Orden:
+18 commits de implementación en la rama, con los incrementos funcionales
+verificados en navegador y con datos reales cuando la pantalla los requiere
+(cuentas de prueba creadas y limpiadas después). Orden:
 
 ```
 bc62782 Rediseño Piqo (lote 0+1 parcial): tokens, marca y pantallas nucleo
@@ -57,6 +58,13 @@ d54665a Rediseño Piqo (lote 3, parte 1): comparativa de todos en jornada cerrad
 2445ac3 Rediseño Piqo (lote 3, parte 3): histórico de jornadas por grupo
 310acfe Rediseño Piqo (lote 3, parte 4): detalle de miembro
 ce9b720 Rediseño Piqo (lote 3, parte 5 — cierra el lote): gráfico de evolución
+dad19f4 Rediseño Piqo (lote 4, parte 1): carrusel de onboarding
+d945a27 Rediseño Piqo (lote 4, parte 2): confirmación real de jornada
+2e7b458 Rediseño Piqo (lote 4, parte 3): bandeja de avisos mock
+eeefa37 Rediseño Piqo (lote 4, parte 4): normas y premios
+6d56733 Rediseño Piqo (lote 5, parte 1): completa el barrido de marca
+b5abac1 Rediseño Piqo (lote 5, parte 2): centraliza colores de marca
+d7fbd43 Rediseño Piqo (lote 5, parte 3): renueva iconos y marca nativa
 ```
 
 Lee los mensajes de commit completos (`git log -p` o `git show <hash>`) si
@@ -78,6 +86,10 @@ explicar el porqué, no solo el qué.
 | Calendario de jornadas (`matchday-calendar`, **nueva**) | Rejilla 4 columnas, jugada/abierta/próxima |
 | Histórico de jornadas (`matchday-history`, **nueva**) | Lista de jornadas finalizadas con ganador y medias |
 | Detalle de miembro (`member-detail`, **nueva**) | Racha, % aciertos, insignias, últimas jornadas de otro miembro del grupo |
+| Onboarding pre-login (`landing-page`) | Carrusel de 3 pasos, siempre oscuro, con modos de puntuación reales |
+| Confirmación "Enviado" (`current-matchday`) | Resumen de los pronósticos recién guardados + copia real al portapapeles |
+| Avisos (`notifications`, **nueva**) | Bandeja visual con datos mock marcados explícitamente como demo; no hay backend persistido |
+| Normas y premios (`rules-and-prizes`, **nueva**) | Reglas reales del grupo + bloque genérico de premios pactados fuera de la app |
 
 ### Endpoints de backend nuevos (todos de solo lectura, sin migración)
 
@@ -210,8 +222,9 @@ corrección ya aplicada:
   **boot-loader** estático de `frontend/src/index.html` (el `pq` que se ve
   antes de que cargue Angular). Estas SÍ usan `--surface-dark`/
   `--inverse-surface` y `--text-on-dark`/`--on-inverse-accent` a
-  propósito. La pantalla de **Onboarding** que falta por construir (Lote
-  4) también debe ser así de oscura siempre, por la misma regla de marca.
+  propósito. El **Onboarding** (`landing-page`) y la confirmación
+  **Enviado** de Jornada también son siempre oscuros por la misma regla
+  de marca.
 
 Si añades una pantalla nueva y dudas cuál de los dos patrones usar:
 ¿es una pantalla de navegación normal, o un momento de marca/conversión
@@ -238,21 +251,24 @@ Lo segundo → `--surface-dark`.
   (`profile-page.component.html/.ts`), mismo patrón visual de segmented
   control que el resto de tabs de la app.
 
-## Rebranding a "Piqo" — qué se cambió y qué falta
+## Rebranding a "Piqo" — estado final
 
-Hecho: título de la app (`index.html`), `manifest.webmanifest`
-(`name`/`short_name`/`theme_color`/`background_color`, pero **no** los PNG
-de los iconos — siguen siendo el logo antiguo, es un encargo de
-producción de assets aparte, fuera de alcance de este rediseño de código),
-boot-loader, marca "pq" en el login, copy del login ("Entra al
-vestuario"), un texto suelto del tutorial ("Bienvenido a Piqo").
+El barrido visible ya está completo: título web, manifest, boot-loader,
+login, tutorial, soporte, privacidad, aviso de juego sin dinero, nombres
+nativos de Android/iOS y títulos fallback de notificaciones muestran
+Piqo. `Quiniela 1X2`, `tus quinielas` y expresiones equivalentes se
+mantienen cuando nombran el modo de juego o los pronósticos; no son marca
+antigua en esos contextos.
 
-**Pendiente (parte del Lote 5, ver abajo):** barrido de cualquier
-"Acerton"/"Quiniela" como nombre de marca que quede en textos de otras
-pantallas (footer, soporte, política de privacidad, etc. — no se ha
-revisado sistemáticamente todavía). El vocabulario funcional (Grupos,
-Jornada, Tabla/Clasificación, Perfil) **no se cambia**: Piqo usa esas
-mismas palabras en su propio menú inferior.
+Los identificadores técnicos existentes tampoco se renombran: dominio
+`acerton.app`, correo `support@acerton.app`, Firebase, `appId`/bundle id,
+namespace Java y claves antiguas de `localStorage`. Cambiarlos rompería
+infraestructura, sesiones o preferencias ya guardadas y no aporta ningún
+cambio visual.
+
+Los iconos web/PWA, favicon, App Store/iOS y Android, incluidos los splash,
+ya usan el monograma `pq` en grafito y champán. Las pantallas de arranque
+nativas son siempre oscuras, igual que el boot-loader y el onboarding.
 
 ## Reglas de producto que no se pueden inventar ni saltar
 
@@ -313,66 +329,49 @@ nuevas:
   antes de enviar el formulario (el autocompletado tiende a reponerse
   tras cada recarga de página del `ng serve` en modo watch).
 
-## Lo que queda (Lote 4 y Lote 5) — siguiente paso recomendado
+## Lotes 4 y 5 — cerrados
 
-### Lote 4 — pantallas nuevas / de datos mock
+- El onboarding tiene tres pasos y usa una superficie de marca siempre
+  oscura. Explica los dos modos de puntuación existentes, sin añadir
+  mecánicas ficticias.
+- Al guardar una jornada se muestra `Enviado` con el resumen exacto de las
+  selecciones que devolvió el backend. `Copiar resumen` usa el portapapeles
+  real. No se añadió el botón ficticio de compartir como imagen.
+- Avisos deja escrito en código y en pantalla que sus datos son una demo.
+  No se creó persistencia de notificaciones.
+- Normas y premios consume grupo/competición reales para mostrar el modo de
+  puntuación y el comodín de remontada. Los premios se describen como un
+  acuerdo externo del grupo porque no existe ese dato en el modelo.
+- El barrido de color movió transparencias y sombras de componentes a
+  tokens compartidos en `styles.scss`. Los únicos hex/RGBA que quedan fuera
+  son el loader estático de `index.html` y `ThemeService`, que necesitan
+  colores exactos antes o fuera de la cascada CSS.
+- Los iconos instalables y recursos nativos ya muestran Piqo.
 
-1. **Onboarding pre-login** (Piqo: Onboarding 1-3): sustituir/ampliar
-   `frontend/src/app/features/landing/landing-page/` por un carrusel de 3
-   pasos, **siempre oscuro** (regla de marca). Contenido real donde se
-   pueda: paso 2 puede explicar de verdad "Quiniela 1X2" vs "Resultado
-   exacto" (son reglas reales de `product-rules.md`), el resto puede ser
-   copy de marca sin datos reales detrás.
-2. **Pantalla "Enviado" tras completar la jornada**: hoy
-   `current-matchday.component` simplemente guarda in-line sin navegar.
-   Construir una confirmación con resumen real de los pronósticos
-   enviados (reutilizar los datos ya cargados en el componente) +
-   "copiar resumen" al portapapeles (mismo patrón que
-   `group-invite.component.ts` → `copyCode()`/`copyLink()`). "Compartir
-   como imagen" (lo que hace Piqo) es más trabajo (renderizar una tarjeta
-   a imagen) — no fingirlo con un botón que no hace nada; si no da tiempo,
-   omitirlo y decirlo explícitamente, no simularlo.
-3. **Bandeja de Avisos** (Piqo: Notifs): **no hay backend real para
-   esto** — solo hay envío de push "fire-and-forget" (Firebase), sin
-   tabla de eventos persistida. Construir la pantalla con datos mock
-   explícitos (dejarlo dicho en el código/commit: esto es mock, no está
-   conectado a datos reales). No inventar un backend de notificaciones
-   nuevo salvo que el usuario lo pida explícitamente — es una pieza grande
-   fuera del alcance de "probar un rediseño visual".
-4. **Normas y premios**: las reglas de puntuación (1X2, resultado exacto,
-   comodín de remontada) sí son datos reales — ya existen en
-   `group-detail.component` mezcladas con el resto de ajustes. Construir
-   una pantalla dedicada con esas reglas reales + una sección de
-   "premios" como texto informativo genérico (no inventar un campo de
-   datos "premios" que no existe en el modelo — Piqo lo muestra como algo
-   que cada grupo pacta por su cuenta, no como una función de la app).
-   Enlazar desde Perfil (Piqo tiene una fila "Normas y premios" en su
-   pantalla de Perfil que hoy no existe en la app real — añadirla).
+Verificación del cierre: build Angular de producción correcto y recursos
+PWA comprobados desde `http://localhost:4200`. Los PNG tienen los tamaños
+declarados y los XML/plist nativos son válidos. El ensamblado Android no
+pudo completarse en esta máquina: Gradle toma Java 8 por defecto y el JBR
+instalado con Android Studio es Java 11, mientras el Android Gradle Plugin
+8.13 exige Java 17. Es una limitación del entorno, no un error de recursos;
+repetir `gradlew.bat assembleDebug` con `JAVA_HOME` apuntando a un JDK 17.
 
-### Lote 5 — barrido final
-
-- Buscar "Acerton"/"Quiniela" como nombre de marca en textos sueltos
-  (`grep -rn "Acerton\|Quiniela" frontend/src/app` y revisar caso a caso —
-  cuidado, "quiniela" también se usa como término genérico correcto en
-  algunos sitios, no cambiar eso).
-- Revisar si queda algún color sin tokenizar (`grep -rn "#[0-9a-fA-F]\{3,6\}"
-  frontend/src/app` para hexadecimales sueltos fuera de `styles.scss`).
-- Decidir qué hacer con los iconos de PWA/App Store (siguen siendo el
-  logo antiguo) — probablemente un encargo de assets aparte, no de código.
+La verificación funcional del Lote 4 se hizo con backend NestJS, frontend
+Angular y PostgreSQL locales: cuenta QA y grupo exacto creados dentro de
+transacciones, comprobación de la confirmación con pronósticos reales y
+limpieza final verificada (`0|0`). No se tocó el usuario `sagui`.
 
 ## Cómo seguir sin repetir trabajo
 
 1. `git checkout design/nuevo-estilo-ui && git pull` (o clona el repo y
    haz checkout de esa rama si trabajas desde cero).
-2. Lee los 11 commits (`git log --oneline dev..design/nuevo-estilo-ui`) si
+2. Lee los commits (`git log --oneline dev..design/nuevo-estilo-ui`) si
    quieres el detalle exacto de cada decisión, especialmente
    `a36e182` (la corrección de contraste) y `3807032` (la corrección de
    cabeceras) — son los dos sitios donde más se aprendió a base de
    errores ya corregidos, no los repitas.
-3. Sigue con el Lote 4 en el orden de arriba, un incremento por commit,
-   verificando cada uno con datos reales (no solo capturas) antes de
-   pasar al siguiente — es el patrón que se ha seguido durante toda la
-   rama.
+3. Si se añade otro lote, mantén un incremento por commit y verifica con
+   datos reales las pantallas que dependen del backend.
 4. Todo se commitea directamente a `design/nuevo-estilo-ui` y se empuja a
    `origin/design/nuevo-estilo-ui`. **No mergees a `dev` ni a `main`** sin
    que el usuario lo pida explícitamente — es una rama de prueba que él
