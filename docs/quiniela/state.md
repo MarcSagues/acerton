@@ -1,10 +1,13 @@
 # Estado actual
 
-_Última actualización: 2026-09-10 (Sprint 3 y Sprint 4 completos en `dev`,
+_Última actualización: 2026-09-12. Sprint 3 y Sprint 4 completos en `dev`,
 Sprint 5 con sus tres primeros incrementos (base de temporadas,
-elegibilidad, racha global) en `dev` — pendiente de que el usuario los
-pruebe antes de mergear a `main`. Sesión todavía abierta, no cerrada con
-`/quiniela cerrar`)._
+elegibilidad, racha global) en `dev` — **todavía pendiente de que el
+usuario los pruebe antes de mergear a `main`** (sin cambios en este punto
+desde el 2026-09-10). Entretanto, una sesión de rediseño visual
+("Piqo Mobile 4.0" → "Piqo App 4.1", fuera del alcance de esta skill) ha
+seguido subiendo commits directos a `dev`; ver más abajo la reconciliación
+de lo que, de paso, sí tocaba reglas de producto de este roadmap._
 
 ## Sprint activo
 
@@ -14,75 +17,72 @@ pruebe antes de mergear a `main`. Sesión todavía abierta, no cerrada con
 comprobaciones de permisos por HTTP directo + navegador con dos sesiones
 reales). Ver `roadmap.md` Sprint 3. Issue #8 en Status "Test".
 
-**Sprint 4 — Tutorial**: completo en `dev`, verificado en web. Recorrido
-guiado tipo "coach mark" (no un modal de texto, corregido tras feedback
-explícito del usuario): cada paso resalta el elemento real de la
-interfaz con una burbuja anclada junto a él. El paso que señala el botón
-"Jornada" del menú inferior avanza solo al detectar que el usuario lo
-pulsó de verdad (navegación real vía `Router`), sin botón propio — el
-resto de pasos usa "Siguiente"/"Saltar". Adaptado al modo de puntuación
-del grupo, persistido por cuenta (`User.tutorialCompletedAt`),
-repetible desde Perfil sin resetear el flag. Ver `roadmap.md` Sprint 4.
-Issue #9 en Status "Test".
+**Sprint 4 — Tutorial**: completo en `dev`, verificado en web. Ver
+`roadmap.md` Sprint 4. Issue #9 en Status "Test". Nota: una sesión de
+rediseño visual posterior corrigió un bug real no relacionado con el
+roadmap (`TutorialService.start()` no marcaba `tutorialCompletedAt` hasta
+terminar el recorrido completo, así que si el usuario navegaba fuera a
+mitad del tutorial volvía a aparecer en la siguiente jornada/grupo) — ahora
+se marca "visto" en cuanto arranca. Refuerza la fila ya ✅ "No reaparece en
+cada grupo", no añade una tarea nueva.
 
 **Sprint 5 — Temporadas, estadísticas y rachas**: **en curso**, primer
-incremento (base de temporada) completo en `dev`. Decisión de modelo
-tomada con el usuario (ver `decisions.md`): una temporada de grupo
-termina cuando se cuenta el último partido de TODAS sus competiciones
-activas — no una fecha fija. Se puede dar un preview de cuándo, pero el
-cierre es definitivo solo tras el recuento; un aplazamiento recalcula en
-vez de cerrar. Implementado: `GroupSeason` (por grupo), detección real de
-cierre enganchada al flujo existente de finalización de jornada,
-`RankingSnapshot` vinculado a su temporada, etiqueta "Temporada 2026/27"
-visible en Tabla. Verificado en vivo contra la base de datos real
-(creación automática al puntuar) + 9 tests unitarios de la lógica de
-cierre (no se puede provocar un cierre real esta sesión: ninguna liga
-termina pronto). Issue #10 actualizado con las casillas hechas, **sigue
-en Status "New features"** (el sprint no está completo, solo su primer
-incremento — no aplica la regla de mover a Test todavía).
-
-Incremento 2 (completo): elegibilidad de participación (50% inclusive de
-jornadas disponibles desde la incorporación, un pronóstico basta por
-jornada, deduplicado). `EligibilityService` + `GET /groups/:id/eligibility`
-— 8 tests unitarios + verificado en vivo. Base para el mínimo de 3
-candidatos válidos que necesitará el Sprint 6.
-
-Incremento 3 (completo): racha global — una sola racha por usuario que
-suma jornadas de todas las competiciones de todos sus grupos, sin
-duplicar una misma jornada compartida por varios grupos (deduplicada por
-`userId` a nivel de la unión de grupos afectados en cada cierre de
-jornada). `StreaksService.updateGlobalStreaks`/`getGlobalForUser` +
-modelo `GlobalStreak`, reutiliza el mismo cálculo de racha
-(`streak-calculator.ts`) y el mismo patrón de idempotencia por
-`lastMatchdayId` que las rachas por grupo. Expuesta en
-`GET /users/me/profile` y en la pantalla de Perfil (sustituye la
-aproximación anterior por `Math.max` de las rachas por grupo, que podía
-sobreestimar). 4 tests unitarios (deduplicación de query, participar en
-cualquier grupo cuenta, faltar una jornada la rompe, idempotencia) +
-verificado en vivo en el navegador (registro, unión a grupo, pantalla de
-Perfil mostrando "RACHA GLOBAL ACTUAL"/"MEJOR RACHA GLOBAL" y el texto
-explicativo). Commiteado y empujado a `dev`.
+incremento (base de temporada), segundo (elegibilidad) y tercero (racha
+global) completos en `dev`. Ver `roadmap.md` Sprint 5 para el detalle
+exacto. Issue #10 actualizado con las casillas hechas, **sigue en Status
+"New features"** (el sprint no está completo).
 
 Pendiente del mismo sprint, en incrementos siguientes: orden estable de
 jornadas por cierre de pronósticos (necesita investigación con datos
 reales antes de implementar, ver `backlog.md`), estadísticas agregadas
-por temporada. Ver `roadmap.md` Sprint 5 para el detalle exacto de cada
-tarea.
+por temporada. Ninguno de los dos se ha tocado desde el 2026-09-10.
 
-Sin verificar en Sprint 3/4: iOS/Android (solo web).
+Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
-**Infraestructura — entorno dev/pre**: sigue como en el cierre anterior —
-`dev.acerton.app` funcionando (login incluido), pendiente subir producción
-a Render Starter y Cloudflare Access. Ver issue #16. Además, esta sesión
-añadió `GOOGLE_NATIVE_CLIENT_ID` al backend (para que el login nativo de
-Google funcione también contra un backend con `GOOGLE_CLIENT_ID` propio) y
-un input `environment: production|dev` al workflow de iOS
-(`ios-build.yml`) para poder generar builds de TestFlight que apunten a
-dev. El usuario ya confirmó que puso la variable en Render (valor
-correcto: `environment.googleWebClientId` de producción, NO el
-`GIDClientID` de Info.plist — hubo una corrección a mitad de sesión, ver
-`decisions.md` si hace falta el detalle) — pendiente de que confirme si
-el login de Google ya funciona en el build de dev tras el redeploy.
+**Infraestructura — entorno dev/pre**: sin cambios desde el cierre
+anterior (ver `roadmap.md` para el plan completo) — `dev.acerton.app`
+funcionando, pendiente subir producción a Render Starter y Cloudflare
+Access. Issue #16.
+
+## Reconciliación 2026-09-12 (trabajo ajeno a esta skill que sí tocaba el roadmap)
+
+Entre el 2026-09-10 y hoy hubo una sesión larga de rediseño visual del
+frontend (commits `bc62782`…`6379286`, "Piqo Mobile 4.0"/"Piqo App 4.1")
+que **no se hizo bajo `/quiniela continuar`** y es, en su inmensa mayoría,
+una reconstrucción puramente de presentación (tokens de diseño,
+gradientes, animaciones, reestructuración de pantallas) sin relación con
+`product-rules.md`. No se ha registrado sprint por sprint porque no lo es.
+
+Al comprobar el código contra el roadmap (siguiendo el punto 2 del
+protocolo de `/quiniela continuar`: "no asumir que el estado coincide con
+lo anotado"), dos piezas de ese trabajo sí resuelven tareas reales de
+sprints bloqueados en "falta este detalle":
+
+- **Sprint 7 — "Nombre bloqueado 7 días"**: pasó de 🟡 a ✅ web. El input
+  de nombre ya no se oculta cuando no se puede cambiar — se muestra
+  `[disabled]` con el nombre actual dentro, más el hint de fecha debajo.
+  Ver `roadmap.md` Sprint 7 y issue #12 (casilla marcada).
+- **Sprint 8 — "Popup con descripción y % de usuarios que la tienen"**:
+  pasó de ⬜ a ✅ web. `GET /badges/stats` (nuevo, `BadgesService.
+  getEarnStats`) calcula el % sobre el total de usuarios registrados,
+  deduplicado por usuario (no cuenta dos veces a quien ganó la insignia en
+  varios grupos); `BadgeDetailDialogComponent` lo muestra junto a la
+  descripción y el estado conseguida/pendiente. Ver `roadmap.md` Sprint 8
+  e issue #13 (casilla marcada).
+
+Ninguno de los dos sprints queda completo con esto — quedan más tareas
+pendientes en ambos (ver `roadmap.md`) — así que ninguno de los dos issues
+cambia de columna en el Project (siguen en "New features").
+
+**Todo lo demás de esa sesión de rediseño** (sistema visual Piqo 4.1,
+reconstrucción de Avisos/Histórico de jornadas/Normas y premios,
+insignias/trofeos como vitrina visual — los "años" y el "resumen de
+temporada" de un trofeo son datos de muestra explícitos, no implementan el
+Sprint 6 real, que sigue 🔒 sin modelo de datos —, toggles de Ajustes de
+grupo, icono de cabecera en Unirse a un grupo, página de error de
+muestra) es presentación pura sin relación con ninguna tarea de
+`product-rules.md`/`roadmap.md` — no se ha tocado nada más en los
+documentos por esto.
 
 ## Último trabajo verificado
 
@@ -90,14 +90,8 @@ el login de Google ya funciona en el build de dev tras el redeploy.
   endpoints nuevos (leave/kick/role/transfer/delete), 17 comprobaciones de
   permisos por HTTP directo, flujo completo de UI con dos sesiones de
   navegador reales.
-- Sprint 4: campo `User.tutorialCompletedAt` + endpoint, `TutorialService`
-  + `TutorialCoachMarkComponent` (global), `data-tutorial="..."` en los
-  elementos reales que se señalan (cabecera de Tabla, botón Jornada del
-  menú inferior, primer partido de Jornada, botón Perfil). Verificado con
-  la posición real del resaltado (`getBoundingClientRect`) sobre cada
-  elemento, el avance automático al pulsar el botón Jornada de verdad, el
-  texto adaptado a ambos modos de puntuación, y que sobrevive a una
-  recarga completa (persistido en servidor).
+- Sprint 4: `TutorialService` + `TutorialCoachMarkComponent`, persistido
+  por cuenta. Reforzado 2026-09-12 (ver reconciliación arriba).
 - Sprint 5 (incremento 1): `GroupSeason` + `Competition.seasonEndPreviewAt`
   + `SeasonsService` (preview, cierre real, 9 tests) + etiqueta de
   temporada en Tabla.
@@ -107,25 +101,27 @@ el login de Google ya funciona en el build de dev tras el redeploy.
 - Sprint 5 (incremento 3): racha global (`GlobalStreak`,
   `updateGlobalStreaks`/`getGlobalForUser`), 4 tests unitarios +
   verificado en vivo en Perfil (navegador).
-- Issue #18 (mejora de tarjeta de grupo: posición a la izquierda + liga
-  obligatoria al crear grupo) completo y cerrando su causa raíz.
+- Sprint 7: nombre bloqueado con input deshabilitado visible (2026-09-12,
+  ver reconciliación).
+- Sprint 8: popup de insignia con % real de usuarios (2026-09-12, ver
+  reconciliación).
 
 ## Siguiente paso concreto
 
-**Inmediato, del usuario**: probar Sprint 3, Sprint 4 y los incrementos 1-3
-del Sprint 5 (temporadas, elegibilidad, racha global) en local o en
-`dev.acerton.app` antes de decidir si se mergea a `main`. Todo está en
-`dev`, empujado a `origin/dev`, **no mergeado a `main` todavía**.
+**Inmediato, del usuario**: sigue pendiente decidir sobre el mismo punto
+del 2026-09-10 — probar Sprint 3, Sprint 4 y los incrementos 1-3 del
+Sprint 5 (temporadas, elegibilidad, racha global) en local o en
+`dev.acerton.app`, y confirmar si se mergea a `main`. Todo sigue en `dev`,
+empujado a `origin/dev`, **no mergeado a `main` todavía**. Los issues #8 y
+#9 ya están en Status "Test"; el #10 (Sprint 5) se queda en "New features"
+hasta que el sprint entero esté completo.
 
-Cuando el usuario confirme que funciona: mergear a `main` (con
-autorización explícita, como siempre). Los issues #8 y #9 ya están en
-Status "Test"; el #10 (Sprint 5) se queda en "New features" hasta que el
-sprint entero esté completo (regla de la skill: solo se mueve a Test
-cuando el issue queda completo con esa subida).
-
-Después, seguir con los siguientes incrementos del Sprint 5 (orden
-estable de jornadas, estadísticas agregadas) — ver `roadmap.md` — o con
-infraestructura pendiente (issue #16).
+Después (o en paralelo si el usuario prefiere seguir avanzando mientras
+decide sobre el merge): siguientes incrementos del Sprint 5 (orden estable
+de jornadas, estadísticas agregadas) o resto de tareas del Sprint 8
+(alcance global de insignias, catálogo ampliado, favoritas, progreso
+numérico) — ver `roadmap.md` para el detalle. Preguntado explícitamente al
+usuario el 2026-09-12 qué prefiere antes de elegir una de las dos.
 
 ## Bloqueos y preguntas pendientes
 
@@ -135,10 +131,6 @@ Sprint 3 y la decisión de fin de temporada del Sprint 5.
 ## Cambios sin commit
 
 No — todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3 del
-Sprint 5, la mejora de tarjeta de grupo (issue #18) y el arreglo de
-Google auth/workflow de iOS está commiteado y empujado a `origin/dev`. El
-entorno local (Docker + backend + frontend) sigue corriendo en segundo
-plano. Se limpiaron todos los usuarios/grupos de prueba creados durante
-esta sesión (por ID exacto, dentro de transacciones explícitas — ver
-`decisions.md`/memoria de sesión sobre el incidente de borrado
-accidental).
+Sprint 5, y la sesión de rediseño visual completa (incluida la
+reconciliación de este documento) está commiteado y empujado a
+`origin/dev`.

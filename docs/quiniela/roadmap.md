@@ -205,7 +205,7 @@ caso del líder no elegible.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Nombre bloqueado 7 días | 🟡 | Ya implementado en backend y frontend: `User.nameChangedAt`, hint "Ya lo has cambiado..." en `profile-page.component.html`. Falta el detalle nuevo: mostrar el nombre actual **dentro de un input bloqueado** (hoy se oculta el input entero y solo se muestra el texto de aviso). |
+| Nombre bloqueado 7 días | ✅ web | `User.nameChangedAt` (backend) + `profile-page.component.html`: el input de nombre ya no se oculta cuando no se puede cambiar — se muestra `[disabled]` con el nombre actual dentro, y el hint "Ya lo has cambiado. Podrás hacerlo de nuevo el dd/MM/yyyy" debajo. Implementado durante el repaso visual Piqo 4.1 (rama `dev`, no como incremento explícito de este sprint), detectado al reconciliar el roadmap. Sin verificar iOS/Android. |
 | Restricción aplicada en servidor | ✅ | Ya existe (`UsersService.updateName`, según referenciado en el código). |
 | Catálogo de avatares predeterminados | ⬜ | Solo existe `User.avatarUrl` como string libre, sin catálogo. |
 | Asignación automática al registrarse | ⬜ | — |
@@ -229,7 +229,7 @@ de fallos de subida de imagen.
 | Renombrar "Jornada perfecta" → "En lo más alto" | ⬜ | Ver nota de `backlog.md`: la condición actual (`MATCHDAY_TOP_1`) premia empates; el nuevo catálogo la define "en solitario" — decidir cuál se aplica antes de renombrar. |
 | Hasta 3 favoritas, solo entre conseguidas | ⬜ | — |
 | Favoritas visibles como logos bajo el nombre en Perfil | ⬜ | — |
-| Popup con descripción y % de usuarios que la tienen (sobre el total de registrados) | ⬜ | — |
+| Popup con descripción y % de usuarios que la tienen (sobre el total de registrados) | ✅ web | Backend: `GET /badges/stats` (`BadgesService.getEarnStats`) — % de usuarios con al menos una fila de `UserBadge` para cada insignia, deduplicado por `userId`+`badgeId` (no cuenta dos veces a quien la ganó en varios grupos), sobre `User.count()` total. Frontend: `BadgeDetailDialogComponent` muestra descripción, estado conseguida/pendiente y "La tienen el N% de los jugadores." Implementado durante el repaso visual Piqo 4.1 (rama `dev`), detectado al reconciliar el roadmap. Sin verificar iOS/Android. |
 | Progreso numérico + barra cuando sea medible | ⬜ | — |
 | Concesión retroactiva cuando los datos lo permitan | ⬜ | A evaluar insignia por insignia qué datos históricos existen. |
 | Conservar desbloqueos existentes durante la migración a global | 🔒 | Depende de resolver primero la deduplicación mencionada arriba. |

@@ -560,11 +560,12 @@ h1 {
   }
 }
 
-/* En modo revision (partido bloqueado/terminado) el input ya no se toca —
-   solo muestra tu pronostico coloreado — asi que puede ser mas pequeno para
-   dejar sitio al resultado real, que se muestra junto al nombre del equipo
-   (ver .team-score) y que si no queda demasiado apretado en la vista visual. */
-.score-widget.review {
+/* En modo revision (partido bloqueado/terminado), SOLO en la vista visual
+   (.inline, sin fila de equipos aparte) el input puede ser mas pequeno para
+   dejar sitio al resultado real junto al nombre del equipo (ver
+   .team-score) sin quedar apretado — en filas hay sitio de sobra y
+   encogerlo ahi se ve fuera de lugar comparado con el resto de la fila. */
+.score-widget.review.inline {
   .exact-score-box {
     padding: 3px 6px;
     gap: 3px;

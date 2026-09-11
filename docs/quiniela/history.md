@@ -135,3 +135,68 @@ Sprint 2.
 **Cambios sin commit:** no — todo lo de esta entrada se commitea en esta
 misma sesión, a petición explícita del usuario ("sí, súbelo"), a la rama
 `dev`.
+
+---
+
+## 2026-09-12 — Reconciliación tras sesión de rediseño visual (sin implementación nueva de roadmap)
+
+**Qué se hizo:**
+
+- El usuario pidió continuar con los sprints de GitHub, señalando que
+  "se han implementado muchas cosas nuevas" desde el 2026-09-10. Se siguió
+  el protocolo de `/quiniela continuar` paso 2 ("comprobar rama y cambios
+  locales, sin asumir que coincide con lo anotado"): `git log --since
+  2026-09-10` mostró ~50 commits de una sesión de rediseño visual del
+  frontend ("Piqo Mobile 4.0" → "Piqo App 4.1") hecha **fuera** de esta
+  skill, en la misma rama `dev`.
+- Se leyó ese trabajo contra `roadmap.md` para distinguir presentación
+  pura de cambios que sí tocan reglas de producto ya descritas en el
+  roadmap. Resultado: casi todo es reconstrucción visual sin relación con
+  `product-rules.md` (tokens de diseño, animaciones, reestructuración de
+  pantallas de Avisos/Histórico/Normas y premios, vitrina de trofeos con
+  años y resumen de temporada explícitamente de muestra, toggles de
+  Ajustes de grupo, icono de Unirse a un grupo, página de error de
+  muestra) — pero dos piezas sí resuelven tareas concretas ya descritas
+  como pendientes:
+  - Sprint 7: el input de nombre bloqueado ahora muestra el nombre actual
+    deshabilitado en vez de ocultarse (antes 🟡, detalle pendiente
+    explícito en `roadmap.md` e issue #12).
+  - Sprint 8: nuevo `GET /badges/stats` + `BadgeDetailDialogComponent`
+    dan el popup de insignia con % real de usuarios registrados que la
+    tienen, deduplicado por usuario (antes ⬜ en `roadmap.md` e issue #13).
+- Actualizado `roadmap.md` (ambas filas a ✅ web, con detalle técnico) y
+  `state.md` (sección nueva "Reconciliación 2026-09-12").
+- GitHub: marcadas las casillas correspondientes en los issues #12 y #13
+  (`gh issue edit`). Ninguno de los dos sprints queda completo con esto —
+  ambos issues siguen en Status "New features" (regla de la skill: solo se
+  mueve a "Test" cuando el issue queda completo).
+- No se ha implementado ningún incremento nuevo de roadmap en esta
+  entrada — es una reconciliación de estado, no un `continuar` con
+  desarrollo. Se ha dejado preguntado al usuario si prefiere (a) mergear
+  a `main` el trabajo de Sprint 3/4/5 ya pendiente de confirmación desde
+  el 2026-09-10, o (b) seguir con el siguiente incremento de Sprint 5 o
+  con el resto de Sprint 8, antes de tocar código.
+
+**Pruebas ejecutadas:** ninguna nueva — se confirmó por lectura de código
+(no solo por commit) que ambos detalles siguen presentes en el estado
+actual de `dev` (`profile-page.component.html` línea ~93,
+`badges.controller.ts`/`badges.service.ts`, `badge-detail-dialog.
+component.ts`).
+
+**Migraciones:** ninguna.
+
+**Bloqueos/preguntas dejadas abiertas:** cuál de las dos rutas (merge a
+`main` vs. seguir implementando) prefiere el usuario — ver `state.md`
+"Siguiente paso concreto".
+
+**Siguiente paso:** el que decida el usuario entre las dos opciones
+anteriores. Si elige seguir implementando, los candidatos con detalle ya
+descrito en `roadmap.md` son: Sprint 5 (orden estable de jornadas —
+pendiente de investigación con datos reales; o estadísticas agregadas por
+temporada) y Sprint 8 (alcance global de insignias, catálogo ampliado,
+favoritas, progreso numérico).
+
+**Cambios sin commit:** los documentos de esta reconciliación
+(`roadmap.md`, `state.md`, `history.md`) se han editado en esta sesión;
+pendiente de commit/push explícito si el usuario lo pide (esta skill no
+commitea sin autorización, ver regla general).
