@@ -22,7 +22,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title ?? 'Quiniela';
+  const title = payload.notification?.title ?? 'Piqo';
   const body = payload.notification?.body ?? '';
   self.registration.showNotification(title, {
     body,
