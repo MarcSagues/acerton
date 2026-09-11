@@ -68,7 +68,7 @@ jobs:
       - name: Renombrar la app para el build de dev
         if: inputs.environment == 'dev'
         run: |
-          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Quiniela (dev)" \
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Piqo (dev)" \
             frontend/ios/App/App/Info.plist
 
       # Certificado de distribucion + perfil de aprovisionamiento, ambos
@@ -96,7 +96,7 @@ jobs:
 
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILE_DIR"
-          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_DIR/quiniela.mobileprovision"
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_DIR/piqo.mobileprovision"
 
       - name: Archivar (xcodebuild archive)
         working-directory: frontend/ios/App
@@ -139,8 +139,8 @@ jobs:
             <string>manual</string>
             <key>provisioningProfiles</key>
             <dict>
-              <key>app.acerton.quiniela</key>
-              <string>Sagui</string>
+              <key>app.piqo.es</key>
+              <string>Piqo</string>
             </dict>
             <key>destination</key>
             <string>upload</string>
@@ -159,7 +159,7 @@ jobs:
       - name: Subir el .ipa como artefacto de este workflow
         uses: actions/upload-artifact@v4
         with:
-          name: Quiniela-ios-${{ inputs.environment }}-${{ github.run_number }}
+          name: Piqo-ios-${{ inputs.environment }}-${{ github.run_number }}
           path: ${{ runner.temp }}/export/*.ipa
           retention-days: 30
 

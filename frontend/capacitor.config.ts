@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.acerton.quiniela',
+  appId: 'app.piqo.es',
   appName: 'Piqo',
   webDir: 'dist/frontend/browser',
   // El refresh token se guarda en una cookie SameSite=Lax (ver
