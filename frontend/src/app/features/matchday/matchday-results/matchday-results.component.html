@@ -1,56 +1,58 @@
 @if (page.loading()) {
-  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else if (page.locked()) {
   <div class="page">
-    <p class="empty">Esta jornada todavia esta abierta; los pronosticos del grupo se veran al cerrar.</p>
+    <p class="empty">Esta jornada todavía está abierta; los pronósticos del grupo se verán al cerrar.</p>
   </div>
 } @else {
   @if (page.matchday(); as md) {
     <div class="page">
-      <header class="head">
-        <div class="nav-row">
-          <button
-            class="nav-btn"
-            [disabled]="page.navigating() || page.noPreviousAvailable() || md.order <= 1"
-            (click)="page.navigatePrevious()"
-            title="Jornada anterior"
-          >
-            <span class="chevron chevron-left"></span>
-          </button>
-          <div>
-            <div class="title">{{ page.viewingSelf ? 'Tus quinielas' : (page.targetUserName() ?? 'Quinielas') }}</div>
-            <div class="sub mono">
-              {{ md.competition?.name }} · J{{ md.order }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}
-            </div>
-            @if (!page.viewingSelf && page.activeGroupService.activeId(); as groupId) {
-              <a class="member-link mono" [routerLink]="['/groups', groupId, 'members', page.routeUserId]">Ver perfil</a>
-            }
-          </div>
-          <button
-            class="nav-btn"
-            [disabled]="page.navigating() || page.noNextAvailable()"
-            (click)="page.navigateNext()"
-            title="Jornada siguiente"
-          >
-            <span class="chevron chevron-right"></span>
-          </button>
+      <header class="head-row">
+        <button
+          type="button"
+          class="nav-btn"
+          [disabled]="page.navigating() || page.noPreviousAvailable() || md.order <= 1"
+          (click)="page.navigatePrevious()"
+          aria-label="Jornada anterior"
+        >
+          <piqo-svg icon="atras" size="16"></piqo-svg>
+        </button>
+        <div class="title-block">
+          <p class="title">{{ page.viewingSelf ? 'Tus quinielas' : (page.targetUserName() ?? 'Quinielas') }}</p>
+          <p class="sub mono">
+            {{ md.competition?.name }} · J{{ md.order }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}
+          </p>
+          @if (!page.viewingSelf && page.activeGroupService.activeId(); as groupId) {
+            <a class="member-link mono" [routerLink]="['/groups', groupId, 'members', page.routeUserId]">Ver perfil</a>
+          }
         </div>
-        <div class="head-links">
-          <a class="rankings-link" routerLink="/rankings">Tabla</a>
-          <a
-            class="rankings-link"
-            [routerLink]="['/matchday/history']"
-            [queryParams]="{ competitionId: md.competitionId, competitionName: md.competition?.name }"
-          >
-            Historico
-          </a>
-        </div>
+        <button
+          type="button"
+          class="nav-btn"
+          [disabled]="page.navigating() || page.noNextAvailable()"
+          (click)="page.navigateNext()"
+          aria-label="Jornada siguiente"
+        >
+          <piqo-svg icon="arriba" size="16" style="transform: rotate(90deg)"></piqo-svg>
+        </button>
       </header>
+
+      <div class="head-links">
+        <a class="rankings-link" routerLink="/rankings">Tabla</a>
+        <a
+          class="rankings-link"
+          [routerLink]="['/matchday/history']"
+          [queryParams]="{ competitionId: md.competitionId, competitionName: md.competition?.name }"
+        >
+          Histórico
+        </a>
+      </div>
 
       @if (page.hasMultipleCompetitions()) {
         <div class="comp-switcher">
           @for (competition of page.activeCompetitions(); track competition.id) {
             <button
+              type="button"
               class="comp-chip"
               [class.active]="competition.id === md.competitionId"
               [disabled]="page.switchingCompetition()"
@@ -63,9 +65,9 @@
       }
 
       <div class="summary">
-        <div class="points-ring mono">
-          <div class="points-value">{{ page.totalPoints() }}</div>
-          <div class="points-label">PUNTOS</div>
+        <div class="points-ring">
+          <span class="points-value mono">{{ page.totalPoints() }}</span>
+          <span class="points-label mono">PUNTOS</span>
         </div>
         <div class="breakdown">
           <div class="line">
@@ -87,17 +89,17 @@
           @if (page.viewingSelf) {
             <div class="rule"></div>
             <div class="line strong">
-              <span>Racha de participacion</span>
+              <span>Racha de participación</span>
               <span class="mono accent">{{ page.currentStreak() }} jornadas</span>
             </div>
           }
         </div>
       </div>
 
-      <div class="section-title mono">{{ page.viewingSelf ? 'TUS PRONOSTICOS' : 'SUS PRONOSTICOS' }}</div>
+      <p class="section-title mono">{{ page.viewingSelf ? 'TUS PRONÓSTICOS' : 'SUS PRONÓSTICOS' }}</p>
       @if (page.predictions().length === 0) {
         <p class="empty">
-          {{ page.viewingSelf ? 'No enviaste pronosticos en esta jornada.' : 'No envio pronosticos en esta jornada.' }}
+          {{ page.viewingSelf ? 'No enviaste pronósticos en esta jornada.' : 'No envió pronósticos en esta jornada.' }}
         </p>
       } @else {
         <div class="predictions">
@@ -110,20 +112,20 @@
                 [class.pending]="prediction.pointsEarned == null"
               ></div>
               <div class="pred-meta">
-                <div class="pred-match">{{ page.matchLabel(prediction, md) }}</div>
-                <div class="pred-sub mono">
+                <p class="pred-match">{{ page.matchLabel(prediction, md) }}</p>
+                <p class="pred-sub mono">
                   @if (page.isMatchPending(prediction, md)) {
-                    Partido todavia sin acabar
+                    Partido todavía sin acabar
                   } @else if (page.scoringMode() === 'EXACT_SCORE') {
-                    {{ page.scoreLabel(prediction, md) }} · {{ page.viewingSelf ? 'tu' : 'su' }} pronostico {{ page.pickLabel(prediction) }}
+                    {{ page.scoreLabel(prediction, md) }} · {{ page.viewingSelf ? 'tu' : 'su' }} pronóstico {{ page.pickLabel(prediction) }}
                   } @else {
                     {{ page.scoreLabel(prediction, md) }} · {{ page.viewingSelf ? 'tu' : 'su' }} {{ page.pickLabel(prediction) }} · real
                     {{ page.realLabel(prediction, md) }}
                   }
-                </div>
+                </p>
               </div>
               @if (prediction.doubleChanceOption) {
-                <span class="wc-tag wc-tag-rescue mono">SOS</span>
+                <span class="wc-tag mono">SOS</span>
               }
               <span class="pred-pts mono" [class.accent]="(prediction.pointsEarned ?? 0) > 0">
                 {{ prediction.pointsEarned ?? '-' }}
@@ -134,7 +136,7 @@
       }
 
       @if (page.comparisonMembers().length > 1) {
-        <div class="section-title mono">COMPARATIVA DEL GRUPO</div>
+        <p class="section-title mono">COMPARATIVA DEL GRUPO</p>
         <div class="comparison-scroll">
           <table class="comparison">
             <thead>
@@ -171,10 +173,10 @@
         <div class="section">
           @for (userBadge of page.newBadges(); track userBadge.id) {
             <div class="badge-card">
-              <span class="badge-icon mono">{{ userBadge.badge.name.slice(0, 2).toUpperCase() }}</span>
+              <piqo-svg icon="medalla" size="22"></piqo-svg>
               <div>
-                <div class="badge-title">Insignia desbloqueada</div>
-                <div class="badge-desc mono">{{ userBadge.badge.name }} · {{ userBadge.badge.description }}</div>
+                <p class="badge-title">Insignia desbloqueada</p>
+                <p class="badge-desc mono">{{ userBadge.badge.name }} · {{ userBadge.badge.description }}</p>
               </div>
             </div>
           }

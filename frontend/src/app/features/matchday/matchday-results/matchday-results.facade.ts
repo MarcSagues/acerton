@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { RankingsService } from '../../../core/services/rankings.service';
@@ -28,7 +28,7 @@ export class MatchdayResultsFacade {
   private readonly groupsService = inject(GroupsService);
   readonly activeGroupService = inject(ActiveGroupService);
   private readonly authService = inject(AuthService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
 
   /** Si viene en la ruta, estamos viendo las quinielas de otro miembro del grupo en vez de las propias. */
   readonly routeUserId = this.route.snapshot.paramMap.get('userId');
@@ -107,7 +107,7 @@ export class MatchdayResultsFacade {
       next: (matchday) => {
         this.switchingCompetition.set(false);
         if (!matchday) {
-          this.snackBar.open('Todavia no hay jornadas cerradas para esa competicion', 'Cerrar', { duration: 2500 });
+          this.toast.show('Todavia no hay jornadas cerradas para esa competicion');
           return;
         }
         this.noNextAvailable.set(false);
@@ -117,7 +117,7 @@ export class MatchdayResultsFacade {
       },
       error: () => {
         this.switchingCompetition.set(false);
-        this.snackBar.open('No se pudo cargar la competicion', 'Cerrar', { duration: 3000 });
+        this.toast.show('No se pudo cargar la competicion');
       },
     });
   }
@@ -144,10 +144,8 @@ export class MatchdayResultsFacade {
           } else {
             this.noPreviousAvailable.set(true);
           }
-          this.snackBar.open(
+          this.toast.show(
             direction === 'previous' ? 'No hay jornada anterior cerrada' : 'La siguiente jornada todavia no ha cerrado',
-            'Cerrar',
-            { duration: 2500 },
           );
           return;
         }
@@ -158,7 +156,7 @@ export class MatchdayResultsFacade {
       },
       error: () => {
         this.navigating.set(false);
-        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+        this.toast.show('No se pudo cargar la jornada');
       },
     });
   }

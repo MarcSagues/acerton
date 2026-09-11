@@ -1,13 +1,14 @@
+import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { MatchdayResultsFacade } from './matchday-results.facade';
 
 @Component({
   selector: 'app-matchday-results',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, SpinnerComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [MatchdayResultsFacade],
   templateUrl: './matchday-results.component.html',
   styleUrl: './matchday-results.component.scss',
