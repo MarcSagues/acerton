@@ -1,110 +1,108 @@
+.page {
+  min-height: 100%;
+  background: var(--p4-bg);
+  color: var(--p4-text);
+  padding-bottom: 28px;
+}
+
 .loading {
-  min-height: 60vh;
+  min-height: 40vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.dark-head {
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
-  border-radius: 0 0 26px 26px;
-  padding: calc(env(safe-area-inset-top) + 12px) 20px 20px;
-}
-
-.head {
-  margin-bottom: 14px;
+.head-row {
+  padding: 12px 20px 0;
 }
 
 .back {
-  font: 600 15px/1 var(--font-ui);
-  color: var(--accent-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 13px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
 }
 
 .identity {
+  padding: 18px 20px 0;
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 18px;
 }
 
 .avatar {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  border-radius: 50%;
+  flex: none;
+  background: var(--p4-soft);
+  color: var(--p4-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 800 20px/1 var(--font-display);
-  color: var(--accent-secondary);
-  flex: none;
+  font: 600 18px/1 var(--p4-font-ui);
 }
 
 .name {
-  font: 700 21px/1.15 var(--font-display);
-  color: var(--text-primary);
+  margin: 0;
+  font: 700 20px/1 var(--p4-font-display);
 }
 
 .sub {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 3px;
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--p4-muted);
 }
 
 .stats {
+  padding: 20px 20px 0;
   display: flex;
-  gap: 9px;
+  gap: 10px;
 }
 
 .stat-tile {
   flex: 1;
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 11px;
+  border-radius: 14px;
+  background: var(--p4-surface);
+  padding: 12px;
+  text-align: center;
 }
 
 .stat-value {
-  font: 700 19px/1;
-  color: var(--text-primary);
+  margin: 0;
+  font: 700 20px/1 var(--p4-font-display);
 
   &.accent {
-    color: var(--accent-secondary);
+    color: var(--p4-accent);
   }
 }
 
 .stat-label {
-  font-size: 8.5px;
-  color: var(--text-secondary);
-  margin-top: 4px;
+  margin: 8px 0 0;
+  font-size: 9px;
+  color: var(--p4-muted);
 }
 
 .section {
-  padding: 16px 16px 0;
+  padding: 16px 20px 0;
 }
 
 .card {
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 14px;
-}
-
-.card-head {
-  margin-bottom: 10px;
+  border-radius: 16px;
+  background: var(--p4-surface);
+  padding: 16px;
 }
 
 .card-title {
-  font: 700 13.5px/1.2 var(--font-ui);
-  color: var(--text-primary);
+  margin: 0 0 10px;
+  font: 600 14px/1 var(--p4-font-ui);
 }
 
 .empty {
-  font-size: 12px;
-  color: var(--text-secondary);
   margin: 0;
+  font-size: 12px;
+  color: var(--p4-muted);
 }
 
 .matchday-rows {
@@ -113,51 +111,45 @@
 }
 
 .matchday-row {
+  width: 100%;
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--border);
-  cursor: pointer;
+  border-bottom: 1px solid var(--p4-border);
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  color: var(--p4-text);
+  text-align: left;
 
-  &:first-child {
-    border-top: none;
+  &:last-child {
+    border-bottom: 0;
   }
 }
 
 .md-order {
-  width: 34px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  width: 32px;
+  font-size: 12px;
+  color: var(--p4-muted);
 }
 
 .md-position {
   flex: 1;
   font-size: 13px;
-  color: var(--text-primary);
 }
 
 .md-points {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
+  font: 600 13px/1 var(--p4-font-ui);
 }
 
 .badges-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px;
-}
+  gap: 10px;
 
-.badge-medal {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: var(--accent-bg);
-  color: var(--accent-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 12px/1;
+  piqo-svg {
+    color: var(--p4-accent);
+  }
 }
