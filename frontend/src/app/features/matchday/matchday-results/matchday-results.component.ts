@@ -50,6 +50,8 @@ export class MatchdayResultsComponent implements OnInit {
   readonly matchday = signal<Matchday | null>(null);
   readonly activeCompetitions = signal<Competition[]>([]);
   readonly predictions = signal<Prediction[]>([]);
+  /** Todas las predicciones del grupo para esta jornada (sin filtrar por usuario), para la comparativa de todos. */
+  readonly allPredictions = signal<Prediction[]>([]);
   readonly targetUserName = signal<string | null>(null);
   readonly position = signal<{ pos: number; total: number } | null>(null);
   readonly currentStreak = signal(0);
@@ -73,6 +75,19 @@ export class MatchdayResultsComponent implements OnInit {
   readonly rescueHits = computed(
     () => this.predictions().filter((p) => p.doubleChanceOption && (p.pointsEarned ?? 0) > 0).length,
   );
+
+  /** Un miembro por columna en la comparativa de todos, ordenados por nombre; "tu" fila destacada aparte en la plantilla. */
+  readonly comparisonMembers = computed(() => {
+    const seen = new Map<string, string>();
+    for (const prediction of this.allPredictions()) {
+      if (prediction.user?.name) {
+        seen.set(prediction.userId, prediction.user.name);
+      }
+    }
+    return [...seen.entries()]
+      .map(([userId, name]) => ({ userId, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  });
 
   ngOnInit(): void {
     const matchdayId = this.route.snapshot.paramMap.get('matchdayId')!;
@@ -190,6 +205,7 @@ export class MatchdayResultsComponent implements OnInit {
         streak: this.viewingSelf ? this.streaksService.getForUserInGroup(groupId) : of(null),
         profile: this.viewingSelf ? this.profileService.getMyProfile() : of(null),
       }).subscribe(({ predictions, ranking, streak, profile }) => {
+        this.allPredictions.set(predictions);
         const targetPredictions = predictions.filter((p) => p.userId === targetUserId);
         this.predictions.set(targetPredictions);
         this.targetUserName.set(targetPredictions[0]?.user?.name ?? null);
@@ -243,5 +259,27 @@ export class MatchdayResultsComponent implements OnInit {
   realLabel(prediction: Prediction, matchday: Matchday): string {
     const match = matchday.matches.find((m) => m.id === prediction.matchId);
     return match?.result ? this.choiceLabel(match.result) : '?';
+  }
+
+  initials(name: string): string {
+    return name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? '')
+      .join('');
+  }
+
+  predictionFor(matchId: string, userId: string): Prediction | undefined {
+    return this.allPredictions().find((p) => p.matchId === matchId && p.userId === userId);
+  }
+
+  cellLabel(prediction: Prediction | undefined): string {
+    return prediction ? this.pickLabel(prediction) : '-';
+  }
+
+  cellClass(prediction: Prediction | undefined): 'hit' | 'miss' | 'pending' | 'none' {
+    if (!prediction) return 'none';
+    if (prediction.pointsEarned == null) return 'pending';
+    return prediction.pointsEarned > 0 ? 'hit' : 'miss';
   }
 }

@@ -121,6 +121,40 @@
         </div>
       }
 
+      @if (comparisonMembers().length > 1) {
+        <div class="section-title mono">COMPARATIVA DEL GRUPO</div>
+        <div class="comparison-scroll">
+          <table class="comparison">
+            <thead>
+              <tr>
+                <th class="comparison-match-head">Partido</th>
+                @for (member of comparisonMembers(); track member.userId) {
+                  <th class="comparison-member-head mono">{{ initials(member.name) }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (match of md.matches; track match.id) {
+                <tr>
+                  <td class="comparison-match">{{ match.homeTeam }} · {{ match.awayTeam }}</td>
+                  @for (member of comparisonMembers(); track member.userId) {
+                    <td>
+                      <span class="comparison-pick mono" [class]="cellClass(predictionFor(match.id, member.userId))">
+                        {{ cellLabel(predictionFor(match.id, member.userId)) }}
+                      </span>
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="comparison-legend">
+          <span class="mono"><span class="dot hit"></span>Acierto</span>
+          <span class="mono"><span class="dot miss"></span>Fallo</span>
+        </div>
+      }
+
       @if (viewingSelf && newBadges().length > 0) {
         <div class="section">
           @for (userBadge of newBadges(); track userBadge.id) {
