@@ -1,18 +1,18 @@
-@if (activeGroupService.activeGroup(); as g) {
+@if (page.activeGroup(); as g) {
   <button class="switcher" [class.on-dark]="onDark" [matMenuTriggerFor]="menu">
-    <span class="avatar">{{ initials(g.name) }}</span>
+    <span class="avatar">{{ page.initials(g.name) }}</span>
     <span class="meta">
       <span class="name">{{ g.name }}</span>
       <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'publico' : 'privado' }}</span>
     </span>
-    @if (activeGroupService.groups().length > 1) {
+    @if (page.groups().length > 1) {
       <mat-icon class="chevron">expand_more</mat-icon>
     }
   </button>
 
   <mat-menu #menu="matMenu">
-    @for (group of activeGroupService.groups(); track group.id) {
-      <button mat-menu-item class="group-menu-item" [class.active]="group.id === g.id" (click)="select(group.id)">
+    @for (group of page.groups(); track group.id) {
+      <button mat-menu-item class="group-menu-item" [class.active]="group.id === g.id" (click)="page.select(group.id)">
         <span>{{ group.name }}</span>
         @if (group.id === g.id) {
           <mat-icon inline>check</mat-icon>

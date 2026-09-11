@@ -1,12 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { BottomNavComponent } from './bottom-nav.component';
-import { AdsService } from '../../core/services/ads.service';
+import { ShellFacade } from './shell.facade';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
   imports: [RouterOutlet, BottomNavComponent],
+  providers: [ShellFacade],
   template: `
     <div class="shell">
       <div class="shell-content">
@@ -32,9 +33,9 @@ import { AdsService } from '../../core/services/ads.service';
   ],
 })
 export class ShellComponent implements OnInit {
-  private readonly ads = inject(AdsService);
+  private readonly page = inject(ShellFacade);
 
   ngOnInit(): void {
-    this.ads.showBanner();
+    this.page.init();
   }
 }
