@@ -78,6 +78,10 @@ export class GroupsService {
     return this.http.patch<Group>(`${environment.apiUrl}/groups/${groupId}/rules`, rules);
   }
 
+  setMuted(groupId: string, muted: boolean) {
+    return this.http.patch<void>(`${environment.apiUrl}/groups/${groupId}/mute`, { muted });
+  }
+
   /** Tras salir o eliminar un grupo deja de aparecer en "Mis grupos". */
   private forgetGroup(groupId: string): void {
     this.myGroupsSignal.update((groups) => groups.filter((g) => g.id !== groupId));

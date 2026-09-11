@@ -6,6 +6,7 @@ import { UpdateGroupCompetitionsDto } from './dto/update-group-competitions.dto'
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { SetGroupMutedDto } from './dto/set-group-muted.dto';
 
 @Controller('groups')
 export class GroupsController {
@@ -70,6 +71,16 @@ export class GroupsController {
     await this.groupsService.assertIsAdmin(id, user.id);
     await this.groupsService.updateRules(id, dto);
     return this.groupsService.findByIdForMember(id, user.id);
+  }
+
+  @Patch(':id/mute')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setMuted(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SetGroupMutedDto,
+  ) {
+    await this.groupsService.setMuted(id, user.id, dto.muted);
   }
 
   @Post(':id/leave')

@@ -107,8 +107,9 @@ model User {
   streaks            Streak[]
   globalStreak       GlobalStreak?
   rankingSnapshots   RankingSnapshot[]
-  refreshTokens      RefreshToken[]
-  notificationTokens NotificationToken[]
+  refreshTokens          RefreshToken[]
+  notificationTokens     NotificationToken[]
+  notificationPreference NotificationPreference?
 
   @@map("users")
 }
@@ -139,6 +140,40 @@ model NotificationToken {
 
   @@index([userId])
   @@map("notification_tokens")
+}
+
+/// Preferencias de aviso por cuenta (product-rules.md "Notificaciones"),
+/// distintas del permiso de notificaciones del dispositivo (NotificationToken
+/// registra si hay algun dispositivo suscrito; esto decide QUE se le manda).
+/// Fila creada de forma perezosa con los valores por defecto acordados, igual
+/// que GlobalStreak — no existe hasta que el usuario visita sus ajustes de
+/// avisos o hasta que hace falta comprobarla para un envio.
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  /// Aviso de que una jornada nueva ya se puede pronosticar.
+  matchdayOpening Boolean @default(true)
+  /// Recordatorios de cierre por franja, cada uno independiente (seleccion multiple).
+  reminder24h Boolean @default(false)
+  reminder5h  Boolean @default(false)
+  reminder1h  Boolean @default(true)
+  reminder30m Boolean @default(false)
+  /// Aviso por partido propio ya terminado con los puntos ya calculados.
+  matchFinishedPoints Boolean @default(false)
+  /// Aviso de jornada terminada con resultado y posicion en la clasificacion.
+  matchdayFinishedResult Boolean @default(true)
+  /// Insignia conseguida.
+  badgeEarned Boolean @default(true)
+  /// Fin de temporada de un grupo y trofeos otorgados (sin efecto todavia: depende del Sprint 6).
+  seasonFinishedTrophies Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 // ---------------------------------------------------------------------------
@@ -210,6 +245,11 @@ model GroupMembership {
   groupId  String
   role     GroupRole @default(MEMBER)
   joinedAt DateTime  @default(now())
+  /// Silencia los avisos de este grupo para este usuario (product-rules.md
+  /// "Notificaciones": no avisar de grupos silenciados). No afecta a otros
+  /// miembros ni a la preferencia global de tipo de aviso — se combinan
+  /// (hace falta que el tipo este activado Y el grupo no silenciado).
+  mutedNotifications Boolean @default(false)
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -279,7 +319,10 @@ model Matchday {
   status            MatchdayStatus @default(SCHEDULED)
   /// Recordatorios push de cierre escalonados (null = ese aviso aun no se ha
   /// enviado). Cada uno se dispara como mucho una vez, independientemente de
-  /// los demas; ver JobsService.REMINDER_TIERS.
+  /// los demas; ver JobsService.REMINDER_TIERS. El envio real a cada usuario
+  /// ademas se filtra por NotificationPreference (que franjas quiere) y por
+  /// GroupMembership.mutedNotifications (grupos silenciados).
+  reminder24hSentAt DateTime?
   reminder5hSentAt  DateTime?
   reminder1hSentAt  DateTime?
   reminder30mSentAt DateTime?

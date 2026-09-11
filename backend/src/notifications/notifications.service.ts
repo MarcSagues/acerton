@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
+import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferenceFields } from './notification-preferences.service';
 
 export interface PushNotification {
   title: string;
@@ -77,16 +78,51 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
+   * De una lista de candidatos a recibir un aviso de un grupo concreto,
+   * descarta a quien tenga el grupo silenciado (GroupMembership.
+   * mutedNotifications) o el tipo de aviso desactivado en sus preferencias
+   * de cuenta (NotificationPreference, con los valores por defecto del
+   * modelo para quien todavia no tiene fila propia).
+   */
+  private async filterByPreference(
+    groupId: string,
+    userIds: string[],
+    field: keyof NotificationPreferenceFields,
+  ): Promise<string[]> {
+    if (userIds.length === 0) return [];
+
+    const [memberships, preferences] = await Promise.all([
+      this.prisma.groupMembership.findMany({
+        where: { groupId, userId: { in: userIds } },
+        select: { userId: true, mutedNotifications: true },
+      }),
+      this.prisma.notificationPreference.findMany({ where: { userId: { in: userIds } } }),
+    ]);
+
+    const mutedByUser = new Map(memberships.map((m) => [m.userId, m.mutedNotifications]));
+    const preferenceByUser = new Map(preferences.map((p) => [p.userId, p]));
+
+    return userIds.filter((userId) => {
+      if (mutedByUser.get(userId)) return false;
+      const preference = preferenceByUser.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+      return preference[field];
+    });
+  }
+
+  /**
    * Recordatorio de cierre a los miembros de un grupo que todavia no han
    * completado su quiniela de esta jornada (ni la han empezado, ni la han
-   * enviado entera). `urgencyLabel` distingue el aviso de 5h/1h/30min para
-   * que el mensaje suba de tono segun se acerca el cierre.
+   * enviado entera). `preferenceField` distingue la franja (24h/5h/1h/30min,
+   * ver JobsService.REMINDER_TIERS): cada una es una preferencia
+   * independiente, y `urgencyLabel` sube de tono el mensaje segun se acerca
+   * el cierre.
    */
   async notifyMatchdayClosingSoon(
     groupId: string,
     matchdayId: string,
     matchdayName: string,
     urgencyLabel: string,
+    preferenceField: keyof NotificationPreferenceFields,
   ): Promise<void> {
     const [members, totalMatches, predictionCounts] = await Promise.all([
       this.prisma.groupMembership.findMany({ where: { groupId }, select: { userId: true } }),
@@ -103,7 +139,9 @@ export class NotificationsService implements OnModuleInit {
       .map((m) => m.userId)
       .filter((userId) => (submittedCountByUser.get(userId) ?? 0) < totalMatches);
 
-    await this.sendToUsers(pendingUserIds, {
+    const recipientIds = await this.filterByPreference(groupId, pendingUserIds, preferenceField);
+
+    await this.sendToUsers(recipientIds, {
       title: 'Cierra la jornada',
       body: `${matchdayName} cierra en ${urgencyLabel} y todavia no has completado tu quiniela.`,
       data: { type: 'MATCHDAY_CLOSING_SOON', groupId, matchdayId },
@@ -111,8 +149,28 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
-   * Aviso de fin de jornada, uno por miembro con sus propios puntos (no el
-   * mismo mensaje generico para todos) — se calculan sumando pointsEarned de
+   * Posicion actual del usuario en la clasificacion total del grupo: si el
+   * grupo tiene mas de una competicion activa se usa la general
+   * (competitionId null), igual que GroupsService.findMineForUser — mismo
+   * criterio de alcance en toda la app.
+   */
+  private async getPositionForUser(groupId: string, userId: string): Promise<number | null> {
+    const activeCompetitions = await this.prisma.groupCompetition.findMany({
+      where: { groupId, isActive: true },
+      select: { competitionId: true },
+    });
+    const competitionId = activeCompetitions.length === 1 ? activeCompetitions[0].competitionId : null;
+    const snapshot = await this.prisma.rankingSnapshot.findFirst({
+      where: { groupId, userId, period: 'TOTAL', competitionId },
+      orderBy: { createdAt: 'desc' },
+    });
+    return snapshot?.position ?? null;
+  }
+
+  /**
+   * Aviso de fin de jornada, uno por miembro con sus propios puntos y su
+   * posicion actual en la clasificacion del grupo (no el mismo mensaje
+   * generico para todos) — los puntos se calculan sumando pointsEarned de
    * sus predicciones de esa jornada, ya rellenado por
    * PredictionsService.scoreFinishedMatchday antes de llamar aqui.
    */
@@ -137,14 +195,43 @@ export class NotificationsService implements OnModuleInit {
       );
     }
 
-    await Promise.all(
-      [...pointsByUser.entries()].map(([userId, points]) =>
-        this.sendToUser(userId, {
-          title: `${matchdayName} terminada`,
-          body: `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}. La clasificacion ya esta actualizada.`,
-          data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId },
-        }),
-      ),
+    const recipientIds = await this.filterByPreference(
+      groupId,
+      [...pointsByUser.keys()],
+      'matchdayFinishedResult',
     );
+    const recipients = new Set(recipientIds);
+
+    await Promise.all(
+      [...pointsByUser.entries()]
+        .filter(([userId]) => recipients.has(userId))
+        .map(async ([userId, points]) => {
+          const position = await this.getPositionForUser(groupId, userId);
+          const positionText = position != null ? ` Vas ${position}º en la clasificacion.` : '';
+          await this.sendToUser(userId, {
+            title: `${matchdayName} terminada`,
+            body: `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`,
+            data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId },
+          });
+        }),
+    );
+  }
+
+  /**
+   * Insignia conseguida (activada por defecto). No se filtra por
+   * GroupMembership.mutedNotifications: aunque se haya ganado en el
+   * contexto de un grupo concreto, la insignia es de la cuenta, no del
+   * grupo (ver UserBadge) — silenciar un grupo no debe ocultar un logro
+   * propio. Solo se respeta la preferencia de cuenta `badgeEarned`.
+   */
+  async notifyBadgeEarned(userId: string, badgeName: string): Promise<void> {
+    const preference = (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    if (!preference.badgeEarned) return;
+
+    await this.sendToUser(userId, {
+      title: 'Nueva insignia',
+      body: `Has conseguido "${badgeName}".`,
+      data: { type: 'BADGE_EARNED' },
+    });
   }
 }

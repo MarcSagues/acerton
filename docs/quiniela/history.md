@@ -200,3 +200,98 @@ favoritas, progreso numérico).
 (`roadmap.md`, `state.md`, `history.md`) se han editado en esta sesión;
 pendiente de commit/push explícito si el usuario lo pide (esta skill no
 commitea sin autorización, ver regla general).
+
+---
+
+## 2026-09-12 (continuación) — Sprint 9, incremento 1: preferencias de notificación
+
+**Qué se hizo:**
+
+- El usuario pidió seguir con los sprints de GitHub tras la reconciliación
+  del bloque anterior; se le preguntó si quería mergear a `main` el
+  trabajo pendiente del Sprint 5 o seguir implementando, y eligió seguir
+  implementando. Entre Sprint 5 (estadísticas por temporada) y Sprint 8, el
+  usuario pidió expresamente ir por Sprint 9 (Notificaciones).
+- Antes de tocar código, surgió una ambigüedad real en Sprint 5 (qué
+  significa "temporada" en la vista GLOBAL cuando las temporadas son por
+  grupo) — se dejó sin resolver y sin implementar nada de Sprint 5 en esta
+  entrada; el usuario redirigió a Sprint 9 en su lugar.
+- Se creó la rama `feature/sprint-9-notificaciones` a partir de `dev` (con
+  autorización explícita del usuario: "subimos esto a dev y creamos una
+  rama a partir de dev", y luego "Sprint 5 — Estadísticas por temporada"
+  primero, corregido después a Sprint 9 antes de escribir código).
+- Leído `product-rules.md` § "Notificaciones" en detalle antes de diseñar
+  nada. Alcance del incremento 1, decidido por tamaño (igual que se hizo
+  con el Sprint 5): todo lo que se puede construir sin un disparador nuevo
+  en `jobs.service.ts` y sin depender de sprints no implementados.
+- **Backend**:
+  - Migración `add_notification_preferences_and_mute`: modelo
+    `NotificationPreference` (1:1 con `User`, creado de forma perezosa,
+    mismo patrón que `GlobalStreak`), `GroupMembership.mutedNotifications`,
+    `Matchday.reminder24hSentAt`. Aplicada contra la base de datos real de
+    desarrollo (Postgres local en Docker) sin tocar producción.
+  - `NotificationPreferencesService`/`NotificationPreferencesController`
+    (`GET`/`PATCH /users/me/notification-preferences`, incluye la lista de
+    grupos propios con su estado de silencio).
+  - `GroupsService.setMuted` + `PATCH /groups/:id/mute` (cualquier
+    miembro, no requiere ser admin — es su propia preferencia).
+  - `NotificationsService`: nuevo `filterByPreference` (descarta grupo
+    silenciado + preferencia de cuenta desactivada) aplicado a
+    `notifyMatchdayClosingSoon` (ahora recibe la franja como parámetro) y
+    `notifyMatchdayFinished` (ahora incluye la posición real del usuario,
+    vía `getPositionForUser`, mismo criterio de alcance general/por
+    competición que `GroupsService.findMineForUser`). Nuevo
+    `notifyBadgeEarned`, filtrado solo por preferencia de cuenta (no por
+    grupo silenciado, documentado el motivo en el código).
+  - `BadgesService.award` cambiado de `upsert` a comprobar existencia +
+    `create`, para poder distinguir "ya la tenía" de "recién concedida";
+    `evaluateAfterMatchdayClose` devuelve ahora las insignias nuevas de esa
+    pasada, y `JobsService.badgesEvaluateAndNotify` las usa para avisar
+    solo de logros genuinamente nuevos.
+  - `JobsService.REMINDER_TIERS` ampliado a 4 franjas (24h/5h/1h/30min),
+    cada una con su propia preferencia.
+- **Frontend**: `NotificationPreferencesService`/`GroupsService.setMuted`
+  (Angular), pantalla `/notifications/preferences` (facade + componente),
+  enlazada desde Perfil junto a "Avisos", con tres secciones `<details>`
+  plegables (Jornadas, Actividad, Grupos silenciados) y actualización
+  optimista con reversión si falla la petición.
+- **Pruebas ejecutadas**: `npx jest` completo del backend (138 tests, 16
+  suites) tras los cambios — todo verde, incluidos 10 tests
+  nuevos/actualizados (`notifications.service.spec.ts`:
+  filtrado por preferencia, por grupo silenciado, posición incluida,
+  insignia conseguida con/sin preferencia; `jobs.service.spec.ts`: mock de
+  `evaluateAfterMatchdayClose` actualizado a su nueva forma, nuevo test de
+  `sendClosingReminders` que confirma la franja de 24h con su preferencia
+  correcta). `npx tsc --noEmit` sin errores. `ng build` (dev y producción)
+  sin errores nuevos. Verificado además en vivo: backend reiniciado con
+  Prisma Client regenerado (fue necesario matar los procesos de
+  `nest start --watch` que tenían bloqueado el binario nativo antes de
+  poder regenerar), smoke test por API directa (registro de cuenta QA,
+  `GET`/`PATCH` de preferencias, creación de grupo + mute) y verificación
+  visual completa en navegador real (Chromium vía la extensión Claude in
+  Chrome): toggles, persistencia tras recargar, mute en rojo. Cuentas y
+  grupos de prueba borrados al terminar, en transacciones explícitas
+  (`BEGIN`/verificar/`COMMIT`), sin tocar datos reales.
+
+**Migraciones:** `20260911223212_add_notification_preferences_and_mute`,
+aditiva (sin pérdida de datos), aplicada contra la base de datos local de
+desarrollo. Pendiente aplicarla contra `dev`/`main` cuando se fusione la
+rama.
+
+**Bloqueos/preguntas dejadas abiertas:** ninguna nueva sobre Sprint 9 en sí
+— las tareas que quedan pendientes son trabajo no empezado, no ambigüedad
+de producto (ver `roadmap.md` Sprint 9 para el detalle de cada una). Sigue
+abierta la pregunta de Sprint 5 sobre qué significa "temporada" en la
+vista global (sin resolver, sin bloquear nada porque no se ha tocado
+Sprint 5 en esta entrada).
+
+**Siguiente paso:** decisión del usuario — fusionar
+`feature/sprint-9-notificaciones` a `dev` (y aplicar la regla de
+Seguimiento en GitHub al hacerlo) o seguir añadiendo incrementos en la
+misma rama antes de subirla. Ver `state.md` para el resto de decisiones
+pendientes (merge a `main` del Sprint 3/4/5).
+
+**Cambios sin commit:** no en la rama `feature/sprint-9-notificaciones`
+(todo commiteado y empujado); los documentos de esta entrada
+(`roadmap.md`, `state.md`, `history.md`) se han editado en esta misma
+sesión, pendientes de commit en esa rama.
