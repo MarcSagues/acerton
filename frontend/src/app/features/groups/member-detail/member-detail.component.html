@@ -19,7 +19,7 @@
 
       <div class="stats">
         <div class="stat-tile">
-          <p class="stat-value mono accent">{{ p.streak.currentStreak }}</p>
+          <p class="stat-value mono accent">{{ p.streak.currentStreak > 0 ? p.streak.currentStreak : '' }}</p>
           <p class="stat-label mono">RACHA ACTUAL</p>
         </div>
         <div class="stat-tile">

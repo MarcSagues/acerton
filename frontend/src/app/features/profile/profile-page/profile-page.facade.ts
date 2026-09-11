@@ -14,6 +14,7 @@ import { initials } from '../../../shared/utils/initials';
 import { badgeArtId } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
+import { BadgeDetailDialogComponent, BadgeDetailData } from '../badge-detail-dialog.component';
 
 export interface BadgePreviewItem {
   badge: Badge;
@@ -50,6 +51,7 @@ export class ProfilePageFacade {
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);
   private readonly badgeCatalog = signal<Badge[]>([]);
+  private readonly badgeStats = signal<Record<string, number>>({});
 
   /** Hasta 5 insignias: primero las conseguidas, y de faltar se completa con las pendientes en gris. */
   readonly badgePreview = computed<BadgePreviewItem[]>(() => {
@@ -64,6 +66,18 @@ export class ProfilePageFacade {
 
   artId(code: string): string | null {
     return badgeArtId(code);
+  }
+
+  openBadge(item: BadgePreviewItem): void {
+    this.dialog.open<BadgeDetailDialogComponent, void, BadgeDetailData>(BadgeDetailDialogComponent, {
+      data: {
+        artId: this.artId(item.badge.code),
+        name: item.badge.name,
+        description: item.badge.description,
+        earned: item.earned,
+        percentage: this.badgeStats()[item.badge.code] ?? null,
+      },
+    });
   }
 
   /**
@@ -174,5 +188,6 @@ export class ProfilePageFacade {
       error: () => this.loading.set(false),
     });
     this.badgesService.getCatalog().subscribe((catalog) => this.badgeCatalog.set(catalog));
+    this.badgesService.getStats().subscribe((stats) => this.badgeStats.set(stats));
   }
 }

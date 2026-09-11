@@ -134,6 +134,7 @@ h2 {
 }
 
 .badge-preview {
+  position: relative;
   width: 68px;
   height: 68px;
   border-radius: 14px;
@@ -166,15 +167,21 @@ h2 {
   align-items: center;
   justify-content: center;
 
+  /* Con solo cambiar --accent no siempre se nota a simple vista que falta
+     por conseguir: en blanco y negro + atenuado se ve inequivocamente
+     "bloqueado" frente al color pleno de las conseguidas. */
   piqo-svg {
     --accent: var(--p4-disabled);
+    filter: grayscale(0.7) opacity(0.55);
   }
 
   &.earned {
     border-color: var(--p4-accent);
+    background: linear-gradient(165deg, var(--p4-soft), var(--p4-surface));
 
     piqo-svg {
       --accent: var(--p4-accent);
+      filter: none;
     }
   }
 }
@@ -191,6 +198,21 @@ h2 {
   color: var(--p4-on-accent);
   font: 700 10px/16px var(--p4-font-ui);
   text-align: center;
+}
+
+.lock-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--p4-disabled-bg);
+  color: var(--p4-disabled);
+  border: 2px solid var(--p4-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .section {
@@ -222,25 +244,6 @@ h2 {
   color: var(--p4-error);
 }
 
-.group-streaks {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.group-streak-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-}
-
-.group-name {
-  font-weight: 600;
-}
-
 .name-edit-row {
   margin-top: 12px;
   display: flex;
@@ -256,6 +259,12 @@ h2 {
   color: var(--p4-text);
   padding: 0 12px;
   font-size: 14px;
+
+  &:disabled {
+    color: var(--p4-muted);
+    background: var(--p4-disabled-bg);
+    opacity: 0.7;
+  }
 }
 
 .save-btn {
@@ -299,7 +308,9 @@ h2 {
 
 .replay-btn,
 .logout-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: calc(100% - 40px);
   max-width: 350px;
   margin: 22px auto 0;
@@ -310,7 +321,7 @@ h2 {
 
 .logout-btn {
   margin-top: 12px;
-  background: none;
-  border: 0;
+  background: var(--p4-error-bg);
+  border: 1px solid var(--p4-error);
   color: var(--p4-error);
 }

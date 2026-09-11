@@ -108,7 +108,7 @@
             <div class="progress-track">
               <div class="progress-fill" [style.width]="page.progressPct()"></div>
             </div>
-            <div class="progress-label mono">{{ page.doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+            <div class="progress-label mono">{{ page.doneCount() }}/{{ entry.matchday.matches.length }}</div>
           </div>
         }
       </div>
@@ -120,44 +120,76 @@
         </div>
       }
 
-      @if (page.isExactScore()) {
-        <div class="exact-labels">
-          <span>L</span>
-          <span>V</span>
-        </div>
-      }
-
       <div class="match-list" [class.visual]="page.view() === 'visual'">
         @for (match of entry.matchday.matches; track match.id; let first = $first) {
-          <div class="match-card" [class.visual]="page.view() === 'visual'" [attr.data-tutorial]="first ? 'first-match' : null">
+          <div
+            class="match-card"
+            [class.visual]="page.view() === 'visual'"
+            [attr.data-tone]="page.matchAccentTone(match)"
+            [attr.data-tutorial]="first ? 'first-match' : null"
+          >
             <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
 
             @if (page.view() === 'filas') {
               <div class="teams-row">
                 <div class="teams">
-                  <span class="team-home">{{ match.homeTeam }}</span>
-                  <span class="team-away">{{ match.awayTeam }}</span>
+                  <span class="team-home">
+                    {{ match.homeTeam }}
+                    @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                      <span class="team-score mono">{{ match.homeScore }}</span>
+                    }
+                  </span>
+                  <span class="team-away">
+                    {{ match.awayTeam }}
+                    @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                      <span class="team-score mono">{{ match.awayScore }}</span>
+                    }
+                  </span>
                 </div>
                 <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: false }"></ng-container>
               </div>
             } @else {
               <div class="crests-row">
-                <span class="crest">{{ match.homeTeam.slice(0, 1).toUpperCase() }}</span>
-                <span class="team-name">{{ match.homeTeam }}</span>
-                <span class="vs mono">VS</span>
-                <span class="team-name right">{{ match.awayTeam }}</span>
-                <span class="crest">{{ match.awayTeam.slice(0, 1).toUpperCase() }}</span>
+                <span class="team-name">
+                  {{ match.homeTeam }}
+                  @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                    <span class="team-score mono">{{ match.homeScore }}</span>
+                  }
+                </span>
+                @if (page.isExactScore()) {
+                  <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: false, crests: true }"></ng-container>
+                } @else {
+                  <span class="vs mono">VS</span>
+                }
+                <span class="team-name">
+                  {{ match.awayTeam }}
+                  @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                    <span class="team-score mono">{{ match.awayScore }}</span>
+                  }
+                </span>
               </div>
-              <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: true }"></ng-container>
+              @if (!page.isExactScore()) {
+                <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: true }"></ng-container>
+              }
             }
 
             <div class="status-row">
               @if (match.status === 'FINISHED') {
-                <piqo-svg [attr.icon]="page.isPickHit(match) ? 'check' : 'cerrar'" size="16" [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false"></piqo-svg>
-                <span [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false">
-                  {{ page.pickLabel(match.id) ?? 'Sin pronostico' }} · {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
-                </span>
-                <span class="marcador mono">{{ match.homeScore }}-{{ match.awayScore }}</span>
+                @if (page.isExactScore()) {
+                  <piqo-svg [attr.icon]="page.isPickHit(match) ? 'check' : 'cerrar'" size="16" [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false"></piqo-svg>
+                  <span [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false">
+                    {{ page.pickLabel(match.id) ?? 'Sin pronostico' }} · {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
+                  </span>
+                  <span class="marcador mono">{{ match.homeScore }}-{{ match.awayScore }}</span>
+                } @else {
+                  <span
+                    class="points-badge mono"
+                    [class.hit]="page.isPickHit(match) === true"
+                    [class.miss]="page.isPickHit(match) === false"
+                  >
+                    {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
+                  </span>
+                }
               } @else if (page.isMatchLocked(match)) {
                 <piqo-svg icon="candado" size="16"></piqo-svg>
                 <span>{{ page.matchLockedLabel(match) }}</span>
@@ -171,7 +203,7 @@
               } @else if (page.stateFor(match.id).saving) {
                 <app-spinner [size]="16"></app-spinner>
                 <span>Guardando…</span>
-              } @else if (page.stateFor(match.id).saved) {
+              } @else if (page.stateFor(match.id).saved && !page.isExactScore()) {
                 <piqo-svg icon="check" size="16" class="hit"></piqo-svg>
                 <span class="hit">Guardado</span>
               } @else {
@@ -182,32 +214,58 @@
         }
       </div>
 
-      <ng-template #choices let-match="match" let-wide="wide">
+      <ng-template #choices let-match="match" let-wide="wide" let-crests="crests">
         @if (page.isMatchLocked(match) || !page.pickingAllowed()) {
-          <!-- Sin controles: el estado se resuelve en la fila de estado. -->
+          @if (crests) {
+            @if (page.visualScoreLabel(match); as label) {
+              <span class="vs-result mono">{{ label }}</span>
+            } @else {
+              <span class="vs mono">VS</span>
+            }
+          } @else if (!page.isExactScore() && match.status === 'FINISHED') {
+            <div class="options" [class.wide]="wide" role="group" aria-label="Resultado del partido">
+              @for (opt of oneXTwoOptions; track opt.v) {
+                <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
+              }
+            </div>
+          }
+          <!-- filas / comodin: sin controles, el estado se resuelve en la fila de estado. -->
         } @else if (page.isExactScore()) {
-          <div class="exact-score-box" [class.saving]="page.stateFor(match.id).saving" [class.error]="page.stateFor(match.id).error">
-            <input
-              class="score-input mono"
-              type="number"
-              min="0"
-              max="20"
-              inputmode="numeric"
-              [value]="page.stateFor(match.id).predictedHomeScore"
-              (input)="page.updatePredictedScore(match, 'home', $any($event.target).value)"
-              (blur)="page.save(match.id, page.stateFor(match.id))"
-            />
-            <span class="score-sep mono">-</span>
-            <input
-              class="score-input mono"
-              type="number"
-              min="0"
-              max="20"
-              inputmode="numeric"
-              [value]="page.stateFor(match.id).predictedAwayScore"
-              (input)="page.updatePredictedScore(match, 'away', $any($event.target).value)"
-              (blur)="page.save(match.id, page.stateFor(match.id))"
-            />
+          <div class="score-widget" [class.standalone]="wide" [class.inline]="crests">
+            @if (!crests) {
+              <div class="score-labels">
+                <span class="score-label mono">L</span>
+                <span class="score-sep-spacer mono">-</span>
+                <span class="score-label mono">V</span>
+              </div>
+            }
+            <div
+              class="exact-score-box"
+              [class.saving]="page.stateFor(match.id).saving"
+              [class.error]="page.stateFor(match.id).error"
+              [class.confirmed]="page.stateFor(match.id).saved"
+              [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+            >
+              <input
+                class="score-input mono"
+                type="number"
+                min="0"
+                max="20"
+                inputmode="numeric"
+                [value]="page.stateFor(match.id).predictedHomeScore"
+                (input)="page.updatePredictedScore(match, 'home', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
+              />
+              <span class="score-sep mono">-</span>
+              <input
+                class="score-input mono"
+                type="number"
+                min="0"
+                max="20"
+                inputmode="numeric"
+                [value]="page.stateFor(match.id).predictedAwayScore"
+                (input)="page.updatePredictedScore(match, 'away', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
+              />
+            </div>
           </div>
         } @else {
           <div class="wc-row">
@@ -265,14 +323,10 @@
         <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">
           <piqo-svg icon="historial" size="20"></piqo-svg>Ver desglose de resultados
         </a>
-      } @else if (!page.isLocked(entry) && page.pickingAllowed()) {
+      } @else if (!page.isLocked(entry) && page.pickingAllowed() && page.doneCount() === entry.matchday.matches.length) {
         <div class="cta-bar">
-          @if (page.doneCount() === entry.matchday.matches.length) {
-            <piqo-svg icon="check" size="18" class="hit"></piqo-svg>
-            <span>Completado</span>
-          } @else {
-            <span>Faltan {{ entry.matchday.matches.length - page.doneCount() }} por enviar</span>
-          }
+          <piqo-svg icon="check" size="18" class="hit"></piqo-svg>
+          <span>Completado</span>
         </div>
       }
     }

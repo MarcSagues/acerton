@@ -12,10 +12,12 @@ import { DoubleChanceOption } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { formatCountdown } from '../../../shared/countdown.util';
 import {
+  MatchAccentTone,
   PredictionSelection,
   isMatchPredictable as domainIsMatchPredictable,
   isPredictionHit,
   lockedMatchLabel,
+  matchAccentTone as domainMatchAccentTone,
   matchDayLabel as domainMatchDayLabel,
   pointsForPrediction,
   predictionLabel,
@@ -379,6 +381,62 @@ export class CurrentMatchdayFacade {
   /** null si el partido no ha terminado o no enviaste pronostico. */
   isPickHit(match: Match): boolean | null {
     return isPredictionHit(match, this.predictionState.get(match.id), this.isExactScore());
+  }
+
+  /**
+   * Como colorear cada opcion (1/X/2) del resumen de resultado 1X2 una vez
+   * terminado el partido: 'hit' la que elegiste y acertaste, 'miss' la que
+   * elegiste y fallaste, 'actual' el resultado real cuando no coincide con
+   * tu eleccion (para que se vea cual era la respuesta correcta aunque no
+   * la marcaras), o null si esa opcion no es relevante. Con comodin de
+   * doble oportunidad no hay una unica casilla "tuya": solo se resalta el
+   * resultado real, en verde si tu cobertura lo incluia.
+   */
+  choiceReviewTone(match: Match, option: PredictionChoice): 'hit' | 'miss' | 'actual' | null {
+    if (match.status !== 'FINISHED' || !match.result) return null;
+    const selection = this.predictionState.get(match.id);
+    const isActual = option === match.result;
+
+    if (selection?.doubleChanceOption) {
+      if (!isActual) return null;
+      return isPredictionHit(match, selection, false) ? 'hit' : 'actual';
+    }
+
+    const isMine = option === selection?.choice;
+    if (isMine && isActual) return 'hit';
+    if (isMine) return 'miss';
+    if (isActual) return 'actual';
+    return null;
+  }
+
+  /**
+   * Color de la linea superior de la tarjeta segun si hay pronostico y, de
+   * haberlo, si acerto. En resultado exacto no se enciende hasta que el
+   * guardado quede confirmado (el contorno del input haya terminado de
+   * cerrarse, ver exact-score-box.confirmed): escribir un marcador no es
+   * lo mismo que haberlo mandado a guardar.
+   */
+  matchAccentTone(match: Match): MatchAccentTone {
+    const state = this.predictionState.get(match.id);
+    if (this.isExactScore() && match.status !== 'FINISHED' && !state?.saved) {
+      return 'none';
+    }
+    return domainMatchAccentTone(match, state, this.isExactScore());
+  }
+
+  /**
+   * Reemplaza el "VS" de la vista visual en modo resultado exacto: el
+   * marcador real una vez terminado el partido, o tu pronostico segun lo
+   * vas escribiendo mientras tanto. null si no hay nada que mostrar
+   * todavia (partido no empezado y sin pronostico).
+   */
+  visualScoreLabel(match: Match): string | null {
+    if (match.status === 'FINISHED' && match.homeScore != null && match.awayScore != null) {
+      return `${match.homeScore} - ${match.awayScore}`;
+    }
+    const state = this.predictionState.get(match.id);
+    if (state?.predictedHomeScore == null || state?.predictedAwayScore == null) return null;
+    return `${state.predictedHomeScore} - ${state.predictedAwayScore}`;
   }
 
   /**

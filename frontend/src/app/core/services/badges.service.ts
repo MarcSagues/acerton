@@ -10,4 +10,9 @@ export class BadgesService {
   getCatalog() {
     return this.http.get<Badge[]>(`${environment.apiUrl}/badges/catalog`);
   }
+
+  /** % de usuarios que tienen cada insignia, indexado por code. */
+  getStats() {
+    return this.http.get<Record<string, number>>(`${environment.apiUrl}/badges/stats`);
+  }
 }

@@ -48,8 +48,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--p4-surface);
-  border: 1px solid transparent;
+  /* El panel del sheet ya usa --p4-sheet-bg (el mismo tono que --p4-surface,
+     solo con alpha), asi que una fila en --p4-surface a secas quedaba
+     invisible encima. El degradado con --p4-surface-2 + borde real la
+     distingue del fondo del panel. */
+  background: linear-gradient(165deg, var(--p4-surface-2), var(--p4-surface));
+  border: 1px solid var(--p4-border);
   color: var(--p4-text);
   text-align: left;
 

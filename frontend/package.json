@@ -28,6 +28,7 @@
     "@capacitor/core": "8.5.1",
     "@capacitor/dialog": "^8.0.1",
     "@capacitor/ios": "8.5.1",
+    "@capacitor/keyboard": "^8.0.5",
     "@capacitor/push-notifications": "8.1.2",
     "@capawesome/capacitor-google-sign-in": "0.1.4",
     "firebase": "^10.14.1",

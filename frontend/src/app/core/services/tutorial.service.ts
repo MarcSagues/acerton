@@ -117,12 +117,24 @@ export class TutorialService {
     });
   }
 
-  /** No hace nada si ya se completo antes — solo se llama tras comprobar user.tutorialCompleted. */
+  /**
+   * No hace nada si ya se completo antes — solo se llama tras comprobar
+   * user.tutorialCompleted. Marca el tutorial como completado en el
+   * backend ya al empezarlo (no solo al terminarlo o saltarlo): antes,
+   * si el usuario se iba de Tabla a media explicacion sin pulsar ningun
+   * boton del propio aviso, el flag se quedaba en false y el tutorial
+   * volvia a saltar en cada visita futura a Tabla (o al entrar en otro
+   * grupo). "Se ha visto" ahora significa "se ha mostrado una vez",
+   * independientemente de si se completan todos los pasos.
+   */
   start(scoringMode: ScoringMode): void {
     this.scoringModeSignal.set(scoringMode);
     this.stepIndexSignal.set(0);
     this.currentUrlSignal.set(this.router.url.split('?')[0]);
     this.activeSignal.set(true);
+    if (!this.authService.currentUser()?.tutorialCompleted) {
+      this.profileService.completeTutorial().subscribe((user) => this.authService.setCurrentUser(user));
+    }
   }
 
   /** El paso actual senala un objetivo que no existe en pantalla (p. ej. grupo sin partidos): se salta sin bloquear. */

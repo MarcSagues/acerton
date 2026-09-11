@@ -6,6 +6,7 @@ import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { SegmentedControlComponent } from '../../../shared/ui/segmented-control/segmented-control.component';
 import { CurrentMatchdayFacade } from './current-matchday.facade';
+import { PredictionChoice } from '../../../core/models/matchday.model';
 
 @Component({
   selector: 'app-current-matchday',
@@ -22,5 +23,12 @@ export class CurrentMatchdayComponent {
   readonly viewOptions = [
     { value: 'visual' as const, label: 'Visual', icon: 'tarjetas' },
     { value: 'filas' as const, label: 'Filas', icon: 'filas' },
+  ];
+
+  /** Opciones 1X2, compartidas entre los botones de elegir y el resumen de resultado una vez terminado el partido. */
+  readonly oneXTwoOptions: { v: PredictionChoice; l: string }[] = [
+    { v: 'HOME', l: '1' },
+    { v: 'DRAW', l: 'X' },
+    { v: 'AWAY', l: '2' },
   ];
 }

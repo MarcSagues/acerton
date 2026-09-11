@@ -20,12 +20,12 @@
     <div class="stats-row">
       <div class="stat-card">
         <p class="stat-label">Racha actual</p>
-        <p class="stat-value mono">{{ page.globalCurrentStreak() }}</p>
+        <p class="stat-value mono">{{ page.globalCurrentStreak() > 0 ? page.globalCurrentStreak() : '' }}</p>
         <p class="stat-hint">jornadas seguidas en tus grupos</p>
       </div>
       <div class="stat-card">
         <p class="stat-label">Mejor racha</p>
-        <p class="stat-value mono">{{ page.globalLongestStreak() }}</p>
+        <p class="stat-value mono">{{ page.globalLongestStreak() > 0 ? page.globalLongestStreak() : '' }}</p>
         <p class="stat-hint">en cualquiera de tus grupos</p>
       </div>
     </div>
@@ -37,13 +37,22 @@
     <p class="section-hint">{{ page.badgeCount() }} conseguidas hasta ahora.</p>
     <div class="badges-row">
       @for (item of page.badgePreview(); track item.badge.id) {
-        <span class="badge-preview" [class.earned]="item.earned" [attr.aria-label]="item.badge.name">
+        <button
+          type="button"
+          class="badge-preview"
+          [class.earned]="item.earned"
+          [attr.aria-label]="item.badge.name + (item.earned ? '' : ', por desbloquear')"
+          (click)="page.openBadge(item)"
+        >
           @if (page.artId(item.badge.code); as artId) {
             <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="48"></piqo-svg>
           } @else {
             <piqo-svg icon="medalla" size="26"></piqo-svg>
           }
-        </span>
+          @if (!item.earned) {
+            <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
+          }
+        </button>
       }
     </div>
 
@@ -63,26 +72,12 @@
           <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
           @if (trophy.count > 1) {
             <span class="trophy-count mono">{{ trophy.count }}</span>
+          } @else if (trophy.count === 0) {
+            <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
           }
         </button>
       }
     </div>
-
-    @if (p.groups.length > 0) {
-      <div class="section">
-        <div class="card">
-          <p class="card-title">Racha por grupo</p>
-          <div class="group-streaks">
-            @for (summary of p.groups; track summary.group.id) {
-              <div class="group-streak-row">
-                <span class="group-name">{{ summary.group.name }}</span>
-                <span class="mono">{{ summary.streak.currentStreak }} jornadas (mejor {{ summary.streak.longestStreak }})</span>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-    }
 
     <div class="section-head">
       <h2>Ajustes</h2>
@@ -90,22 +85,25 @@
     <div class="section">
       <div class="card">
         <p class="card-title">Nombre</p>
-        @if (page.nameChangeAvailableAt(); as availableAt) {
-          <p class="hint mono">Ya lo has cambiado. Podras hacerlo de nuevo el {{ availableAt | date: 'dd/MM/yyyy' }}.</p>
-        } @else {
-          <div class="name-edit-row">
-            <input
-              class="name-input mono"
-              type="text"
-              maxlength="24"
-              [ngModel]="page.nameInput()"
-              (ngModelChange)="page.nameInput.set($event)"
-              (keydown.enter)="page.saveName()"
-            />
+        <div class="name-edit-row">
+          <input
+            class="name-input mono"
+            type="text"
+            maxlength="24"
+            [disabled]="!!page.nameChangeAvailableAt()"
+            [ngModel]="page.nameInput()"
+            (ngModelChange)="page.nameInput.set($event)"
+            (keydown.enter)="page.saveName()"
+          />
+          @if (!page.nameChangeAvailableAt()) {
             <button type="button" class="piqo-primary save-btn" [disabled]="!page.canSaveName()" (click)="page.saveName()">
               {{ page.nameSaving() ? 'Guardando…' : 'Guardar' }}
             </button>
-          </div>
+          }
+        </div>
+        @if (page.nameChangeAvailableAt(); as availableAt) {
+          <p class="hint mono">Ya lo has cambiado. Podras hacerlo de nuevo el {{ availableAt | date: 'dd/MM/yyyy' }}.</p>
+        } @else {
           @if (page.nameHint(); as hint) {
             <p class="error mono">{{ hint }}</p>
           }

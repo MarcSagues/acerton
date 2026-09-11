@@ -26,6 +26,9 @@
               <span class="meta">
                 <span class="name">{{ group.name }}</span>
                 <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
+                @if (page.streakFor(group.id); as streak) {
+                  <span class="streak-chip"><piqo-svg icon="racha" size="14"></piqo-svg>{{ streak }} jornadas</span>
+                }
               </span>
               @if (group.id === page.activeGroupId()) {
                 <span class="active-chip"><piqo-svg icon="check" size="18"></piqo-svg>Activo</span>

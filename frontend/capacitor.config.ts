@@ -23,6 +23,15 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound'],
     },
+    // Por defecto (resize: 'native') iOS encoge el WKWebView entero al
+    // abrir el teclado, lo que arrastra hacia arriba cualquier elemento
+    // position:fixed (la barra inferior "sube" pegada al teclado en vez
+    // de quedarse fija en el borde real de la pantalla). Con 'none' el
+    // WebView no se redimensiona a si mismo: el teclado se superpone por
+    // encima sin mover nada fijo.
+    Keyboard: {
+      resize: 'none',
+    },
     // El fetch/XHR normal del WKWebView esta fallando en iOS con "Load
     // failed" para cualquier peticion, incluso al propio origen local. Esto
     // hace que fetch/XHR pasen por codigo nativo (URLSession) en vez de por

@@ -169,8 +169,8 @@ h1 {
 }
 
 .progress-label {
-  font-size: 10px;
-  color: var(--p4-muted);
+  font: 700 18px/1 var(--p4-font-display);
+  color: var(--p4-text);
   white-space: nowrap;
 }
 
@@ -184,15 +184,15 @@ h1 {
   font: 400 12px/17px var(--p4-font-ui);
 
   &.info {
-    background: var(--p4-info-bg);
+    background: color-mix(in srgb, var(--p4-info) 16%, transparent);
     color: var(--p4-info);
   }
   &.warning {
-    background: var(--p4-warning-bg);
+    background: color-mix(in srgb, var(--p4-warning) 16%, transparent);
     color: var(--p4-warning);
   }
   &.error {
-    background: var(--p4-error-bg);
+    background: color-mix(in srgb, var(--p4-error) 16%, transparent);
     color: var(--p4-error);
   }
 
@@ -201,15 +201,6 @@ h1 {
   }
 }
 
-.exact-labels {
-  padding: 12px 20px 0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 27px;
-  padding-right: 34px;
-  font: 600 10px/1 var(--p4-font-ui);
-  color: var(--p4-muted);
-}
 
 .match-list {
   padding: 19px 20px 0;
@@ -230,12 +221,30 @@ h1 {
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   padding: 16px 14px 14px;
 
-  &::before {
+  /* Sin pronostico: sin linea. Con pronostico enviado: acento (pendiente
+     de resultado) o partial (acierto solo del ganador en resultado
+     exacto). Ya decidido: verde si acierto, rojo si fallo. */
+  &[data-tone='pending']::before,
+  &[data-tone='partial']::before {
     content: '';
     position: absolute;
     inset: 0 0 auto;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(210, 190, 148, 0.45), transparent);
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--p4-accent), transparent);
+  }
+  &[data-tone='hit']::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--p4-success), transparent);
+  }
+  &[data-tone='miss']::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--p4-error), transparent);
   }
 
   &.visual {
@@ -273,6 +282,12 @@ h1 {
   white-space: nowrap;
 }
 
+.team-score {
+  margin-left: 6px;
+  font: 700 13px/1 var(--p4-font-display);
+  color: var(--p4-accent);
+}
+
 .crests-row {
   margin-top: 17px;
   display: flex;
@@ -280,32 +295,22 @@ h1 {
   gap: 10px;
 }
 
-.crest {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  flex: none;
-  background: var(--p4-soft);
-  color: var(--p4-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 600 17px/1 var(--p4-font-ui);
-}
-
 .team-name {
   flex: 1;
   min-width: 0;
+  text-align: center;
   font: 600 12px/1 var(--p4-font-ui);
-
-  &.right {
-    text-align: right;
-  }
 }
 
 .vs {
   font-size: 12px;
   color: var(--p4-muted);
+}
+
+.vs-result {
+  flex: none;
+  font: 700 15px/1 var(--p4-font-display);
+  color: var(--p4-text);
 }
 
 .wc-row {
@@ -377,6 +382,27 @@ h1 {
     color: var(--p4-accent);
     border-color: transparent;
   }
+
+  /* Resumen de resultado 1X2 una vez terminado el partido (ver
+     choiceReviewTone): la que elegiste y acertaste en verde, la que
+     elegiste y fallaste en rojo, y el resultado real en acento cuando no
+     coincide con tu eleccion, para que se vea cual era la respuesta
+     correcta aunque no la marcaras. */
+  &.hit {
+    background: var(--p4-success-bg);
+    color: var(--p4-success);
+    border-color: var(--p4-success);
+  }
+  &.miss {
+    background: var(--p4-error-bg);
+    color: var(--p4-error);
+    border-color: var(--p4-error);
+  }
+  &.actual {
+    background: var(--p4-soft);
+    color: var(--p4-accent);
+    border-color: var(--p4-accent);
+  }
 }
 
 .ring {
@@ -398,40 +424,141 @@ h1 {
   display: none;
 }
 
-.exact-score-box {
+/* .score-widget agrupa la fila de etiquetas (fuera de la caja, nunca se
+   pintan de color) y la caja de resultado en si (la que cambia de borde/
+   fondo al guardar). Los dos usan el mismo gap para que L/V queden
+   alineadas justo encima de su numero. */
+.score-widget {
   margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  /* En la vista "visual" va suelto a ancho completo de la tarjeta: sin
+     esto se veria como una barra vacia. En "filas" ya es un item flex
+     mas junto a los equipos, no necesita esto. */
+  &.standalone {
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Resultado exacto en vista visual: sustituye al "VS" dentro de la
+     propia fila de escudos, como un item flex mas (sin margen propio ni
+     fila de etiquetas L/V, que aqui sobra al tener los nombres al lado). */
+  &.inline {
+    margin-top: 0;
+    flex: none;
+  }
+}
+
+.score-labels {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-label {
+  width: 26px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--p4-muted);
+}
+
+/* Mismo glifo que el separador real, solo que invisible: garantiza que
+   ocupa exactamente el mismo ancho sin tener que adivinarlo a mano. */
+.score-sep-spacer {
+  visibility: hidden;
+  font: 700 18px/1 var(--p4-font-display);
+}
+
+.exact-score-box {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
   border-radius: var(--p4-radius-sm);
-  border: 1px solid var(--p4-border);
-  padding: 8px;
+  border: 2px solid var(--p4-border);
+  background: var(--p4-glass);
+  padding: 6px 10px;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
 
+  /* El input nunca puede saber si el pronostico es correcto — eso solo se
+     sabe cuando el partido termina, momento en el que este input deja de
+     mostrarse (pasa a la fila de estado, ver status-row). Por eso aqui no
+     hay un estado "verde": guardando y guardado son ambos el mismo
+     "pendiente de resultado" que el borde superior de la tarjeta
+     (matchAccentTone 'pending'). Mientras guarda, el borde propio se
+     oculta y en su lugar se dibuja un contorno animado que empieza arriba
+     y da la vuelta en sentido horario (--progress, actualizado en cada
+     frame desde el mismo drawOffset que ya anima el aro de los botones
+     1X2 — aqui como conic-gradient recortado a un anillo en vez de un
+     <rect> de SVG, porque esta caja no es cuadrada y estirar un trazo SVG
+     de forma no uniforme para llenarla deformaba su grosor). */
   &.saving {
-    border: 1px dashed var(--p4-accent);
+    /* Sin esto, el borde gris se ve desvanecerse durante 160ms antes de
+       que el anillo animado empiece a dibujarse — un hueco perceptible
+       entre "desaparece" y "empieza el efecto". Al desactivar la
+       transicion aqui, el borde estatico desaparece al instante en el
+       mismo frame en que el anillo arranca desde 0%, sin salto visible
+       (ambos representan "nada dibujado todavia" en ese momento). */
+    transition: none;
+    border-color: transparent;
+  }
+  &.confirmed {
+    border-color: var(--p4-accent);
   }
   &.error {
     border-color: var(--p4-error);
+    background: var(--p4-error-bg);
+  }
+
+  &.saving::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(from 0deg, var(--p4-accent) var(--progress, 0%), transparent 0);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 }
 
 .score-input {
-  width: 48px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid var(--p4-border);
-  background: var(--p4-bg);
+  width: 26px;
+  height: 32px;
+  border: none;
+  background: none;
   color: var(--p4-text);
   text-align: center;
-  font: 600 16px/1 var(--p4-font-ui);
+  font: 700 18px/1 var(--p4-font-display);
 
-  &::-webkit-inner-spin-button {
-    display: none;
+  &:focus {
+    outline: none;
   }
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  appearance: textfield;
 }
 
 .score-sep {
+  font: 700 18px/1 var(--p4-font-display);
   color: var(--p4-muted);
 }
 
@@ -461,6 +588,19 @@ h1 {
   margin-left: auto;
   font: 600 12px/1 var(--p4-font-ui);
   color: var(--p4-text);
+}
+
+.points-badge {
+  margin-left: auto;
+  font: 700 13px/1 var(--p4-font-display);
+  color: var(--p4-muted);
+
+  &.hit {
+    color: var(--p4-success);
+  }
+  &.miss {
+    color: var(--p4-error);
+  }
 }
 
 .retry-btn {

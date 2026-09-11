@@ -29,6 +29,32 @@ export class BadgesService {
   }
 
   /**
+   * % de usuarios (sobre el total registrado) que tienen al menos una fila
+   * de UserBadge para cada insignia, sin contar dos veces a quien la haya
+   * conseguido en mas de un grupo (UserBadge es unico por userId+badgeId+
+   * groupId, no por userId+badgeId).
+   */
+  async getEarnStats(): Promise<Record<string, number>> {
+    const [totalUsers, distinctPairs, badges] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.userBadge.findMany({ distinct: ['badgeId', 'userId'], select: { badgeId: true } }),
+      this.prisma.badge.findMany({ select: { id: true, code: true } }),
+    ]);
+
+    const earnersByBadge = new Map<string, number>();
+    for (const { badgeId } of distinctPairs) {
+      earnersByBadge.set(badgeId, (earnersByBadge.get(badgeId) ?? 0) + 1);
+    }
+
+    const result: Record<string, number> = {};
+    for (const badge of badges) {
+      const earners = earnersByBadge.get(badge.id) ?? 0;
+      result[badge.code] = totalUsers > 0 ? Math.round((earners / totalUsers) * 100) : 0;
+    }
+    return result;
+  }
+
+  /**
    * Se ejecuta tras cerrar y puntuar una jornada, y tras recalcular rachas
    * y clasificacion semanal de esa jornada (el orden importa: streaks y
    * rankings deben estar actualizados antes de evaluar insignias).

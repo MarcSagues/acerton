@@ -288,7 +288,14 @@ button {
   background: none;
   padding: 0;
   margin: 0;
-  text-align: inherit;
+  /* No "inherit": un boton de solo texto sin su propio display:flex
+     (ej. logout-btn, replay-btn) heredaba el text-align izquierdo del
+     contenedor en vez de centrarse como hacia un <button> nativo. Los
+     botones flex (icono + texto) no se ven afectados: su alineacion la
+     deciden justify-content/align-items, no text-align. Los que de
+     verdad necesitan texto a la izquierda (back-link, filas de lista)
+     ya fijan su propio text-align y ganan por especificidad. */
+  text-align: center;
   -webkit-tap-highlight-color: transparent;
 }
 

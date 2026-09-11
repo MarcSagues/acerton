@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { ProfileService } from '../../../core/services/profile.service';
 import { Group } from '../../../core/models/group.model';
 import { initials } from '../../../shared/utils/initials';
 
@@ -9,11 +10,14 @@ import { initials } from '../../../shared/utils/initials';
 export class GroupListFacade {
   private readonly groupsService = inject(GroupsService);
   private readonly activeGroupService = inject(ActiveGroupService);
+  private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
 
   readonly groups = this.groupsService.myGroups;
   readonly activeGroupId = this.activeGroupService.activeId;
   readonly loading = signal(true);
+  /** Racha actual por grupo (jornadas seguidas participando), para el chip de fuego en la tarjeta. */
+  private readonly groupStreaks = signal<Record<string, number>>({});
 
   readonly publicGroups = signal<Group[]>([]);
   readonly joiningGroupId = signal<string | null>(null);
@@ -32,6 +36,18 @@ export class GroupListFacade {
       error: () => this.loading.set(false),
     });
     this.groupsService.loadPublicGroups().subscribe((groups) => this.publicGroups.set(groups));
+    this.profileService.getMyProfile().subscribe((profile) => {
+      const byGroup: Record<string, number> = {};
+      for (const summary of profile.groups) {
+        byGroup[summary.group.id] = summary.streak.currentStreak;
+      }
+      this.groupStreaks.set(byGroup);
+    });
+  }
+
+  streakFor(groupId: string): number | null {
+    const streak = this.groupStreaks()[groupId];
+    return streak > 0 ? streak : null;
   }
 
   joinPublicGroup(groupId: string): void {

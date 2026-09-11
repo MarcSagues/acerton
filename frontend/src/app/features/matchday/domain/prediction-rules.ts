@@ -88,6 +88,38 @@ export function pointsForPrediction(
   return isPredictionHit(match, selection, false) === true ? 1 : 0;
 }
 
+export type MatchAccentTone = 'none' | 'pending' | 'hit' | 'partial' | 'miss';
+
+/**
+ * Color de la linea superior de la tarjeta de partido: sin pronostico no
+ * hay linea; con pronostico enviado y partido aun no acabado, en acento
+ * ("amarillo"); ya acabado, en verde si acierto, rojo si fallo. En modo
+ * resultado exacto un acierto de solo el ganador (2 pts, no 5) se deja en
+ * acento en vez de verde — un acierto a medias no es un acierto pleno.
+ */
+export function matchAccentTone(
+  match: Match,
+  selection: PredictionSelection | undefined,
+  exactScore: boolean,
+): MatchAccentTone {
+  const hasPrediction = exactScore
+    ? selection?.predictedHomeScore != null && selection?.predictedAwayScore != null
+    : !!(selection?.choice || selection?.doubleChanceOption);
+
+  if (!hasPrediction) return 'none';
+  if (match.status !== 'FINISHED' || !match.result) return 'pending';
+
+  if (exactScore) {
+    const points = exactScorePoints(match, selection!);
+    if (points == null) return 'pending';
+    if (points === 5) return 'hit';
+    if (points === 2) return 'partial';
+    return 'miss';
+  }
+
+  return isPredictionHit(match, selection, false) ? 'hit' : 'miss';
+}
+
 export function lockedMatchLabel(match: Match): string {
   if (match.status === 'POSTPONED') return 'Aplazado';
   if (match.status === 'CANCELLED') return 'Cancelado';

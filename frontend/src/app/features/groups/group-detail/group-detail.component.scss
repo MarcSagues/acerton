@@ -247,6 +247,7 @@
 
 .link-btn {
   display: block;
+  text-align: left;
   margin-top: 10px;
   background: none;
   border: 0;
@@ -338,6 +339,9 @@
 }
 
 .delete-group-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 10px;
   width: 100%;
   min-height: var(--p4-touch);
@@ -364,6 +368,9 @@
 }
 
 .cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 350px;
   min-height: var(--p4-touch);

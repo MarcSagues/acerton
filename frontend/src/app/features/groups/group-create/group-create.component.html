@@ -51,6 +51,9 @@
       <label class="field">
         <span class="field-label">Nombre del grupo <span class="required">· obligatorio</span></span>
         <input class="field-input" formControlName="name" placeholder="El grupo del domingo" />
+        @if (page.form.controls.name.invalid && page.form.controls.name.touched) {
+          <span class="hint error">Escribe un nombre de al menos 3 caracteres.</span>
+        }
       </label>
       <label class="field">
         <span class="field-label">Descripción <span class="required">· opcional</span></span>

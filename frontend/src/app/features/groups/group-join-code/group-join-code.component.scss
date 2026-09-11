@@ -69,6 +69,9 @@ h1 {
 }
 
 .cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   min-height: var(--p4-touch);
   border-radius: var(--p4-radius-sm);
