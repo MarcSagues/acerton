@@ -1,6 +1,9 @@
+:host {
+  display: block;
+}
+
 .switcher {
   width: 100%;
-  max-width: 350px;
   height: 54px;
   border-radius: 14px;
   background: var(--p4-surface);

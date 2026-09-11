@@ -6,44 +6,60 @@
 }
 
 .head-row {
-  padding: 12px 20px 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  padding: 8px 20px 0;
 }
 
-.back-btn {
-  width: var(--p4-touch);
-  height: var(--p4-touch);
+.back-link {
+  min-height: 48px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   background: none;
   border: 0;
+  padding: 0;
   color: var(--p4-muted);
-  margin-left: -12px;
+  font: 600 13px/1 var(--p4-font-ui);
+}
+
+.title-row {
+  padding: 6px 20px 0;
 }
 
 h1 {
   margin: 0;
-  font: 700 22px/1 var(--p4-font-display);
+  font: 700 26px/32px var(--p4-font-display);
 }
 
 .lead {
-  margin: 16px 20px 0;
-  font: 400 14px/1 var(--p4-font-ui);
+  margin: 10px 0 0;
+  font: 400 12px/17px var(--p4-font-ui);
   color: var(--p4-muted);
 }
 
 .form {
-  padding: 24px 20px 0;
+  padding: 22px 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
-.code-input {
-  min-height: var(--p4-touch);
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font: 600 12px/1 var(--p4-font-ui);
+}
+
+.required {
+  color: var(--p4-muted);
+  font-weight: 400;
+}
+
+.field-input {
+  min-height: 48px;
   border-radius: 12px;
   border: 1px solid var(--p4-border);
   background: var(--p4-surface);
@@ -54,15 +70,19 @@ h1 {
 }
 
 .cta {
+  width: 100%;
   min-height: var(--p4-touch);
   border-radius: var(--p4-radius-sm);
   font: 600 15px/1 var(--p4-font-ui);
 }
 
 .error {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--p4-error);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 15px;
 }
 
 .callout {

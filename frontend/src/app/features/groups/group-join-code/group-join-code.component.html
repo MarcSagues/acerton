@@ -1,20 +1,29 @@
 <div class="page">
   <div class="head-row">
-    <button type="button" class="back-btn" aria-label="Volver" (click)="page.goBack()">
+    <button type="button" class="back-link" (click)="page.goBack()">
       <piqo-svg icon="atras" size="20"></piqo-svg>
+      Grupos
     </button>
+  </div>
+  <div class="title-row">
     <h1>Unirse a un grupo</h1>
+    <p class="lead">Pide el código a quien ya está dentro. Son nueve caracteres.</p>
   </div>
 
-  <p class="lead">Introduce el código de invitación que te han compartido.</p>
-
   <form [formGroup]="page.form" (ngSubmit)="page.joinGroup()" class="form">
-    <input class="code-input mono" formControlName="inviteCode" placeholder="NQ5CQK93" maxlength="12" />
-    @if (page.errorMessage()) {
-      <p class="error">{{ page.errorMessage() }}</p>
-    }
+    <label class="field">
+      <span class="field-label">Código de invitación <span class="required">· obligatorio</span></span>
+      <input class="field-input mono" formControlName="inviteCode" placeholder="PIQO-0000" maxlength="12" />
+      @if (page.errorMessage()) {
+        <span class="error">
+          <piqo-svg icon="error" size="16"></piqo-svg>
+          {{ page.errorMessage() }}
+        </span>
+      }
+    </label>
+
     <button type="submit" class="piqo-primary cta" [disabled]="page.formLoading()">
-      {{ page.formLoading() ? 'Uniendo…' : 'Unirse' }}
+      {{ page.formLoading() ? 'Uniendo…' : 'Unirme al grupo' }}
     </button>
 
     <div class="callout info">

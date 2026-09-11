@@ -12,6 +12,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { Group, GroupMember } from '../../../core/models/group.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { competitionTrophyId } from '../../../shared/utils/competition-trophy';
 
 @Injectable()
 export class GroupDetailFacade {
@@ -61,6 +62,9 @@ export class GroupDetailFacade {
   });
 
   readonly savingMembership = signal(false);
+
+  /** true durante los 2s posteriores a un copiado con exito. */
+  readonly justCopiedCode = signal(false);
 
   readonly hasCompetitionChanges = computed(() => {
     const active = this.activeCompetitionIds();
@@ -121,6 +125,42 @@ export class GroupDetailFacade {
 
   isLocked(competitionId: string): boolean {
     return this.activeCompetitionIds().has(competitionId);
+  }
+
+  trophyId(competition: Competition): string | null {
+    return competitionTrophyId(competition.code);
+  }
+
+  competitionStatus(competition: Competition): { label: string; tone: 'success' | 'accent' | 'muted' } {
+    if (this.isLocked(competition.id)) {
+      return { label: 'Activa', tone: 'success' };
+    }
+    if (this.selectedCompetitionIds().has(competition.id)) {
+      return { label: 'Se añadirá', tone: 'accent' };
+    }
+    return this.isAdmin() ? { label: 'Disponible', tone: 'muted' } : { label: 'No disponible', tone: 'muted' };
+  }
+
+  roleLabel(member: GroupMember): string {
+    if (this.isOwnerRow(member)) return 'Creador';
+    return member.role === 'ADMIN' ? 'Admin' : 'Miembro';
+  }
+
+  copyCode(): void {
+    if (this.justCopiedCode()) return;
+    const group = this.group();
+    if (!group) return;
+    navigator.clipboard
+      ?.writeText(group.inviteCode)
+      .then(() => {
+        this.justCopiedCode.set(true);
+        setTimeout(() => this.justCopiedCode.set(false), 2000);
+      })
+      .catch(() => undefined);
+  }
+
+  goToInvite(): void {
+    this.router.navigate(['/groups', this.groupId, 'invite']);
   }
 
   toggleCompetition(competitionId: string): void {

@@ -7,11 +7,18 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PushNotificationsService } from '../../../core/services/push-notifications.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
-import { UserProfile } from '../../../core/models/profile.model';
+import { BadgesService } from '../../../core/services/badges.service';
+import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
 import { initials } from '../../../shared/utils/initials';
+import { badgeArtId } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
+
+export interface BadgePreviewItem {
+  badge: Badge;
+  earned: boolean;
+}
 
 /**
  * Vitrina de trofeos (HANDOFF §13/§18): 7 disenos fijos del kit. Piqo aun
@@ -20,13 +27,13 @@ import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-
  * conseguidos en vez de inventar datos de competiciones ganadas.
  */
 const TROPHIES: TrophyDetailData[] = [
-  { id: 'piqo', name: 'Copa Piqo' },
-  { id: 'champions', name: 'Champions League' },
-  { id: 'laliga', name: 'LaLiga' },
-  { id: 'bundesliga', name: 'Bundesliga' },
-  { id: 'ligue1', name: 'Ligue 1' },
-  { id: 'europa', name: 'Europa League' },
-  { id: 'seriea', name: 'Serie A' },
+  { id: 'piqo', name: 'Copa Piqo', count: 0 },
+  { id: 'champions', name: 'Champions League', count: 0 },
+  { id: 'laliga', name: 'LaLiga', count: 0 },
+  { id: 'bundesliga', name: 'Bundesliga', count: 0 },
+  { id: 'ligue1', name: 'Ligue 1', count: 0 },
+  { id: 'europa', name: 'Europa League', count: 0 },
+  { id: 'seriea', name: 'Serie A', count: 0 },
 ];
 
 @Injectable()
@@ -38,9 +45,26 @@ export class ProfilePageFacade {
   readonly pushNotifications = inject(PushNotificationsService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly tutorialService = inject(TutorialService);
+  private readonly badgesService = inject(BadgesService);
 
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);
+  private readonly badgeCatalog = signal<Badge[]>([]);
+
+  /** Hasta 5 insignias: primero las conseguidas, y de faltar se completa con las pendientes en gris. */
+  readonly badgePreview = computed<BadgePreviewItem[]>(() => {
+    const profile = this.profile();
+    if (!profile) return [];
+    const earnedCodes = new Set(profile.badges.map((b) => b.badge.code));
+    const withEarned = this.badgeCatalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));
+    const earned = withEarned.filter((b) => b.earned);
+    const pending = withEarned.filter((b) => !b.earned);
+    return [...earned, ...pending].slice(0, 5);
+  });
+
+  artId(code: string): string | null {
+    return badgeArtId(code);
+  }
 
   /**
    * Racha global (product-rules.md § "Rachas y estadisticas"): cada jornada
@@ -149,5 +173,6 @@ export class ProfilePageFacade {
       },
       error: () => this.loading.set(false),
     });
+    this.badgesService.getCatalog().subscribe((catalog) => this.badgeCatalog.set(catalog));
   }
 }

@@ -21,6 +21,7 @@ export class AuthPageFacade {
 
   readonly mode = signal<AuthMode>('login');
   readonly isRegister = computed(() => this.mode() === 'register');
+  readonly emailFormOpen = signal(false);
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly passwordVisible = signal(false);
@@ -43,6 +44,9 @@ export class AuthPageFacade {
   setMode(mode: AuthMode): void {
     this.mode.set(mode);
     this.errorMessage.set(null);
+    if (mode === 'login') {
+      this.emailFormOpen.set(false);
+    }
     const nameControl = this.form.controls.name;
     if (mode === 'register') {
       nameControl.setValidators([Validators.required, usernameValidator()]);
@@ -66,6 +70,16 @@ export class AuthPageFacade {
 
   togglePasswordVisibility(): void {
     this.passwordVisible.update((v) => !v);
+  }
+
+  openEmailForm(): void {
+    this.emailFormOpen.set(true);
+    this.errorMessage.set(null);
+  }
+
+  closeEmailForm(): void {
+    this.emailFormOpen.set(false);
+    this.errorMessage.set(null);
   }
 
   /**

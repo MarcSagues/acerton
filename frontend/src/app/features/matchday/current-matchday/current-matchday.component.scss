@@ -14,8 +14,6 @@
 
 .head-row {
   padding: 12px 20px 0;
-  display: flex;
-  justify-content: center;
 }
 
 .title-row {
@@ -101,13 +99,6 @@ h1 {
 
 .view-row {
   padding: 18px 20px 0;
-  display: flex;
-  justify-content: center;
-
-  app-segmented-control {
-    width: 100%;
-    max-width: 350px;
-  }
 }
 
 .ciclo-row {

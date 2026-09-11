@@ -1,46 +1,46 @@
-<div class="auth-page">
-  <div class="auth-content">
-    <piqo-svg logo size="140"></piqo-svg>
-    <h1>Mismos partidos.<br />Distintas lecturas.<br />Nuestro pique.</h1>
-    <p class="tagline">Pronostica con tu grupo, jornada a jornada. Se guarda al elegir.</p>
-
-    <div class="tabs">
-      <button type="button" class="tab" [class.active]="!page.isRegister()" (click)="page.setMode('login')">Entrar</button>
-      <button type="button" class="tab" [class.active]="page.isRegister()" (click)="page.setMode('register')">Crear cuenta</button>
+@if (page.isRegister()) {
+  <div class="page">
+    <div class="head-row">
+      <button type="button" class="back-link" (click)="page.setMode('login')">
+        <piqo-svg icon="atras" size="20"></piqo-svg>
+        Acceso
+      </button>
+    </div>
+    <div class="title-row">
+      <h1>Crear cuenta</h1>
+      <p class="lead">Tu nombre es el que verá tu grupo en la clasificación.</p>
     </div>
 
     <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
-      @if (page.isRegister()) {
-        <label class="field">
-          <span class="field-label">Nombre de usuario</span>
-          <input class="field-input" type="text" formControlName="name" autocomplete="username" maxlength="24" />
-        </label>
-        @if (page.nameHint(); as hint) {
-          <p class="error">{{ hint }}</p>
-        }
-      }
-
       <label class="field">
-        <span class="field-label">Email</span>
-        <input class="field-input" type="email" formControlName="email" autocomplete="email" />
+        <span class="field-label">Nombre visible <span class="required">· obligatorio</span></span>
+        <input class="field-input" type="text" formControlName="name" autocomplete="username" maxlength="24" placeholder="Alex" />
+        @if (page.nameHint(); as hint) {
+          <span class="hint error">{{ hint }}</span>
+        } @else {
+          <span class="hint">Podrás cambiarlo una vez cada 30 días.</span>
+        }
       </label>
 
       <label class="field">
-        <span class="field-label">Contraseña</span>
+        <span class="field-label">Correo <span class="required">· obligatorio</span></span>
+        <input class="field-input" type="email" formControlName="email" autocomplete="email" placeholder="tu@correo.com" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Contraseña <span class="required">· obligatorio</span></span>
         <div class="field-input password-input">
           <input
             [type]="page.passwordVisible() ? 'text' : 'password'"
             formControlName="password"
-            [autocomplete]="page.isRegister() ? 'new-password' : 'current-password'"
+            autocomplete="new-password"
+            placeholder="Mínimo 8 caracteres"
           />
           <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
             {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
           </button>
         </div>
       </label>
-      @if (page.isRegister()) {
-        <p class="hint">Mínimo 8 caracteres.</p>
-      }
 
       @if (page.errorMessage()) {
         <p class="error">{{ page.errorMessage() }}</p>
@@ -50,33 +50,58 @@
         @if (page.loading()) {
           <app-spinner [size]="20"></app-spinner>
         } @else {
-          {{ page.isRegister() ? 'Crear cuenta' : 'Entrar' }}
+          Crear cuenta
+        }
+      </button>
+    </form>
+  </div>
+} @else if (page.emailFormOpen()) {
+  <div class="page">
+    <div class="head-row">
+      <button type="button" class="back-link" (click)="page.closeEmailForm()">
+        <piqo-svg icon="atras" size="20"></piqo-svg>
+        Acceso
+      </button>
+    </div>
+    <div class="title-row">
+      <h1>Entrar con correo</h1>
+    </div>
+
+    <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
+      <label class="field">
+        <span class="field-label">Correo</span>
+        <input class="field-input" type="email" formControlName="email" autocomplete="email" placeholder="tu@correo.com" />
+      </label>
+
+      <label class="field">
+        <span class="field-label">Contraseña</span>
+        <div class="field-input password-input">
+          <input
+            [type]="page.passwordVisible() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
+            {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
+          </button>
+        </div>
+      </label>
+
+      @if (page.errorMessage()) {
+        <p class="error">{{ page.errorMessage() }}</p>
+      }
+
+      <button type="submit" class="piqo-primary cta" [disabled]="page.loading()">
+        @if (page.loading()) {
+          <app-spinner [size]="20"></app-spinner>
+        } @else {
+          Entrar
         }
       </button>
     </form>
 
-    <div class="divider">
-      <span></span>
-      <span class="divider-label">O</span>
-      <span></span>
-    </div>
-
     @if (page.isNativePlatform) {
-      <button type="button" class="google-btn" [disabled]="page.loading()" (click)="page.loginWithGoogleNative()">
-        <span class="google-dot">G</span>
-        Continuar con Google
-      </button>
-    } @else {
-      <a class="google-btn" [href]="page.googleLoginUrl" (click)="page.saveReturnUrlForGoogleRedirect()">
-        <span class="google-dot">G</span>
-        Continuar con Google
-      </a>
-    }
-
-    <p class="legal">Al continuar aceptas los términos<br />y la <a routerLink="/privacy">política de privacidad</a>.</p>
-
-    @if (page.isNativePlatform) {
-      <button type="button" class="ghost-link" [disabled]="page.runningDiagnostics()" (click)="page.runDiagnostics()">
+      <button type="button" class="ghost-link diagnostics-link" [disabled]="page.runningDiagnostics()" (click)="page.runDiagnostics()">
         {{ page.runningDiagnostics() ? 'Probando...' : 'Diagnóstico de red' }}
       </button>
       @if (page.diagnostics(); as result) {
@@ -84,4 +109,32 @@
       }
     }
   </div>
-</div>
+} @else {
+  <div class="access-page">
+    <piqo-svg logo size="190"></piqo-svg>
+    <h1>Mismos partidos. Distintas lecturas. Nuestro pique.</h1>
+    <p class="tagline">Pronostica con tu grupo, jornada a jornada. Se guarda al elegir.</p>
+    <div class="spacer"></div>
+    <div class="actions">
+      @if (page.isNativePlatform) {
+        <button type="button" class="piqo-primary cta" [disabled]="page.loading()" (click)="page.loginWithGoogleNative()">
+          Continuar con Google
+        </button>
+      } @else {
+        <a class="piqo-primary cta" [href]="page.googleLoginUrl" (click)="page.saveReturnUrlForGoogleRedirect()">
+          Continuar con Google
+        </a>
+      }
+      <button type="button" class="cta secondary" (click)="page.openEmailForm()">
+        <piqo-svg icon="correo" size="20"></piqo-svg>
+        Entrar con correo
+      </button>
+      <button type="button" class="cta link" (click)="page.setMode('register')">Crear una cuenta</button>
+    </div>
+    <p class="legal">Al continuar aceptas los términos y la <a routerLink="/privacy">política de privacidad</a> de Piqo.</p>
+
+    @if (page.errorMessage()) {
+      <p class="error">{{ page.errorMessage() }}</p>
+    }
+  </div>
+}

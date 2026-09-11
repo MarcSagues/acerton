@@ -31,13 +31,15 @@ export interface SegmentOption<T> {
   `,
   styles: [
     `
+      :host {
+        display: block;
+      }
       .seg {
         display: flex;
         padding: 4px;
         gap: 4px;
         border-radius: var(--p4-radius-md);
         background: var(--p4-surface);
-        border: 1px solid var(--p4-border);
       }
       .seg-btn {
         flex: 1;
