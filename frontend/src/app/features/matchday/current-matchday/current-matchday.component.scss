@@ -15,16 +15,36 @@
   margin-top: 24px;
 }
 
+.dark-head {
+  background: var(--surface-dark);
+  border-radius: 0 0 26px 26px;
+  padding-bottom: 4px;
+
+  /* .dark-head siempre es oscuro (marca), independiente del tema activo,
+     asi que los pills de estado usan un tratamiento champan/neutro fijo en
+     vez de los tokens --accent-soft/--surface-alt (pensados para ir sobre
+     una superficie clara). */
+  .pill-open {
+    background: rgba(210, 190, 148, 0.16);
+    border-color: rgba(210, 190, 148, 0.4);
+    color: var(--on-inverse-accent);
+  }
+
+  .pill-neutral {
+    background: rgba(241, 240, 234, 0.12);
+    color: var(--text-on-dark-secondary);
+  }
+}
+
 .head {
-  padding: 12px 16px 10px;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border);
 }
 
 .comp-switcher {
-  padding: 10px 16px 0;
+  padding: 12px 16px 0;
   display: flex;
   gap: 7px;
   overflow-x: auto;
@@ -41,19 +61,18 @@
   cursor: pointer;
 
   &.active {
-    background: var(--text-primary);
-    color: var(--bg);
+    background: var(--surface-dark);
+    color: var(--text-on-dark);
     border-color: transparent;
     font-weight: 600;
   }
 }
 
 .summary {
-  padding: 16px 16px 12px;
+  padding: 4px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  border-bottom: 1px solid var(--border);
 }
 
 .summary-top {
@@ -74,7 +93,7 @@
   text-align: center;
   font: 400 10px/1 var(--font-mono);
   letter-spacing: 0.1em;
-  color: var(--text-secondary);
+  color: var(--text-on-dark-secondary);
   text-transform: uppercase;
 }
 
@@ -84,8 +103,8 @@
   height: 26px;
   border-radius: 50%;
   border: none;
-  background: var(--surface-alt);
-  color: var(--text-secondary);
+  background: rgba(241, 240, 234, 0.1);
+  color: var(--text-on-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,31 +137,32 @@
   align-self: center;
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--on-inverse-accent);
   font-size: 10px;
   cursor: pointer;
   text-decoration: underline;
 }
 
 .headline {
-  font: 700 24px/1 var(--font-ui);
+  font: 700 24px/1 var(--font-display);
   letter-spacing: -0.01em;
+  color: var(--text-on-dark);
 
   /* "Se abre en": todavia no se puede predecir, se distingue en gris de
      "Cierra en" (accion posible ahora) para no confundir una cuenta atras
      con la otra. */
   &.pending {
-    color: var(--text-secondary);
+    color: var(--text-on-dark-secondary);
   }
 }
 
 .countdown {
   font: 700 24px/1 var(--font-mono);
-  color: var(--accent);
+  color: var(--on-inverse-accent);
   white-space: nowrap;
 
   &.pending {
-    color: var(--text-secondary);
+    color: var(--text-on-dark-secondary);
   }
 }
 
@@ -156,27 +176,27 @@
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: var(--surface-alt);
+  background: rgba(241, 240, 234, 0.15);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: var(--accent);
+  background: var(--on-inverse-accent);
   transition: width 0.2s ease;
 }
 
 .progress-label {
   font: 500 11px/1 var(--font-mono);
-  color: var(--text-secondary);
+  color: var(--text-on-dark-secondary);
   white-space: nowrap;
 }
 
 .live-points {
   margin-top: 8px;
   font-size: 11px;
-  color: var(--accent);
+  color: var(--on-inverse-accent);
 }
 
 .match-list {
@@ -472,7 +492,7 @@
   border: 1.5px solid var(--border-strong);
   background: var(--surface-alt-2);
   font: 700 10px/1 var(--font-mono);
-  color: #fff;
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -480,17 +500,20 @@
   &.hit {
     background: var(--accent);
     border-color: var(--accent);
+    color: var(--accent-on);
   }
 
   &.miss {
     background: var(--danger);
     border-color: var(--danger);
+    color: var(--text-on-dark);
   }
 }
 
 .badge.points.earned {
   background: var(--accent);
   border-color: var(--accent);
+  color: var(--accent-on);
 }
 
 .results-link {

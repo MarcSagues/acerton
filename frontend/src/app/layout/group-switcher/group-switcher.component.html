@@ -1,5 +1,5 @@
 @if (activeGroupService.activeGroup(); as g) {
-  <button class="switcher" [matMenuTriggerFor]="menu">
+  <button class="switcher" [class.on-dark]="onDark" [matMenuTriggerFor]="menu">
     <span class="avatar">{{ initials(g.name) }}</span>
     <span class="meta">
       <span class="name">{{ g.name }}</span>
@@ -22,7 +22,7 @@
     <a mat-menu-item routerLink="/groups">Ver todos los grupos</a>
   </mat-menu>
 } @else {
-  <a class="switcher empty" routerLink="/groups">
+  <a class="switcher empty" [class.on-dark]="onDark" routerLink="/groups">
     <span class="name">Unete o crea un grupo</span>
   </a>
 }

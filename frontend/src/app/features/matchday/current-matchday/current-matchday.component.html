@@ -9,16 +9,74 @@
   </div>
 } @else {
   <div class="page">
-    <header class="head">
-      <app-group-switcher></app-group-switcher>
-      @if (activeEntry(); as entry) {
-        @if (isLocked(entry)) {
-          <span class="pill pill-neutral">{{ entry.matchday.status === 'FINISHED' ? 'FINALIZADA' : 'CERRADA' }}</span>
-        } @else {
-          <span class="pill pill-open"><span class="pulse-dot"></span>ABIERTA</span>
+    <div class="dark-head">
+      <header class="head">
+        <app-group-switcher [onDark]="true"></app-group-switcher>
+        @if (activeEntry(); as entry) {
+          @if (isLocked(entry)) {
+            <span class="pill pill-neutral">{{ entry.matchday.status === 'FINISHED' ? 'FINALIZADA' : 'CERRADA' }}</span>
+          } @else {
+            <span class="pill pill-open"><span class="pulse-dot"></span>ABIERTA</span>
+          }
         }
+      </header>
+
+      @if (activeEntry(); as entry) {
+        <div class="summary">
+          <div class="eyebrow-row">
+            <button
+              class="nav-btn"
+              [disabled]="navigating() || entry.matchday.order <= 1"
+              (click)="navigatePrevious()"
+              title="Jornada anterior"
+            >
+              <span class="chevron chevron-left"></span>
+            </button>
+            <div class="eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</div>
+            <button
+              class="nav-btn"
+              [disabled]="navigating() || noNextAvailable()"
+              (click)="navigateNext()"
+              title="Jornada siguiente"
+            >
+              <span class="chevron chevron-right"></span>
+            </button>
+          </div>
+          @if (!isViewingLive()) {
+            <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
+          }
+          <div class="summary-top">
+            <div class="headline" [class.pending]="!isLocked(entry) && !isMatchdayOpenByTime()">
+              @if (isLocked(entry)) {
+                Cerrada
+              } @else if (!isMatchdayOpenByTime()) {
+                La jornada se abre en
+              } @else {
+                La jornada cierra en
+              }
+            </div>
+            @if (isLocked(entry)) {
+              <div class="countdown mono">{{ totalPoints() }} pts</div>
+            } @else if (!isMatchdayOpenByTime()) {
+              <div class="countdown mono pending">{{ opensInLabel() }}</div>
+            } @else {
+              <div class="countdown mono">{{ countdownLabel() }}</div>
+            }
+          </div>
+          <div class="progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" [style.width]="progressPct()"></div>
+            </div>
+            <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+          </div>
+          @if (!isLocked(entry) && anyMatchFinished()) {
+            <div class="live-points mono">
+              Llevas {{ totalPoints() }} {{ totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
+            </div>
+          }
+        </div>
       }
-    </header>
+    </div>
 
     @if (entries().length > 1) {
       <div class="comp-switcher">
@@ -31,60 +89,6 @@
     }
 
     @if (activeEntry(); as entry) {
-      <div class="summary">
-        <div class="eyebrow-row">
-          <button
-            class="nav-btn"
-            [disabled]="navigating() || entry.matchday.order <= 1"
-            (click)="navigatePrevious()"
-            title="Jornada anterior"
-          >
-            <span class="chevron chevron-left"></span>
-          </button>
-          <div class="eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</div>
-          <button
-            class="nav-btn"
-            [disabled]="navigating() || noNextAvailable()"
-            (click)="navigateNext()"
-            title="Jornada siguiente"
-          >
-            <span class="chevron chevron-right"></span>
-          </button>
-        </div>
-        @if (!isViewingLive()) {
-          <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
-        }
-        <div class="summary-top">
-          <div class="headline" [class.pending]="!isLocked(entry) && !isMatchdayOpenByTime()">
-            @if (isLocked(entry)) {
-              Cerrada
-            } @else if (!isMatchdayOpenByTime()) {
-              La jornada se abre en
-            } @else {
-              La jornada cierra en
-            }
-          </div>
-          @if (isLocked(entry)) {
-            <div class="countdown mono">{{ totalPoints() }} pts</div>
-          } @else if (!isMatchdayOpenByTime()) {
-            <div class="countdown mono pending">{{ opensInLabel() }}</div>
-          } @else {
-            <div class="countdown mono">{{ countdownLabel() }}</div>
-          }
-        </div>
-        <div class="progress-row">
-          <div class="progress-track">
-            <div class="progress-fill" [style.width]="progressPct()"></div>
-          </div>
-          <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
-        </div>
-        @if (!isLocked(entry) && anyMatchFinished()) {
-          <div class="live-points mono">
-            Llevas {{ totalPoints() }} {{ totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
-          </div>
-        }
-      </div>
-
       @if (isExactScore()) {
         <div class="exact-score-columns">
           <div class="exact-score-columns-fields">

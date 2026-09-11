@@ -6,6 +6,13 @@
   color: var(--text-secondary);
 }
 
+.dark-head {
+  background: var(--surface-dark);
+  border-radius: 0 0 26px 26px;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: 16px;
+}
+
 .head {
   padding: 14px 16px 12px;
   display: flex;
@@ -14,33 +21,34 @@
   gap: 12px;
 
   h1 {
-    font: 700 20px/1.1 var(--font-ui);
+    font: 700 24px/1.1 var(--font-display);
+    color: var(--text-on-dark);
     margin: 0;
   }
 
   .season-label {
     font-size: 10px;
-    color: var(--text-tertiary);
+    color: var(--text-on-dark-secondary);
     margin: 3px 0 0;
   }
 }
 
 .tabs {
-  margin: 0 16px 12px;
+  margin: 4px 16px 0;
   display: flex;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--surface);
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(241, 240, 234, 0.08);
 }
 
 .tab {
   flex: 1;
-  height: 34px;
-  border-radius: 9px;
+  height: 36px;
+  border-radius: 10px;
   border: none;
   background: transparent;
   font: 500 12px/1 var(--font-ui);
-  color: var(--text-secondary);
+  color: var(--text-on-dark-secondary);
   cursor: pointer;
 
   &.active {
@@ -68,8 +76,8 @@
   cursor: pointer;
 
   &.active {
-    background: var(--text-primary);
-    color: var(--bg);
+    background: var(--surface-dark);
+    color: var(--text-on-dark);
     border-color: transparent;
     font-weight: 600;
   }

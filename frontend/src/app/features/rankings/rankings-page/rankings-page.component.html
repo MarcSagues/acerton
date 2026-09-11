@@ -2,19 +2,21 @@
   <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
 } @else {
   <div class="page">
-    <div class="head" data-tutorial="rankings-head">
-      <div>
-        <h1>Clasificacion</h1>
-        @if (currentSeasonLabel(); as label) {
-          <p class="season-label mono">Temporada {{ label }}</p>
-        }
+    <div class="dark-head">
+      <div class="head" data-tutorial="rankings-head">
+        <div>
+          <h1>Clasificacion</h1>
+          @if (currentSeasonLabel(); as label) {
+            <p class="season-label mono">Temporada {{ label }}</p>
+          }
+        </div>
+        <app-group-switcher [onDark]="true"></app-group-switcher>
       </div>
-      <app-group-switcher></app-group-switcher>
-    </div>
 
-    <div class="tabs">
-      <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
-      <button class="tab" [class.active]="period() === 'TOTAL'" (click)="setPeriod('TOTAL')">Total</button>
+      <div class="tabs">
+        <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
+        <button class="tab" [class.active]="period() === 'TOTAL'" (click)="setPeriod('TOTAL')">Total</button>
+      </div>
     </div>
 
     <div class="comp-pills">

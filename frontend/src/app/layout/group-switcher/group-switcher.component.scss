@@ -51,6 +51,29 @@
   color: var(--accent);
 }
 
+/* Sobre una cabecera de marca (siempre oscura, independiente del tema). */
+.switcher.on-dark {
+  color: var(--text-on-dark);
+
+  .avatar {
+    background: rgba(241, 240, 234, 0.12);
+    border-color: transparent;
+    color: var(--on-inverse-accent);
+  }
+
+  .sub {
+    color: var(--text-on-dark-secondary);
+  }
+
+  .chevron {
+    color: var(--text-on-dark-secondary);
+  }
+
+  &.empty .name {
+    color: var(--on-inverse-accent);
+  }
+}
+
 .group-menu-item {
   display: flex;
   align-items: center;
