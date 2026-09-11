@@ -295,3 +295,96 @@ pendientes (merge a `main` del Sprint 3/4/5).
 (todo commiteado y empujado); los documentos de esta entrada
 (`roadmap.md`, `state.md`, `history.md`) se han editado en esta misma
 sesión, pendientes de commit en esa rama.
+
+---
+
+## 2026-09-12 (continuación) — Sprint 7, incremento 1 de avatares: catálogo de mascota + color
+
+**Qué se hizo:**
+
+- El usuario pidió empezar el tema de avatares del Sprint 7, aportando de
+  entrada la especificación exacta: colores de fondo a elegir, 13
+  imágenes de la mascota "Piqo" (carpeta `C:\Users\34655\Downloads\
+  piqopetimg`, 10 numeradas + 3 sueltas), y la posibilidad de elegir una
+  foto del carrete o la mascota con el fondo que se quiera.
+- Antes de escribir código: se inspeccionaron las 13 imágenes (dimensiones
+  muy dispares, 408×726 a 1254×1254, 1-1.6 MB cada una, fondo
+  transparente) y se comprobó que no existe ninguna infraestructura de
+  subida/almacenamiento de imágenes en el backend (sin `multer`, sin
+  S3/Cloudinary, Render sin disco persistente utilizable). Se decidió
+  dividir el trabajo: catálogo cerrado (mascota + color, sin dependencias
+  de infraestructura nueva) ahora; subida de foto propia aparte, bloqueada
+  hasta decidir proveedor de almacenamiento con el usuario (anotado en
+  `backlog.md`, no resuelto en esta sesión).
+- **Procesado de las 13 imágenes** con `sharp` (recorte de márgenes
+  transparentes, centrado y reescalado a 512×512 con la misma altura de
+  personaje en las 13 para que se vean uniformes en una rejilla, PNG
+  paletizado): de 1-1.6 MB a 55-68 KB cada una. Publicadas en
+  `frontend/public/assets/avatars/mascot/<id>.png` (no en `src/assets/`,
+  que no forma parte de los `assets` de `angular.json` — detectado porque
+  las imágenes daban 404 en el primer intento, con el input real siendo
+  `public/`).
+- **Backend**: `User.avatarBackground` (migración
+  `add_avatar_background`), catálogo cerrado en
+  `src/users/avatar-catalog.ts` (13 ids de mascota + 8 colores curados a
+  juego con la marca, ninguno de los tokens semánticos `--p4-*` para no
+  mezclar significado funcional con personalización), `UpdateAvatarDto`
+  validado con `class-validator` `@IsIn` contra ese catálogo cerrado (no
+  se aceptan URLs ni colores libres, justo porque no hay subida de foto
+  todavía), `GET /users/me/avatar-catalog` + `PATCH /users/me/avatar`,
+  `UsersService.updateAvatar`. `AuthService.register` asigna mascota y
+  color aleatorios sin ningún paso extra (`randomCatalogAvatar`); las
+  cuentas de Google no lo necesitan, ya llegan con su foto real.
+  `PublicUser`/`toPublicUser` ampliados con `avatarBackground`.
+- **Frontend**: modelos y servicio (`ProfileService.getAvatarCatalog`/
+  `updateAvatar`), componente compartido `app-avatar` (foto/mascota sobre
+  su color, o iniciales si no hay nada elegido) para no repetir esa
+  lógica en cada pantalla — sustituye el markup ad-hoc de `top-bar` y
+  añade la primera vez que Perfil respeta `avatarUrl` (antes siempre
+  mostraba iniciales, ignorando cualquier avatar guardado). Nueva pantalla
+  `/profile/avatar`: vista previa en vivo, swatches de color, rejilla de
+  13 mascotas, una casilla "Subir foto (próximamente)" visible pero
+  deshabilitada para no prometer algo que no existe todavía, botón
+  "Guardar avatar" deshabilitado sin cambios.
+- **Pruebas ejecutadas**: `npx tsc --noEmit` y `npx jest` completos del
+  backend en verde (139/139, 1 test nuevo de `updateAvatar`). `ng build`
+  (dev) sin errores. Verificado en vivo: backend reiniciado tras
+  regenerar Prisma Client (mismo bloqueo del binario nativo que en la
+  entrada anterior, mismos pasos para resolverlo), smoke test por API
+  directa (catálogo, guardar avatar, rechazo de valores fuera del
+  catálogo con 400, registro con asignación automática), y verificación
+  visual completa en navegador real: seleccionar mascota/color actualiza
+  la vista previa, guardar persiste y se refleja en Perfil y en la
+  cabecera tras volver/recargar. Un susto sin bug real: las 13 mascotas
+  parecían idénticas en la rejilla a simple vista en una captura
+  comprimida — se confirmó con un hash de píxeles por `canvas` en la
+  propia página que las 13 imágenes son distintas de verdad (mismo
+  personaje y paleta de color, poses sutilmente distintas a tamaño de
+  miniatura). **Aparte, sin relación con el encargo**: al ir a probar con
+  la cuenta real del usuario, Chrome autorellenó el formulario de login
+  con su email y contraseña reales guardados — no se usaron ni se
+  revelaron, se limpiaron los campos y se continuó con una cuenta de
+  prueba (`qa-piqo-avatar1@test.local`), luego borrada.
+- Reconciliado el frontend dev server: los assets nuevos en `public/`
+  necesitaron reiniciar `ng serve` (no basta con el hot-reload normal de
+  componentes) para dejar de dar 404 — anotado por si vuelve a pasar con
+  assets estáticos nuevos en el futuro.
+
+**Migraciones:** `20260911232322_add_avatar_background`, aditiva (sin
+pérdida de datos), aplicada contra la base de datos local de desarrollo.
+Pendiente aplicarla contra `dev`/`main` cuando se fusione la rama.
+
+**Bloqueos/preguntas dejadas abiertas:** proveedor de almacenamiento de
+imágenes para la subida de foto propia (ver `backlog.md`) — no bloquea el
+resto del sprint, solo esa tarea y las que dependen de ella.
+
+**Siguiente paso:** decisión del usuario — fusionar
+`feature/sprint-7-avatares` a `dev` (y aplicar la regla de Seguimiento en
+GitHub al hacerlo) o seguir añadiendo incrementos en la misma rama; y,
+por separado, decidir el proveedor de almacenamiento para poder empezar
+la subida de foto propia.
+
+**Cambios sin commit:** no en la rama `feature/sprint-7-avatares` (todo
+commiteado y empujado tras esta entrada); los documentos de esta entrada
+(`roadmap.md`, `state.md`, `history.md`, `backlog.md`) se han editado en
+esta misma sesión, incluidos en el mismo commit.

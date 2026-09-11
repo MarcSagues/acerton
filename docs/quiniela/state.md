@@ -39,12 +39,11 @@ por temporada. Ninguno de los dos se ha tocado desde el 2026-09-10.
 
 Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
-**Sprint 9 — Notificaciones**: **en curso**, primer incremento completo en
-la rama `feature/sprint-9-notificaciones` (creada a partir de `dev`, **no
-fusionada a `dev` todavía** — pendiente de autorización explícita del
-usuario para subirla). Ver `roadmap.md` Sprint 9 para el detalle exacto.
-Issue #14 actualizado con las casillas hechas (7 de 12), **sigue en Status
-"New features"** (el sprint no está completo).
+**Sprint 9 — Notificaciones**: **en curso**, primer incremento completo,
+mergeado a `dev` y empujado a `origin/dev` (con autorización explícita del
+usuario). Ver `roadmap.md` Sprint 9 para el detalle exacto. Issue #14
+actualizado con las casillas hechas (7 de 12), **sigue en Status "New
+features"** (el sprint no está completo).
 
 Pendiente del mismo sprint, en incrementos siguientes: aviso de apertura
 de jornada (necesita un disparador nuevo — hoy no existe ningún evento de
@@ -52,6 +51,18 @@ de jornada (necesita un disparador nuevo — hoy no existe ningún evento de
 partido individual terminado con puntos, agrupar el mismo partido jugado
 en varios grupos en un solo aviso, aviso de temporada/trofeos (bloqueado
 por Sprints 5-6), y la comprobación de regularidad del hosting.
+
+**Sprint 7 — Perfil y avatares**: **en curso**, primer incremento de
+avatares (catálogo de mascota + color, asignación automática al
+registrarse) completo en la rama `feature/sprint-7-avatares` (creada a
+partir de `dev`, **no fusionada a `dev` todavía** — pendiente de
+autorización explícita del usuario para subirla). El usuario aportó las
+13 imágenes de la mascota "Piqo" y pidió también color de fondo
+elegible + subir foto propia; la parte de foto propia queda bloqueada
+por una decisión de almacenamiento de imágenes sin tomar (ver
+`backlog.md`). Ver `roadmap.md` Sprint 7 para el detalle exacto. Issue
+#12 actualizado con las casillas hechas (4 de 8), **sigue en Status "New
+features"**.
 
 **Infraestructura — entorno dev/pre**: sin cambios desde el cierre
 anterior (ver `roadmap.md` para el plan completo) — `dev.acerton.app`
@@ -127,12 +138,25 @@ documentos por esto.
   unitarios nuevos/actualizados (`notifications.service.spec.ts`,
   `jobs.service.spec.ts`) + verificado en navegador real (cuenta nueva:
   toggle, recarga, mute de grupo). Sin verificar entrega real de push
-  (requiere Firebase configurado + dispositivo). Rama
-  `feature/sprint-9-notificaciones`, no fusionada a `dev` todavía.
+  (requiere Firebase configurado + dispositivo). Mergeado a `dev` y
+  empujado a `origin/dev`.
+- Sprint 7 (incremento 1 de avatares, 2026-09-12): catálogo cerrado de 13
+  mascotas + 8 colores de fondo (`User.avatarBackground`, migración
+  aplicada), `GET /users/me/avatar-catalog` + `PATCH /users/me/avatar`
+  con validación de catálogo cerrado en servidor, asignación aleatoria al
+  registrarse (`AuthService.register`), pantalla `/profile/avatar`,
+  componente compartido `app-avatar` (foto/mascota+color o iniciales)
+  usado en top-bar y Perfil. 1 test unitario nuevo
+  (`users.service.spec.ts`) + verificado en navegador real (cuenta nueva:
+  selección, guardado, persistencia) y por API directa (registro con
+  asignación automática, rechazo de `mascotId`/`background` fuera del
+  catálogo). Subida de foto propia explícitamente bloqueada (ver
+  `backlog.md`). Rama `feature/sprint-7-avatares`, no fusionada a `dev`
+  todavía.
 
 ## Siguiente paso concreto
 
-**Inmediato, del usuario**: dos decisiones pendientes, independientes
+**Inmediato, del usuario**: tres decisiones pendientes, independientes
 entre sí:
 
 1. Sigue pendiente desde el 2026-09-10 — probar Sprint 3, Sprint 4 y los
@@ -142,29 +166,36 @@ entre sí:
    todavía**. Los issues #8 y #9 ya están en Status "Test"; el #10
    (Sprint 5) se queda en "New features" hasta que el sprint entero esté
    completo.
-2. Nueva desde el 2026-09-12 — confirmar si se sube el incremento 1 del
-   Sprint 9 (`feature/sprint-9-notificaciones`) a `dev` para poder
-   probarlo ahí (dispara la regla de "Seguimiento en GitHub": marcar el
-   Project cuando se suba, aunque el issue #14 seguirá en "New features"
-   porque el sprint no queda completo con este incremento).
+2. Confirmar si se sube el incremento 1 de avatares del Sprint 7
+   (`feature/sprint-7-avatares`) a `dev` para poder probarlo ahí (dispara
+   la regla de "Seguimiento en GitHub": marcar el Project cuando se suba,
+   aunque el issue #12 seguirá en "New features" porque el sprint no
+   queda completo con este incremento).
+3. Decidir proveedor de almacenamiento de imágenes (coste, cuenta,
+   credenciales) para poder implementar "subir foto propia" del Sprint 7
+   — sin esto, esa tarea y las que dependen de ella (sustituir foto,
+   validar/limpiar metadatos) no se pueden empezar. Ver `backlog.md`.
 
 Después: siguientes incrementos del Sprint 5 (orden estable de jornadas,
 estadísticas agregadas), resto de tareas del Sprint 8 (alcance global de
-insignias, catálogo ampliado, favoritas, progreso numérico), o siguientes
+insignias, catálogo ampliado, favoritas, progreso numérico), siguientes
 incrementos del Sprint 9 (apertura de jornada, partido individual
-terminado, agrupar avisos entre grupos) — ver `roadmap.md` para el
-detalle de cada uno.
+terminado, agrupar avisos entre grupos), o el resto del Sprint 7 (perfil
+ajeno, historial entre dos usuarios) — ver `roadmap.md` para el detalle
+de cada uno.
 
 ## Bloqueos y preguntas pendientes
 
-Ver `backlog.md`. Sin cambios nuevos desde el cierre de las preguntas de
-Sprint 3 y la decisión de fin de temporada del Sprint 5.
+Ver `backlog.md`. Nuevo desde el 2026-09-12: proveedor de almacenamiento
+de imágenes para la subida de foto propia del Sprint 7 (sin resolver, no
+bloquea nada más — el resto del sprint sigue avanzando).
 
 ## Cambios sin commit
 
 No en `dev`: todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3
-del Sprint 5, y la sesión de rediseño visual completa (incluida la
-reconciliación de este documento) está commiteado y empujado a
-`origin/dev`. El incremento 1 del Sprint 9 está commiteado y empujado a
-`origin/feature/sprint-9-notificaciones`, una rama aparte que **todavía no
-se ha fusionado a `dev`** (pendiente de autorización explícita).
+del Sprint 5, el Sprint 9 (incremento 1), y la sesión de rediseño visual
+completa (incluida la reconciliación de este documento) está commiteado y
+empujado a `origin/dev`. El incremento 1 de avatares del Sprint 7 está
+commiteado y empujado a `origin/feature/sprint-7-avatares`, una rama
+aparte que **todavía no se ha fusionado a `dev`** (pendiente de
+autorización explícita).

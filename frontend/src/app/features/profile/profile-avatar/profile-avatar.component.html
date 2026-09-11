@@ -1,0 +1,79 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  <div class="page">
+    <div class="head-row">
+      <button type="button" class="back-btn" (click)="page.goBack()">
+        <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+      </button>
+    </div>
+    <div class="title-row">
+      <h1>Tu avatar</h1>
+      <p class="lead">Elige un color de fondo y una mascota de Piqo.</p>
+    </div>
+
+    <div class="preview-row">
+      <app-avatar
+        [url]="page.selectedMascotId() ? '/assets/avatars/mascot/' + page.selectedMascotId() + '.png' : null"
+        [background]="page.selectedBackground()"
+        [name]="''"
+        [size]="128"
+      ></app-avatar>
+    </div>
+
+    <div class="section-head">
+      <p class="eyebrow-sm">Color de fondo</p>
+    </div>
+    <div class="section">
+      <div class="swatches">
+        @for (color of page.backgrounds(); track color) {
+          <button
+            type="button"
+            class="swatch"
+            [style.background]="color"
+            [class.selected]="page.selectedBackground() === color"
+            [attr.aria-label]="'Color ' + color"
+            (click)="page.selectBackground(color)"
+          >
+            @if (page.selectedBackground() === color) {
+              <piqo-svg icon="check" size="16"></piqo-svg>
+            }
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="section-head">
+      <p class="eyebrow-sm">Mascota</p>
+    </div>
+    <div class="section">
+      <div class="mascot-grid">
+        @for (mascot of page.mascots(); track mascot.id) {
+          <button
+            type="button"
+            class="mascot-tile"
+            [style.background]="page.selectedBackground() || 'var(--p4-soft)'"
+            [class.selected]="page.selectedMascotId() === mascot.id"
+            (click)="page.selectMascot(mascot.id)"
+          >
+            <img [src]="mascot.url" alt="" />
+          </button>
+        }
+        <div class="mascot-tile upload-tile" aria-disabled="true">
+          <piqo-svg icon="camara" size="22"></piqo-svg>
+          <span>Subir foto<br />(próximamente)</span>
+        </div>
+      </div>
+    </div>
+
+    @if (page.error()) {
+      <p class="error section">{{ page.error() }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="piqo-primary cta" [disabled]="!page.hasChanges() || page.saving()" (click)="page.save()">
+        {{ page.saving() ? 'Guardando…' : 'Guardar avatar' }}
+      </button>
+    </div>
+  </div>
+}

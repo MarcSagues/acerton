@@ -10,6 +10,7 @@ import { LoginDto } from './dto/login.dto';
 import { AuthTokens, JwtAccessPayload, JwtRefreshPayload, PublicUser } from './auth.types';
 import { hashToken } from './token-hash.util';
 import { toPublicUser } from './public-user.util';
+import { mascotAssetPath, randomCatalogAvatar } from '../users/avatar-catalog';
 
 const SALT_ROUNDS = 12;
 
@@ -39,8 +40,15 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const { mascotId, background } = randomCatalogAvatar();
     const user = await this.prisma.user.create({
-      data: { email: dto.email, passwordHash, name: dto.name },
+      data: {
+        email: dto.email,
+        passwordHash,
+        name: dto.name,
+        avatarUrl: mascotAssetPath(mascotId),
+        avatarBackground: background,
+      },
     });
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);

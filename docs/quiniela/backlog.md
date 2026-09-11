@@ -39,6 +39,16 @@ marcarla resuelta) de aquí.
   No se ha investigado a fondo en esta sesión; si hiciera falta
   infraestructura de pago o un servicio adicional, requiere autorización
   explícita del usuario antes de contratarlo.
+- **Sprint 7 (subida de foto propia)**: no existe ningún almacenamiento de
+  imágenes hoy (sin S3/Cloudinary/similar, sin `multer`, Render sin disco
+  persistente utilizable). El catálogo de avatares (mascota + color) no lo
+  necesitaba porque son assets estáticos del propio frontend, pero "subir
+  una foto del carrete" sí requiere decidir un proveedor (coste, cuenta,
+  credenciales) antes de escribir código — igual que se hizo con el
+  entorno dev/pre (ver `roadmap.md` § Infraestructura). No investigado a
+  fondo en esta sesión: pendiente de traer opciones concretas (coste,
+  límites del plan gratuito si lo hay) cuando el usuario quiera retomar
+  este punto.
 
 ## Notas de contraste que no son bloqueantes pero conviene tener presentes
 

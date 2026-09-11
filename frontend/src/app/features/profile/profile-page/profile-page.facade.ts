@@ -9,7 +9,6 @@ import { TutorialService } from '../../../core/services/tutorial.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
-import { initials } from '../../../shared/utils/initials';
 import { badgeArtId } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
@@ -151,10 +150,6 @@ export class ProfilePageFacade {
       }
       this.authService.logout().subscribe(() => this.router.navigate(['/login']));
     });
-  }
-
-  initials(name: string): string {
-    return initials(name);
   }
 
   init(): void {

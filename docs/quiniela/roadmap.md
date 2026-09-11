@@ -201,17 +201,17 @@ ningún modelo de trofeo/premio en el schema actual.
 Probar todos los ejemplos de empates dados en `product-rules.md` y el
 caso del líder no elegible.
 
-## Sprint 7 — Perfil y avatares
+## Sprint 7 — Perfil y avatares 🟡 en curso (incremento 1 de avatares, 2026-09-12)
 
 | Tarea | Estado | Notas |
 |---|---|---|
 | Nombre bloqueado 7 días | ✅ web | `User.nameChangedAt` (backend) + `profile-page.component.html`: el input de nombre ya no se oculta cuando no se puede cambiar — se muestra `[disabled]` con el nombre actual dentro, y el hint "Ya lo has cambiado. Podrás hacerlo de nuevo el dd/MM/yyyy" debajo. Implementado durante el repaso visual Piqo 4.1 (rama `dev`, no como incremento explícito de este sprint), detectado al reconciliar el roadmap. Sin verificar iOS/Android. |
 | Restricción aplicada en servidor | ✅ | Ya existe (`UsersService.updateName`, según referenciado en el código). |
-| Catálogo de avatares predeterminados | ⬜ | Solo existe `User.avatarUrl` como string libre, sin catálogo. |
-| Asignación automática al registrarse | ⬜ | — |
-| Subida de foto, recorte, previsualización circular | ⬜ | — |
-| Sustituir foto o volver a avatar del catálogo | ⬜ | — |
-| Validar formato/tamaño y quitar metadatos privados (EXIF, etc.) | ⬜ | — |
+| Catálogo de avatares predeterminados | ✅ web | El usuario aportó 13 imágenes de la mascota "Piqo" (`C:\Users\34655\Downloads\piqopetimg`), procesadas con `sharp` (recortadas, centradas, 512×512, fondo transparente, ~55-68 KB cada una — el original pesaba hasta 1.6 MB) y servidas desde `frontend/public/assets/avatars/mascot/<id>.png`. Paleta cerrada de 8 colores de fondo a juego con la marca (champán/grafito + 6 tonos apagados complementarios, no los tokens semánticos `--p4-success` etc. para no mezclar significado funcional con personalización). Catálogo cerrado (no URLs/colores libres) validado en servidor (`class-validator` `@IsIn`) — ver nota de "Subida de foto" sobre por qué no se acepta aún cualquier imagen. `GET /users/me/avatar-catalog` expone la lista para que frontend y backend no diverjan. Nueva pantalla `/profile/avatar` (grid de mascotas + swatches de color + vista previa en vivo), enlazada desde el avatar de Perfil. Nuevo componente compartido `app-avatar` (foto/mascota + color, o iniciales si no hay nada elegido) usado en top-bar y Perfil — pendiente extenderlo a Tabla/miembros de grupo, que hoy siguen solo con iniciales. Verificado en navegador real (cuenta nueva): selección, vista previa, guardado, persistencia tras volver a Perfil y recargar. |
+| Asignación automática al registrarse | ✅ | `AuthService.register` asigna una mascota y un color aleatorios del catálogo (`randomCatalogAvatar`) sin ningún paso extra en el formulario. Las cuentas de Google no lo necesitan: ya llegan con la foto real de su perfil de Google. Verificado por API (registro real, `avatarUrl`/`avatarBackground` no nulos en la respuesta). |
+| Subida de foto, recorte, previsualización circular | 🔒 | Bloqueado por una decisión de infraestructura sin tomar: no existe ningún almacenamiento de imágenes hoy (sin S3/Cloudinary/similar configurado, sin `multer` ni librería de subida instalada) y Render (donde vive el backend) no tiene disco persistente utilizable para esto. La pantalla `/profile/avatar` ya deja un hueco visible ("Subir foto — próximamente") para no prometer algo que no hace. Antes de implementarlo hay que decidir proveedor y coste con el usuario, como se hizo con el entorno dev/pre. |
+| Sustituir foto o volver a avatar del catálogo | 🔒 | Depende de la subida de foto de arriba — hoy solo hay "avatar de catálogo", no hay "foto propia" que sustituir. |
+| Validar formato/tamaño y quitar metadatos privados (EXIF, etc.) | 🔒 | Depende de la subida de foto de arriba. |
 | Abrir perfiles desde nombre/avatar en Tabla | 🟡 | Hoy `rankings-page` ya navega a `matchday/:matchdayId/results/:userId` al pulsar una fila (`viewUserPicks`), que muestra los pronósticos de esa persona — pero no es una "página de perfil" con avatar/trofeos/estadísticas, es la vista de resultados de jornada ajena. |
 | Perfil ajeno (avatar, nombre, favoritas, trofeos, estadísticas, rachas) | ⬜ | No existe como pantalla propia todavía. |
 | Historial reciente entre dos usuarios del mismo grupo | 🟡 | El usuario indica que esta lógica ya existe — a confirmar qué es exactamente (posiblemente la vista de resultados de jornada ajena de arriba) y ajustar su presentación, sin reescribirla si ya funciona. |

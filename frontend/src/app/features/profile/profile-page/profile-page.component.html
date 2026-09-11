@@ -8,7 +8,15 @@
     </div>
 
     <div class="identity-row">
-      <span class="avatar">{{ page.initials(page.authService.currentUser()?.name ?? '') }}</span>
+      <a routerLink="/profile/avatar" class="avatar-link" aria-label="Cambiar avatar">
+        <app-avatar
+          [url]="page.authService.currentUser()?.avatarUrl ?? null"
+          [background]="page.authService.currentUser()?.avatarBackground ?? null"
+          [name]="page.authService.currentUser()?.name ?? ''"
+          [size]="64"
+        ></app-avatar>
+        <span class="avatar-edit-badge"><piqo-svg icon="camara" size="14"></piqo-svg></span>
+      </a>
       <span class="meta">
         <span class="name-row">
           <span class="name">{{ page.authService.currentUser()?.name }}</span>
