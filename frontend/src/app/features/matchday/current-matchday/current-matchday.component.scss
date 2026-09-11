@@ -286,6 +286,13 @@ h1 {
   margin-left: 6px;
   font: 700 13px/1 var(--p4-font-display);
   color: var(--p4-accent);
+
+  /* En la fila del segundo equipo (vista visual) va antes del nombre, no
+     despues: el espaciado se invierte para que quede pegado al numero. */
+  &:first-child {
+    margin-left: 0;
+    margin-right: 6px;
+  }
 }
 
 .crests-row {
@@ -300,17 +307,14 @@ h1 {
   min-width: 0;
   text-align: center;
   font: 600 12px/1 var(--p4-font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vs {
   font-size: 12px;
   color: var(--p4-muted);
-}
-
-.vs-result {
-  flex: none;
-  font: 700 15px/1 var(--p4-font-display);
-  color: var(--p4-text);
 }
 
 .wc-row {
@@ -424,16 +428,16 @@ h1 {
   display: none;
 }
 
-/* .score-widget agrupa la fila de etiquetas (fuera de la caja, nunca se
-   pintan de color) y la caja de resultado en si (la que cambia de borde/
-   fondo al guardar). Los dos usan el mismo gap para que L/V queden
-   alineadas justo encima de su numero. */
+/* .score-widget envuelve solo la caja de resultado (la que cambia de
+   borde/fondo al guardar): las etiquetas L/V flotan encima con position
+   absolute (ver .score-labels) para no formar parte de su caja, y asi no
+   contar en el align-items:center de .teams-row — sin esto el input
+   quedaba mas abajo que los nombres de equipo, desplazado por el alto de
+   la fila de etiquetas por encima. */
 .score-widget {
-  margin-top: 12px;
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
 
   /* En la vista "visual" va suelto a ancho completo de la tarjeta: sin
      esto se veria como una barra vacia. En "filas" ya es un item flex
@@ -445,18 +449,23 @@ h1 {
   }
 
   /* Resultado exacto en vista visual: sustituye al "VS" dentro de la
-     propia fila de escudos, como un item flex mas (sin margen propio ni
-     fila de etiquetas L/V, que aqui sobra al tener los nombres al lado). */
+     propia fila de escudos, como un item flex mas. */
   &.inline {
-    margin-top: 0;
     flex: none;
   }
 }
 
 .score-labels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  pointer-events: none;
 }
 
 .score-label {
@@ -519,6 +528,22 @@ h1 {
     background: var(--p4-error-bg);
   }
 
+  /* Resumen de resultado exacto una vez terminado el partido: mismo input
+     que antes de empezar, ahora deshabilitado y coloreado segun acierto
+     (matchAccentTone) igual que el borde superior de la tarjeta. */
+  &[data-tone='hit'] {
+    border-color: var(--p4-success);
+    background: var(--p4-success-bg);
+  }
+  &[data-tone='partial'] {
+    border-color: var(--p4-accent);
+    background: var(--p4-soft);
+  }
+  &[data-tone='miss'] {
+    border-color: var(--p4-error);
+    background: var(--p4-error-bg);
+  }
+
   &.saving::before {
     content: '';
     position: absolute;
@@ -532,6 +557,25 @@ h1 {
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
+  }
+}
+
+/* En modo revision (partido bloqueado/terminado) el input ya no se toca —
+   solo muestra tu pronostico coloreado — asi que puede ser mas pequeno para
+   dejar sitio al resultado real, que se muestra junto al nombre del equipo
+   (ver .team-score) y que si no queda demasiado apretado en la vista visual. */
+.score-widget.review {
+  .exact-score-box {
+    padding: 3px 6px;
+    gap: 3px;
+  }
+  .score-input {
+    width: 15px;
+    height: 20px;
+    font-size: 13px;
+  }
+  .score-sep {
+    font-size: 13px;
   }
 }
 
@@ -555,6 +599,11 @@ h1 {
   }
 
   appearance: textfield;
+
+  &:disabled {
+    opacity: 1;
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 .score-sep {
@@ -584,21 +633,18 @@ h1 {
   }
 }
 
-.marcador {
-  margin-left: auto;
-  font: 600 12px/1 var(--p4-font-ui);
-  color: var(--p4-text);
-}
-
 .points-badge {
   margin-left: auto;
   font: 700 13px/1 var(--p4-font-display);
   color: var(--p4-muted);
 
-  &.hit {
+  &[data-tone='hit'] {
     color: var(--p4-success);
   }
-  &.miss {
+  &[data-tone='partial'] {
+    color: var(--p4-accent);
+  }
+  &[data-tone='miss'] {
     color: var(--p4-error);
   }
 }

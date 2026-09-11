@@ -135,13 +135,13 @@
                 <div class="teams">
                   <span class="team-home">
                     {{ match.homeTeam }}
-                    @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                    @if (match.status === 'FINISHED') {
                       <span class="team-score mono">{{ match.homeScore }}</span>
                     }
                   </span>
                   <span class="team-away">
                     {{ match.awayTeam }}
-                    @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                    @if (match.status === 'FINISHED') {
                       <span class="team-score mono">{{ match.awayScore }}</span>
                     }
                   </span>
@@ -152,7 +152,7 @@
               <div class="crests-row">
                 <span class="team-name">
                   {{ match.homeTeam }}
-                  @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                  @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.homeScore }}</span>
                   }
                 </span>
@@ -162,10 +162,10 @@
                   <span class="vs mono">VS</span>
                 }
                 <span class="team-name">
-                  {{ match.awayTeam }}
-                  @if (match.status === 'FINISHED' && !page.isExactScore()) {
+                  @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.awayScore }}</span>
                   }
+                  {{ match.awayTeam }}
                 </span>
               </div>
               @if (!page.isExactScore()) {
@@ -175,21 +175,9 @@
 
             <div class="status-row">
               @if (match.status === 'FINISHED') {
-                @if (page.isExactScore()) {
-                  <piqo-svg [attr.icon]="page.isPickHit(match) ? 'check' : 'cerrar'" size="16" [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false"></piqo-svg>
-                  <span [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false">
-                    {{ page.pickLabel(match.id) ?? 'Sin pronostico' }} · {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
-                  </span>
-                  <span class="marcador mono">{{ match.homeScore }}-{{ match.awayScore }}</span>
-                } @else {
-                  <span
-                    class="points-badge mono"
-                    [class.hit]="page.isPickHit(match) === true"
-                    [class.miss]="page.isPickHit(match) === false"
-                  >
-                    {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
-                  </span>
-                }
+                <span class="points-badge mono" [attr.data-tone]="page.matchAccentTone(match)">
+                  {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
+                </span>
               } @else if (page.isMatchLocked(match)) {
                 <piqo-svg icon="candado" size="16"></piqo-svg>
                 <span>{{ page.matchLockedLabel(match) }}</span>
@@ -216,13 +204,24 @@
 
       <ng-template #choices let-match="match" let-wide="wide" let-crests="crests">
         @if (page.isMatchLocked(match) || !page.pickingAllowed()) {
-          @if (crests) {
-            @if (page.visualScoreLabel(match); as label) {
-              <span class="vs-result mono">{{ label }}</span>
-            } @else {
-              <span class="vs mono">VS</span>
-            }
-          } @else if (!page.isExactScore() && match.status === 'FINISHED') {
+          @if (page.isExactScore()) {
+            <div class="score-widget review" [class.standalone]="wide" [class.inline]="crests">
+              @if (!crests) {
+                <div class="score-labels">
+                  <span class="score-label mono">L</span>
+                  <span class="score-sep-spacer mono">-</span>
+                  <span class="score-label mono">V</span>
+                </div>
+              }
+              <div class="exact-score-box" [attr.data-tone]="page.matchAccentTone(match)">
+                <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedHomeScore" />
+                <span class="score-sep mono">-</span>
+                <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedAwayScore" />
+              </div>
+            </div>
+          } @else if (crests) {
+            <span class="vs mono">VS</span>
+          } @else if (match.status === 'FINISHED') {
             <div class="options" [class.wide]="wide" role="group" aria-label="Resultado del partido">
               @for (opt of oneXTwoOptions; track opt.v) {
                 <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>

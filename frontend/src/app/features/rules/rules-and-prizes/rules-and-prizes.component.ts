@@ -1,12 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RulesAndPrizesFacade } from './rules-and-prizes.facade';
 
 @Component({
   selector: 'app-rules-and-prizes',
   standalone: true,
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [RulesAndPrizesFacade],
   templateUrl: './rules-and-prizes.component.html',
   styleUrl: './rules-and-prizes.component.scss',

@@ -1,40 +1,45 @@
-<main class="page notices-page">
-  <header class="notices-head">
-    <a routerLink="/profile" class="back" aria-label="Volver a Perfil"><mat-icon>arrow_back</mat-icon></a>
-    <div>
-      <p class="eyebrow">PIQO</p>
-      <h1>Avisos</h1>
-    </div>
-    <button type="button" class="read-all" (click)="page.markAllRead()">Leer todo</button>
-  </header>
+<div class="page">
+  <div class="head-row">
+    <a routerLink="/profile" class="back-btn" aria-label="Volver a Perfil">
+      <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+    </a>
+    <button type="button" class="link" (click)="page.markAllRead()">Leer todo</button>
+  </div>
+  <div class="title-row">
+    <h1>Avisos</h1>
+  </div>
 
-  <aside class="demo-note">
-    <mat-icon>science</mat-icon>
-    <div><strong>Vista de demostracion</strong><span>Estos avisos son datos mock y no representan actividad real de tu cuenta.</span></div>
-  </aside>
+  <div class="callout info">
+    <piqo-svg icon="info" size="20"></piqo-svg>
+    <span><strong>Vista de demostración.</strong> Estos avisos son datos de ejemplo y no representan actividad real de tu cuenta.</span>
+  </div>
 
   <div class="notice-groups">
     @for (period of page.periods; track period) {
-      <section class="notice-group">
+      <div class="section-head">
         <h2>{{ period }}</h2>
-        <div class="notice-list">
+      </div>
+      <div class="section">
+        <div class="notices">
           @for (notice of page.notices(); track notice.id) {
             @if (notice.period === period) {
-              <article class="notice" [class.unread]="notice.unread">
-                <div class="notice-icon" [attr.data-kind]="notice.kind"><mat-icon>{{ notice.icon }}</mat-icon></div>
+              <div class="notice-card" [class.unread]="notice.unread">
+                <piqo-svg [attr.icon]="notice.icon" size="20" [attr.data-kind]="notice.kind"></piqo-svg>
                 <div class="notice-copy">
                   <div class="notice-title-row">
-                    <h3>{{ notice.title }}</h3>
-                    @if (notice.unread) { <span class="unread-dot" aria-label="No leido"></span> }
+                    <p class="notice-title">{{ notice.title }}</p>
+                    @if (notice.unread) {
+                      <span class="unread-dot" aria-label="No leído"></span>
+                    }
                   </div>
-                  <p>{{ notice.body }}</p>
-                  <time>{{ notice.time }}</time>
+                  <p class="notice-body">{{ notice.body }}</p>
+                  <p class="notice-time mono">{{ notice.time }}</p>
                 </div>
-              </article>
+              </div>
             }
           }
         </div>
-      </section>
+      </div>
     }
   </div>
-</main>
+</div>

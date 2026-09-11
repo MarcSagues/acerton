@@ -378,11 +378,6 @@ export class CurrentMatchdayFacade {
     return predictionLabel(this.predictionState.get(matchId), this.isExactScore());
   }
 
-  /** null si el partido no ha terminado o no enviaste pronostico. */
-  isPickHit(match: Match): boolean | null {
-    return isPredictionHit(match, this.predictionState.get(match.id), this.isExactScore());
-  }
-
   /**
    * Como colorear cada opcion (1/X/2) del resumen de resultado 1X2 una vez
    * terminado el partido: 'hit' la que elegiste y acertaste, 'miss' la que
@@ -422,21 +417,6 @@ export class CurrentMatchdayFacade {
       return 'none';
     }
     return domainMatchAccentTone(match, state, this.isExactScore());
-  }
-
-  /**
-   * Reemplaza el "VS" de la vista visual en modo resultado exacto: el
-   * marcador real una vez terminado el partido, o tu pronostico segun lo
-   * vas escribiendo mientras tanto. null si no hay nada que mostrar
-   * todavia (partido no empezado y sin pronostico).
-   */
-  visualScoreLabel(match: Match): string | null {
-    if (match.status === 'FINISHED' && match.homeScore != null && match.awayScore != null) {
-      return `${match.homeScore} - ${match.awayScore}`;
-    }
-    const state = this.predictionState.get(match.id);
-    if (state?.predictedHomeScore == null || state?.predictedAwayScore == null) return null;
-    return `${state.predictedHomeScore} - ${state.predictedAwayScore}`;
   }
 
   /**

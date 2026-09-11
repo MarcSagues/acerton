@@ -38,7 +38,6 @@ h1 {
 
 .lead {
   margin: 10px 0 0;
-  max-width: 350px;
   font: 400 12px/17px var(--p4-font-ui);
   color: var(--p4-muted);
 }
@@ -58,9 +57,9 @@ h1 {
 
 .badge-card {
   width: 100%;
-  max-width: 350px;
   border-radius: 20px;
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 18px;
   display: flex;
   align-items: center;

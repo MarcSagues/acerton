@@ -28,8 +28,8 @@ export interface BadgePreviewItem {
  * conseguidos en vez de inventar datos de competiciones ganadas.
  */
 const TROPHIES: TrophyDetailData[] = [
-  { id: 'piqo', name: 'Copa Piqo', count: 0 },
-  { id: 'champions', name: 'Champions League', count: 0 },
+  { id: 'piqo', name: 'Copa Piqo', count: 1 },
+  { id: 'champions', name: 'Champions League', count: 3 },
   { id: 'laliga', name: 'LaLiga', count: 0 },
   { id: 'bundesliga', name: 'Bundesliga', count: 0 },
   { id: 'ligue1', name: 'Ligue 1', count: 0 },

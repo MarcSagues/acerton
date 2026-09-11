@@ -1,12 +1,14 @@
 @if (page.loading()) {
-  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
   <div class="page">
-    <div class="dark-head">
-      <header class="head">
-        <a routerLink="/rankings" class="back">&lt; Clasificacion</a>
-      </header>
-      <h1>Historico de jornadas</h1>
+    <div class="head-row">
+      <a routerLink="/rankings" class="back-btn">
+        <piqo-svg icon="atras" size="20"></piqo-svg>Clasificación
+      </a>
+    </div>
+    <div class="title-row">
+      <h1>Histórico de jornadas</h1>
       @if (page.history(); as h) {
         <p class="sub mono">{{ page.competitionName }} · {{ h.matchdays.length }} jornadas jugadas</p>
       }
@@ -14,45 +16,49 @@
 
     @if (page.history(); as h) {
       @if (h.matchdays.length === 0) {
-        <p class="empty">Todavia no hay ninguna jornada finalizada de esta competicion.</p>
+        <app-empty-state
+          icon="historial"
+          title="Todavía no hay jornadas"
+          text="Todavía no hay ninguna jornada finalizada de esta competición."
+        ></app-empty-state>
       } @else {
-        <div class="content">
-          @for (entry of h.matchdays; track entry.matchdayId) {
-            <div class="row" (click)="page.openMatchday(entry.matchdayId)">
-              <div class="order-badge">
-                <span class="order-n mono">{{ entry.order }}</span>
-                <span class="order-label mono">JORN</span>
-              </div>
-              <div class="meta">
-                @if (entry.winner) {
-                  <div class="title">Gano {{ page.isMine(entry.winner.userId) ? 'tu' : entry.winner.name }}</div>
-                } @else {
-                  <div class="title">Sin ganador registrado</div>
-                }
-                <div class="note mono">
-                  @if (entry.myPoints === null) {
-                    No participaste
+        <div class="section">
+          <div class="rows">
+            @for (entry of h.matchdays; track entry.matchdayId) {
+              <button type="button" class="row" (click)="page.openMatchday(entry.matchdayId)">
+                <span class="order-badge">
+                  <span class="order-n mono">{{ entry.order }}</span>
+                  <span class="order-label mono">JORN</span>
+                </span>
+                <span class="meta">
+                  @if (entry.winner) {
+                    <span class="title">Ganó {{ page.isMine(entry.winner.userId) ? 'tú' : entry.winner.name }}</span>
                   } @else {
-                    Tu puntuacion: {{ entry.myPoints }}
+                    <span class="title">Sin ganador registrado</span>
                   }
-                </div>
-              </div>
-              <div class="pts">
-                <div class="pts-value mono" [class.accent]="entry.winner && page.isMine(entry.winner.userId)">
-                  {{ entry.myPoints ?? '-' }}
-                </div>
-                <div class="pts-label mono">tus pts</div>
-              </div>
-            </div>
-          }
+                  <span class="note mono">
+                    @if (entry.myPoints === null) {
+                      No participaste
+                    } @else {
+                      Tu puntuación: {{ entry.myPoints }}
+                    }
+                  </span>
+                </span>
+                <span class="pts">
+                  <span class="pts-value mono" [class.accent]="entry.winner && page.isMine(entry.winner.userId)">
+                    {{ entry.myPoints ?? '-' }}
+                  </span>
+                  <span class="pts-label mono">tus pts</span>
+                </span>
+              </button>
+            }
+          </div>
         </div>
 
-        <div class="averages">
-          <p class="mono">
-            Media del grupo: {{ h.groupAverage !== null ? (h.groupAverage | number: '1.1-1') : '-' }} puntos por
-            jornada. Tu media: {{ h.userAverage !== null ? (h.userAverage | number: '1.1-1') : '-' }}.
-          </p>
-        </div>
+        <p class="footnote">
+          Media del grupo: {{ h.groupAverage !== null ? (h.groupAverage | number: '1.1-1') : '-' }} puntos por
+          jornada. Tu media: {{ h.userAverage !== null ? (h.userAverage | number: '1.1-1') : '-' }}.
+        </p>
       }
     }
   </div>
