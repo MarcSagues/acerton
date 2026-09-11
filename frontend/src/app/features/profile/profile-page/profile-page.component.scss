@@ -275,24 +275,6 @@ h2 {
   font: 600 13px/1 var(--p4-font-ui);
 }
 
-.notif-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.notif-meta {
-  flex: 1;
-}
-
-.activate-btn {
-  flex: none;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font: 600 12px/1 var(--p4-font-ui);
-}
-
 .settings-link {
   display: flex;
   align-items: center;

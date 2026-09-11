@@ -115,46 +115,10 @@
     </div>
 
     <div class="section">
-      <div class="card notif-card">
-        <div class="notif-meta">
-          <p class="card-title">Notificaciones push</p>
-          @if (!page.pushNotifications.supported) {
-            <p class="hint mono">Este navegador no las soporta.</p>
-          } @else if (!page.pushNotifications.configured) {
-            <p class="hint mono">No configuradas en este entorno.</p>
-          } @else if (page.pushNotifications.permission() === 'granted') {
-            <p class="hint mono">Reflejan el permiso real: activadas en este navegador.</p>
-          } @else if (page.pushNotifications.permission() === 'denied') {
-            <p class="hint mono">Bloqueadas en los permisos del navegador.</p>
-          } @else {
-            <p class="hint mono">Avisa antes del cierre de jornada y cuando hay resultados.</p>
-          }
-          @if (page.pushNotifications.error()) {
-            <p class="error mono">{{ page.pushNotifications.error() }}</p>
-          }
-        </div>
-        @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'granted' && page.pushNotifications.permission() !== 'denied') {
-          <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.enablePushNotifications()">
-            {{ page.pushNotifications.loading() ? 'Activando…' : 'Activar' }}
-          </button>
-        }
-      </div>
-    </div>
-
-    <div class="section">
       <a class="card settings-link" routerLink="/profile/appearance">
         <div>
           <p class="card-title">Apariencia</p>
           <p class="hint mono">Claro, oscuro o según el sistema</p>
-        </div>
-        <piqo-svg icon="flecha" size="18"></piqo-svg>
-      </a>
-    </div>
-    <div class="section">
-      <a class="card settings-link" routerLink="/notifications">
-        <div>
-          <p class="card-title">Avisos</p>
-          <p class="hint mono">Bandeja de actividad y recordatorios</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>

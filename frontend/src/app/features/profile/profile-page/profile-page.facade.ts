@@ -4,7 +4,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { PushNotificationsService } from '../../../core/services/push-notifications.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
 import { BadgesService } from '../../../core/services/badges.service';
@@ -28,7 +27,6 @@ export class ProfilePageFacade {
   private readonly router = inject(Router);
   private readonly dialog = inject(PiqoDialogService);
   readonly authService = inject(AuthService);
-  readonly pushNotifications = inject(PushNotificationsService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly tutorialService = inject(TutorialService);
   private readonly badgesService = inject(BadgesService);
@@ -108,10 +106,6 @@ export class ProfilePageFacade {
       name !== current.name &&
       validateUsername(this.nameInput()) === null
     );
-  }
-
-  enablePushNotifications(): void {
-    this.pushNotifications.enable();
   }
 
   /** Repetir el tutorial no reinicia el flag del backend, solo lo vuelve a mostrar desde Tabla. */
