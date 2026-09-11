@@ -1,8 +1,8 @@
 {
-  "name": "Quiniela",
-  "short_name": "Quiniela",
-  "theme_color": "#0E1114",
-  "background_color": "#0E1114",
+  "name": "Piqo",
+  "short_name": "Piqo",
+  "theme_color": "#F1F0EA",
+  "background_color": "#F1F0EA",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

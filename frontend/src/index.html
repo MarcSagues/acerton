@@ -2,16 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Quiniela</title>
+  <title>Piqo</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0E1114">
+  <meta name="theme-color" content="#F1F0EA">
 
   <!--
     Loader estatico, sin depender de Angular ni de styles.css: pinta al
@@ -25,49 +25,50 @@
     #boot-loader {
       position: fixed;
       inset: 0;
-      background: #0e1114;
-      color: #f2f4f3;
+      background: #f1f0ea;
+      color: #121619;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 20px;
-      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       z-index: 9999;
     }
     #boot-loader .boot-mark {
       width: 52px;
       height: 52px;
-      border-radius: 15px;
-      background: #12b76a;
-      color: #0e1114;
+      border-radius: 17px;
+      background: #d2be94;
+      color: #121619;
       display: flex;
       align-items: center;
       justify-content: center;
-      font: 700 18px/1 'JetBrains Mono', ui-monospace, monospace;
+      font: 800 20px/1 'Manrope', sans-serif;
+      letter-spacing: -2px;
     }
     #boot-loader .boot-track {
       width: 160px;
       height: 4px;
       border-radius: 2px;
-      background: #1e242b;
+      background: rgba(18, 22, 25, 0.1);
       overflow: hidden;
     }
     #boot-loader .boot-fill {
       height: 100%;
       width: 0%;
       border-radius: 2px;
-      background: #12b76a;
+      background: #d2be94;
       animation: boot-progress 40s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
     }
     #boot-loader .boot-label {
-      font: 400 11px/1.4 'JetBrains Mono', ui-monospace, monospace;
-      color: #8c949b;
+      font: 600 11px/1.4 'Inter', system-ui, sans-serif;
+      color: rgba(18, 22, 25, 0.5);
       letter-spacing: 0.04em;
     }
     #boot-loader .boot-hint {
-      font: 400 10px/1.5 'Space Grotesk', system-ui, sans-serif;
-      color: #5e666d;
+      font: 400 10px/1.5 'Inter', system-ui, sans-serif;
+      color: rgba(18, 22, 25, 0.4);
       max-width: 220px;
       text-align: center;
       opacity: 0;
@@ -116,7 +117,7 @@
 <body class="mat-typography">
   <app-root>
     <div id="boot-loader">
-      <div class="boot-mark">1X2</div>
+      <div class="boot-mark">pq</div>
       <div class="boot-track"><div class="boot-fill"></div></div>
       <div class="boot-label">CARGANDO</div>
       <div class="boot-hint">El servidor puede tardar unos segundos en despertar</div>

@@ -9,7 +9,7 @@
 .bottom-nav {
   display: flex;
   border-top: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
   max-width: 480px;
   margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
@@ -17,47 +17,44 @@
 
 .item {
   flex: 1;
-  padding: 14px 0 16px;
+  padding: 12px 0 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  border-top: 2px solid transparent;
-  margin-top: -1px;
+  gap: 6px;
   cursor: pointer;
 }
 
 .item.active {
-  border-top-color: var(--accent);
-
   .label {
-    color: var(--accent);
+    color: var(--text-primary);
     font-weight: 600;
   }
 
   .icon-matchday {
-    border-color: var(--accent);
+    border-color: var(--text-primary);
     .tick {
-      background: var(--accent);
+      background: var(--text-primary);
     }
   }
   .icon-groups .circle.c1 {
-    border-color: var(--accent);
+    border-color: var(--text-primary);
   }
   .icon-groups .circle.c2 {
-    background: var(--accent);
+    background: var(--text-primary);
+    opacity: 1;
   }
   .icon-table .bar {
-    background: var(--accent);
+    background: var(--text-primary);
   }
   .icon-profile .head,
   .icon-profile .body {
-    border-color: var(--accent);
+    border-color: var(--text-primary);
   }
 }
 
 .label {
-  font: 500 10px/1.2 var(--font-ui);
+  font: 500 10.5px/1.2 var(--font-ui);
   color: var(--text-tertiary);
 }
 

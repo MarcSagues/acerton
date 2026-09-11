@@ -1,3 +1,20 @@
+.head:not(.public-head) {
+  padding: calc(env(safe-area-inset-top) + 18px) 20px 20px;
+  background: var(--surface-dark);
+  border-radius: 0 0 28px 28px;
+  margin-bottom: 4px;
+
+  h1 {
+    font: 700 26px/1.1 var(--font-display);
+    color: var(--text-on-dark);
+    margin: 0 0 4px;
+  }
+
+  .sub {
+    color: var(--text-on-dark-secondary);
+  }
+}
+
 .head {
   padding: 16px 16px 14px;
 
@@ -112,7 +129,7 @@
 }
 
 .name {
-  font: 600 15px/1.2 var(--font-ui);
+  font: 700 15px/1.2 var(--font-display);
 }
 
 .active-badge {
@@ -204,7 +221,7 @@
   padding-top: 4px;
 
   h2 {
-    font: 700 16px/1.2 var(--font-ui);
+    font: 700 16px/1.2 var(--font-display);
     margin: 0 0 3px;
   }
 }
@@ -260,7 +277,7 @@
   padding: 18px 18px 28px;
 
   h2 {
-    font: 700 18px/1.2 var(--font-ui);
+    font: 700 18px/1.2 var(--font-display);
     margin: 0 0 6px;
   }
 }

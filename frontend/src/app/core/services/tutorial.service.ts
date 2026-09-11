@@ -27,7 +27,7 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
       id: 'tabla',
       route: '/rankings',
       target: '[data-tutorial="rankings-head"]',
-      title: 'Bienvenido a Quiniela',
+      title: 'Bienvenido a Piqo',
       body: 'Esta es la Tabla: aqui ves la clasificacion general del grupo, quien va primero y cuantos puntos lleva cada uno.',
       placement: 'bottom',
       advanceOn: 'manual',
