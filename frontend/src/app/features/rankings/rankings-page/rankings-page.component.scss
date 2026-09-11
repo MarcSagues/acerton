@@ -7,7 +7,8 @@
 }
 
 .dark-head {
-  background: var(--surface-dark);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   border-radius: 0 0 26px 26px;
   padding-top: env(safe-area-inset-top);
   padding-bottom: 16px;
@@ -22,13 +23,13 @@
 
   h1 {
     font: 700 24px/1.1 var(--font-display);
-    color: var(--text-on-dark);
+    color: var(--text-primary);
     margin: 0;
   }
 
   .season-label {
     font-size: 10px;
-    color: var(--text-on-dark-secondary);
+    color: var(--text-secondary);
     margin: 3px 0 0;
   }
 }
@@ -38,7 +39,8 @@
   display: flex;
   padding: 4px;
   border-radius: 14px;
-  background: rgba(241, 240, 234, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .tab {
@@ -48,7 +50,7 @@
   border: none;
   background: transparent;
   font: 500 12px/1 var(--font-ui);
-  color: var(--text-on-dark-secondary);
+  color: var(--text-secondary);
   cursor: pointer;
 
   &.active {
@@ -59,7 +61,8 @@
 }
 
 .comp-pills {
-  padding: 0 16px 14px;
+  margin-top: 10px;
+  padding: 0 16px;
   display: flex;
   gap: 7px;
   overflow-x: auto;
@@ -76,8 +79,8 @@
   cursor: pointer;
 
   &.active {
-    background: var(--surface-dark);
-    color: var(--text-on-dark);
+    background: var(--surface);
+    color: var(--text-primary);
     border-color: transparent;
     font-weight: 600;
   }
@@ -90,7 +93,7 @@
 }
 
 .my-row {
-  margin: 0 16px 12px;
+  margin: 16px 16px 12px;
   border-radius: var(--radius-md);
   background: var(--accent-bg);
   border: 1px solid var(--accent-border);

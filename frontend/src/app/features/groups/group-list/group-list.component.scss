@@ -1,17 +1,18 @@
 .head:not(.public-head) {
   padding: calc(env(safe-area-inset-top) + 18px) 20px 20px;
-  background: var(--surface-dark);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   border-radius: 0 0 28px 28px;
   margin-bottom: 4px;
 
   h1 {
     font: 700 26px/1.1 var(--font-display);
-    color: var(--text-on-dark);
+    color: var(--text-primary);
     margin: 0 0 4px;
   }
 
   .sub {
-    color: var(--text-on-dark-secondary);
+    color: var(--text-secondary);
   }
 }
 

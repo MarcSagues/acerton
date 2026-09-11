@@ -16,24 +16,10 @@
 }
 
 .dark-head {
-  background: var(--surface-dark);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   border-radius: 0 0 26px 26px;
   padding-bottom: 4px;
-
-  /* .dark-head siempre es oscuro (marca), independiente del tema activo,
-     asi que los pills de estado usan un tratamiento champan/neutro fijo en
-     vez de los tokens --accent-soft/--surface-alt (pensados para ir sobre
-     una superficie clara). */
-  .pill-open {
-    background: rgba(210, 190, 148, 0.16);
-    border-color: rgba(210, 190, 148, 0.4);
-    color: var(--on-inverse-accent);
-  }
-
-  .pill-neutral {
-    background: rgba(241, 240, 234, 0.12);
-    color: var(--text-on-dark-secondary);
-  }
 }
 
 .head {
@@ -93,7 +79,7 @@
   text-align: center;
   font: 400 10px/1 var(--font-mono);
   letter-spacing: 0.1em;
-  color: var(--text-on-dark-secondary);
+  color: var(--text-secondary);
   text-transform: uppercase;
 }
 
@@ -103,8 +89,8 @@
   height: 26px;
   border-radius: 50%;
   border: none;
-  background: rgba(241, 240, 234, 0.1);
-  color: var(--text-on-dark);
+  background: var(--surface);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -137,7 +123,7 @@
   align-self: center;
   background: none;
   border: none;
-  color: var(--on-inverse-accent);
+  color: var(--accent-secondary);
   font-size: 10px;
   cursor: pointer;
   text-decoration: underline;
@@ -146,23 +132,23 @@
 .headline {
   font: 700 24px/1 var(--font-display);
   letter-spacing: -0.01em;
-  color: var(--text-on-dark);
+  color: var(--text-primary);
 
   /* "Se abre en": todavia no se puede predecir, se distingue en gris de
      "Cierra en" (accion posible ahora) para no confundir una cuenta atras
      con la otra. */
   &.pending {
-    color: var(--text-on-dark-secondary);
+    color: var(--text-secondary);
   }
 }
 
 .countdown {
   font: 700 24px/1 var(--font-mono);
-  color: var(--on-inverse-accent);
+  color: var(--accent-secondary);
   white-space: nowrap;
 
   &.pending {
-    color: var(--text-on-dark-secondary);
+    color: var(--text-secondary);
   }
 }
 
@@ -176,27 +162,28 @@
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: rgba(241, 240, 234, 0.15);
+  background: var(--surface);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: var(--on-inverse-accent);
+  background: var(--accent-secondary);
   transition: width 0.2s ease;
 }
 
 .progress-label {
   font: 500 11px/1 var(--font-mono);
-  color: var(--text-on-dark-secondary);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .live-points {
   margin-top: 8px;
   font-size: 11px;
-  color: var(--on-inverse-accent);
+  color: var(--accent-secondary);
 }
 
 .match-list {

@@ -51,26 +51,27 @@
   color: var(--accent-secondary);
 }
 
-/* Sobre una cabecera de marca (siempre oscura, independiente del tema). */
+/* Sobre la cabecera de una pantalla (superficie --surface-2): el avatar usa
+   --surface solido para destacar sobre ese fondo, en vez de mezclarse con el. */
 .switcher.on-dark {
-  color: var(--text-on-dark);
+  color: var(--text-primary);
 
   .avatar {
-    background: rgba(241, 240, 234, 0.12);
-    border-color: transparent;
-    color: var(--on-inverse-accent);
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--accent-secondary);
   }
 
   .sub {
-    color: var(--text-on-dark-secondary);
+    color: var(--text-secondary);
   }
 
   .chevron {
-    color: var(--text-on-dark-secondary);
+    color: var(--text-secondary);
   }
 
   &.empty .name {
-    color: var(--on-inverse-accent);
+    color: var(--accent-secondary);
   }
 }
 

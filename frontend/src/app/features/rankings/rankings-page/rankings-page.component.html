@@ -17,16 +17,18 @@
         <button class="tab" [class.active]="period() === 'WEEKLY'" (click)="setPeriod('WEEKLY')">Semanal</button>
         <button class="tab" [class.active]="period() === 'TOTAL'" (click)="setPeriod('TOTAL')">Total</button>
       </div>
-    </div>
 
-    <div class="comp-pills">
-      @if (hasMultipleCompetitions() && period() !== 'WEEKLY') {
-        <button class="comp-pill" [class.active]="scope() === 'general'" (click)="setScope('general')">General</button>
-      }
-      @for (competition of activeCompetitions(); track competition.id) {
-        <button class="comp-pill" [class.active]="scope() === competition.id" (click)="setScope(competition.id)">
-          {{ competition.name }}
-        </button>
+      @if (hasMultipleCompetitions()) {
+        <div class="comp-pills">
+          @if (period() !== 'WEEKLY') {
+            <button class="comp-pill" [class.active]="scope() === 'general'" (click)="setScope('general')">General</button>
+          }
+          @for (competition of activeCompetitions(); track competition.id) {
+            <button class="comp-pill" [class.active]="scope() === competition.id" (click)="setScope(competition.id)">
+              {{ competition.name }}
+            </button>
+          }
+        </div>
       }
     </div>
 

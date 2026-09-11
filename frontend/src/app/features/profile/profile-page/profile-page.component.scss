@@ -6,7 +6,8 @@
 }
 
 .dark-head {
-  background: var(--surface-dark);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   border-radius: 0 0 26px 26px;
   padding-top: env(safe-area-inset-top);
   padding-bottom: 20px;
@@ -23,23 +24,24 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: rgba(241, 240, 234, 0.12);
+  background: var(--surface);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   font: 800 18px/1 var(--font-display);
-  color: var(--on-inverse-accent);
+  color: var(--accent-secondary);
   flex: none;
 }
 
 .name {
   font: 700 19px/1.15 var(--font-display);
-  color: var(--text-on-dark);
+  color: var(--text-primary);
 }
 
 .email {
   font-size: 11px;
-  color: var(--text-on-dark-secondary);
+  color: var(--text-secondary);
   margin-top: 3px;
 }
 
@@ -59,22 +61,23 @@
 .stat-tile {
   flex: 1;
   border-radius: var(--radius-md);
-  background: rgba(241, 240, 234, 0.07);
+  background: var(--surface);
+  border: 1px solid var(--border);
   padding: 12px;
 }
 
 .stat-value {
   font: 700 22px/1;
-  color: var(--text-on-dark);
+  color: var(--text-primary);
 
   &.accent {
-    color: var(--on-inverse-accent);
+    color: var(--accent-secondary);
   }
 }
 
 .stat-label {
   font-size: 9px;
-  color: var(--text-on-dark-secondary);
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
