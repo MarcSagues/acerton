@@ -46,6 +46,10 @@ export interface MatchPredictionState extends PredictionSelection {
   progressFrame: number | null;
 }
 
+const VIEW_STORAGE_KEY = 'piqo-jornada-vista';
+
+export type MatchdayView = 'filas' | 'visual';
+
 @Injectable()
 export class CurrentMatchdayFacade {
   private readonly activeGroupService = inject(ActiveGroupService);
@@ -55,6 +59,9 @@ export class CurrentMatchdayFacade {
   private readonly wildcardsService = inject(WildcardsService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Filas/Visual: "visual" es el valor inicial, se recuerda en el dispositivo por separado del tema (HANDOFF §6). */
+  readonly view = signal<MatchdayView>(this.readStoredView());
 
   readonly loading = signal(true);
   readonly entries = signal<CurrentMatchdayEntry[]>([]);
@@ -146,6 +153,53 @@ export class CurrentMatchdayFacade {
     const entry = this.activeEntry();
     if (!entry || entry.matchday.matches.length === 0) return '0%';
     return `${Math.round((this.doneCount() / entry.matchday.matches.length) * 100)}%`;
+  }
+
+  setView(view: MatchdayView): void {
+    this.view.set(view);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+      // Privado/sin storage: la vista vuelve a "visual" la proxima vez, no es grave.
+    }
+  }
+
+  private readStoredView(): MatchdayView {
+    try {
+      return localStorage.getItem(VIEW_STORAGE_KEY) === 'filas' ? 'filas' : 'visual';
+    } catch {
+      return 'visual';
+    }
+  }
+
+  /** Texto de cabecera segun el ciclo de 4 estados de la jornada (HANDOFF §9). */
+  cicloTitulo(entry: CurrentMatchdayEntry): string {
+    if (entry.matchday.status === 'FINISHED') return `Finalizada · ${entry.competition.name} J${entry.matchday.order}`;
+    if (this.isLocked(entry)) return 'Cerrada · en juego';
+    if (!this.isMatchdayOpenByTime()) return 'Próxima · abre en';
+    return 'Abierta · cierra en';
+  }
+
+  cicloMeta(entry: CurrentMatchdayEntry): string {
+    if (entry.matchday.status === 'FINISHED') {
+      return `${this.totalPoints()} ${this.totalPoints() === 1 ? 'punto' : 'puntos'}`;
+    }
+    if (this.isLocked(entry)) return `${this.totalPoints()} pts en juego`;
+    if (!this.isMatchdayOpenByTime()) return this.opensInLabel();
+    return this.countdownLabel();
+  }
+
+  /** Aviso de estado bajo la cabecera: warning si el cierre esta cerca, error si fallo el ultimo guardado, info en el resto. */
+  cicloAviso(entry: CurrentMatchdayEntry): { text: string; tone: 'warning' | 'error' | 'info' } | null {
+    if (this.isLocked(entry) || !this.pickingAllowed()) return null;
+    const anyError = entry.matchday.matches.some((m) => this.stateFor(m.id).error);
+    if (anyError) {
+      return { text: 'No se ha guardado algun pronostico. Revisa tu conexion y reintenta.', tone: 'error' };
+    }
+    if (this.doneCount() < entry.matchday.matches.length) {
+      return { text: 'Se guarda automaticamente al elegir. Puedes editarlo hasta el cierre.', tone: 'info' };
+    }
+    return { text: `Cierra en ${this.countdownLabel()}. Puedes editar tus elecciones hasta entonces.`, tone: 'warning' };
   }
 
   constructor() {
