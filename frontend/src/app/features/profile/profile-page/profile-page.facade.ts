@@ -15,27 +15,12 @@ import { badgeArtId } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
 import { BadgeDetailDialogComponent, BadgeDetailData } from '../badge-detail-dialog.component';
+import { TROPHIES } from '../domain/trophies';
 
 export interface BadgePreviewItem {
   badge: Badge;
   earned: boolean;
 }
-
-/**
- * Vitrina de trofeos (HANDOFF §13/§18): 7 disenos fijos del kit. Piqo aun
- * no tiene un modelo de datos real para trofeos ("Para Copa Piqo falta
- * fijar el criterio"), asi que se muestran todos honestamente como no
- * conseguidos en vez de inventar datos de competiciones ganadas.
- */
-const TROPHIES: TrophyDetailData[] = [
-  { id: 'piqo', name: 'Copa Piqo', count: 1 },
-  { id: 'champions', name: 'Champions League', count: 3 },
-  { id: 'laliga', name: 'LaLiga', count: 0 },
-  { id: 'bundesliga', name: 'Bundesliga', count: 0 },
-  { id: 'ligue1', name: 'Ligue 1', count: 0 },
-  { id: 'europa', name: 'Europa League', count: 0 },
-  { id: 'seriea', name: 'Serie A', count: 0 },
-];
 
 @Injectable()
 export class ProfilePageFacade {

@@ -1,0 +1,61 @@
+<div class="page">
+  <div class="head-row">
+    <a routerLink="/profile" class="back-btn" aria-label="Volver a Perfil">
+      <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+    </a>
+  </div>
+  <div class="title-row">
+    <p class="eyebrow">{{ page.trophyName() }}</p>
+    <h1>Temporada {{ page.year() }}</h1>
+  </div>
+
+  <div class="section">
+    <div class="callout info">
+      <piqo-svg icon="info" size="20"></piqo-svg>
+      <span><strong>Vista de demostración.</strong> Esta clasificación y este historial son datos de ejemplo: Piqo todavía no guarda un histórico real de temporadas ganadas.</span>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-n mono">01</span>
+    <div>
+      <p class="eyebrow-sm">Al cerrar la temporada</p>
+      <h2>Clasificación final</h2>
+    </div>
+  </div>
+  <div class="section">
+    <div class="rows">
+      @for (row of page.standings(); track row.position) {
+        <div class="row" [class.me]="row.isMe">
+          <span class="pos mono">{{ row.position }}</span>
+          <span class="name">{{ row.isMe ? 'Tú · ' + row.name : row.name }}</span>
+          <span class="pts mono">{{ row.points }} pts</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="section-head">
+    <span class="section-n mono">02</span>
+    <div>
+      <p class="eyebrow-sm">Jornada a jornada</p>
+      <h2>Historial de la temporada</h2>
+    </div>
+  </div>
+  <div class="section">
+    <div class="rows">
+      @for (matchday of page.matchdays(); track matchday.order) {
+        <div class="row">
+          <span class="order-badge">
+            <span class="order-n mono">{{ matchday.order }}</span>
+            <span class="order-label mono">JORN</span>
+          </span>
+          <span class="meta">
+            <span class="title">Ganó {{ matchday.winnerName }}</span>
+            <span class="note mono">Tu puntuación: {{ matchday.myPoints }}</span>
+          </span>
+        </div>
+      }
+    </div>
+  </div>
+</div>

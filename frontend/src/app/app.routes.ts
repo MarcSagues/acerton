@@ -181,6 +181,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile/trophies/:trophyId/:year',
+        loadComponent: () =>
+          import('./features/profile/trophy-season/trophy-season.component').then(
+            (m) => m.TrophySeasonComponent,
+          ),
+      },
+      {
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/notifications-page/notifications-page.component').then(
