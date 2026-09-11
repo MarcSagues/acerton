@@ -3,7 +3,7 @@ import { Component, signal } from '@angular/core';
 const STORAGE_KEY = 'acerton.noRealMoneyNotice.v1';
 
 /**
- * Aviso modal, mostrado una vez por dispositivo, de que Acerton no implica
+ * Aviso modal, mostrado una vez por dispositivo, de que Piqo no implica
  * dinero real: ni apuestas, ni premios en metalico, ni pago por participar.
  * Se monta globalmente (ver app.component.html) para que aparezca sobre
  * cualquier pantalla nada mas abrir la app, incluida la landing publica que

@@ -80,7 +80,7 @@ export class PushNotificationsService {
         resolve(false);
       });
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        const title = notification.title ?? 'Quiniela';
+        const title = notification.title ?? 'Piqo';
         const body = notification.body ?? '';
         // Alerta nativa centrada en vez del banner del sistema (desactivado
         // en capacitor.config.ts) para que no compita con el nuestro.
@@ -121,7 +121,7 @@ export class PushNotificationsService {
     await firstValueFrom(this.profileService.registerNotificationToken(token));
 
     onMessage(messaging, (payload) => {
-      const title = payload.notification?.title ?? 'Quiniela';
+      const title = payload.notification?.title ?? 'Piqo';
       const body = payload.notification?.body ?? '';
       this.snackBar.open(`${title}: ${body}`, 'Cerrar', { duration: 5000 });
     });
