@@ -200,6 +200,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notifications/preferences',
+        loadComponent: () =>
+          import('./features/notifications/notification-settings/notification-settings.component').then(
+            (m) => m.NotificationSettingsComponent,
+          ),
+      },
+      {
         path: 'rules',
         loadComponent: () =>
           import('./features/rules/rules-and-prizes/rules-and-prizes.component').then(

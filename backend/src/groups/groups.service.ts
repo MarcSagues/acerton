@@ -208,6 +208,25 @@ export class GroupsService {
     }
   }
 
+  /**
+   * Silencia/reactiva los avisos de este grupo solo para quien lo pide
+   * (product-rules.md "Notificaciones": opcion de silenciar grupos). No
+   * requiere ser admin: cualquier miembro decide esto sobre su propia
+   * membresia.
+   */
+  async setMuted(groupId: string, userId: string, muted: boolean): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('No perteneces a este grupo');
+    }
+    await this.prisma.groupMembership.update({
+      where: { userId_groupId: { userId, groupId } },
+      data: { mutedNotifications: muted },
+    });
+  }
+
   async assertIsAdmin(groupId: string, userId: string): Promise<void> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },

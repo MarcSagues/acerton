@@ -9,25 +9,31 @@ import { BadgesService } from '../badges/badges.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SeasonsService } from '../seasons/seasons.service';
 import { shouldSendReminder } from '../matchdays/matchday.util';
+import { NotificationPreferenceFields } from '../notifications/notification-preferences.service';
 
-type ReminderField = 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
+type ReminderField = 'reminder24hSentAt' | 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
 
 interface ReminderTier {
   field: ReminderField;
   windowMs: number;
   urgencyLabel: string;
+  /** Preferencia de cuenta que gobierna esta franja (product-rules.md: seleccion multiple, independientes entre si). */
+  preferenceField: keyof NotificationPreferenceFields;
 }
 
 /**
- * Tres avisos escalonados antes del cierre de una jornada, cada uno
- * independiente (se dispara como mucho una vez por jornada). Se comprueban
- * de la mas lejana a la mas cercana; cada uno solo llega a quien todavia no
- * ha completado su quiniela en ese momento.
+ * Cuatro avisos escalonados antes del cierre de una jornada, cada uno
+ * independiente (se dispara como mucho una vez por jornada, y cada usuario
+ * decide por separado que franjas quiere recibir — ver
+ * NotificationPreference). Se comprueban de la mas lejana a la mas cercana;
+ * cada uno solo llega a quien todavia no ha completado su quiniela en ese
+ * momento y tiene esa franja concreta activada.
  */
 const REMINDER_TIERS: ReminderTier[] = [
-  { field: 'reminder5hSentAt', windowMs: 5 * 60 * 60 * 1000, urgencyLabel: '5 horas' },
-  { field: 'reminder1hSentAt', windowMs: 60 * 60 * 1000, urgencyLabel: '1 hora' },
-  { field: 'reminder30mSentAt', windowMs: 30 * 60 * 1000, urgencyLabel: '30 minutos' },
+  { field: 'reminder24hSentAt', windowMs: 24 * 60 * 60 * 1000, urgencyLabel: '24 horas', preferenceField: 'reminder24h' },
+  { field: 'reminder5hSentAt', windowMs: 5 * 60 * 60 * 1000, urgencyLabel: '5 horas', preferenceField: 'reminder5h' },
+  { field: 'reminder1hSentAt', windowMs: 60 * 60 * 1000, urgencyLabel: '1 hora', preferenceField: 'reminder1h' },
+  { field: 'reminder30mSentAt', windowMs: 30 * 60 * 1000, urgencyLabel: '30 minutos', preferenceField: 'reminder30m' },
 ];
 
 @Injectable()
@@ -117,6 +123,7 @@ export class JobsService implements OnApplicationBootstrap {
             matchday.id,
             matchday.name,
             tier.urgencyLabel,
+            tier.preferenceField,
           );
         }
 
@@ -214,7 +221,10 @@ export class JobsService implements OnApplicationBootstrap {
     });
 
     for (const gc of groupCompetitions) {
-      await this.badgesService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
+      const newlyAwarded = await this.badgesService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
+      for (const { userId, badgeName } of newlyAwarded) {
+        await this.notificationsService.notifyBadgeEarned(userId, badgeName);
+      }
       await this.notificationsService.notifyMatchdayFinished(gc.groupId, matchdayId, matchdayName);
     }
   }

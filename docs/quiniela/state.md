@@ -39,6 +39,20 @@ por temporada. Ninguno de los dos se ha tocado desde el 2026-09-10.
 
 Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
+**Sprint 9 — Notificaciones**: **en curso**, primer incremento completo en
+la rama `feature/sprint-9-notificaciones` (creada a partir de `dev`, **no
+fusionada a `dev` todavía** — pendiente de autorización explícita del
+usuario para subirla). Ver `roadmap.md` Sprint 9 para el detalle exacto.
+Issue #14 actualizado con las casillas hechas (7 de 12), **sigue en Status
+"New features"** (el sprint no está completo).
+
+Pendiente del mismo sprint, en incrementos siguientes: aviso de apertura
+de jornada (necesita un disparador nuevo — hoy no existe ningún evento de
+"jornada abierta" que un cron pueda detectar, ver `roadmap.md`), aviso de
+partido individual terminado con puntos, agrupar el mismo partido jugado
+en varios grupos en un solo aviso, aviso de temporada/trofeos (bloqueado
+por Sprints 5-6), y la comprobación de regularidad del hosting.
+
 **Infraestructura — entorno dev/pre**: sin cambios desde el cierre
 anterior (ver `roadmap.md` para el plan completo) — `dev.acerton.app`
 funcionando, pendiente subir producción a Render Starter y Cloudflare
@@ -105,23 +119,41 @@ documentos por esto.
   ver reconciliación).
 - Sprint 8: popup de insignia con % real de usuarios (2026-09-12, ver
   reconciliación).
+- Sprint 9 (incremento 1, 2026-09-12): `NotificationPreference` +
+  `GroupMembership.mutedNotifications` (migración aplicada y probada
+  contra la base de datos real de desarrollo), pantalla `/notifications/
+  preferences`, recordatorios de cierre con 4 franjas independientes,
+  jornada terminada con posición real, insignia conseguida. 10 tests
+  unitarios nuevos/actualizados (`notifications.service.spec.ts`,
+  `jobs.service.spec.ts`) + verificado en navegador real (cuenta nueva:
+  toggle, recarga, mute de grupo). Sin verificar entrega real de push
+  (requiere Firebase configurado + dispositivo). Rama
+  `feature/sprint-9-notificaciones`, no fusionada a `dev` todavía.
 
 ## Siguiente paso concreto
 
-**Inmediato, del usuario**: sigue pendiente decidir sobre el mismo punto
-del 2026-09-10 — probar Sprint 3, Sprint 4 y los incrementos 1-3 del
-Sprint 5 (temporadas, elegibilidad, racha global) en local o en
-`dev.acerton.app`, y confirmar si se mergea a `main`. Todo sigue en `dev`,
-empujado a `origin/dev`, **no mergeado a `main` todavía**. Los issues #8 y
-#9 ya están en Status "Test"; el #10 (Sprint 5) se queda en "New features"
-hasta que el sprint entero esté completo.
+**Inmediato, del usuario**: dos decisiones pendientes, independientes
+entre sí:
 
-Después (o en paralelo si el usuario prefiere seguir avanzando mientras
-decide sobre el merge): siguientes incrementos del Sprint 5 (orden estable
-de jornadas, estadísticas agregadas) o resto de tareas del Sprint 8
-(alcance global de insignias, catálogo ampliado, favoritas, progreso
-numérico) — ver `roadmap.md` para el detalle. Preguntado explícitamente al
-usuario el 2026-09-12 qué prefiere antes de elegir una de las dos.
+1. Sigue pendiente desde el 2026-09-10 — probar Sprint 3, Sprint 4 y los
+   incrementos 1-3 del Sprint 5 (temporadas, elegibilidad, racha global)
+   en local o en `dev.acerton.app`, y confirmar si se mergea a `main`.
+   Todo sigue en `dev`, empujado a `origin/dev`, **no mergeado a `main`
+   todavía**. Los issues #8 y #9 ya están en Status "Test"; el #10
+   (Sprint 5) se queda en "New features" hasta que el sprint entero esté
+   completo.
+2. Nueva desde el 2026-09-12 — confirmar si se sube el incremento 1 del
+   Sprint 9 (`feature/sprint-9-notificaciones`) a `dev` para poder
+   probarlo ahí (dispara la regla de "Seguimiento en GitHub": marcar el
+   Project cuando se suba, aunque el issue #14 seguirá en "New features"
+   porque el sprint no queda completo con este incremento).
+
+Después: siguientes incrementos del Sprint 5 (orden estable de jornadas,
+estadísticas agregadas), resto de tareas del Sprint 8 (alcance global de
+insignias, catálogo ampliado, favoritas, progreso numérico), o siguientes
+incrementos del Sprint 9 (apertura de jornada, partido individual
+terminado, agrupar avisos entre grupos) — ver `roadmap.md` para el
+detalle de cada uno.
 
 ## Bloqueos y preguntas pendientes
 
@@ -130,7 +162,9 @@ Sprint 3 y la decisión de fin de temporada del Sprint 5.
 
 ## Cambios sin commit
 
-No — todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3 del
-Sprint 5, y la sesión de rediseño visual completa (incluida la
+No en `dev`: todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3
+del Sprint 5, y la sesión de rediseño visual completa (incluida la
 reconciliación de este documento) está commiteado y empujado a
-`origin/dev`.
+`origin/dev`. El incremento 1 del Sprint 9 está commiteado y empujado a
+`origin/feature/sprint-9-notificaciones`, una rama aparte que **todavía no
+se ha fusionado a `dev`** (pendiente de autorización explícita).

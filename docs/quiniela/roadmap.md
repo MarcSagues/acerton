@@ -237,26 +237,37 @@ de fallos de subida de imagen.
 Probar que el cálculo de progreso y el de desbloqueo usan exactamente la
 misma regla (para que no se desincronicen).
 
-## Sprint 9 — Notificaciones
+## Sprint 9 — Notificaciones 🟡 en curso (incremento 1, 2026-09-12)
+
+**Incremento 1 (completo, rama `feature/sprint-9-notificaciones`)**: modelo de
+preferencias por cuenta, silenciar grupo, y aplicar ambos a los avisos que
+ya existían (recordatorios de cierre y jornada terminada) más uno nuevo
+(insignia conseguida). Deja fuera, para incrementos siguientes, todo lo que
+requiere un disparador nuevo que no existe hoy en `jobs.service.ts`
+(apertura de jornada, partido individual terminado, agrupar mismo partido
+entre grupos) y lo que depende de sprints no implementados (temporada/
+trofeos, Sprints 5-6).
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Preferencias por cuenta + silenciar grupo | 🔒 | No existe ningún modelo de preferencias de notificación — solo `NotificationToken` (token de dispositivo). Requiere modelo nuevo. |
-| Interfaz desplegable con controles independientes | ⬜ | — |
-| Apertura de jornada (activada por defecto) | ⬜ | No se ha visto este evento en `jobs.service.ts` — hoy solo hay recordatorios de cierre y aviso de resultados. |
-| Recordatorios 24h/5h/1h/30min, selección múltiple, solo 1h por defecto | 🟡 | Hoy existen 5h/1h/30min fijos para todos (`reminder5hSentAt`/`reminder1hSentAt`/`reminder30mSentAt` en `Matchday`), sin preferencia por usuario y sin la franja de 24h. Cambiar esto a "por usuario y configurable" es un cambio de modelo, no solo de UI. |
-| Recordatorios solo si faltan pronósticos | ✅ (probable) | El propio README describe que los recordatorios van "a quien todavía no ha completado su quiniela" — confirmar que se mantiene al añadir preferencias. |
-| Partido terminado con puntos (desactivado por defecto) | ⬜ | No existe este tipo de notificación hoy. |
-| Jornada terminada con resultado y posición (activada) | 🟡 | El README menciona que al finalizar una jornada se dispara "la notificación de resultados publicados" — a confirmar que incluye posición y que se puede desactivar. |
-| Insignia conseguida (activada) | ⬜ | No se ha visto este disparo en `notifications`/`badges`. |
-| Temporada terminada y trofeos (activada) | 🔒 | Depende de que exista el concepto de temporada y trofeo (Sprints 5-6). |
-| Agrupar mismo partido jugado en varios grupos en un solo aviso | ⬜ | — |
-| No duplicar ni reenviar recordatorios antiguos al cambiar preferencias | ⬜ | — |
-| No avisar de grupos silenciados o abandonados | ⬜ | — |
-| Verificar regularidad del hosting del backend para los crons necesarios | ⬜ | Backend en Render (plan gratuito, se duerme) — ver `backlog.md`, puede no ser sensible a los intervalos actuales pero sí a franjas nuevas más finas (p. ej. 24h en punto para muchos usuarios). No introducir infraestructura de pago sin autorización explícita. |
+| Preferencias por cuenta + silenciar grupo, en interfaz desplegable con controles independientes | ✅ web | Modelo `NotificationPreference` (1:1 con `User`, creado de forma perezosa como `GlobalStreak`) + `GroupMembership.mutedNotifications`. Backend: `GET/PATCH /users/me/notification-preferences`, `PATCH /groups/:id/mute`. Frontend: pantalla `/notifications/preferences` (enlazada desde Perfil) con secciones `<details>` plegables ("Jornadas", "Actividad", "Grupos silenciados") y un toggle independiente por preferencia, más la lista de grupos propios con su mute. Distingue explícitamente el permiso del dispositivo (tarjeta separada arriba, mismo componente que ya existía en Perfil) de las preferencias de cuenta. Verificado en navegador real (cuenta nueva): toggle óptimo con reversión si falla la petición, persistencia tras recargar, mute en rojo para diferenciarlo visualmente de los demás toggles. |
+| Apertura de jornada (activada por defecto) | 🟡 | La preferencia existe (con su default `true`) pero **no envía nada todavía**: no hay ningún evento de "jornada abierta" en `jobs.service.ts` — el `status` de `Matchday` nunca pasa por `SCHEDULED` en la práctica (`deriveInitialStatus` la crea ya `OPEN`), así que "abrirse para pronosticar" es hoy una función calculada en cada petición (`canPredict`+`opensAt` en `MatchdaysService`), no un cambio de estado que un cron pueda detectar una vez. Implementarlo bien requiere una comprobación periódica de esa misma regla por competición, con su propio campo "ya avisado" — pendiente de incremento futuro. |
+| Recordatorios 24h/5h/1h/30min, selección múltiple, solo 1h por defecto | ✅ | `Matchday.reminder24hSentAt` añadido (antes solo 5h/1h/30min). `JobsService.REMINDER_TIERS` con 4 franjas, cada una ligada a su propia preferencia (`reminder24h/5h/1h/30m`) — seleccionar varias es independiente por diseño (son 4 booleanos sueltos). Defaults iguales a los del encargo (todas `false` salvo `reminder1h`). 1 test unitario nuevo (`sendClosingReminders`) que confirma que con un cierre a 23h solo dispara la franja de 24h con su preferencia correcta. |
+| Recordatorios solo cuando falten pronósticos | ✅ | Sin cambios en esta parte de la lógica (`pendingUserIds` ya lo hacía) — reconfirmado con los 7 tests existentes/nuevos de `notifications.service.spec.ts`, que siguen pasando tras añadir el filtro de preferencias por encima. |
+| Partido terminado con puntos (desactivado por defecto) | ⬜ | Preferencia creada (`matchFinishedPoints`, default `false`) pero sin disparador: es un aviso por partido individual ya terminado, distinto del de jornada completa que ya existía — no se ha tocado `MatchdaysService`/`JobsService` para detectar "este partido concreto acaba de terminar" a nivel de usuario. Pendiente de incremento futuro. |
+| Jornada terminada con resultado y posición (activada) | ✅ web | `NotificationsService.notifyMatchdayFinished` ahora incluye la posición real (`getPositionForUser`, mismo criterio de alcance general/por competición que `GroupsService.findMineForUser`) además de los puntos, y se filtra por la preferencia `matchdayFinishedResult` + grupo no silenciado. 2 tests nuevos (incluye posición cuando hay snapshot; no avisa si la preferencia está desactivada). |
+| Insignia conseguida (activada) | ✅ | Nuevo `NotificationsService.notifyBadgeEarned`, filtrado solo por la preferencia de cuenta `badgeEarned` (no por grupo silenciado — una insignia es de la cuenta, no del grupo, ver comentario en el código). `BadgesService.award` ahora distingue "ya la tenía" de "recién concedida" (antes un `upsert` no lo permitía saber) y `evaluateAfterMatchdayClose` devuelve las insignias nuevas de esa pasada para que `JobsService` avise solo de logros genuinamente nuevos. 2 tests nuevos. |
+| Temporada terminada y trofeos (activada) | 🔒 | Preferencia creada con su default (`true`) pero sin efecto: sigue dependiendo de que exista temporada cerrada de verdad (Sprint 5, sin cerrar ninguna real todavía) y trofeos (Sprint 6, sin modelo). |
+| Agrupar mismo partido jugado en varios grupos en un solo aviso | ⬜ | Sin tocar — `notifyMatchdayClosingSoon`/`notifyMatchdayFinished` se siguen llamando una vez por cada `GroupCompetition` que usa la competición, así que un usuario en dos grupos con la misma liga sigue recibiendo dos avisos separados para el mismo partido/jornada. |
+| No duplicar ni reenviar recordatorios antiguos al cambiar preferencias | ✅ | Verificado por diseño: los campos `reminderXSentAt` siguen siendo por jornada+franja (no por usuario), así que cambiar una preferencia nunca reabre un envío ya hecho — solo decide si un envío nuevo, futuro, te incluye o no. |
+| No avisar de grupos silenciados o abandonados | ✅ | `filterByPreference` descarta a quien tiene `GroupMembership.mutedNotifications` para ese grupo, en recordatorios de cierre y en jornada terminada. Abandonados ya se excluían solos (las consultas parten de `GroupMembership`, que no existe tras salir del grupo). 1 test nuevo (no avisa a quien silenció el grupo). |
+| Verificar regularidad del hosting del backend para los crons necesarios | ⬜ | Sin tocar — sigue igual que el 2026-09-10 (ver `backlog.md`). |
 
 Validar permisos de notificación y entrega real en las tres plataformas
-cuando haya dispositivos y credenciales disponibles.
+cuando haya dispositivos y credenciales disponibles. Migración aplicada y
+probada contra la base de datos real de desarrollo (no solo tests): fila de
+preferencias creada de forma perezosa al primer `PATCH`, mute de grupo
+verificado por API y por navegador (ver `history.md`).
 
 ## Sprint 10 — Validación integrada ⬜
 

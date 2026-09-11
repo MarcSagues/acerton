@@ -57,58 +57,72 @@ export class BadgesService {
   /**
    * Se ejecuta tras cerrar y puntuar una jornada, y tras recalcular rachas
    * y clasificacion semanal de esa jornada (el orden importa: streaks y
-   * rankings deben estar actualizados antes de evaluar insignias).
+   * rankings deben estar actualizados antes de evaluar insignias). Devuelve
+   * las insignias recien concedidas en esta pasada (no las que ya se
+   * tenian) para que JobsService pueda avisar solo de logros nuevos.
    */
-  async evaluateAfterMatchdayClose(groupId: string, matchdayId: string): Promise<void> {
+  async evaluateAfterMatchdayClose(
+    groupId: string,
+    matchdayId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
     const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
       select: { userId: true },
     });
 
+    const newlyAwarded: { userId: string; badgeName: string }[] = [];
     for (const { userId } of members) {
-      await this.checkFirstMatchdayPlayed(userId, groupId, matchdayId);
-      await this.checkStreakBadges(userId, groupId, matchdayId);
-      await this.checkHotStreak(userId, groupId, matchdayId);
+      newlyAwarded.push(...(await this.checkFirstMatchdayPlayed(userId, groupId, matchdayId)));
+      newlyAwarded.push(...(await this.checkStreakBadges(userId, groupId, matchdayId)));
+      newlyAwarded.push(...(await this.checkHotStreak(userId, groupId, matchdayId)));
     }
 
-    await this.checkMatchdayTop1(groupId, matchdayId);
+    newlyAwarded.push(...(await this.checkMatchdayTop1(groupId, matchdayId)));
+    return newlyAwarded;
   }
 
   private async checkFirstMatchdayPlayed(
     userId: string,
     groupId: string,
     matchdayId: string,
-  ): Promise<void> {
+  ): Promise<{ userId: string; badgeName: string }[]> {
     const predictions = await this.prisma.prediction.findMany({
       where: { userId, groupId },
       select: { match: { select: { matchdayId: true } } },
     });
     const matchdays = new Set(predictions.map((p) => p.match.matchdayId));
     if (matchdays.size === 1 && matchdays.has(matchdayId)) {
-      await this.award(userId, BADGE_CODES.FIRST_MATCHDAY_PLAYED, groupId, matchdayId);
+      return this.award(userId, BADGE_CODES.FIRST_MATCHDAY_PLAYED, groupId, matchdayId);
     }
+    return [];
   }
 
   private async checkStreakBadges(
     userId: string,
     groupId: string,
     matchdayId: string,
-  ): Promise<void> {
+  ): Promise<{ userId: string; badgeName: string }[]> {
     const streak = await this.prisma.streak.findUnique({
       where: { userId_groupId: { userId, groupId } },
     });
     if (!streak) {
-      return;
+      return [];
     }
+    const awarded: { userId: string; badgeName: string }[] = [];
     if (streak.currentStreak === 5) {
-      await this.award(userId, BADGE_CODES.STREAK_5, groupId, matchdayId);
+      awarded.push(...(await this.award(userId, BADGE_CODES.STREAK_5, groupId, matchdayId)));
     }
     if (streak.currentStreak === 10) {
-      await this.award(userId, BADGE_CODES.STREAK_10, groupId, matchdayId);
+      awarded.push(...(await this.award(userId, BADGE_CODES.STREAK_10, groupId, matchdayId)));
     }
+    return awarded;
   }
 
-  private async checkHotStreak(userId: string, groupId: string, matchdayId: string): Promise<void> {
+  private async checkHotStreak(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
     const recentScored = await this.prisma.prediction.findMany({
       where: { userId, groupId, pointsEarned: { not: null } },
       orderBy: { match: { kickoff: 'desc' } },
@@ -120,14 +134,18 @@ export class BadgesService {
       recentScored.length === 5 && recentScored.every((p) => (p.pointsEarned ?? 0) > 0);
 
     if (allCorrect) {
-      await this.award(userId, BADGE_CODES.HOT_STREAK_5, groupId, matchdayId);
+      return this.award(userId, BADGE_CODES.HOT_STREAK_5, groupId, matchdayId);
     }
+    return [];
   }
 
-  private async checkMatchdayTop1(groupId: string, matchdayId: string): Promise<void> {
+  private async checkMatchdayTop1(
+    groupId: string,
+    matchdayId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
     const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
     if (!matchday) {
-      return;
+      return [];
     }
 
     const winners = await this.prisma.rankingSnapshot.findMany({
@@ -140,27 +158,34 @@ export class BadgesService {
       },
     });
 
+    const awarded: { userId: string; badgeName: string }[] = [];
     for (const winner of winners) {
-      await this.award(winner.userId, BADGE_CODES.MATCHDAY_TOP_1, groupId, matchdayId);
+      awarded.push(...(await this.award(winner.userId, BADGE_CODES.MATCHDAY_TOP_1, groupId, matchdayId)));
     }
+    return awarded;
   }
 
+  /** Devuelve un array con la insignia si se ha concedido de verdad ahora (vacio si ya se tenia). */
   private async award(
     userId: string,
     code: string,
     groupId: string,
     matchdayId?: string,
-  ): Promise<void> {
+  ): Promise<{ userId: string; badgeName: string }[]> {
     const badge = await this.prisma.badge.findUnique({ where: { code } });
     if (!badge) {
       this.logger.warn(`Insignia con codigo ${code} no existe en el catalogo`);
-      return;
+      return [];
     }
 
-    await this.prisma.userBadge.upsert({
+    const existing = await this.prisma.userBadge.findUnique({
       where: { userId_badgeId_groupId: { userId, badgeId: badge.id, groupId } },
-      update: {},
-      create: { userId, badgeId: badge.id, groupId, matchdayId },
     });
+    if (existing) {
+      return [];
+    }
+
+    await this.prisma.userBadge.create({ data: { userId, badgeId: badge.id, groupId, matchdayId } });
+    return [{ userId, badgeName: badge.name }];
   }
 }

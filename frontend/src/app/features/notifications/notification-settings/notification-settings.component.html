@@ -1,0 +1,151 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  @if (page.preferences(); as preferences) {
+  <div class="page">
+    <div class="head-row">
+      <button type="button" class="back-btn" (click)="page.goBack()">
+        <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+      </button>
+    </div>
+    <div class="title-row">
+      <h1>Preferencias de avisos</h1>
+      <p class="lead">Qué avisos quieres recibir y qué grupos prefieres silenciar.</p>
+    </div>
+
+    <div class="section">
+      <div class="card device-card">
+        <p class="card-title">Notificaciones push en este dispositivo</p>
+        @if (!page.pushNotifications.supported) {
+          <p class="hint mono">Este navegador no las soporta.</p>
+        } @else if (!page.pushNotifications.configured) {
+          <p class="hint mono">No configuradas en este entorno.</p>
+        } @else if (page.pushNotifications.permission() === 'granted') {
+          <p class="hint mono">Activadas en este dispositivo.</p>
+        } @else if (page.pushNotifications.permission() === 'denied') {
+          <p class="hint mono">Bloqueadas en los permisos del navegador.</p>
+        } @else {
+          <p class="hint mono">Hace falta darles permiso en este dispositivo.</p>
+        }
+        <p class="device-note">
+          Esto es un permiso del dispositivo, distinto de las preferencias de abajo: aunque lo actives aquí,
+          solo recibirás los avisos que tengas encendidos más abajo.
+        </p>
+        @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'granted' && page.pushNotifications.permission() !== 'denied') {
+          <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.pushNotifications.enable()">
+            {{ page.pushNotifications.loading() ? 'Activando…' : 'Activar' }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <details class="group" open>
+      <summary>Jornadas</summary>
+      <div class="rows">
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">Jornada nueva disponible</p>
+            <p class="hint">Cuando ya se puede pronosticar.</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.matchdayOpening" [class.disabled]="page.isSaving('matchdayOpening')" (click)="page.togglePreference('matchdayOpening')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">24 horas antes del cierre</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.reminder24h" [class.disabled]="page.isSaving('reminder24h')" (click)="page.togglePreference('reminder24h')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">5 horas antes del cierre</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.reminder5h" [class.disabled]="page.isSaving('reminder5h')" (click)="page.togglePreference('reminder5h')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">1 hora antes del cierre</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.reminder1h" [class.disabled]="page.isSaving('reminder1h')" (click)="page.togglePreference('reminder1h')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">30 minutos antes del cierre</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.reminder30m" [class.disabled]="page.isSaving('reminder30m')" (click)="page.togglePreference('reminder30m')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <p class="hint group-hint">Solo avisan si todavía te falta algún pronóstico.</p>
+      </div>
+    </details>
+
+    <details class="group" open>
+      <summary>Actividad</summary>
+      <div class="rows">
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">Partido propio terminado</p>
+            <p class="hint">Con tus puntos, solo de partidos que pronosticaste.</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.matchFinishedPoints" [class.disabled]="page.isSaving('matchFinishedPoints')" (click)="page.togglePreference('matchFinishedPoints')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">Jornada terminada</p>
+            <p class="hint">Resultado y tu posición en la clasificación.</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.matchdayFinishedResult" [class.disabled]="page.isSaving('matchdayFinishedResult')" (click)="page.togglePreference('matchdayFinishedResult')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">Insignia conseguida</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.badgeEarned" [class.disabled]="page.isSaving('badgeEarned')" (click)="page.togglePreference('badgeEarned')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">Fin de temporada y trofeos</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.seasonFinishedTrophies" [class.disabled]="page.isSaving('seasonFinishedTrophies')" (click)="page.togglePreference('seasonFinishedTrophies')">
+            <span class="knob"></span>
+          </button>
+        </div>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>Grupos silenciados</summary>
+      <div class="rows">
+        @if (page.groups().length === 0) {
+          <p class="hint group-hint">Todavía no perteneces a ningún grupo.</p>
+        }
+        @for (group of page.groups(); track group.groupId) {
+          <div class="row">
+            <div class="row-text">
+              <p class="row-title">{{ group.name }}</p>
+            </div>
+            <button type="button" class="toggle mute" [class.on]="group.muted" [class.disabled]="page.isSaving(group.groupId)" (click)="page.toggleGroupMuted(group.groupId)">
+              <span class="knob"></span>
+            </button>
+          </div>
+        }
+        <p class="hint group-hint">Silenciar un grupo apaga todos sus avisos, aunque los tengas activados arriba.</p>
+      </div>
+    </details>
+  </div>
+  }
+}
