@@ -1,14 +1,14 @@
-@if (loading()) {
+@if (page.loading()) {
   <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
-} @else if (entries().length === 0) {
+} @else if (page.entries().length === 0) {
   <div class="page empty-page">
     <app-group-switcher></app-group-switcher>
     <p class="empty">
       Todavia no hay jornada sincronizada para las competiciones de este grupo. Vuelve mas tarde.
     </p>
   </div>
-} @else if (submissionConfirmed()) {
-  @if (activeEntry(); as entry) {
+} @else if (page.submissionConfirmed()) {
+  @if (page.activeEntry(); as entry) {
     <main class="sent-page">
       <div class="sent-brand">pq</div>
       <div class="sent-check" aria-hidden="true"><mat-icon>check</mat-icon></div>
@@ -23,16 +23,16 @@
               <span>{{ match.homeTeam }}</span>
               <span>{{ match.awayTeam }}</span>
             </div>
-            <strong class="sent-pick mono">{{ pickLabel(match.id) }}</strong>
+            <strong class="sent-pick mono">{{ page.pickLabel(match.id) }}</strong>
           </div>
         }
       </section>
 
-      <button type="button" class="sent-primary" [disabled]="justCopiedSummary()" (click)="copySummary()">
-        <mat-icon>{{ justCopiedSummary() ? 'check' : 'content_copy' }}</mat-icon>
-        {{ justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
+      <button type="button" class="sent-primary" [disabled]="page.justCopiedSummary()" (click)="page.copySummary()">
+        <mat-icon>{{ page.justCopiedSummary() ? 'check' : 'content_copy' }}</mat-icon>
+        {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
       </button>
-      <button type="button" class="sent-secondary" (click)="editPredictions()">Revisar pronosticos</button>
+      <button type="button" class="sent-secondary" (click)="page.editPredictions()">Revisar pronosticos</button>
     </main>
   }
 } @else {
@@ -40,8 +40,8 @@
     <div class="dark-head">
       <header class="head">
         <app-group-switcher [onDark]="true"></app-group-switcher>
-        @if (activeEntry(); as entry) {
-          @if (isLocked(entry)) {
+        @if (page.activeEntry(); as entry) {
+          @if (page.isLocked(entry)) {
             <span class="pill pill-neutral">{{ entry.matchday.status === 'FINISHED' ? 'FINALIZADA' : 'CERRADA' }}</span>
           } @else {
             <span class="pill pill-open"><span class="pulse-dot"></span>ABIERTA</span>
@@ -49,77 +49,77 @@
         }
       </header>
 
-      @if (activeEntry(); as entry) {
+      @if (page.activeEntry(); as entry) {
         <div class="summary">
           <div class="eyebrow-row">
             <button
               class="nav-btn"
-              [disabled]="navigating() || entry.matchday.order <= 1"
-              (click)="navigatePrevious()"
+              [disabled]="page.navigating() || entry.matchday.order <= 1"
+              (click)="page.navigatePrevious()"
               title="Jornada anterior"
             >
               <span class="chevron chevron-left"></span>
             </button>
-            <button type="button" class="eyebrow" (click)="goToCalendar()">
+            <button type="button" class="eyebrow" (click)="page.goToCalendar()">
               {{ entry.competition.name }} · J{{ entry.matchday.order }} ▾
             </button>
             <button
               class="nav-btn"
-              [disabled]="navigating() || noNextAvailable()"
-              (click)="navigateNext()"
+              [disabled]="page.navigating() || page.noNextAvailable()"
+              (click)="page.navigateNext()"
               title="Jornada siguiente"
             >
               <span class="chevron chevron-right"></span>
             </button>
           </div>
-          @if (!isViewingLive()) {
-            <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
+          @if (!page.isViewingLive()) {
+            <button class="live-link mono" (click)="page.goToLive()">&lt; Volver a la jornada actual</button>
           }
           <div class="summary-top">
-            <div class="headline" [class.pending]="!isLocked(entry) && !isMatchdayOpenByTime()">
-              @if (isLocked(entry)) {
+            <div class="headline" [class.pending]="!page.isLocked(entry) && !page.isMatchdayOpenByTime()">
+              @if (page.isLocked(entry)) {
                 Cerrada
-              } @else if (!isMatchdayOpenByTime()) {
+              } @else if (!page.isMatchdayOpenByTime()) {
                 La jornada se abre en
               } @else {
                 La jornada cierra en
               }
             </div>
-            @if (isLocked(entry)) {
-              <div class="countdown mono">{{ totalPoints() }} pts</div>
-            } @else if (!isMatchdayOpenByTime()) {
-              <div class="countdown mono pending">{{ opensInLabel() }}</div>
+            @if (page.isLocked(entry)) {
+              <div class="countdown mono">{{ page.totalPoints() }} pts</div>
+            } @else if (!page.isMatchdayOpenByTime()) {
+              <div class="countdown mono pending">{{ page.opensInLabel() }}</div>
             } @else {
-              <div class="countdown mono">{{ countdownLabel() }}</div>
+              <div class="countdown mono">{{ page.countdownLabel() }}</div>
             }
           </div>
           <div class="progress-row">
             <div class="progress-track">
-              <div class="progress-fill" [style.width]="progressPct()"></div>
+              <div class="progress-fill" [style.width]="page.progressPct()"></div>
             </div>
-            <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
+            <div class="progress-label mono">{{ page.doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
           </div>
-          @if (!isLocked(entry) && anyMatchFinished()) {
+          @if (!page.isLocked(entry) && page.anyMatchFinished()) {
             <div class="live-points mono">
-              Llevas {{ totalPoints() }} {{ totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
+              Llevas {{ page.totalPoints() }} {{ page.totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
             </div>
           }
         </div>
       }
     </div>
 
-    @if (entries().length > 1) {
+    @if (page.entries().length > 1) {
       <div class="comp-switcher">
-        @for (entry of entries(); track entry.competition.id; let i = $index) {
-          <button class="comp-chip" [class.active]="i === activeTabIndex()" (click)="selectTab(i)">
+        @for (entry of page.entries(); track entry.competition.id; let i = $index) {
+          <button class="comp-chip" [class.active]="i === page.activeTabIndex()" (click)="page.selectTab(i)">
             {{ entry.competition.name }} · {{ entry.matchday.matches.length }}
           </button>
         }
       </div>
     }
 
-    @if (activeEntry(); as entry) {
-      @if (isExactScore()) {
+    @if (page.activeEntry(); as entry) {
+      @if (page.isExactScore()) {
         <div class="exact-score-columns">
           <div class="exact-score-columns-fields">
             <span class="exact-score-columns-label">L</span>
@@ -132,7 +132,7 @@
         @for (match of entry.matchday.matches; track match.id) {
           <div class="match-row" [attr.data-tutorial]="$first ? 'first-match' : null">
             <div class="kickoff mono">
-              <span>{{ matchDayLabel(match.kickoff) }}</span>
+              <span>{{ page.matchDayLabel(match.kickoff) }}</span>
               <span>{{ match.kickoff | date: 'HH:mm' }}</span>
             </div>
 
@@ -146,24 +146,24 @@
               <div class="result-block">
                 <div class="result mono">{{ match.homeScore }}-{{ match.awayScore }}</div>
                 <div class="pick-line mono">
-                  <span class="badge pick" [class.hit]="isPickHit(match) === true" [class.miss]="isPickHit(match) === false">
-                    {{ pickLabel(match.id) ?? 'N/A' }}
+                  <span class="badge pick" [class.hit]="page.isPickHit(match) === true" [class.miss]="page.isPickHit(match) === false">
+                    {{ page.pickLabel(match.id) ?? 'N/A' }}
                   </span>
-                  <span class="badge points" [class.earned]="pointsFor(match) > 0">
-                    {{ pointsFor(match) > 0 ? '+' : '' }}{{ pointsFor(match) }}
+                  <span class="badge points" [class.earned]="page.pointsFor(match) > 0">
+                    {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }}
                   </span>
                 </div>
               </div>
-            } @else if (isMatchLocked(match)) {
-              <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
-            } @else if (!pickingAllowed()) {
+            } @else if (page.isMatchLocked(match)) {
+              <div class="result mono dim">{{ page.matchLockedLabel(match) }}</div>
+            } @else if (!page.pickingAllowed()) {
               <div class="result mono dim">Aun no</div>
-            } @else if (isExactScore()) {
+            } @else if (page.isExactScore()) {
               <div
                 class="exact-score-box"
-                [class.pending]="stateFor(match.id).saving"
-                [class.confirmed]="stateFor(match.id).saved && !stateFor(match.id).saving"
-                [class.error]="stateFor(match.id).error"
+                [class.pending]="page.stateFor(match.id).saving"
+                [class.confirmed]="page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                [class.error]="page.stateFor(match.id).error"
               >
                 <svg class="choice-progress" viewBox="0 0 112 38" aria-hidden="true">
                   <rect
@@ -173,7 +173,7 @@
                     height="36"
                     rx="9"
                     pathLength="100"
-                    [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                    [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                   ></rect>
                 </svg>
                 <div class="exact-score-field">
@@ -183,10 +183,10 @@
                     min="0"
                     max="20"
                     inputmode="numeric"
-                    [disabled]="isMatchLocked(match)"
-                    [value]="stateFor(match.id).predictedHomeScore"
-                    (input)="updatePredictedScore(match, 'home', $any($event.target).value)"
-                    (blur)="save(match.id, stateFor(match.id))"
+                    [disabled]="page.isMatchLocked(match)"
+                    [value]="page.stateFor(match.id).predictedHomeScore"
+                    (input)="page.updatePredictedScore(match, 'home', $any($event.target).value)"
+                    (blur)="page.save(match.id, page.stateFor(match.id))"
                   />
                 </div>
                 <span class="score-sep mono">-</span>
@@ -197,36 +197,36 @@
                     min="0"
                     max="20"
                     inputmode="numeric"
-                    [disabled]="isMatchLocked(match)"
-                    [value]="stateFor(match.id).predictedAwayScore"
-                    (input)="updatePredictedScore(match, 'away', $any($event.target).value)"
-                    (blur)="save(match.id, stateFor(match.id))"
+                    [disabled]="page.isMatchLocked(match)"
+                    [value]="page.stateFor(match.id).predictedAwayScore"
+                    (input)="page.updatePredictedScore(match, 'away', $any($event.target).value)"
+                    (blur)="page.save(match.id, page.stateFor(match.id))"
                   />
                 </div>
               </div>
             } @else {
               <div class="wc-icons">
-                @if ((comeback()?.enabled && (comeback()?.remaining ?? 0) > 0) || stateFor(match.id).doubleChanceOption) {
+                @if ((page.comeback()?.enabled && (page.comeback()?.remaining ?? 0) > 0) || page.stateFor(match.id).doubleChanceOption) {
                   <button
                     class="wc-icon-btn rescue"
-                    [class.active]="!!stateFor(match.id).doubleChanceOption"
-                    [title]="'Remontada (quedan ' + (comeback()?.remaining ?? 0) + ')'"
-                    (click)="toggleDoubleChance(match)"
+                    [class.active]="!!page.stateFor(match.id).doubleChanceOption"
+                    [title]="'Remontada (quedan ' + (page.comeback()?.remaining ?? 0) + ')'"
+                    (click)="page.toggleDoubleChance(match)"
                   >
                     <mat-icon inline>health_and_safety</mat-icon>
                   </button>
                 }
               </div>
 
-              @if (stateFor(match.id).doubleChanceOption) {
+              @if (page.stateFor(match.id).doubleChanceOption) {
                 <div class="choices compact">
                   <button
                     class="choice-btn"
-                    [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW'"
-                    [class.pending]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).error"
-                    (click)="selectDoubleChance(match, 'HOME_OR_DRAW')"
+                    [class.selected]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW'"
+                    [class.pending]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && page.stateFor(match.id).saving"
+                    [class.confirmed]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                    [class.error]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && page.stateFor(match.id).error"
+                    (click)="page.selectDoubleChance(match, 'HOME_OR_DRAW')"
                   >
                     <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
                       <rect
@@ -236,18 +236,18 @@
                         height="28"
                         rx="7"
                         pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                        [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                       ></rect>
                     </svg>
                     1X
                   </button>
                   <button
                     class="choice-btn"
-                    [class.selected]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY'"
-                    [class.pending]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).error"
-                    (click)="selectDoubleChance(match, 'DRAW_OR_AWAY')"
+                    [class.selected]="page.stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY'"
+                    [class.pending]="page.stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && page.stateFor(match.id).saving"
+                    [class.confirmed]="page.stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                    [class.error]="page.stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && page.stateFor(match.id).error"
+                    (click)="page.selectDoubleChance(match, 'DRAW_OR_AWAY')"
                   >
                     <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
                       <rect
@@ -257,18 +257,18 @@
                         height="28"
                         rx="7"
                         pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                        [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                       ></rect>
                     </svg>
                     X2
                   </button>
                   <button
                     class="choice-btn"
-                    [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY'"
-                    [class.pending]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).error"
-                    (click)="selectDoubleChance(match, 'HOME_OR_AWAY')"
+                    [class.selected]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY'"
+                    [class.pending]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && page.stateFor(match.id).saving"
+                    [class.confirmed]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                    [class.error]="page.stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && page.stateFor(match.id).error"
+                    (click)="page.selectDoubleChance(match, 'HOME_OR_AWAY')"
                   >
                     <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
                       <rect
@@ -278,7 +278,7 @@
                         height="28"
                         rx="7"
                         pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                        [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                       ></rect>
                     </svg>
                     12
@@ -288,11 +288,11 @@
                 <div class="choices compact">
                   <button
                     class="choice-btn"
-                    [class.selected]="stateFor(match.id).choice === 'HOME'"
-                    [class.pending]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).error"
-                    (click)="selectChoice(match, 'HOME')"
+                    [class.selected]="page.stateFor(match.id).choice === 'HOME'"
+                    [class.pending]="page.stateFor(match.id).choice === 'HOME' && page.stateFor(match.id).saving"
+                    [class.confirmed]="page.stateFor(match.id).choice === 'HOME' && page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                    [class.error]="page.stateFor(match.id).choice === 'HOME' && page.stateFor(match.id).error"
+                    (click)="page.selectChoice(match, 'HOME')"
                   >
                     <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
                       <rect
@@ -302,18 +302,18 @@
                         height="28"
                         rx="7"
                         pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                        [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                       ></rect>
                     </svg>
                     1
                   </button>
                   <button
                     class="choice-btn"
-                    [class.selected]="stateFor(match.id).choice === 'DRAW'"
-                    [class.pending]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).error"
-                    (click)="selectChoice(match, 'DRAW')"
+                    [class.selected]="page.stateFor(match.id).choice === 'DRAW'"
+                    [class.pending]="page.stateFor(match.id).choice === 'DRAW' && page.stateFor(match.id).saving"
+                    [class.confirmed]="page.stateFor(match.id).choice === 'DRAW' && page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                    [class.error]="page.stateFor(match.id).choice === 'DRAW' && page.stateFor(match.id).error"
+                    (click)="page.selectChoice(match, 'DRAW')"
                   >
                     <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
                       <rect
@@ -323,18 +323,18 @@
                         height="28"
                         rx="7"
                         pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                        [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                       ></rect>
                     </svg>
                     X
                   </button>
                   <button
                     class="choice-btn"
-                    [class.selected]="stateFor(match.id).choice === 'AWAY'"
-                    [class.pending]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).error"
-                    (click)="selectChoice(match, 'AWAY')"
+                    [class.selected]="page.stateFor(match.id).choice === 'AWAY'"
+                    [class.pending]="page.stateFor(match.id).choice === 'AWAY' && page.stateFor(match.id).saving"
+                    [class.confirmed]="page.stateFor(match.id).choice === 'AWAY' && page.stateFor(match.id).saved && !page.stateFor(match.id).saving"
+                    [class.error]="page.stateFor(match.id).choice === 'AWAY' && page.stateFor(match.id).error"
+                    (click)="page.selectChoice(match, 'AWAY')"
                   >
                     <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
                       <rect
@@ -344,7 +344,7 @@
                         height="28"
                         rx="7"
                         pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
+                        [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"
                       ></rect>
                     </svg>
                     2
@@ -358,14 +358,14 @@
 
       @if (entry.matchday.status === 'FINISHED') {
         <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">Ver resultados de esta jornada</a>
-      } @else if (!isLocked(entry)) {
+      } @else if (!page.isLocked(entry)) {
         <div class="cta-bar">
           <span>
-            @if (doneCount() === entry.matchday.matches.length) {
+            @if (page.doneCount() === entry.matchday.matches.length) {
               <mat-icon class="cta-check" inline>check_circle</mat-icon>
               Completado
             } @else {
-              Faltan {{ entry.matchday.matches.length - doneCount() }} por enviar
+              Faltan {{ entry.matchday.matches.length - page.doneCount() }} por enviar
             }
           </span>
         </div>
