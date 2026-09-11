@@ -1,4 +1,4 @@
-@if (loading()) {
+@if (page.loading()) {
   <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
 } @else {
   <div class="page">
@@ -7,25 +7,25 @@
         <a routerLink="/rankings" class="back">&lt; Clasificacion</a>
       </header>
       <h1>Historico de jornadas</h1>
-      @if (history(); as h) {
-        <p class="sub mono">{{ competitionName }} · {{ h.matchdays.length }} jornadas jugadas</p>
+      @if (page.history(); as h) {
+        <p class="sub mono">{{ page.competitionName }} · {{ h.matchdays.length }} jornadas jugadas</p>
       }
     </div>
 
-    @if (history(); as h) {
+    @if (page.history(); as h) {
       @if (h.matchdays.length === 0) {
         <p class="empty">Todavia no hay ninguna jornada finalizada de esta competicion.</p>
       } @else {
         <div class="content">
           @for (entry of h.matchdays; track entry.matchdayId) {
-            <div class="row" (click)="openMatchday(entry.matchdayId)">
+            <div class="row" (click)="page.openMatchday(entry.matchdayId)">
               <div class="order-badge">
                 <span class="order-n mono">{{ entry.order }}</span>
                 <span class="order-label mono">JORN</span>
               </div>
               <div class="meta">
                 @if (entry.winner) {
-                  <div class="title">Gano {{ isMine(entry.winner.userId) ? 'tu' : entry.winner.name }}</div>
+                  <div class="title">Gano {{ page.isMine(entry.winner.userId) ? 'tu' : entry.winner.name }}</div>
                 } @else {
                   <div class="title">Sin ganador registrado</div>
                 }
@@ -38,7 +38,7 @@
                 </div>
               </div>
               <div class="pts">
-                <div class="pts-value mono" [class.accent]="entry.winner && isMine(entry.winner.userId)">
+                <div class="pts-value mono" [class.accent]="entry.winner && page.isMine(entry.winner.userId)">
                   {{ entry.myPoints ?? '-' }}
                 </div>
                 <div class="pts-label mono">tus pts</div>
