@@ -12,20 +12,13 @@
       </header>
 
       <div class="section">
-        <div class="card">
-          <div class="eyebrow">LINK DE INVITACION</div>
-          <div class="invite-row">
-            <div class="invite-code mono">{{ g.inviteCode }}</div>
-            <button class="copy-btn" [disabled]="justCopiedInviteLink()" (click)="copyInviteLink()">
-              @if (justCopiedInviteLink()) {
-                <mat-icon inline>check</mat-icon> Copiado
-              } @else {
-                <mat-icon inline>content_copy</mat-icon> Copiar link
-              }
-            </button>
+        <a class="card invite-link-row" [routerLink]="['/groups', groupId, 'invite']">
+          <div>
+            <div class="invite-link-title">Invitar miembros</div>
+            <div class="invite-link-hint mono">Codigo y enlace del grupo</div>
           </div>
-          <div class="invite-url mono">{{ inviteLink() }}</div>
-        </div>
+          <mat-icon inline>chevron_right</mat-icon>
+        </a>
       </div>
 
       <div class="section">

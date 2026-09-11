@@ -62,49 +62,25 @@
   padding: 14px;
 }
 
-.invite-row {
+.invite-link-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.invite-code {
-  flex: 1;
-  font: 700 18px/1 var(--font-mono);
-  letter-spacing: 0.12em;
-  color: var(--accent-secondary);
-}
-
-.copy-btn {
-  padding: 8px 13px;
-  border-radius: var(--radius-pill);
-  background: var(--bg);
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary);
-  font: 600 11px/1 var(--font-ui);
+  justify-content: space-between;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
 
   mat-icon {
-    font-size: 14px;
-    width: 14px;
-    height: 14px;
-  }
-
-  &:disabled {
-    color: var(--accent-secondary);
-    border-color: var(--accent-border);
-    cursor: default;
+    color: var(--text-tertiary);
   }
 }
 
-.invite-url {
+.invite-link-title {
+  font: 600 14px/1.2 var(--font-ui);
+}
+
+.invite-link-hint {
   font-size: 10px;
-  color: var(--text-tertiary);
-  margin-top: 10px;
-  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  margin-top: 3px;
 }
 
 .comp-list {

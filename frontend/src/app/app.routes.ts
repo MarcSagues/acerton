@@ -90,6 +90,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'groups/:groupId/invite',
+        loadComponent: () =>
+          import('./features/groups/group-invite/group-invite.component').then(
+            (m) => m.GroupInviteComponent,
+          ),
+      },
+      {
         path: 'matchday',
         loadComponent: () =>
           import('./features/matchday/current-matchday/current-matchday.component').then(

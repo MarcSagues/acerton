@@ -32,8 +32,6 @@ export class GroupDetailComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
 
   readonly groupId = this.route.snapshot.paramMap.get('groupId')!;
-  /** true durante los 2s posteriores a un copiado con exito: el boton muestra un tick y no se puede volver a pulsar. */
-  readonly justCopiedInviteLink = signal(false);
 
   readonly loading = signal(true);
   readonly group = signal<Group | null>(null);
@@ -98,11 +96,6 @@ export class GroupDetailComponent implements OnInit {
   );
 
   readonly saving = computed(() => this.savingCompetitions() || this.savingRules());
-
-  readonly inviteLink = computed(() => {
-    const group = this.group();
-    return group ? `${window.location.origin}/groups/join/${group.inviteCode}` : '';
-  });
 
   ngOnInit(): void {
     forkJoin({
@@ -423,19 +416,5 @@ export class GroupDetailComponent implements OnInit {
         },
       });
     });
-  }
-
-  copyInviteLink(): void {
-    if (this.justCopiedInviteLink()) return;
-    // Solo se confirma si la copia funciona de verdad: sin fallback ni
-    // comprobacion posterior del portapapeles, nos limitamos a reaccionar
-    // al resultado de esta escritura concreta.
-    navigator.clipboard
-      ?.writeText(this.inviteLink())
-      .then(() => {
-        this.justCopiedInviteLink.set(true);
-        setTimeout(() => this.justCopiedInviteLink.set(false), 2000);
-      })
-      .catch(() => undefined);
   }
 }
