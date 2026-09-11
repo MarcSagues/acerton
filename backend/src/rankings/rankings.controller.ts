@@ -31,4 +31,14 @@ export class RankingsController {
 
     return this.rankingsService.getLatestRanking(groupId, query.period, competitionId);
   }
+
+  @Get('history')
+  async getHistory(
+    @Param('groupId') groupId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('competitionId') competitionId: string,
+  ) {
+    await this.groupsService.assertIsMember(groupId, user.id);
+    return this.rankingsService.getHistoryForCompetition(groupId, competitionId, user.id);
+  }
 }

@@ -241,4 +241,61 @@ export class RankingsService {
       include: { user: { select: { id: true, name: true, avatarUrl: true } } },
     });
   }
+
+  /**
+   * Historico de jornadas ya finalizadas de una competicion dentro de un
+   * grupo: quien gano cada una y cuantos puntos hizo el usuario que pide el
+   * historico, mas la media de puntos por jornada del grupo y la suya
+   * propia. Reutiliza los RankingSnapshot semanales ya calculados al cerrar
+   * cada jornada (computeWeekly) — no hace falta volver a sumar nada de
+   * Prediction.
+   */
+  async getHistoryForCompetition(groupId: string, competitionId: string, userId: string) {
+    const finishedMatchdays = await this.prisma.matchday.findMany({
+      where: { competitionId, status: 'FINISHED' },
+      orderBy: { order: 'desc' },
+    });
+    if (finishedMatchdays.length === 0) {
+      return { matchdays: [], groupAverage: null, userAverage: null };
+    }
+
+    const matchdayIds = finishedMatchdays.map((m) => m.id);
+    const snapshots = await this.prisma.rankingSnapshot.findMany({
+      where: { groupId, competitionId, matchdayId: { in: matchdayIds }, period: 'WEEKLY' },
+      include: { user: { select: { id: true, name: true } } },
+    });
+
+    const byMatchday = new Map<string, typeof snapshots>();
+    for (const snapshot of snapshots) {
+      const entries = byMatchday.get(snapshot.matchdayId) ?? [];
+      entries.push(snapshot);
+      byMatchday.set(snapshot.matchdayId, entries);
+    }
+
+    const matchdays = finishedMatchdays.map((matchday) => {
+      const entries = byMatchday.get(matchday.id) ?? [];
+      const winner = entries.reduce<(typeof entries)[number] | null>(
+        (best, entry) => (!best || entry.points > best.points ? entry : best),
+        null,
+      );
+      const mine = entries.find((entry) => entry.userId === userId);
+      return {
+        matchdayId: matchday.id,
+        order: matchday.order,
+        winner: winner ? { userId: winner.userId, name: winner.user.name, points: winner.points } : null,
+        myPoints: mine ? mine.points : null,
+      };
+    });
+
+    const allPoints = snapshots.map((snapshot) => snapshot.points);
+    const groupAverage = allPoints.length ? average(allPoints) : null;
+    const myPoints = snapshots.filter((snapshot) => snapshot.userId === userId).map((snapshot) => snapshot.points);
+    const userAverage = myPoints.length ? average(myPoints) : null;
+
+    return { matchdays, groupAverage, userAverage };
+  }
+}
+
+function average(values: number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }

@@ -1,0 +1,128 @@
+.loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0 0 26px 26px;
+  padding: calc(env(safe-area-inset-top) + 12px) 20px 18px;
+}
+
+.head {
+  margin-bottom: 12px;
+}
+
+.back {
+  font: 600 15px/1 var(--font-ui);
+  color: var(--accent-secondary);
+}
+
+h1 {
+  font: 700 26px/1.1 var(--font-display);
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.empty {
+  padding: 20px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.content {
+  padding: 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  cursor: pointer;
+}
+
+.order-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  background: var(--surface-alt);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-n {
+  font: 700 15px/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.order-label {
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+
+.meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font: 600 14.5px/1.2 var(--font-ui);
+  color: var(--text-primary);
+}
+
+.note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.pts {
+  text-align: right;
+  flex: none;
+}
+
+.pts-value {
+  font: 700 17px/1;
+  color: var(--text-primary);
+
+  &.accent {
+    color: var(--accent-secondary);
+  }
+}
+
+.pts-label {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.averages {
+  padding: 16px 20px 24px;
+
+  p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+}

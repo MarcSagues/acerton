@@ -13,3 +13,17 @@ export interface RankingRow {
   positionDelta: number;
   user: { id: string; name: string; avatarUrl: string | null };
 }
+
+export interface MatchdayHistoryEntry {
+  matchdayId: string;
+  order: number;
+  winner: { userId: string; name: string; points: number } | null;
+  /** null si el usuario no tenia pronostico en esa jornada (se unio despues). */
+  myPoints: number | null;
+}
+
+export interface CompetitionHistory {
+  matchdays: MatchdayHistoryEntry[];
+  groupAverage: number | null;
+  userAverage: number | null;
+}

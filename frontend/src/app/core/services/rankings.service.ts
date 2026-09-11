@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-import { RankingPeriod, RankingRow } from '../models/ranking.model';
+import { CompetitionHistory, RankingPeriod, RankingRow } from '../models/ranking.model';
 
 @Injectable({ providedIn: 'root' })
 export class RankingsService {
@@ -16,6 +16,12 @@ export class RankingsService {
   getRankingForMatchday(groupId: string, period: RankingPeriod, competitionId: string | null, matchdayId: string) {
     return this.http.get<RankingRow[]>(`${environment.apiUrl}/groups/${groupId}/rankings`, {
       params: { period, scope: competitionId ?? 'general', matchdayId },
+    });
+  }
+
+  getHistory(groupId: string, competitionId: string) {
+    return this.http.get<CompetitionHistory>(`${environment.apiUrl}/groups/${groupId}/rankings/history`, {
+      params: { competitionId },
     });
   }
 }

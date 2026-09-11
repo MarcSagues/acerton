@@ -32,7 +32,16 @@
             <span class="chevron chevron-right"></span>
           </button>
         </div>
-        <a class="rankings-link" routerLink="/rankings">Tabla</a>
+        <div class="head-links">
+          <a class="rankings-link" routerLink="/rankings">Tabla</a>
+          <a
+            class="rankings-link"
+            [routerLink]="['/matchday/history']"
+            [queryParams]="{ competitionId: md.competitionId, competitionName: md.competition?.name }"
+          >
+            Historico
+          </a>
+        </div>
       </header>
 
       @if (hasMultipleCompetitions()) {

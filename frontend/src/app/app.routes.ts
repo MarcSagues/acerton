@@ -111,6 +111,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'matchday/history',
+        loadComponent: () =>
+          import('./features/matchday/matchday-history/matchday-history.component').then(
+            (m) => m.MatchdayHistoryComponent,
+          ),
+      },
+      {
         path: 'matchday/:matchdayId/results',
         loadComponent: () =>
           import('./features/matchday/matchday-results/matchday-results.component').then(
