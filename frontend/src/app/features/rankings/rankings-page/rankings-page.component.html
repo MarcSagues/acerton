@@ -48,6 +48,25 @@
       </div>
     }
 
+    @if (showEvolution() && evolutionBars().length > 0) {
+      <div class="evolution-card">
+        <div class="evolution-head">
+          <span class="evolution-title">Tu evolucion</span>
+          <span class="evolution-sub mono">{{ evolutionBars()[0].label }} &rarr; {{ evolutionBars().at(-1)?.label }}</span>
+        </div>
+        <div class="evolution-bars">
+          @for (bar of evolutionBars(); track bar.label) {
+            <div class="evolution-col">
+              <div class="evolution-bar-track">
+                <div class="evolution-bar" [style.height.%]="bar.heightPct"></div>
+              </div>
+              <span class="evolution-label mono">{{ bar.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <div class="table-head">
       <div class="col-pos mono">#</div>
       <div class="col-delta mono"></div>

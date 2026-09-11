@@ -14,6 +14,13 @@ import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-swi
 import { Group } from '../../../core/models/group.model';
 import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
 
+export interface EvolutionBar {
+  label: string;
+  points: number;
+  /** 0-100, para la altura de la barra. */
+  heightPct: number;
+}
+
 @Component({
   selector: 'app-rankings-page',
   standalone: true,
@@ -42,6 +49,7 @@ export class RankingsPageComponent {
   readonly period = signal<RankingPeriod>('TOTAL');
   readonly scope = signal<string>('general');
   readonly rows = signal<RankingRow[]>([]);
+  readonly evolutionMatchdays = signal<{ order: number; myPoints: number | null }[]>([]);
   readonly currentUserId = this.authService.currentUser()?.id;
   /** Etiqueta de la temporada abierta del grupo ("2026/27"), o null si todavia no se ha puntuado ninguna jornada. */
   readonly currentSeasonLabel = signal<string | null>(null);
@@ -51,6 +59,17 @@ export class RankingsPageComponent {
   );
   readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
   readonly myRow = computed(() => this.rows().find((r) => r.userId === this.currentUserId) ?? null);
+  /** Solo tiene sentido por competicion: cada una tiene su propio calendario de jornadas, no hay "jornada combinada" en la vista general. */
+  readonly showEvolution = computed(() => this.period() === 'TOTAL' && this.scope() !== 'general');
+  readonly evolutionBars = computed<EvolutionBar[]>(() => {
+    const recent = this.evolutionMatchdays().slice(0, 6).reverse();
+    const max = Math.max(1, ...recent.map((m) => m.myPoints ?? 0));
+    return recent.map((m) => ({
+      label: `J${m.order}`,
+      points: m.myPoints ?? 0,
+      heightPct: m.myPoints === null ? 0 : Math.max(6, Math.round((m.myPoints / max) * 100)),
+    }));
+  });
 
   constructor() {
     effect(
@@ -166,5 +185,14 @@ export class RankingsPageComponent {
         this.loadingRanking.set(false);
       },
     });
+
+    if (this.showEvolution()) {
+      this.rankingsService.getHistory(groupId, this.scope()).subscribe({
+        next: (history) => this.evolutionMatchdays.set(history.matchdays),
+        error: () => this.evolutionMatchdays.set([]),
+      });
+    } else {
+      this.evolutionMatchdays.set([]);
+    }
   }
 }
