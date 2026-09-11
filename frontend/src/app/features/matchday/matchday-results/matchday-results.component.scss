@@ -101,6 +101,14 @@
   margin-top: 3px;
 }
 
+.member-link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--accent-secondary);
+  text-decoration: underline;
+}
+
 .head-links {
   flex: none;
   display: flex;

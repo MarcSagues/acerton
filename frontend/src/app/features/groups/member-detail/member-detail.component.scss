@@ -1,0 +1,163 @@
+.loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-head {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0 0 26px 26px;
+  padding: calc(env(safe-area-inset-top) + 12px) 20px 20px;
+}
+
+.head {
+  margin-bottom: 14px;
+}
+
+.back {
+  font: 600 15px/1 var(--font-ui);
+  color: var(--accent-secondary);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 20px/1 var(--font-display);
+  color: var(--accent-secondary);
+  flex: none;
+}
+
+.name {
+  font: 700 21px/1.15 var(--font-display);
+  color: var(--text-primary);
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.stats {
+  display: flex;
+  gap: 9px;
+}
+
+.stat-tile {
+  flex: 1;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 11px;
+}
+
+.stat-value {
+  font: 700 19px/1;
+  color: var(--text-primary);
+
+  &.accent {
+    color: var(--accent-secondary);
+  }
+}
+
+.stat-label {
+  font-size: 8.5px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.section {
+  padding: 16px 16px 0;
+}
+
+.card {
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+
+.card-head {
+  margin-bottom: 10px;
+}
+
+.card-title {
+  font: 700 13.5px/1.2 var(--font-ui);
+  color: var(--text-primary);
+}
+
+.empty {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.matchday-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.matchday-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.md-order {
+  width: 34px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.md-position {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.md-points {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.badge-medal {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--accent-bg);
+  color: var(--accent-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 12px/1;
+}

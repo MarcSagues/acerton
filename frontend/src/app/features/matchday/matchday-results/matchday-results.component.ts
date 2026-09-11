@@ -34,12 +34,12 @@ export class MatchdayResultsComponent implements OnInit {
   private readonly streaksService = inject(StreaksService);
   private readonly profileService = inject(ProfileService);
   private readonly groupsService = inject(GroupsService);
-  private readonly activeGroupService = inject(ActiveGroupService);
+  readonly activeGroupService = inject(ActiveGroupService);
   private readonly authService = inject(AuthService);
   private readonly snackBar = inject(MatSnackBar);
 
   /** Si viene en la ruta, estamos viendo las quinielas de otro miembro del grupo en vez de las propias. */
-  private readonly routeUserId = this.route.snapshot.paramMap.get('userId');
+  readonly routeUserId = this.route.snapshot.paramMap.get('userId');
   private readonly currentUserId = this.authService.currentUser()?.id ?? null;
   readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
 

@@ -90,6 +90,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'groups/:groupId/members/:userId',
+        loadComponent: () =>
+          import('./features/groups/member-detail/member-detail.component').then(
+            (m) => m.MemberDetailComponent,
+          ),
+      },
+      {
         path: 'groups/:groupId/invite',
         loadComponent: () =>
           import('./features/groups/group-invite/group-invite.component').then(

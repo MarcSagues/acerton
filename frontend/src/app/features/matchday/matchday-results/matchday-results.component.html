@@ -22,6 +22,9 @@
             <div class="sub mono">
               {{ md.competition?.name }} · J{{ md.order }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}
             </div>
+            @if (!viewingSelf && activeGroupService.activeId(); as groupId) {
+              <a class="member-link mono" [routerLink]="['/groups', groupId, 'members', routeUserId]">Ver perfil</a>
+            }
           </div>
           <button
             class="nav-btn"
