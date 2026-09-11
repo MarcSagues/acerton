@@ -57,6 +57,32 @@ export function isMatchPredictable(match: MatchPredictabilityCheck, now: Date): 
   return match.kickoff.getTime() > now.getTime();
 }
 
+export interface CurrentMatchdayEntrySortKey {
+  matchday: { status: MatchdayStatus; closesAt: Date };
+}
+
+/**
+ * Orden de las jornadas "actuales" de un grupo con varias competiciones
+ * (ver MatchdaysController.getCurrentForGroup): la primera pestaña debe
+ * ser la que este mas cerca de empezar/cerrar, no el orden en que se
+ * activaron las competiciones en el grupo. Las jornadas todavia con algo
+ * pendiente (no FINISHED) van primero, ordenadas por cierre mas proximo;
+ * las que ya terminaron del todo (la competicion no tiene ninguna jornada
+ * pendiente) van al final, mas reciente primero. Logica pura para poder
+ * testearla sin base de datos.
+ */
+export function sortCurrentMatchdayEntries<T extends CurrentMatchdayEntrySortKey>(entries: T[]): T[] {
+  return [...entries].sort((a, b) => {
+    const aFinished = a.matchday.status === 'FINISHED';
+    const bFinished = b.matchday.status === 'FINISHED';
+    if (aFinished !== bFinished) {
+      return aFinished ? 1 : -1;
+    }
+    const diff = a.matchday.closesAt.getTime() - b.matchday.closesAt.getTime();
+    return aFinished ? -diff : diff;
+  });
+}
+
 /** 1X2 a partir del marcador final; null si el partido no ha terminado. */
 export function computeMatchResult(
   homeGoals: number | null,

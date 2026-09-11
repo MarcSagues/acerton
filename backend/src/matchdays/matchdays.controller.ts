@@ -3,6 +3,7 @@ import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-use
 import { MatchdaysService } from './matchdays.service';
 import { GroupsService } from '../groups/groups.service';
 import { CompetitionsService } from '../competitions/competitions.service';
+import { sortCurrentMatchdayEntries } from './matchday.util';
 
 @Controller()
 export class MatchdaysController {
@@ -27,7 +28,11 @@ export class MatchdaysController {
       })),
     );
 
-    return matchdays.filter((entry) => entry.matchday !== null);
+    const pending = matchdays.filter(
+      (entry): entry is typeof entry & { matchday: NonNullable<(typeof entry)['matchday']> } =>
+        entry.matchday !== null,
+    );
+    return sortCurrentMatchdayEntries(pending);
   }
 
   @Get('groups/:groupId/competitions/:competitionId/matchdays')
