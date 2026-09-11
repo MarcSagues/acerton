@@ -7,7 +7,7 @@
     </div>
   </header>
 
-  @if (group(); as g) {
+  @if (page.group(); as g) {
     <section class="group-context">
       <span class="group-avatar">{{ g.name.slice(0, 1).toUpperCase() }}</span>
       <div><small>REGLAS DEL GRUPO ACTIVO</small><strong>{{ g.name }}</strong></div>
@@ -15,21 +15,18 @@
     </section>
 
     <section class="content-section">
-      <div class="section-title"><span>01</span><div><p>Puntuacion</p><h2>{{ g.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}</h2></div></div>
+      <div class="section-title"><span>01</span><div><p>Puntuacion</p><h2>{{ page.modeLabel() }}</h2></div></div>
       <div class="score-grid">
-        @if (g.scoringMode === 'EXACT_SCORE') {
-          <article class="score-card featured"><strong>5</strong><span>Marcador exacto</span><small>Aciertas todos los goles</small></article>
-          <article class="score-card"><strong>2</strong><span>Signo correcto</span><small>Aciertas ganador o empate</small></article>
-          <article class="score-card"><strong>0</strong><span>Sin acierto</span><small>El resultado no coincide</small></article>
-        } @else {
-          <article class="score-card featured"><strong>1</strong><span>Signo correcto</span><small>Local, empate o visitante</small></article>
-          <article class="score-card"><strong>0</strong><span>Sin acierto</span><small>El signo no coincide</small></article>
+        @for (rule of page.rules(); track rule.points) {
+          <article class="score-card" [class.featured]="rule.featured">
+            <strong>{{ rule.points }}</strong><span>{{ rule.label }}</span><small>{{ rule.description }}</small>
+          </article>
         }
       </div>
       <p class="rule-note"><mat-icon>edit_calendar</mat-icon>Los pronosticos se guardan al elegir y pueden cambiarse hasta que empiece cada partido.</p>
     </section>
 
-    @if (g.scoringMode === 'ONE_X_TWO') {
+    @if (page.showComeback()) {
       <section class="content-section">
         <div class="section-title"><span>02</span><div><p>Ayuda para remontar</p><h2>Comodin de remontada</h2></div></div>
         <article class="comeback-card" [class.disabled]="!g.comebackEnabled">
@@ -49,7 +46,7 @@
     }
 
     <section class="content-section prizes-section">
-      <div class="section-title"><span>{{ g.scoringMode === 'ONE_X_TWO' ? '03' : '02' }}</span><div><p>Al final de la temporada</p><h2>Premios del grupo</h2></div></div>
+      <div class="section-title"><span>{{ page.prizeSectionNumber() }}</span><div><p>Al final de la temporada</p><h2>Premios del grupo</h2></div></div>
       <div class="podium" aria-hidden="true"><span>2</span><span>1</span><span>3</span></div>
       <h3>Vosotros poneis el premio</h3>
       <p>Una cena, una copa o simplemente poder presumir: cada grupo acuerda sus premios fuera de Piqo.</p>
