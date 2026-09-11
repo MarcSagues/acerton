@@ -60,7 +60,7 @@ h1 {
   cursor: pointer;
 
   &.active {
-    background: var(--text-primary);
+    background: var(--surface-dark);
     color: var(--text-on-dark);
     font-weight: 600;
   }
@@ -139,7 +139,7 @@ h1 {
 .cta {
   height: 52px;
   border-radius: 14px;
-  background: var(--text-primary);
+  background: var(--surface-dark);
   color: var(--accent);
   border: none;
   display: flex;
@@ -197,8 +197,8 @@ h1 {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--text-primary);
-  color: var(--bg);
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
   display: flex;
   align-items: center;
   justify-content: center;

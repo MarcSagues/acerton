@@ -82,6 +82,26 @@
       </div>
     </div>
 
+    <div class="section-head">
+      <span class="eyebrow">AJUSTES</span>
+    </div>
+    <div class="section">
+      <div class="card">
+        <div class="card-title">Apariencia</div>
+        <div class="theme-tabs">
+          <button type="button" class="theme-tab" [class.active]="theme() === 'light'" (click)="setTheme('light')">
+            Claro
+          </button>
+          <button type="button" class="theme-tab" [class.active]="theme() === 'dark'" (click)="setTheme('dark')">
+            Oscuro
+          </button>
+          <button type="button" class="theme-tab" [class.active]="theme() === 'auto'" (click)="setTheme('auto')">
+            Automatico
+          </button>
+        </div>
+      </div>
+    </div>
+
     @if (p.groups.length > 0) {
       <div class="section">
         <div class="card">

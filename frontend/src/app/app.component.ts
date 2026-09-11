@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { NoRealMoneyNoticeComponent } from './shared/no-real-money-notice/no-real-money-notice.component';
 import { TutorialCoachMarkComponent } from './shared/tutorial-coach-mark/tutorial-coach-mark.component';
+import { ThemeService } from './core/services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -11,4 +12,8 @@ import { TutorialCoachMarkComponent } from './shared/tutorial-coach-mark/tutoria
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {}
+export class AppComponent {
+  // Inyectado solo para forzar su instanciacion (y por tanto aplicar el
+  // atributo data-theme) al arrancar la app, no porque se use aqui.
+  private readonly themeService = inject(ThemeService);
+}

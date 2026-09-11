@@ -1,29 +1,99 @@
-/* Tokens de diseño de Piqo. Paleta única por ahora (sin modo oscuro
-   automático todavía — se añadirá más adelante como override de estos
-   mismos nombres de variable, sin tocar los componentes). */
+/* Tokens de diseño de Piqo. Dos temas (claro/oscuro) sobre la misma
+   marca. El tema activo se decide así, en este orden:
+   1) atributo data-theme en <html> puesto por ThemeService según la
+      preferencia guardada (Claro/Oscuro/Automatico, ver Perfil > Ajustes)
+   2) si no hay preferencia guardada ("Automatico"), sigue prefers-color-scheme
+   Los nombres de variable "viejos" (--text-primary, --accent, --surface-alt,
+   etc.) se mantienen como alias hacia los tokens nuevos para no tener que
+   editar cada componente: cambiar esos alias aquí basta para retemizar
+   toda la app. */
 
-:root {
+@mixin light-tokens {
   --bg: #f1f0ea;
   --surface: #ffffff;
-  --surface-alt: rgba(18, 22, 25, 0.05);
-  --surface-alt-2: rgba(210, 190, 148, 0.16);
-  --surface-dark: #121619;
-  --border: rgba(18, 22, 25, 0.07);
-  --border-strong: rgba(18, 22, 25, 0.14);
-  --text-primary: #121619;
-  --text-secondary: rgba(18, 22, 25, 0.55);
-  --text-tertiary: rgba(18, 22, 25, 0.4);
-  --text-on-dark: #f1f0ea;
-  --text-on-dark-secondary: rgba(241, 240, 234, 0.55);
-  --text-on-dark-tertiary: rgba(241, 240, 234, 0.35);
-  --accent: #d2be94;
-  --accent-on: #121619;
-  --accent-bg: rgba(210, 190, 148, 0.16);
-  --accent-border: rgba(210, 190, 148, 0.4);
-  --accent-secondary: #786039;
-  --danger: #c25b45;
-  --danger-bg: rgba(194, 91, 69, 0.1);
-  --danger-border: rgba(194, 91, 69, 0.3);
+  --surface-2: rgba(18, 22, 25, 0.06);
+  --border-c: rgba(18, 22, 25, 0.07);
+  --divider-c: rgba(18, 22, 25, 0.1);
+  --ink: #121619;
+  --ink-muted: rgba(18, 22, 25, 0.55);
+  --ink-faint: rgba(18, 22, 25, 0.4);
+  --accent-c: #786039;
+  --accent-soft: rgba(120, 96, 57, 0.12);
+  --inverse-surface: #121619;
+  --on-inverse: #f1f0ea;
+  --on-inverse-accent: #d2be94;
+  --champagne: #d2be94;
+  --on-champagne: #121619;
+  --danger-c: #c25b45;
+  --danger-bg-c: rgba(194, 91, 69, 0.1);
+  --danger-border-c: rgba(194, 91, 69, 0.3);
+
+  color-scheme: light;
+}
+
+@mixin dark-tokens {
+  --bg: #0b0e10;
+  --surface: #15191c;
+  --surface-2: rgba(241, 240, 234, 0.07);
+  --border-c: rgba(241, 240, 234, 0.09);
+  --divider-c: rgba(241, 240, 234, 0.12);
+  --ink: #f1f0ea;
+  --ink-muted: rgba(241, 240, 234, 0.55);
+  --ink-faint: rgba(241, 240, 234, 0.35);
+  --accent-c: #d2be94;
+  --accent-soft: rgba(210, 190, 148, 0.14);
+  --inverse-surface: #1d2226;
+  --on-inverse: #f1f0ea;
+  --on-inverse-accent: #d2be94;
+  --champagne: #d2be94;
+  --on-champagne: #121619;
+  --danger-c: #c25b45;
+  --danger-bg-c: rgba(194, 91, 69, 0.18);
+  --danger-border-c: rgba(194, 91, 69, 0.4);
+
+  color-scheme: dark;
+}
+
+:root {
+  @include light-tokens;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
+  }
+}
+
+:root[data-theme='dark'] {
+  @include dark-tokens;
+}
+
+:root[data-theme='light'] {
+  @include light-tokens;
+}
+
+:root {
+  /* Alias hacia los nombres ya usados en los componentes: no renombrar
+     estos en cada archivo, solo aquí. */
+  --surface-alt: var(--surface-2);
+  --surface-alt-2: var(--accent-soft);
+  --surface-dark: var(--inverse-surface);
+  --border: var(--border-c);
+  --border-strong: var(--divider-c);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
+  --text-tertiary: var(--ink-faint);
+  --text-on-dark: var(--on-inverse);
+  --text-on-dark-secondary: var(--on-inverse);
+  --text-on-dark-tertiary: var(--on-inverse);
+  --accent: var(--champagne);
+  --accent-on: var(--on-champagne);
+  --accent-bg: var(--accent-soft);
+  --accent-border: var(--divider-c);
+  --accent-secondary: var(--accent-c);
+  --danger: var(--danger-c);
+  --danger-bg: var(--danger-bg-c);
+  --danger-border: var(--danger-border-c);
 
   --font-ui: 'Inter', system-ui, sans-serif;
   --font-display: 'Manrope', 'Inter', system-ui, sans-serif;
@@ -35,8 +105,6 @@
   --radius-pill: 20px;
 
   --shadow-elevated: 0 10px 30px rgba(18, 22, 25, 0.16);
-
-  color-scheme: light;
 }
 
 html,
@@ -126,9 +194,9 @@ a {
 }
 
 .pill-open {
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  color: var(--accent-secondary);
+  background: var(--accent-soft);
+  border: 1px solid var(--divider-c);
+  color: var(--accent-c);
 }
 
 .pill-urgent {

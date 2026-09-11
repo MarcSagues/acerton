@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PushNotificationsService } from '../../../core/services/push-notifications.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
+import { ThemePreference, ThemeService } from '../../../core/services/theme.service';
 import { UserProfile } from '../../../core/models/profile.model';
 import { Badge } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
@@ -32,6 +33,13 @@ export class ProfilePageComponent implements OnInit {
   readonly pushNotifications = inject(PushNotificationsService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly tutorialService = inject(TutorialService);
+  private readonly themeService = inject(ThemeService);
+
+  readonly theme = this.themeService.preference;
+
+  setTheme(pref: ThemePreference): void {
+    this.themeService.setPreference(pref);
+  }
 
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);

@@ -89,6 +89,32 @@
   font: 600 13px/1.2 var(--font-ui);
 }
 
+.theme-tabs {
+  display: flex;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--surface-alt);
+  margin-top: 10px;
+  gap: 4px;
+}
+
+.theme-tab {
+  flex: 1;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  font: 500 12px/1 var(--font-ui);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &.active {
+    background: var(--surface-dark);
+    color: var(--text-on-dark);
+    font-weight: 600;
+  }
+}
+
 .name-edit-row {
   display: flex;
   align-items: center;
