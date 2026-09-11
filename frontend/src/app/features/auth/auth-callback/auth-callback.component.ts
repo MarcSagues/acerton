@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
-import { GOOGLE_RETURN_URL_KEY } from '../auth-page/auth-page.component';
+import { GOOGLE_RETURN_URL_KEY } from '../auth-page/auth-page.constants';
 
 @Component({
   selector: 'app-auth-callback',

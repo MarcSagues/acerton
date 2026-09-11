@@ -8,28 +8,28 @@
       <button
         type="button"
         class="tab"
-        [class.active]="!isRegister()"
-        (click)="setMode('login')"
+        [class.active]="!page.isRegister()"
+        (click)="page.setMode('login')"
       >
         Entrar
       </button>
       <button
         type="button"
         class="tab"
-        [class.active]="isRegister()"
-        (click)="setMode('register')"
+        [class.active]="page.isRegister()"
+        (click)="page.setMode('register')"
       >
         Crear cuenta
       </button>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="form">
-      @if (isRegister()) {
+    <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
+      @if (page.isRegister()) {
         <label class="field">
           <span class="field-label">Nombre de usuario</span>
           <input class="field-input" type="text" formControlName="name" autocomplete="username" maxlength="24" />
         </label>
-        @if (nameHint(); as hint) {
+        @if (page.nameHint(); as hint) {
           <p class="error">{{ hint }}</p>
         }
       }
@@ -43,28 +43,28 @@
         <span class="field-label">Contrasena</span>
         <div class="field-input password-input">
           <input
-            [type]="passwordVisible() ? 'text' : 'password'"
+            [type]="page.passwordVisible() ? 'text' : 'password'"
             formControlName="password"
-            [autocomplete]="isRegister() ? 'new-password' : 'current-password'"
+            [autocomplete]="page.isRegister() ? 'new-password' : 'current-password'"
           />
-          <button type="button" class="ghost-link" (click)="togglePasswordVisibility()">
-            {{ passwordVisible() ? 'ocultar' : 'ver' }}
+          <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
+            {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
           </button>
         </div>
       </label>
-      @if (isRegister()) {
+      @if (page.isRegister()) {
         <div class="hint">Minimo 8 caracteres.</div>
       }
 
-      @if (errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
+      @if (page.errorMessage()) {
+        <p class="error">{{ page.errorMessage() }}</p>
       }
 
-      <button type="submit" class="cta" [disabled]="loading()">
-        @if (loading()) {
+      <button type="submit" class="cta" [disabled]="page.loading()">
+        @if (page.loading()) {
           <mat-spinner diameter="20"></mat-spinner>
         } @else {
-          {{ isRegister() ? 'Crear cuenta' : 'Entrar' }}
+          {{ page.isRegister() ? 'Crear cuenta' : 'Entrar' }}
         }
       </button>
     </form>
@@ -75,13 +75,13 @@
       <span></span>
     </div>
 
-    @if (isNativePlatform) {
-      <button type="button" class="google-btn" [disabled]="loading()" (click)="loginWithGoogleNative()">
+    @if (page.isNativePlatform) {
+      <button type="button" class="google-btn" [disabled]="page.loading()" (click)="page.loginWithGoogleNative()">
         <span class="google-dot">G</span>
         Continuar con Google
       </button>
     } @else {
-      <a class="google-btn" [href]="googleLoginUrl" (click)="saveReturnUrlForGoogleRedirect()">
+      <a class="google-btn" [href]="page.googleLoginUrl" (click)="page.saveReturnUrlForGoogleRedirect()">
         <span class="google-dot">G</span>
         Continuar con Google
       </a>
@@ -89,11 +89,11 @@
 
     <p class="legal">Al continuar aceptas los terminos<br />y la <a routerLink="/privacy">politica de privacidad</a>.</p>
 
-    @if (isNativePlatform) {
-      <button type="button" class="ghost-link" [disabled]="runningDiagnostics()" (click)="runDiagnostics()">
-        {{ runningDiagnostics() ? 'Probando...' : 'Diagnostico de red' }}
+    @if (page.isNativePlatform) {
+      <button type="button" class="ghost-link" [disabled]="page.runningDiagnostics()" (click)="page.runDiagnostics()">
+        {{ page.runningDiagnostics() ? 'Probando...' : 'Diagnostico de red' }}
       </button>
-      @if (diagnostics(); as result) {
+      @if (page.diagnostics(); as result) {
         <pre class="diagnostics">{{ result }}</pre>
       }
     }
