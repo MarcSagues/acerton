@@ -77,7 +77,10 @@ h1 {
 .stat-card {
   flex: 1;
   border-radius: 16px;
-  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  background:
+    radial-gradient(120% 90% at 20% -10%, rgba(var(--p4-bloom-1), 0.14), transparent 60%),
+    linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 14px;
 }
 
@@ -196,7 +199,10 @@ h2 {
 
 .card {
   border-radius: 16px;
-  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  background:
+    radial-gradient(120% 90% at 20% -10%, rgba(var(--p4-bloom-1), 0.12), transparent 60%),
+    linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 16px;
 }
 
