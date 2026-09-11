@@ -1,54 +1,74 @@
-<div class="page">
-  <div class="brand">1X2</div>
-  <h1>Acerton</h1>
-  <p class="tagline">La quiniela de tu grupo de amigos. Pronostica cada jornada, gana puntos y pica a todos en la tabla.</p>
+<main class="onboarding">
+  <header class="topbar">
+    <a class="wordmark" routerLink="/" aria-label="Piqo, inicio"><span>pq</span> Piqo</a>
+    @if (currentStep() < steps.length - 1) {
+      <button type="button" class="skip" (click)="goTo(steps.length - 1)">Saltar</button>
+    }
+  </header>
 
-  <div class="cta-row">
-    <a routerLink="/register" class="cta">Crear cuenta</a>
-    <a routerLink="/login" class="ghost">Entrar</a>
-  </div>
+  <section class="stage" aria-live="polite">
+    @switch (currentStep()) {
+      @case (0) {
+        <div class="visual visual-table" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="score-card score-card-back"><span>3</span><i></i><span>1</span></div>
+          <div class="score-card"><span>2</span><i></i><span>2</span></div>
+          <div class="crown">01</div>
+        </div>
+      }
+      @case (1) {
+        <div class="visual visual-modes" aria-hidden="true">
+          <div class="mode-card">
+            <small>QUINIELA 1X2</small>
+            <div class="mode-options"><b>1</b><b>X</b><b>2</b></div>
+          </div>
+          <div class="mode-card exact-card">
+            <small>RESULTADO EXACTO</small>
+            <div class="exact-score"><b>2</b><span>:</span><b>1</b></div>
+          </div>
+        </div>
+      }
+      @default {
+        <div class="visual visual-trophy" aria-hidden="true">
+          <div class="trophy-mark">pq</div>
+          <div class="podium"><span>2</span><span>1</span><span>3</span></div>
+          <div class="confetti confetti-one"></div>
+          <div class="confetti confetti-two"></div>
+          <div class="confetti confetti-three"></div>
+        </div>
+      }
+    }
 
-  <section>
-    <h2>Que es Acerton</h2>
-    <p>
-      Acerton es un juego social gratuito de pronosticos de futbol. Creas un grupo, invitas a tus amigos y
-      cada jornada todos predecis los resultados de las ligas y copas que sigais. Los puntos se acumulan
-      jornada tras jornada y una tabla de clasificacion decide quien manda en el grupo.
-    </p>
-    <p>
-      <strong>No hay dinero real de por medio.</strong> Acerton no es una casa de apuestas ni una loteria:
-      no se paga por participar, no se cobran comisiones y los puntos e insignias no tienen valor monetario
-      ni son canjeables por premios. Es solo una forma de competir por diversion con tu grupo de amigos.
-    </p>
+    <div class="copy">
+      <p class="eyebrow">{{ steps[currentStep()].eyebrow }}</p>
+      <h1>{{ steps[currentStep()].title }}</h1>
+      <p class="body-copy">{{ steps[currentStep()].body }}</p>
+    </div>
   </section>
 
-  <section>
-    <h2>Dos formas de jugar</h2>
-    <ul>
-      <li>
-        <strong>Quiniela 1X2:</strong> eliges si gana el local, hay empate o gana el visitante, con la opcion
-        de doble oportunidad y un comodin de remontada.
-      </li>
-      <li>
-        <strong>Resultado exacto:</strong> predices el marcador. 5 puntos si aciertas el resultado exacto,
-        2 si aciertas solo quien gana, 0 si fallas.
-      </li>
-    </ul>
-    <p>El modo se elige al crear el grupo y no cambia despues, asi la clasificacion se mantiene justa toda la temporada.</p>
-  </section>
+  <footer class="actions">
+    <div class="dots" aria-label="Paso del carrusel">
+      @for (step of steps; track $index) {
+        <button
+          type="button"
+          [class.active]="$index === currentStep()"
+          [attr.aria-label]="'Ir al paso ' + ($index + 1)"
+          [attr.aria-current]="$index === currentStep() ? 'step' : null"
+          (click)="goTo($index)"
+        ></button>
+      }
+    </div>
 
-  <section>
-    <h2>Como funciona</h2>
-    <ul>
-      <li>Crea un grupo o unete con un codigo de invitacion.</li>
-      <li>Envia tus pronosticos antes de que arranque la jornada.</li>
-      <li>Cuando la jornada cierra, ves los pronosticos de tus amigos y la clasificacion se actualiza.</li>
-    </ul>
-  </section>
+    @if (currentStep() < steps.length - 1) {
+      <button type="button" class="primary" (click)="next()">Siguiente <span aria-hidden="true">→</span></button>
+    } @else {
+      <a routerLink="/register" class="primary">Crear cuenta <span aria-hidden="true">→</span></a>
+      <a routerLink="/login" class="login-link">Ya tengo cuenta</a>
+    }
 
-  <footer>
-    <a routerLink="/soporte">Soporte</a>
-    <span class="dot">&middot;</span>
-    <a routerLink="/privacy">Privacidad</a>
+    <nav class="legal-links" aria-label="Enlaces legales">
+      <a routerLink="/soporte">Soporte</a><span>·</span><a routerLink="/privacy">Privacidad</a>
+    </nav>
   </footer>
-</div>
+</main>
