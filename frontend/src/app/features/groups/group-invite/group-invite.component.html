@@ -1,10 +1,10 @@
-@if (loading()) {
+@if (page.loading()) {
   <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
 } @else {
-  @if (group(); as g) {
+  @if (page.group(); as g) {
     <div class="page dark-page">
       <header class="head">
-        <a [routerLink]="['/groups', groupId, 'settings']" class="back">&lt; {{ g.name }}</a>
+        <a [routerLink]="['/groups', page.groupId, 'settings']" class="back">&lt; {{ g.name }}</a>
       </header>
 
       <div class="content">
@@ -16,15 +16,15 @@
           <div class="code mono">{{ g.inviteCode }}</div>
           <div class="code-divider"></div>
           <div class="code-actions">
-            <button class="code-btn" [disabled]="justCopiedCode()" (click)="copyCode()">
-              @if (justCopiedCode()) {
+            <button class="code-btn" [disabled]="page.justCopiedCode()" (click)="page.copyCode()">
+              @if (page.justCopiedCode()) {
                 <mat-icon inline>check</mat-icon> Copiado
               } @else {
                 Copiar codigo
               }
             </button>
-            <button class="code-btn ghost" [disabled]="justCopiedLink()" (click)="copyLink()">
-              @if (justCopiedLink()) {
+            <button class="code-btn ghost" [disabled]="page.justCopiedLink()" (click)="page.copyLink()">
+              @if (page.justCopiedLink()) {
                 <mat-icon inline>check</mat-icon> Copiado
               } @else {
                 Compartir enlace
@@ -33,13 +33,13 @@
           </div>
         </div>
 
-        <div class="link-row mono">{{ inviteLink() }}</div>
+        <div class="link-row mono">{{ page.inviteLink() }}</div>
 
         <div class="members-block">
-          <p class="members-title">Ya dentro · {{ members().length }}</p>
+          <p class="members-title">Ya dentro · {{ page.members().length }}</p>
           <div class="members-row">
-            @for (member of members(); track member.id) {
-              <span class="member-avatar">{{ initials(member.user.name) }}</span>
+            @for (member of page.members(); track member.id) {
+              <span class="member-avatar">{{ page.initials(member.user.name) }}</span>
             }
           </div>
         </div>

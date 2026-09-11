@@ -1,14 +1,14 @@
-@if (loading()) {
+@if (page.loading()) {
   <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
 } @else {
-  @if (profile(); as p) {
+  @if (page.profile(); as p) {
     <div class="page">
       <div class="dark-head">
         <header class="head">
           <a [routerLink]="['/rankings']" class="back">&lt; Clasificacion</a>
         </header>
         <div class="identity">
-          <span class="avatar">{{ initials(p.name) }}</span>
+          <span class="avatar">{{ page.initials(p.name) }}</span>
           <div>
             <div class="name">{{ p.name }}</div>
             <div class="sub mono">
@@ -22,7 +22,7 @@
             <div class="stat-label mono">RACHA ACTUAL</div>
           </div>
           <div class="stat-tile">
-            <div class="stat-value mono">{{ hitRatePercent() !== null ? hitRatePercent() + '%' : '-' }}</div>
+            <div class="stat-value mono">{{ page.hitRatePercent() !== null ? page.hitRatePercent() + '%' : '-' }}</div>
             <div class="stat-label mono">ACIERTOS</div>
           </div>
           <div class="stat-tile">
@@ -42,7 +42,7 @@
           } @else {
             <div class="matchday-rows">
               @for (md of p.recentMatchdays; track md.matchdayId) {
-                <div class="matchday-row" (click)="openMatchday(md.matchdayId)">
+                <div class="matchday-row" (click)="page.openMatchday(md.matchdayId)">
                   <span class="md-order mono">J{{ md.order }}</span>
                   <span class="md-position mono">{{ md.position }}.º</span>
                   <span class="md-points mono">{{ md.points }} pts</span>
