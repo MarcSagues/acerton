@@ -153,6 +153,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile/appearance',
+        loadComponent: () =>
+          import('./features/profile/profile-appearance/profile-appearance.component').then(
+            (m) => m.ProfileAppearanceComponent,
+          ),
+      },
+      {
+        path: 'profile/badges',
+        loadComponent: () =>
+          import('./features/profile/profile-badges/profile-badges.component').then(
+            (m) => m.ProfileBadgesComponent,
+          ),
+      },
+      {
         path: 'notifications',
         loadComponent: () =>
           import('./features/notifications/notifications-page/notifications-page.component').then(

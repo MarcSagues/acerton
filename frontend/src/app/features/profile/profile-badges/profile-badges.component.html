@@ -1,0 +1,29 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  <div class="page">
+    <div class="head-row">
+      <button type="button" class="back-btn" (click)="page.goBack()">
+        <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+      </button>
+    </div>
+    <div class="title-row">
+      <h1>Insignias</h1>
+      <p class="lead">Cinco hitos, una familia visual. La regla se lee antes de celebrarse.</p>
+      <p class="count mono">{{ page.earnedCount() }} de {{ page.totalCount() }}</p>
+    </div>
+
+    <div class="badges">
+      @for (item of page.badgeStates(); track item.badge.id) {
+        <div class="badge-card">
+          <piqo-svg [attr.icon]="item.earned ? 'medalla' : 'candado'" size="32" [class.earned]="item.earned"></piqo-svg>
+          <div class="meta">
+            <span class="name">{{ item.badge.name }}</span>
+            <span class="desc">{{ item.badge.description }}</span>
+            <span class="chip" [class.earned]="item.earned">{{ item.earned ? 'Conseguida' : 'Pendiente' }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

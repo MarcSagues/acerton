@@ -1,57 +1,60 @@
 @if (page.loading()) {
-  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
   <div class="page">
-    <div class="dark-head">
-      <div class="head" data-tutorial="rankings-head">
-        <div>
-          <h1>Clasificacion</h1>
-          @if (page.currentSeasonLabel(); as label) {
-            <p class="season-label mono">Temporada {{ label }}</p>
-          }
-        </div>
-        <app-group-switcher [onDark]="true"></app-group-switcher>
-      </div>
+    <div class="head-row">
+      <app-group-switcher></app-group-switcher>
+    </div>
 
-      <div class="tabs">
-        <button class="tab" [class.active]="page.period() === 'WEEKLY'" (click)="page.setPeriod('WEEKLY')">Semanal</button>
-        <button class="tab" [class.active]="page.period() === 'TOTAL'" (click)="page.setPeriod('TOTAL')">Total</button>
-      </div>
-
-      @if (page.hasMultipleCompetitions()) {
-        <div class="comp-pills">
-          @if (page.period() !== 'WEEKLY') {
-            <button class="comp-pill" [class.active]="page.scope() === 'general'" (click)="page.setScope('general')">General</button>
-          }
-          @for (competition of page.activeCompetitions(); track competition.id) {
-            <button class="comp-pill" [class.active]="page.scope() === competition.id" (click)="page.setScope(competition.id)">
-              {{ competition.name }}
-            </button>
-          }
-        </div>
+    <div class="title-row" data-tutorial="rankings-head">
+      <h1>Clasificación</h1>
+      @if (page.currentSeasonLabel(); as label) {
+        <p class="season-label mono">Temporada {{ label }}</p>
       }
     </div>
 
-    @if (page.myRow(); as mine) {
-      <div class="my-row" (click)="page.viewUserPicks(mine.userId)">
-        <div class="my-pos mono">{{ mine.position }}</div>
-        <div class="my-meta">
-          <div class="my-name">Tu · {{ mine.user.name }}</div>
-          <div class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
-            {{ page.deltaLabel(mine.positionDelta) }} esta semana
-          </div>
-        </div>
-        <div class="my-pts">
-          <div class="pts-value mono">{{ mine.points }}</div>
-          <div class="pts-label mono">PTS</div>
-        </div>
+    <div class="seg-row">
+      <app-segmented-control
+        [options]="periodOptions"
+        [value]="page.period()"
+        ariaLabel="Periodo de clasificación"
+        (valueChange)="page.setPeriod($event)"
+      ></app-segmented-control>
+    </div>
+
+    @if (page.hasMultipleCompetitions()) {
+      <div class="comp-pills">
+        @if (page.period() !== 'WEEKLY') {
+          <button type="button" class="comp-pill" [class.active]="page.scope() === 'general'" (click)="page.setScope('general')">General</button>
+        }
+        @for (competition of page.activeCompetitions(); track competition.id) {
+          <button type="button" class="comp-pill" [class.active]="page.scope() === competition.id" (click)="page.setScope(competition.id)">
+            {{ competition.name }}
+          </button>
+        }
       </div>
+    }
+
+    @if (page.myRow(); as mine) {
+      <button type="button" class="my-row" (click)="page.viewUserPicks(mine.userId)">
+        <span class="my-pos mono">{{ mine.position }}</span>
+        <span class="my-meta">
+          <span class="my-name">Tú · {{ mine.user.name }}</span>
+          <span class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
+            {{ page.deltaLabel(mine.positionDelta) }} esta semana
+          </span>
+        </span>
+        <span class="my-pts">
+          <span class="pts-value mono">{{ mine.points }}</span>
+          <span class="pts-label mono">PTS</span>
+        </span>
+      </button>
     }
 
     @if (page.showEvolution() && page.evolutionBars().length > 0) {
       <div class="evolution-card">
         <div class="evolution-head">
-          <span class="evolution-title">Tu evolucion</span>
+          <span class="evolution-title">Tu evolución</span>
           <span class="evolution-sub mono">{{ page.evolutionBars()[0].label }} &rarr; {{ page.evolutionBars().at(-1)?.label }}</span>
         </div>
         <div class="evolution-bars">
@@ -68,30 +71,30 @@
     }
 
     <div class="table-head">
-      <div class="col-pos mono">#</div>
-      <div class="col-delta mono"></div>
-      <div class="col-name mono">JUGADOR</div>
-      <div class="col-pts mono">PTS</div>
+      <span class="col-pos mono">#</span>
+      <span class="col-delta mono"></span>
+      <span class="col-name mono">JUGADOR</span>
+      <span class="col-pts mono">PTS</span>
     </div>
 
     @if (page.loadingRanking()) {
-      <div class="loading"><span class="mono">...</span></div>
+      <div class="loading"><app-spinner [size]="20"></app-spinner></div>
     } @else if (page.rows().length === 0) {
-      <p class="empty">Todavia no hay puntos calculados para esta vista.</p>
+      <p class="empty">Todavía no hay puntos calculados para esta vista.</p>
     } @else {
       <div class="rows">
         @for (row of page.rows(); track row.userId) {
-          <div class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
-            <div class="col-pos mono">{{ row.position }}</div>
-            <div class="col-delta mono" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
+          <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
+            <span class="col-pos mono">{{ row.position }}</span>
+            <span class="col-delta mono" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
               {{ page.deltaLabel(row.positionDelta) }}
-            </div>
-            <div class="col-name">
+            </span>
+            <span class="col-name">
               <span class="avatar">{{ page.initials(row.user.name) }}</span>
               <span class="name">{{ row.user.name }}</span>
-            </div>
-            <div class="col-pts mono">{{ row.points }}</div>
-          </div>
+            </span>
+            <span class="col-pts mono">{{ row.points }}</span>
+          </button>
         }
       </div>
     }

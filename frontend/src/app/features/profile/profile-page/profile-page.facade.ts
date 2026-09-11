@@ -1,40 +1,29 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatDialog } from '@angular/material/dialog';
+import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { ProfileService } from '../../../core/services/profile.service';
-import { BadgesService } from '../../../core/services/badges.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PushNotificationsService } from '../../../core/services/push-notifications.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
-import { ThemePreference, ThemeService } from '../../../core/services/theme.service';
 import { UserProfile } from '../../../core/models/profile.model';
-import { Badge } from '../../../core/models/profile.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
-import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { initials } from '../../../shared/utils/initials';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
 @Injectable()
 export class ProfilePageFacade {
   private readonly profileService = inject(ProfileService);
-  private readonly badgesService = inject(BadgesService);
   private readonly router = inject(Router);
-  private readonly dialog = inject(MatDialog);
+  private readonly dialog = inject(PiqoDialogService);
   readonly authService = inject(AuthService);
   readonly pushNotifications = inject(PushNotificationsService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly tutorialService = inject(TutorialService);
-  private readonly themeService = inject(ThemeService);
-
-  readonly theme = this.themeService.preference;
-
-  setTheme(pref: ThemePreference): void {
-    this.themeService.setPreference(pref);
-  }
 
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);
-  readonly catalog = signal<Badge[]>([]);
 
   /**
    * Racha global (product-rules.md § "Rachas y estadisticas"): cada jornada
@@ -44,10 +33,7 @@ export class ProfilePageFacade {
    */
   readonly globalCurrentStreak = computed(() => this.profile()?.globalStreak.currentStreak ?? 0);
   readonly globalLongestStreak = computed(() => this.profile()?.globalStreak.longestStreak ?? 0);
-  readonly badgeStates = computed(() => {
-    const earnedCodes = new Set((this.profile()?.badges ?? []).map((b) => b.badge.code));
-    return this.catalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));
-  });
+  readonly badgeCount = computed(() => this.profile()?.badges.length ?? 0);
 
   readonly nameInput = signal('');
   readonly nameSaving = signal(false);
@@ -110,7 +96,7 @@ export class ProfilePageFacade {
   }
 
   logout(): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, {
       data: {
         title: 'Cerrar sesion',
         message: 'Vas a cerrar sesion en este dispositivo. ¿Confirmas?',
@@ -118,7 +104,7 @@ export class ProfilePageFacade {
       },
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
+    dialogRef.closed.subscribe((confirmed) => {
       if (!confirmed) {
         return;
       }
@@ -127,11 +113,7 @@ export class ProfilePageFacade {
   }
 
   initials(name: string): string {
-    return name
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() ?? '')
-      .join('');
+    return initials(name);
   }
 
   init(): void {
@@ -143,6 +125,5 @@ export class ProfilePageFacade {
       },
       error: () => this.loading.set(false),
     });
-    this.badgesService.getCatalog().subscribe((catalog) => this.catalog.set(catalog));
   }
 }

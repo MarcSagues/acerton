@@ -1,11 +1,12 @@
 import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { MatchdayViewService } from '../../../core/services/matchday-view.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
@@ -46,10 +47,6 @@ export interface MatchPredictionState extends PredictionSelection {
   progressFrame: number | null;
 }
 
-const VIEW_STORAGE_KEY = 'piqo-jornada-vista';
-
-export type MatchdayView = 'filas' | 'visual';
-
 @Injectable()
 export class CurrentMatchdayFacade {
   private readonly activeGroupService = inject(ActiveGroupService);
@@ -57,11 +54,12 @@ export class CurrentMatchdayFacade {
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly predictionsService = inject(PredictionsService);
   private readonly wildcardsService = inject(WildcardsService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly matchdayViewService = inject(MatchdayViewService);
 
   /** Filas/Visual: "visual" es el valor inicial, se recuerda en el dispositivo por separado del tema (HANDOFF §6). */
-  readonly view = signal<MatchdayView>(this.readStoredView());
+  readonly view = this.matchdayViewService.view;
 
   readonly loading = signal(true);
   readonly entries = signal<CurrentMatchdayEntry[]>([]);
@@ -155,21 +153,8 @@ export class CurrentMatchdayFacade {
     return `${Math.round((this.doneCount() / entry.matchday.matches.length) * 100)}%`;
   }
 
-  setView(view: MatchdayView): void {
-    this.view.set(view);
-    try {
-      localStorage.setItem(VIEW_STORAGE_KEY, view);
-    } catch {
-      // Privado/sin storage: la vista vuelve a "visual" la proxima vez, no es grave.
-    }
-  }
-
-  private readStoredView(): MatchdayView {
-    try {
-      return localStorage.getItem(VIEW_STORAGE_KEY) === 'filas' ? 'filas' : 'visual';
-    } catch {
-      return 'visual';
-    }
+  setView(view: 'filas' | 'visual'): void {
+    this.matchdayViewService.setView(view);
   }
 
   /** Texto de cabecera segun el ciclo de 4 estados de la jornada (HANDOFF §9). */
@@ -291,7 +276,7 @@ export class CurrentMatchdayFacade {
       },
       error: () => {
         this.navigating.set(false);
-        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+        this.toast.show('No se pudo cargar la jornada');
       },
     });
   }
@@ -309,11 +294,7 @@ export class CurrentMatchdayFacade {
           if (direction === 'next') {
             this.noNextAvailable.set(true);
           }
-          this.snackBar.open(
-            direction === 'previous' ? 'No hay jornada anterior' : 'Todavia no hay jornada siguiente',
-            'Cerrar',
-            { duration: 2500 },
-          );
+          this.toast.show(direction === 'previous' ? 'No hay jornada anterior' : 'Todavia no hay jornada siguiente');
           return;
         }
         this.noNextAvailable.set(false);
@@ -321,7 +302,7 @@ export class CurrentMatchdayFacade {
       },
       error: () => {
         this.navigating.set(false);
-        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+        this.toast.show('No se pudo cargar la jornada');
       },
     });
   }
@@ -494,15 +475,11 @@ export class CurrentMatchdayFacade {
     }
 
     if (!comeback?.enabled) {
-      this.snackBar.open('El comodin de remontada esta desactivado en este grupo', 'Cerrar', {
-        duration: 3000,
-      });
+      this.toast.show('El comodin de remontada esta desactivado en este grupo');
       return;
     }
     if (comeback.remaining <= 0) {
-      this.snackBar.open('No te quedan comodines de remontada disponibles esta jornada', 'Cerrar', {
-        duration: 3000,
-      });
+      this.toast.show('No te quedan comodines de remontada disponibles esta jornada');
       return;
     }
 
@@ -558,9 +535,7 @@ export class CurrentMatchdayFacade {
           this.finishDrawProgress(state, seq, () => {
             state.saving = false;
             state.error = true;
-            this.snackBar.open(error.error?.message ?? 'No se pudo guardar el pronostico', 'Cerrar', {
-              duration: 3000,
-            });
+            this.toast.show(error.error?.message ?? 'No se pudo guardar el pronostico');
           });
         },
       });

@@ -1,6 +1,6 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { RankingsService } from '../../../core/services/rankings.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
@@ -27,7 +27,7 @@ export class RankingsPageFacade {
   private readonly tutorialService = inject(TutorialService);
   private readonly seasonsService = inject(SeasonsService);
   private readonly router = inject(Router);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
   readonly activeGroupService = inject(ActiveGroupService);
 
   /** Se inicia al entrar por primera vez en un grupo (Tabla es donde se aterriza al elegirlo). */
@@ -148,7 +148,7 @@ export class RankingsPageFacade {
       next: (matchday) => {
         this.resolvingUserId.set(null);
         if (!matchday) {
-          this.snackBar.open('Todavia no hay jornadas cerradas para ver quinielas', 'Cerrar', { duration: 2500 });
+          this.toast.show('Todavia no hay jornadas cerradas para ver quinielas');
           return;
         }
         const path =
@@ -159,7 +159,7 @@ export class RankingsPageFacade {
       },
       error: () => {
         this.resolvingUserId.set(null);
-        this.snackBar.open('No se pudo cargar la jornada', 'Cerrar', { duration: 3000 });
+        this.toast.show('No se pudo cargar la jornada');
       },
     });
   }
