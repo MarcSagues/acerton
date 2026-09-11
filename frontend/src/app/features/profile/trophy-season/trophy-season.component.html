@@ -47,8 +47,7 @@
       @for (matchday of page.matchdays(); track matchday.order) {
         <div class="row">
           <span class="order-badge">
-            <span class="order-n mono">{{ matchday.order }}</span>
-            <span class="order-label mono">JORN</span>
+            <span class="order-n mono">J{{ matchday.order }}</span>
           </span>
           <span class="meta">
             <span class="title">Ganó {{ matchday.winnerName }}</span>

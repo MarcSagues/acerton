@@ -116,18 +116,22 @@
   color: var(--p4-text);
   text-align: left;
 
-  piqo-svg {
+  > piqo-svg {
     flex: none;
     color: var(--p4-muted);
-  }
-
-  &.active piqo-svg {
-    color: var(--p4-accent);
   }
 
   &.disabled {
     opacity: 0.75;
   }
+}
+
+.comp-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .comp-name {
@@ -141,13 +145,6 @@
   font: 600 10px/1 var(--p4-font-ui);
   padding: 6px 8px;
   border-radius: 6px;
-  background: var(--p4-disabled-bg);
-  color: var(--p4-muted);
-
-  &.success {
-    background: var(--p4-success-bg);
-    color: var(--p4-success);
-  }
 
   &.accent {
     background: var(--p4-soft);

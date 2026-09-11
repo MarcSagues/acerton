@@ -39,23 +39,29 @@
       <div class="section">
         <div class="comp-list">
           @for (competition of page.catalog(); track competition.id) {
-            <button
-              type="button"
-              class="comp-row"
-              [class.active]="page.selectedCompetitionIds().has(competition.id)"
-              [class.disabled]="!page.isAdmin() || page.isLocked(competition.id)"
-              (click)="page.toggleCompetition(competition.id)"
-            >
+            <div class="comp-row" [class.disabled]="!page.isAdmin() || page.isLocked(competition.id)">
               @if (page.trophyId(competition); as trophy) {
                 <piqo-svg [attr.trophy]="trophy" variant="mini" size="24"></piqo-svg>
               } @else {
                 <piqo-svg icon="trofeo" size="24"></piqo-svg>
               }
-              <span class="comp-name">{{ competition.name }}</span>
-              <span [class]="'status-chip ' + page.competitionStatus(competition).tone">
-                {{ page.competitionStatus(competition).label }}
-              </span>
-            </button>
+              <div class="comp-text">
+                <span class="comp-name">{{ competition.name }}</span>
+                @if (page.competitionStatus(competition).tone === 'accent') {
+                  <span class="status-chip accent">{{ page.competitionStatus(competition).label }}</span>
+                }
+              </div>
+              <button
+                type="button"
+                class="toggle"
+                [class.on]="page.isLocked(competition.id) || page.selectedCompetitionIds().has(competition.id)"
+                [class.disabled]="!page.isAdmin() || page.isLocked(competition.id)"
+                [attr.aria-label]="competition.name"
+                (click)="page.toggleCompetition(competition.id)"
+              >
+                <span class="knob"></span>
+              </button>
+            </div>
           }
         </div>
       </div>

@@ -27,8 +27,7 @@
             @for (entry of h.matchdays; track entry.matchdayId) {
               <button type="button" class="row" (click)="page.openMatchday(entry.matchdayId)">
                 <span class="order-badge">
-                  <span class="order-n mono">{{ entry.order }}</span>
-                  <span class="order-label mono">JORN</span>
+                  <span class="order-n mono">J{{ entry.order }}</span>
                 </span>
                 <span class="meta">
                   @if (entry.winner) {
