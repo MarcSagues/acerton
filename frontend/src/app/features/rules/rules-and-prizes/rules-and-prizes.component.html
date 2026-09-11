@@ -1,0 +1,59 @@
+<main class="page rules-page">
+  <header class="rules-head">
+    <a routerLink="/profile" class="back" aria-label="Volver a Perfil"><mat-icon>arrow_back</mat-icon></a>
+    <div>
+      <p class="eyebrow">COMO SE JUEGA</p>
+      <h1>Normas y premios</h1>
+    </div>
+  </header>
+
+  @if (group(); as g) {
+    <section class="group-context">
+      <span class="group-avatar">{{ g.name.slice(0, 1).toUpperCase() }}</span>
+      <div><small>REGLAS DEL GRUPO ACTIVO</small><strong>{{ g.name }}</strong></div>
+      <span class="mode-pill">{{ g.scoringMode === 'EXACT_SCORE' ? 'Exacto' : '1X2' }}</span>
+    </section>
+
+    <section class="content-section">
+      <div class="section-title"><span>01</span><div><p>Puntuacion</p><h2>{{ g.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}</h2></div></div>
+      <div class="score-grid">
+        @if (g.scoringMode === 'EXACT_SCORE') {
+          <article class="score-card featured"><strong>5</strong><span>Marcador exacto</span><small>Aciertas todos los goles</small></article>
+          <article class="score-card"><strong>2</strong><span>Signo correcto</span><small>Aciertas ganador o empate</small></article>
+          <article class="score-card"><strong>0</strong><span>Sin acierto</span><small>El resultado no coincide</small></article>
+        } @else {
+          <article class="score-card featured"><strong>1</strong><span>Signo correcto</span><small>Local, empate o visitante</small></article>
+          <article class="score-card"><strong>0</strong><span>Sin acierto</span><small>El signo no coincide</small></article>
+        }
+      </div>
+      <p class="rule-note"><mat-icon>edit_calendar</mat-icon>Los pronosticos se guardan al elegir y pueden cambiarse hasta que empiece cada partido.</p>
+    </section>
+
+    @if (g.scoringMode === 'ONE_X_TWO') {
+      <section class="content-section">
+        <div class="section-title"><span>02</span><div><p>Ayuda para remontar</p><h2>Comodin de remontada</h2></div></div>
+        <article class="comeback-card" [class.disabled]="!g.comebackEnabled">
+          <div class="comeback-top">
+            <mat-icon>health_and_safety</mat-icon>
+            <strong>{{ g.comebackEnabled ? 'Activado' : 'Desactivado' }}</strong>
+          </div>
+          @if (g.comebackEnabled) {
+            <p>Por cada <b>{{ g.comebackPointsPerBonus }} puntos</b> de diferencia con el lider recibes un uso adicional esa jornada.</p>
+            <div class="double-options"><span>1X</span><span>X2</span><span>12</span></div>
+            <small>Cada uso permite cubrir dos signos en un partido. Se calcula automaticamente segun la clasificacion.</small>
+          } @else {
+            <p>Este grupo juega sin doble oportunidad de remontada.</p>
+          }
+        </article>
+      </section>
+    }
+
+    <section class="content-section prizes-section">
+      <div class="section-title"><span>{{ g.scoringMode === 'ONE_X_TWO' ? '03' : '02' }}</span><div><p>Al final de la temporada</p><h2>Premios del grupo</h2></div></div>
+      <div class="podium" aria-hidden="true"><span>2</span><span>1</span><span>3</span></div>
+      <h3>Vosotros poneis el premio</h3>
+      <p>Una cena, una copa o simplemente poder presumir: cada grupo acuerda sus premios fuera de Piqo.</p>
+      <div class="generic-note"><mat-icon>info</mat-icon><span>Piqo no registra ni gestiona premios pactados, dinero ni pagos. La clasificacion y los trofeos de la app sirven para reconocer el resultado.</span></div>
+    </section>
+  }
+</main>

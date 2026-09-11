@@ -159,6 +159,13 @@ export const routes: Routes = [
             (m) => m.NotificationsPageComponent,
           ),
       },
+      {
+        path: 'rules',
+        loadComponent: () =>
+          import('./features/rules/rules-and-prizes/rules-and-prizes.component').then(
+            (m) => m.RulesAndPrizesComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'matchday' },
