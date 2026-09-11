@@ -1,0 +1,19 @@
+<div class="page">
+  <div class="hero-icon">
+    <div class="hero-icon-gap">
+      <div class="hero-icon-inner">
+        <piqo-svg icon="error" size="44"></piqo-svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="title-row">
+    <h1>Algo ha ido mal</h1>
+    <p class="lead">No hemos podido cargar esto. Comprueba tu conexión e inténtalo de nuevo.</p>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="piqo-primary cta" (click)="reload()">Reintentar</button>
+    <a routerLink="/matchday" class="piqo-secondary cta">Volver al inicio</a>
+  </div>
+</div>

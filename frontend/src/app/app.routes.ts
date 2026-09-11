@@ -27,6 +27,11 @@ export const routes: Routes = [
       import('./features/legal/soporte/soporte.component').then((m) => m.SoporteComponent),
   },
   {
+    path: 'error-demo',
+    loadComponent: () =>
+      import('./features/error/error-page/error-page.component').then((m) => m.ErrorPageComponent),
+  },
+  {
     path: 'auth/callback',
     loadComponent: () =>
       import('./features/auth/auth-callback/auth-callback.component').then(

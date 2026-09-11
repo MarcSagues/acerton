@@ -20,8 +20,44 @@
   font: 600 13px/1 var(--p4-font-ui);
 }
 
+.hero-icon {
+  margin: 20px auto 0;
+  width: 144px;
+  height: 144px;
+  border-radius: 50%;
+  background: var(--p4-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Deja ver el fondo de pagina entre el anillo (tenue, .hero-icon) y el
+   circulo solido del icono, para que el anillo se lea fino en vez de un
+   bloque grueso pegado al icono. */
+.hero-icon-gap {
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  background: var(--p4-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-icon-inner {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--p4-accent-gradient);
+  color: var(--p4-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .title-row {
   padding: 6px 20px 0;
+  text-align: center;
 }
 
 h1 {
