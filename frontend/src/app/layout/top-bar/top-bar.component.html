@@ -1,0 +1,16 @@
+<div class="top-bar">
+  <piqo-svg logo size="120"></piqo-svg>
+  <div class="spacer"></div>
+  <button type="button" class="icon-btn" aria-label="Avisos" (click)="page.goNotifications()">
+    <piqo-svg icon="campana" size="24"></piqo-svg>
+  </button>
+  <button type="button" class="avatar-btn" aria-label="Tu perfil" (click)="page.goProfile()">
+    @if (page.currentUser(); as user) {
+      @if (user.avatarUrl) {
+        <img [src]="user.avatarUrl" alt="" class="avatar-img" />
+      } @else {
+        <span class="avatar-initials">{{ page.initials(user.name) }}</span>
+      }
+    }
+  </button>
+</div>

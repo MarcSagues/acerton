@@ -3,12 +3,19 @@ import { RouterOutlet } from '@angular/router';
 import { CookieConsentComponent } from './shared/cookie-consent/cookie-consent.component';
 import { NoRealMoneyNoticeComponent } from './shared/no-real-money-notice/no-real-money-notice.component';
 import { TutorialCoachMarkComponent } from './shared/tutorial-coach-mark/tutorial-coach-mark.component';
+import { ToastHostComponent } from './shared/ui/toast/toast-host.component';
 import { ThemeService } from './core/services/theme.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CookieConsentComponent, NoRealMoneyNoticeComponent, TutorialCoachMarkComponent],
+  imports: [
+    RouterOutlet,
+    CookieConsentComponent,
+    NoRealMoneyNoticeComponent,
+    TutorialCoachMarkComponent,
+    ToastHostComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })

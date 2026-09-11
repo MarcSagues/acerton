@@ -3,7 +3,9 @@ import { Injectable, signal } from '@angular/core';
 export type ThemePreference = 'light' | 'dark' | 'auto';
 
 const STORAGE_KEY = 'piqo-theme';
-const THEME_COLOR = { light: '#f1f0ea', dark: '#0b0e10' };
+const THEME_COLOR = { light: '#f1f0ea', dark: '#121619' };
+/** Valores de data-theme en español para coincidir 1:1 con tema.css del kit de diseño Piqo 4.0. */
+const DOM_THEME = { light: 'claro', dark: 'oscuro' } as const;
 
 /**
  * Aplica la preferencia de tema (Claro/Oscuro/Automatico) como atributo
@@ -50,7 +52,7 @@ export class ThemeService {
     if (pref === 'auto') {
       root.removeAttribute('data-theme');
     } else {
-      root.setAttribute('data-theme', pref);
+      root.setAttribute('data-theme', DOM_THEME[pref]);
     }
     this.syncMetaThemeColor();
   }

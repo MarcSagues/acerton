@@ -1,8 +1,8 @@
 {
   "name": "Piqo",
   "short_name": "Piqo",
-  "theme_color": "#0B0E10",
-  "background_color": "#0B0E10",
+  "theme_color": "#121619",
+  "background_color": "#121619",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

@@ -7,147 +7,54 @@
 }
 
 .bottom-nav {
+  height: 82px;
+  padding-bottom: env(safe-area-inset-bottom);
   display: flex;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
+  align-items: center;
+  justify-content: space-around;
   max-width: 480px;
   margin: 0 auto;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--p4-surface);
+  border-top: 1px solid var(--p4-border);
 }
 
 .item {
   flex: 1;
-  padding: 12px 0 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  cursor: pointer;
+  gap: 3px;
+  color: var(--p4-muted);
+
+  &.active {
+    color: var(--p4-accent);
+  }
 }
 
-.item.active {
-  .label {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
+.pill {
+  width: 48px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease;
+}
 
-  .icon-matchday {
-    border-color: var(--text-primary);
-    .tick {
-      background: var(--text-primary);
-    }
-  }
-  .icon-groups .circle.c1 {
-    border-color: var(--text-primary);
-  }
-  .icon-groups .circle.c2 {
-    background: var(--text-primary);
-    opacity: 1;
-  }
-  .icon-table .bar {
-    background: var(--text-primary);
-  }
-  .icon-profile .head,
-  .icon-profile .body {
-    border-color: var(--text-primary);
-  }
+.item.active .pill {
+  background: var(--p4-soft);
 }
 
 .label {
-  font: 500 10.5px/1.2 var(--font-ui);
-  color: var(--text-tertiary);
+  font: 400 11px/1 var(--p4-font-ui);
 }
 
-.icon {
-  width: 17px;
-  height: 17px;
-  position: relative;
-  display: block;
+.item.active .label {
+  font-weight: 600;
 }
 
-/* Jornada: cuadrado con "check" */
-.icon-matchday {
-  box-sizing: border-box;
-  border: 1.5px solid var(--text-tertiary);
-  border-radius: 4px;
-
-  .tick {
-    position: absolute;
-    left: 1.5px;
-    right: 1.5px;
-    top: 2.5px;
-    height: 1.5px;
-    background: var(--text-tertiary);
-  }
-}
-
-/* Grupos: dos círculos superpuestos */
-.icon-groups {
-  width: 19px;
-
-  .circle {
-    position: absolute;
-    top: 3px;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-  }
-  .c1 {
-    left: 0;
-    box-sizing: border-box;
-    border: 1.5px solid var(--text-tertiary);
-  }
-  .c2 {
-    right: 0;
-    background: var(--text-tertiary);
-    opacity: 0.45;
-  }
-}
-
-/* Tabla: barras */
-.icon-table {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-
-  .bar {
-    flex: 1;
-    border-radius: 1px;
-    background: var(--text-tertiary);
-  }
-  .b1 {
-    height: 7px;
-  }
-  .b2 {
-    height: 14px;
-  }
-  .b3 {
-    height: 10px;
-  }
-}
-
-/* Perfil: persona */
-.icon-profile {
-  .head {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    box-sizing: border-box;
-    border: 1.5px solid var(--text-tertiary);
-  }
-  .body {
-    position: absolute;
-    left: 1px;
-    right: 1px;
-    bottom: 1px;
-    height: 8px;
-    border-radius: 8px 8px 3px 3px;
-    box-sizing: border-box;
-    border: 1.5px solid var(--text-tertiary);
-    border-bottom: none;
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
   }
 }

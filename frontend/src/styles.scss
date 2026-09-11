@@ -59,17 +59,93 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root:not([data-theme='claro']) {
     @include dark-tokens;
   }
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='oscuro'] {
   @include dark-tokens;
 }
 
-:root[data-theme='light'] {
+:root[data-theme='claro'] {
   @include light-tokens;
+}
+
+/* ---- Piqo 4.0 ----------------------------------------------------------
+   Tokens del nuevo sistema de diseño (proyecto "Piqo Mobile 4.0"), con el
+   prefijo `--p4-` para no chocar con los alias de arriba mientras conviven
+   ambos sistemas durante la reconstrucción de la app. Los componentes
+   nuevos usan estos; los que aún no se han reconstruido siguen con los de
+   arriba hasta que les toque su lote. Valores calcados de `tema.css`. */
+@mixin piqo4-claro {
+  --p4-bg: #f1f0ea;
+  --p4-surface: #ffffff;
+  --p4-text: #121619;
+  --p4-muted: #5f676b;
+  --p4-accent: #786039;
+  --p4-on-accent: #ffffff;
+  --p4-border: #777f82;
+  --p4-soft: #eae2d2;
+  --p4-success: #236b4d;
+  --p4-success-bg: #e0eee7;
+  --p4-error: #a53240;
+  --p4-error-bg: #f8e5e8;
+  --p4-warning: #805900;
+  --p4-warning-bg: #f6ebcf;
+  --p4-info: #285e91;
+  --p4-info-bg: #e3edf8;
+  --p4-disabled: #788184;
+  --p4-disabled-bg: #e2e5e4;
+}
+
+@mixin piqo4-oscuro {
+  --p4-bg: #121619;
+  --p4-surface: #1d2426;
+  --p4-text: #f1f0ea;
+  --p4-muted: #adb5b5;
+  --p4-accent: #d2be94;
+  --p4-on-accent: #121619;
+  --p4-border: #7c878d;
+  --p4-soft: #373126;
+  --p4-success: #91c7ae;
+  --p4-success-bg: #193c30;
+  --p4-error: #f1a4aa;
+  --p4-error-bg: #43272e;
+  --p4-warning: #e3bd75;
+  --p4-warning-bg: #3b321e;
+  --p4-info: #a4c7ec;
+  --p4-info-bg: #203247;
+  --p4-disabled: #718083;
+  --p4-disabled-bg: #273033;
+}
+
+:root {
+  @include piqo4-claro;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='claro']) {
+    @include piqo4-oscuro;
+  }
+}
+
+:root[data-theme='oscuro'] {
+  @include piqo4-oscuro;
+}
+
+:root[data-theme='claro'] {
+  @include piqo4-claro;
+}
+
+:root {
+  --p4-font-ui: 'Inter', system-ui, sans-serif;
+  --p4-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+  --p4-radius-lg: 22px;
+  --p4-radius-md: 16px;
+  --p4-radius-sm: 12px;
+  --p4-radius-pill: 20px;
+  --p4-touch: 48px;
 }
 
 :root {
@@ -243,4 +319,221 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   padding: 14px;
+}
+
+/* ---- Piqo 4.0: utilidades base (calcadas de tema.css) ------------------ */
+.piqo-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--p4-muted);
+  flex: none;
+}
+
+.piqo-icon-button {
+  min-width: var(--p4-touch);
+  min-height: var(--p4-touch);
+}
+
+.piqo-primary,
+.piqo-choice[aria-pressed='true'] {
+  background: var(--p4-accent);
+  color: var(--p4-on-accent);
+  border-color: var(--p4-accent);
+}
+
+.piqo-secondary,
+.piqo-choice {
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  border: 1px solid var(--p4-border);
+}
+
+.piqo-choice {
+  min-width: var(--p4-touch);
+  min-height: var(--p4-touch);
+  border-radius: 10px;
+}
+
+.piqo-view[aria-pressed='true'] {
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+}
+
+.piqo-success {
+  color: var(--p4-success);
+  background: var(--p4-success-bg);
+}
+
+.piqo-error {
+  color: var(--p4-error);
+  background: var(--p4-error-bg);
+}
+
+.piqo-warning {
+  color: var(--p4-warning);
+  background: var(--p4-warning-bg);
+}
+
+.piqo-info {
+  color: var(--p4-info);
+  background: var(--p4-info-bg);
+}
+
+.piqo-page button:disabled {
+  background: var(--p4-disabled-bg);
+  color: var(--p4-disabled);
+  cursor: default;
+}
+
+.piqo-page button:focus-visible {
+  outline: 2px solid var(--p4-accent);
+  outline-offset: 3px;
+}
+
+.piqo-match-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 156px;
+  gap: 10px;
+  padding: 14px;
+}
+
+.piqo-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(48px, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 359px) {
+  .piqo-match-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes piqoSheetIn {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes piqoFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes piqoAcento {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.4;
+  }
+  55% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes piqoSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piqo-choice,
+  .piqo-view {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* ---- Piqo 4.0: overlays de @angular/cdk/dialog -------------------------
+   Estas clases se aplican a elementos que CDK adjunta a <body> (fuera del
+   encapsulamiento de cualquier componente), asi que van globales aqui. */
+.piqo-dialog-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.piqo-dialog-panel {
+  max-width: 340px;
+  width: calc(100vw - 40px);
+  border-radius: var(--p4-radius-lg);
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  padding: 20px;
+  animation: piqoFade 120ms ease;
+}
+
+.piqo-sheet-panel {
+  width: 100%;
+  max-width: 430px;
+  border-radius: 20px 20px 0 0;
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  animation: piqoSheetIn 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.piqo-sheet-panel.piqo-sheet-leaving {
+  animation: piqoSheetIn 180ms cubic-bezier(0.4, 0, 1, 1) reverse forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piqo-dialog-panel,
+  .piqo-sheet-panel,
+  .piqo-sheet-panel.piqo-sheet-leaving {
+    animation: none;
+  }
+}
+
+/* ---- Piqo 4.0: toasts --------------------------------------------------- */
+.piqo-toast-host {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.piqo-toast {
+  pointer-events: auto;
+  max-width: 390px;
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--p4-radius-sm);
+  background: var(--p4-text);
+  color: var(--p4-bg);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font: 500 13px/1.4 var(--p4-font-ui);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: piqoFade 120ms ease;
+}
+
+.piqo-toast button {
+  flex: none;
+  background: none;
+  border: 0;
+  color: var(--p4-accent);
+  font: 700 12px/1 var(--p4-font-ui);
 }

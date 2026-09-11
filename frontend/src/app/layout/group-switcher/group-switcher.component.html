@@ -1,28 +1,10 @@
 @if (page.activeGroup(); as g) {
-  <button class="switcher" [class.on-dark]="onDark" [matMenuTriggerFor]="menu">
+  <button type="button" class="switcher" (click)="open()">
     <span class="avatar">{{ page.initials(g.name) }}</span>
     <span class="meta">
       <span class="name">{{ g.name }}</span>
-      <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'publico' : 'privado' }}</span>
+      <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'público' : 'privado' }}</span>
     </span>
-    @if (page.groups().length > 1) {
-      <mat-icon class="chevron">expand_more</mat-icon>
-    }
+    <piqo-svg icon="abajo" size="20"></piqo-svg>
   </button>
-
-  <mat-menu #menu="matMenu">
-    @for (group of page.groups(); track group.id) {
-      <button mat-menu-item class="group-menu-item" [class.active]="group.id === g.id" (click)="page.select(group.id)">
-        <span>{{ group.name }}</span>
-        @if (group.id === g.id) {
-          <mat-icon inline>check</mat-icon>
-        }
-      </button>
-    }
-    <a mat-menu-item routerLink="/groups">Ver todos los grupos</a>
-  </mat-menu>
-} @else {
-  <a class="switcher empty" [class.on-dark]="onDark" routerLink="/groups">
-    <span class="name">Unete o crea un grupo</span>
-  </a>
 }

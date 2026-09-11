@@ -1,0 +1,45 @@
+.top-bar {
+  padding: 6px 20px 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--p4-text);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.icon-btn,
+.avatar-btn {
+  width: var(--p4-touch);
+  height: var(--p4-touch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--p4-muted);
+}
+
+.avatar-img,
+.avatar-initials {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+
+.avatar-img {
+  object-fit: cover;
+}
+
+.avatar-initials {
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 12px/1 var(--p4-font-ui);
+}

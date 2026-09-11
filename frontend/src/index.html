@@ -8,23 +8,34 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0B0E10">
+  <meta name="theme-color" content="#121619">
+
+  <!--
+    Sistema de arte de Piqo 4.0 (iconos, insignias, trofeos y firma) como
+    custom element <piqo-svg>, cargado antes de Angular para poder pintar
+    la firma incluso en el loader estatico de mas abajo.
+  -->
+  <script src="piqo/icons.js"></script>
+  <script src="piqo/art.js"></script>
+  <script src="piqo/piqo-svg.js"></script>
 
   <!--
     Aplica la preferencia de tema (Claro/Oscuro/Automatico, guardada por
     ThemeService) antes de que cargue nada mas, para no pintar primero un
     tema y luego cambiar a otro de golpe. "Automatico" = sin atributo,
-    resuelto por prefers-color-scheme en styles.scss.
+    resuelto por prefers-color-scheme en styles.scss. Valores de atributo
+    en español ("claro"/"oscuro") para coincidir 1:1 con tema.css del kit
+    de diseño, sin capa de traduccion.
   -->
   <script>
     (function () {
       try {
         var pref = localStorage.getItem('piqo-theme');
         if (pref === 'light' || pref === 'dark') {
-          document.documentElement.setAttribute('data-theme', pref);
+          document.documentElement.setAttribute('data-theme', pref === 'light' ? 'claro' : 'oscuro');
         }
       } catch (e) {}
     })();
@@ -39,11 +50,14 @@
     que esto solo se ve mientras no hay nada mas que mostrar.
   -->
   <style>
+    /* --accent inline para que <piqo-svg logo> (usa var(--accent)) pinte
+       bien desde el primer frame, antes de que cargue styles.scss. */
+    :root { --accent: #d2be94; }
     /* Pantalla de marca: siempre oscura (grafito + champan), en los dos temas. */
     #boot-loader {
       position: fixed;
       inset: 0;
-      background: #0b0e10;
+      background: #121619;
       color: #f1f0ea;
       display: flex;
       flex-direction: column;
@@ -52,18 +66,6 @@
       gap: 20px;
       font-family: 'Inter', system-ui, sans-serif;
       z-index: 9999;
-    }
-    #boot-loader .boot-mark {
-      width: 52px;
-      height: 52px;
-      border-radius: 17px;
-      background: #d2be94;
-      color: #121619;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font: 800 20px/1 'Manrope', sans-serif;
-      letter-spacing: -2px;
     }
     #boot-loader .boot-track {
       width: 160px;
@@ -135,7 +137,7 @@
 <body class="mat-typography">
   <app-root>
     <div id="boot-loader">
-      <div class="boot-mark">pq</div>
+      <piqo-svg logo size="120"></piqo-svg>
       <div class="boot-track"><div class="boot-fill"></div></div>
       <div class="boot-label">CARGANDO</div>
       <div class="boot-hint">El servidor puede tardar unos segundos en despertar</div>
