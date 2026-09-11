@@ -1,234 +1,78 @@
-<div class="page">
-  <div class="head">
-    <h1>Mis grupos</h1>
-    <p class="sub mono">{{ page.groups().length }} {{ page.groups().length === 1 ? 'activo' : 'activos' }}</p>
-  </div>
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  <div class="page">
+    <div class="title-row">
+      <h1>Tus grupos</h1>
+      <p class="lead">Elige dónde pronosticas esta jornada.</p>
+    </div>
 
-  @if (page.loading()) {
-    <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
-  } @else if (page.groups().length === 0) {
-    <p class="empty">Todavia no perteneces a ningun grupo. ¡Crea uno o unete con un codigo!</p>
-  } @else {
-    <div class="groups">
-      @for (group of page.groups(); track group.id) {
-        <div class="group-card" [class.active]="group.id === page.activeGroupId()" (click)="page.goToGroup(group.id)">
-          @if (group.myPosition; as position) {
-            <div class="group-rank">
-              <span class="rank-position mono">{{ position.position }}&#186;</span>
-              <span class="rank-points mono">{{ position.points }}pts</span>
-            </div>
-            <div class="rank-divider"></div>
-          }
-          <div class="group-main">
-            <div class="group-top">
+    @if (page.groups().length === 0) {
+      <app-empty-state
+        icon="grupos"
+        title="Todavía no estás en ningún grupo"
+        text="Crea uno para tu gente o únete con el código que te hayan pasado."
+        ctaLabel="Crear grupo"
+        cta2Label="Unirse con código"
+        (cta)="page.goToCreate()"
+        (cta2)="page.goToJoinCode()"
+      ></app-empty-state>
+    } @else {
+      <div class="groups">
+        @for (group of page.groups(); track group.id) {
+          <div class="group-row" [class.active]="group.id === page.activeGroupId()">
+            <button type="button" class="group-main" (click)="page.goToGroup(group.id)">
               <span class="avatar">{{ page.initials(group.name) }}</span>
-              <div class="meta">
-                <div class="name-row">
-                  <div class="name">{{ group.name }}</div>
-                  @if (group.id === page.activeGroupId()) {
-                    <span class="active-badge mono">
-                      <mat-icon inline>check</mat-icon>
-                      activo
-                    </span>
-                  }
-                </div>
-                <div class="sub mono">
-                  {{ group.isPublic ? 'publico' : 'privado' }} · {{ group._count?.memberships ?? 0 }} miembros ·
-                  {{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}
-                </div>
-              </div>
-            </div>
-
-            @if (group.groupCompetitions && group.groupCompetitions.length > 0) {
-              <div class="chips">
-                @for (gc of group.groupCompetitions; track gc.id) {
-                  @if (gc.isActive) {
-                    <span class="chip mono">{{ gc.competition.name }}</span>
-                  }
-                }
-              </div>
-            }
-
-            <div class="divider"></div>
-            <div class="footer">
-              <span class="footer-label mono">Ver jornada y clasificacion</span>
-              <a class="settings-link" [routerLink]="['/groups', group.id, 'settings']" (click)="$event.stopPropagation()">
-                <mat-icon inline>tune</mat-icon>
-              </a>
-            </div>
-          </div>
-        </div>
-      }
-    </div>
-  }
-
-  <div class="actions">
-    <button class="primary-btn" (click)="page.openCreateSheet()">Crear grupo</button>
-    <button class="secondary-btn" (click)="page.openJoinSheet()">Unirme con codigo</button>
-  </div>
-
-  @if (page.discoverableGroups().length > 0) {
-    <div class="head public-head">
-      <h2>Grupos publicos</h2>
-      <p class="sub mono">Abiertos a cualquiera, sin invitacion</p>
-    </div>
-    <div class="public-groups">
-      @for (group of page.discoverableGroups(); track group.id) {
-        <div class="public-group-row">
-          <span class="avatar">{{ page.initials(group.name) }}</span>
-          <div class="meta">
-            <div class="name">{{ group.name }}</div>
-            <div class="sub mono">{{ group._count?.memberships ?? 0 }} miembros</div>
-          </div>
-          <button
-            class="join-btn"
-            [disabled]="page.joiningGroupId() === group.id"
-            (click)="page.joinPublicGroup(group.id)"
-          >
-            {{ page.joiningGroupId() === group.id ? 'Uniendo...' : 'Unirme' }}
-          </button>
-        </div>
-      }
-    </div>
-  }
-</div>
-
-@if (page.showCreateSheet() || page.showJoinSheet()) {
-  <div class="sheet-overlay" (click)="page.closeSheets()">
-    <div class="sheet" (click)="$event.stopPropagation()">
-      <div class="sheet-handle"></div>
-
-      @if (page.showCreateSheet()) {
-        <h2>Crear grupo</h2>
-
-        @if (page.createStep() === 'competitions') {
-          <p class="sheet-desc mono">
-            Elige al menos una liga para el grupo. Podras anadir mas despues, pero no quitar estas.
-          </p>
-          <div class="comp-list">
-            @for (competition of page.catalog(); track competition.id) {
-              <div
-                class="comp-row"
-                [class.active]="page.createSelectedCompetitionIds().has(competition.id)"
-                (click)="page.toggleCreateCompetition(competition.id)"
-              >
-                <span class="comp-abbr mono">{{ competition.name.slice(0, 3).toUpperCase() }}</span>
-                <div class="comp-meta">
-                  <div class="comp-name">{{ competition.name }}</div>
-                  <div class="comp-code mono">{{ competition.code }}</div>
-                </div>
-                <span class="toggle" [class.on]="page.createSelectedCompetitionIds().has(competition.id)">
-                  <span class="knob"></span>
-                </span>
-              </div>
-            }
-          </div>
-          <button type="button" class="cta" [disabled]="page.createSelectedCompetitionIds().size === 0" (click)="page.goToCreateDetails()">
-            Continuar ({{ page.createSelectedCompetitionIds().size }})
-          </button>
-        } @else {
-          <button type="button" class="back-link mono" (click)="page.backToCreateCompetitions()">
-            &lt; {{ page.createSelectedCompetitionIds().size }} liga(s) elegida(s)
-          </button>
-          <form [formGroup]="page.createForm" (ngSubmit)="page.createGroup()" class="sheet-form">
-          <label class="field">
-            <span class="field-label">Nombre del grupo</span>
-            <input class="field-input" formControlName="name" />
-          </label>
-          <label class="field">
-            <span class="field-label">Descripcion (opcional)</span>
-            <input class="field-input" formControlName="description" />
-          </label>
-          <div class="field">
-            <span class="field-label">Modo de puntuacion</span>
-            <div class="tabs mode-tabs">
-              <button
-                type="button"
-                class="tab"
-                [class.active]="page.createForm.value.scoringMode === 'ONE_X_TWO'"
-                (click)="page.setScoringMode('ONE_X_TWO')"
-              >
-                Quiniela 1X2
-              </button>
-              <button
-                type="button"
-                class="tab"
-                [class.active]="page.createForm.value.scoringMode === 'EXACT_SCORE'"
-                (click)="page.setScoringMode('EXACT_SCORE')"
-              >
-                Resultado exacto
-              </button>
-            </div>
-            <p class="sheet-desc mono">
-              @if (page.createForm.value.scoringMode === 'EXACT_SCORE') {
-                5 puntos por marcador exacto, 2 por acertar solo el resultado. Sin comodin de remontada.
-              } @else {
-                1 punto por acertar 1X2. Incluye comodin de remontada.
+              <span class="meta">
+                <span class="name">{{ group.name }}</span>
+                <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
+              </span>
+              @if (group.id === page.activeGroupId()) {
+                <span class="active-chip"><piqo-svg icon="check" size="18"></piqo-svg>Activo</span>
               }
-            </p>
-            @if (page.createForm.value.scoringMode === 'ONE_X_TWO') {
-              <button type="button" class="comeback-toggle mono" (click)="page.showComebackDetail.set(!page.showComebackDetail())">
-                {{ page.showComebackDetail() ? 'Ocultar' : '¿Como funciona el comodin?' }}
-              </button>
-              @if (page.showComebackDetail()) {
-                <p class="sheet-desc comeback-detail">
-                  Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronostico normal.
-                  Los usos disponibles se recalculan cada semana segun tu diferencia de puntos con quien vaya
-                  primero en el grupo: cada varios puntos de distancia dan derecho a un uso mas esa jornada. El
-                  admin del grupo puede desactivarlo o ajustar ese numero de puntos despues, desde los ajustes.
-                </p>
-              }
-            }
-            <p class="sheet-desc mono">No podras cambiar el modo despues de crear el grupo.</p>
+            </button>
+            <button type="button" class="settings-btn" aria-label="Ajustes del grupo" (click)="page.goToSettings(group.id)">
+              <piqo-svg icon="ajustes" size="22"></piqo-svg>
+            </button>
           </div>
-          <div class="field">
-            <span class="field-label">Privacidad</span>
-            <div class="tabs mode-tabs">
-              <button
-                type="button"
-                class="tab"
-                [class.active]="!page.createForm.value.isPublic"
-                (click)="page.setPrivacy(false)"
-              >
-                Privado
-              </button>
-              <button
-                type="button"
-                class="tab"
-                [class.active]="page.createForm.value.isPublic"
-                (click)="page.setPrivacy(true)"
-              >
-                Publico
-              </button>
-            </div>
-            <p class="sheet-desc mono">
-              @if (page.createForm.value.isPublic) {
-                Cualquiera puede verlo y unirse sin invitacion.
-              } @else {
-                Solo se puede entrar con el enlace o codigo de invitacion.
-              }
-            </p>
-            <p class="sheet-desc mono">Podras cambiarlo despues desde los ajustes del grupo.</p>
-          </div>
-          @if (page.errorMessage()) {
-            <p class="error">{{ page.errorMessage() }}</p>
-          }
-          <button type="submit" class="cta" [disabled]="page.formLoading()">Crear</button>
-          </form>
         }
-      }
+      </div>
 
-      @if (page.showJoinSheet()) {
-        <h2>Unirme a un grupo</h2>
-        <p class="sheet-desc">Introduce el codigo de invitacion que te han compartido.</p>
-        <form [formGroup]="page.joinForm" (ngSubmit)="page.joinGroup()" class="sheet-form">
-          <input class="code-input mono" formControlName="inviteCode" placeholder="NQ5CQK93" maxlength="12" />
-          @if (page.errorMessage()) {
-            <p class="error">{{ page.errorMessage() }}</p>
-          }
-          <button type="submit" class="cta" [disabled]="page.formLoading()">Unirme</button>
-        </form>
-      }
-    </div>
+      <div class="actions">
+        <button type="button" class="piqo-primary action-btn" (click)="page.goToCreate()">
+          <piqo-svg icon="mas" size="20"></piqo-svg>Crear grupo
+        </button>
+        <button type="button" class="piqo-secondary action-btn" (click)="page.goToJoinCode()">
+          <piqo-svg icon="enlace" size="20"></piqo-svg>Unirse con código
+        </button>
+      </div>
+    }
+
+    @if (page.discoverableGroups().length > 0) {
+      <div class="section-head">
+        <h2>Grupos públicos</h2>
+      </div>
+      <div class="groups">
+        @for (group of page.discoverableGroups(); track group.id) {
+          <div class="group-row">
+            <div class="group-main">
+              <span class="avatar">{{ page.initials(group.name) }}</span>
+              <span class="meta">
+                <span class="name">{{ group.name }}</span>
+                <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · público</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              class="piqo-secondary join-btn"
+              [disabled]="page.joiningGroupId() === group.id"
+              (click)="page.joinPublicGroup(group.id)"
+            >
+              {{ page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirse' }}
+            </button>
+          </div>
+        }
+      </div>
+    }
   </div>
 }

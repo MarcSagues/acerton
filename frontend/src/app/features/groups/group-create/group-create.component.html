@@ -1,0 +1,118 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-btn" aria-label="Volver" (click)="page.goBack()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+    </button>
+    <h1>Crear grupo</h1>
+  </div>
+
+  @if (page.step() === 'competitions') {
+    <p class="lead">Elige al menos una liga para el grupo. Podrás añadir más después, pero no quitar estas.</p>
+    <div class="comp-list">
+      @for (competition of page.catalog(); track competition.id) {
+        <button
+          type="button"
+          class="comp-row"
+          [class.active]="page.selectedCompetitionIds().has(competition.id)"
+          (click)="page.toggleCompetition(competition.id)"
+        >
+          <span class="comp-abbr mono">{{ competition.name.slice(0, 3).toUpperCase() }}</span>
+          <span class="comp-meta">
+            <span class="comp-name">{{ competition.name }}</span>
+            <span class="comp-code mono">{{ competition.code }}</span>
+          </span>
+          <span class="toggle" [class.on]="page.selectedCompetitionIds().has(competition.id)">
+            <span class="knob"></span>
+          </span>
+        </button>
+      }
+    </div>
+    <button
+      type="button"
+      class="piqo-primary cta"
+      [disabled]="page.selectedCompetitionIds().size === 0"
+      (click)="page.goToDetails()"
+    >
+      Continuar ({{ page.selectedCompetitionIds().size }})
+    </button>
+  } @else {
+    <form [formGroup]="page.form" (ngSubmit)="page.createGroup()" class="form">
+      <label class="field">
+        <span class="field-label">Nombre del grupo</span>
+        <input class="field-input" formControlName="name" />
+      </label>
+      <label class="field">
+        <span class="field-label">Descripción (opcional)</span>
+        <input class="field-input" formControlName="description" />
+      </label>
+
+      <div class="field">
+        <span class="field-label">Modo de puntuación</span>
+        <div class="mode-tabs">
+          <button
+            type="button"
+            class="mode-tab"
+            [class.active]="page.form.value.scoringMode === 'ONE_X_TWO'"
+            (click)="page.setScoringMode('ONE_X_TWO')"
+          >
+            Quiniela 1X2
+          </button>
+          <button
+            type="button"
+            class="mode-tab"
+            [class.active]="page.form.value.scoringMode === 'EXACT_SCORE'"
+            (click)="page.setScoringMode('EXACT_SCORE')"
+          >
+            Resultado exacto
+          </button>
+        </div>
+        <p class="hint">
+          @if (page.form.value.scoringMode === 'EXACT_SCORE') {
+            5 puntos por marcador exacto, 2 por acertar solo el resultado. Sin comodín de remontada.
+          } @else {
+            1 punto por acertar 1X2. Incluye comodín de remontada.
+          }
+        </p>
+        @if (page.form.value.scoringMode === 'ONE_X_TWO') {
+          <button type="button" class="link-btn" (click)="page.showComebackDetail.set(!page.showComebackDetail())">
+            {{ page.showComebackDetail() ? 'Ocultar' : '¿Cómo funciona el comodín?' }}
+          </button>
+          @if (page.showComebackDetail()) {
+            <p class="hint">
+              Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronóstico normal. Los
+              usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en
+              el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.
+            </p>
+          }
+        }
+        <p class="hint">No podrás cambiar el modo después de crear el grupo.</p>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Privacidad</span>
+        <div class="mode-tabs">
+          <button type="button" class="mode-tab" [class.active]="!page.form.value.isPublic" (click)="page.setPrivacy(false)">
+            Privado
+          </button>
+          <button type="button" class="mode-tab" [class.active]="page.form.value.isPublic" (click)="page.setPrivacy(true)">
+            Público
+          </button>
+        </div>
+        <p class="hint">
+          @if (page.form.value.isPublic) {
+            Cualquiera puede verlo y unirse sin invitación.
+          } @else {
+            Solo se puede entrar con el enlace o código de invitación.
+          }
+        </p>
+      </div>
+
+      @if (page.errorMessage()) {
+        <p class="error">{{ page.errorMessage() }}</p>
+      }
+      <button type="submit" class="piqo-primary cta" [disabled]="page.formLoading()">
+        {{ page.formLoading() ? 'Creando…' : 'Crear' }}
+      </button>
+    </form>
+  }
+</div>

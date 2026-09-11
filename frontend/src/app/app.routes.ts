@@ -83,6 +83,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'groups/create',
+        loadComponent: () =>
+          import('./features/groups/group-create/group-create.component').then(
+            (m) => m.GroupCreateComponent,
+          ),
+      },
+      {
+        path: 'groups/join-code',
+        loadComponent: () =>
+          import('./features/groups/group-join-code/group-join-code.component').then(
+            (m) => m.GroupJoinCodeComponent,
+          ),
+      },
+      {
         path: 'groups/:groupId/settings',
         loadComponent: () =>
           import('./features/groups/group-detail/group-detail.component').then(

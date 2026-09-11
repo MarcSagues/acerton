@@ -1,18 +1,14 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
-import { CompetitionsService } from '../../../core/services/competitions.service';
-import { Group, ScoringMode } from '../../../core/models/group.model';
+import { Group } from '../../../core/models/group.model';
+import { initials } from '../../../shared/utils/initials';
 
 @Injectable()
 export class GroupListFacade {
   private readonly groupsService = inject(GroupsService);
   private readonly activeGroupService = inject(ActiveGroupService);
-  private readonly competitionsService = inject(CompetitionsService);
-  private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
   readonly groups = this.groupsService.myGroups;
@@ -27,37 +23,6 @@ export class GroupListFacade {
     return this.publicGroups().filter((g) => !myIds.has(g.id));
   });
 
-  readonly showComebackDetail = signal(false);
-
-  readonly showCreateSheet = signal(false);
-  readonly showJoinSheet = signal(false);
-  readonly formLoading = signal(false);
-  readonly errorMessage = signal<string | null>(null);
-
-  readonly catalog = this.competitionsService.catalog;
-  /** Elegir al menos una liga es un paso obligatorio antes de poder tocar el resto del formulario. */
-  readonly createStep = signal<'competitions' | 'details'>('competitions');
-  readonly createSelectedCompetitionIds = signal<Set<string>>(new Set());
-
-  readonly createForm = this.fb.nonNullable.group({
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    description: [''],
-    isPublic: [false],
-    scoringMode: ['ONE_X_TWO' as ScoringMode, [Validators.required]],
-  });
-
-  setScoringMode(mode: ScoringMode): void {
-    this.createForm.patchValue({ scoringMode: mode });
-  }
-
-  setPrivacy(isPublic: boolean): void {
-    this.createForm.patchValue({ isPublic });
-  }
-
-  readonly joinForm = this.fb.nonNullable.group({
-    inviteCode: ['', [Validators.required, Validators.minLength(6)]],
-  });
-
   init(): void {
     this.groupsService.loadMyGroups().subscribe({
       next: (groups) => {
@@ -67,28 +32,6 @@ export class GroupListFacade {
       error: () => this.loading.set(false),
     });
     this.groupsService.loadPublicGroups().subscribe((groups) => this.publicGroups.set(groups));
-    this.competitionsService.loadCatalog().subscribe();
-  }
-
-  toggleCreateCompetition(competitionId: string): void {
-    this.createSelectedCompetitionIds.update((current) => {
-      const next = new Set(current);
-      if (next.has(competitionId)) {
-        next.delete(competitionId);
-      } else {
-        next.add(competitionId);
-      }
-      return next;
-    });
-  }
-
-  goToCreateDetails(): void {
-    if (this.createSelectedCompetitionIds().size === 0) return;
-    this.createStep.set('details');
-  }
-
-  backToCreateCompetitions(): void {
-    this.createStep.set('competitions');
   }
 
   joinPublicGroup(groupId: string): void {
@@ -104,31 +47,7 @@ export class GroupListFacade {
   }
 
   initials(name: string): string {
-    return name
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() ?? '')
-      .join('');
-  }
-
-  openCreateSheet(): void {
-    this.showCreateSheet.set(true);
-    this.showJoinSheet.set(false);
-    this.errorMessage.set(null);
-    this.showComebackDetail.set(false);
-    this.createStep.set('competitions');
-    this.createSelectedCompetitionIds.set(new Set());
-  }
-
-  openJoinSheet(): void {
-    this.showJoinSheet.set(true);
-    this.showCreateSheet.set(false);
-    this.errorMessage.set(null);
-  }
-
-  closeSheets(): void {
-    this.showCreateSheet.set(false);
-    this.showJoinSheet.set(false);
+    return initials(name);
   }
 
   goToGroup(groupId: string): void {
@@ -136,54 +55,15 @@ export class GroupListFacade {
     this.router.navigate(['/rankings']);
   }
 
-  createGroup(): void {
-    if (this.createForm.invalid || this.createSelectedCompetitionIds().size === 0) {
-      this.createForm.markAllAsTouched();
-      return;
-    }
-
-    this.formLoading.set(true);
-    const value = this.createForm.getRawValue();
-    this.groupsService
-      .create({
-        name: value.name,
-        description: value.description || undefined,
-        isPublic: value.isPublic,
-        scoringMode: value.scoringMode,
-        competitionIds: [...this.createSelectedCompetitionIds()],
-      })
-      .subscribe({
-        next: (group) => {
-          this.formLoading.set(false);
-          this.closeSheets();
-          this.activeGroupService.setActive(group.id);
-          this.router.navigate(['/groups', group.id, 'settings']);
-        },
-        error: (error: HttpErrorResponse) => {
-          this.formLoading.set(false);
-          this.errorMessage.set(error.error?.message ?? 'No se pudo crear el grupo');
-        },
-      });
+  goToSettings(groupId: string): void {
+    this.router.navigate(['/groups', groupId, 'settings']);
   }
 
-  joinGroup(): void {
-    if (this.joinForm.invalid) {
-      this.joinForm.markAllAsTouched();
-      return;
-    }
+  goToCreate(): void {
+    this.router.navigate(['/groups/create']);
+  }
 
-    this.formLoading.set(true);
-    const { inviteCode } = this.joinForm.getRawValue();
-    this.groupsService.joinByInviteCode(inviteCode.trim().toUpperCase()).subscribe({
-      next: (group) => {
-        this.formLoading.set(false);
-        this.closeSheets();
-        this.goToGroup(group.id);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.formLoading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'Codigo de invitacion invalido');
-      },
-    });
+  goToJoinCode(): void {
+    this.router.navigate(['/groups/join-code']);
   }
 }

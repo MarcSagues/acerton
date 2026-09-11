@@ -1,15 +1,14 @@
+import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { RouterLink } from '@angular/router';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
+import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { GroupListFacade } from './group-list.facade';
 
 @Component({
   selector: 'app-group-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatIconModule, MatProgressSpinnerModule],
+  imports: [CommonModule, SpinnerComponent, EmptyStateComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupListFacade],
   templateUrl: './group-list.component.html',
   styleUrl: './group-list.component.scss',
