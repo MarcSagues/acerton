@@ -100,6 +100,18 @@
   font: 600 13px/1.2 var(--font-ui);
 }
 
+.settings-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-arrow {
+  color: var(--accent-secondary);
+  font: 600 18px/1 var(--font-ui);
+}
+
 .theme-tabs {
   display: flex;
   padding: 4px;

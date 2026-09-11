@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog } from '@angular/material/dialog';
@@ -20,7 +20,7 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule],
+  imports: [CommonModule, FormsModule, RouterLink, MatProgressSpinnerModule],
   templateUrl: './profile-page.component.html',
   styleUrl: './profile-page.component.scss',
 })

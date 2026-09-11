@@ -1,0 +1,40 @@
+<main class="page notices-page">
+  <header class="notices-head">
+    <a routerLink="/profile" class="back" aria-label="Volver a Perfil"><mat-icon>arrow_back</mat-icon></a>
+    <div>
+      <p class="eyebrow">PIQO</p>
+      <h1>Avisos</h1>
+    </div>
+    <button type="button" class="read-all" (click)="markAllRead()">Leer todo</button>
+  </header>
+
+  <aside class="demo-note">
+    <mat-icon>science</mat-icon>
+    <div><strong>Vista de demostracion</strong><span>Estos avisos son datos mock y no representan actividad real de tu cuenta.</span></div>
+  </aside>
+
+  <div class="notice-groups">
+    @for (period of periods; track period) {
+      <section class="notice-group">
+        <h2>{{ period }}</h2>
+        <div class="notice-list">
+          @for (notice of notices(); track notice.id) {
+            @if (notice.period === period) {
+              <article class="notice" [class.unread]="notice.unread">
+                <div class="notice-icon" [attr.data-kind]="notice.kind"><mat-icon>{{ notice.icon }}</mat-icon></div>
+                <div class="notice-copy">
+                  <div class="notice-title-row">
+                    <h3>{{ notice.title }}</h3>
+                    @if (notice.unread) { <span class="unread-dot" aria-label="No leido"></span> }
+                  </div>
+                  <p>{{ notice.body }}</p>
+                  <time>{{ notice.time }}</time>
+                </div>
+              </article>
+            }
+          }
+        </div>
+      </section>
+    }
+  </div>
+</main>

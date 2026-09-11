@@ -152,6 +152,13 @@ export const routes: Routes = [
             (m) => m.ProfilePageComponent,
           ),
       },
+      {
+        path: 'notifications',
+        loadComponent: () =>
+          import('./features/notifications/notifications-page/notifications-page.component').then(
+            (m) => m.NotificationsPageComponent,
+          ),
+      },
     ],
   },
   { path: '**', redirectTo: 'matchday' },
