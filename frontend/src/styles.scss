@@ -257,6 +257,13 @@ piqo-svg {
 html,
 body {
   height: 100%;
+  /* Safari/WKWebView puede agrandar automaticamente el texto en vistas
+     con filas largas (Jornada, Grupos y Tabla). La heuristica no se
+     aplica igual a Perfil y terminaba haciendo que unas pantallas
+     pareciesen ampliadas y desbordasen en iPhone. Conservamos las medidas
+     de diseno declaradas en CSS de forma uniforme en todas las rutas. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   /* Salvaguarda: ningun elemento suelto (icono/avatar ligeramente mas
      ancho que su marco, circulo decorativo de fondo, etc.) debe poder
      forzar scroll horizontal de la pagina entera — cualquier scroll
@@ -264,6 +271,16 @@ body {
      clasificacion) vive en su propio contenedor con su propio
      overflow-x:auto, que esto no afecta. */
   overflow-x: hidden;
+  /* El scroll vertical de la app sigue funcionando igual; solo ocultamos
+     la barra visual (en un WebView/movil nativo no se ve, pero en un
+     navegador de escritorio con raton/trackpad si aparece una barra
+     persistente que no encaja con el resto de la interfaz). */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 body {
@@ -354,6 +371,7 @@ button {
 }
 
 .page {
+  width: 100%;
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
