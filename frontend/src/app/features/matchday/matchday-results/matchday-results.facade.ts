@@ -71,14 +71,18 @@ export class MatchdayResultsFacade {
 
   /** Un miembro por columna en la comparativa de todos, ordenados por nombre; "tu" fila destacada aparte en la plantilla. */
   readonly comparisonMembers = computed(() => {
-    const seen = new Map<string, string>();
+    const seen = new Map<string, { name: string; avatarUrl: string | null; avatarBackground: string | null }>();
     for (const prediction of this.allPredictions()) {
       if (prediction.user?.name) {
-        seen.set(prediction.userId, prediction.user.name);
+        seen.set(prediction.userId, {
+          name: prediction.user.name,
+          avatarUrl: prediction.user.avatarUrl,
+          avatarBackground: prediction.user.avatarBackground,
+        });
       }
     }
     return [...seen.entries()]
-      .map(([userId, name]) => ({ userId, name }))
+      .map(([userId, data]) => ({ userId, ...data }))
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 
@@ -252,12 +256,18 @@ export class MatchdayResultsFacade {
     return match?.result ? this.choiceLabel(match.result) : '?';
   }
 
-  initials(name: string): string {
-    return name
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() ?? '')
-      .join('');
+  /** userId cuya insignia de la comparativa esta mostrando el nombre (mantener pulsado). */
+  readonly comparisonTooltipUserId = signal<string | null>(null);
+  private comparisonTooltipTimer?: ReturnType<typeof setTimeout>;
+
+  startComparisonTooltip(userId: string): void {
+    clearTimeout(this.comparisonTooltipTimer);
+    this.comparisonTooltipTimer = setTimeout(() => this.comparisonTooltipUserId.set(userId), 400);
+  }
+
+  endComparisonTooltip(): void {
+    clearTimeout(this.comparisonTooltipTimer);
+    this.comparisonTooltipUserId.set(null);
   }
 
   artId(code: string): string | null {
