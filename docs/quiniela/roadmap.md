@@ -283,6 +283,37 @@ seguras, claro/oscuro, accesibilidad, notas de versión).
 La publicación es un paso separado y no se dispara automáticamente al
 completar este sprint.
 
+## Sprint 11 — Piqo Premium (monetización) ⬜ (añadido 2026-09-12, a petición del usuario)
+
+Precios acordados con el usuario: **0,99 €/mes** o **9,99 €/año**
+(equivale a ~2 meses gratis frente al mensual). Suscripción, no compra
+única — necesita renovación automática vía IAP de Apple/Google. Ninguna
+ventaja afecta a la mecánica del juego (puntos, aciertos, quién gana la
+quiniela): todo es cosmético, de conveniencia o de límites de uso, para no
+romper el posicionamiento "juego social gratuito, sin apuestas" ya fijado
+en el producto (`no-real-money-notice`, textos de marketing).
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| Infraestructura de suscripción (IAP iOS/Android + validación de recibo + modelo `User.isPremium`/fecha de expiración en backend) | 🔒 | Bloqueado por una decisión de proveedor sin tomar: implementar StoreKit/Play Billing a mano (dos integraciones nativas + validación de recibo propia) o un intermediario tipo RevenueCat (una integración, coste extra por ingresos). Todo lo demás de este sprint depende de esto — sin una fuente de verdad de "es premium hasta cuándo" en el backend, ninguna ventaja se puede aplicar ni proteger del lado servidor. |
+| Planes 0,99€/mes y 9,99€/año en App Store Connect / Play Console | ⬜ | Alta de los productos de suscripción en ambas tiendas; depende de la fila anterior para poder validarlos. |
+| Quitar anuncios (general) | ⬜ | Depende de `isPremium`: `AdsService` (AdMob) ya existe, hace falta que consulte el estado premium antes de pedir intersticial/rewarded. |
+| Modo sin anuncios/banners específicamente en la pantalla de Jornada | ⬜ | Puede ir junto con la fila anterior o quedar como verificación aparte si Jornada tiene algún banner propio distinto del resto de pantallas — a confirmar contra el código de `AdsService` al implementar. |
+| Mascotas y fondos de avatar exclusivos para premium | ⬜ | Amplía el catálogo cerrado de `avatar-catalog.ts` (Sprint 7) con una marca "solo premium", igual que ya existe "solo con ese trofeo". |
+| Marcos de avatar animados | ⬜ | Nuevo, no existe hoy ningún "marco" alrededor del avatar — a diseñar (SVG/CSS o igual que los GIFs de trofeo animados ya existentes). |
+| Comodines extra por temporada | ⬜ | Depende de la lógica de comodín/remontada ya existente (`WildcardsService`) — añadir un límite superior distinto para cuentas premium. |
+| Histórico ampliado de temporadas anteriores | ⬜ | Depende también del Sprint 5 ("Temporadas anteriores consultables", hoy ⬜ — sin eso no hay histórico que ampliar). |
+| Grupos ilimitados | ⬜ | Hoy no hay límite de grupos simultáneos para ninguna cuenta — para que esto sea una ventaja premium primero hace falta decidir y fijar un límite gratuito (número a acordar con el usuario), luego eximir a premium de él. |
+| Insignias/trofeos exclusivos de marca premium | ⬜ | Depende del catálogo de insignias (Sprint 8, con su propio ⬜ de catálogo ampliado) y del modelo de trofeos (Sprint 6, 🔒 sin modelo todavía) — coordinar para no duplicar trabajo de catálogo. |
+| Personalización de icono/color de portada del grupo | ⬜ | Grupos no tienen hoy ningún icono/color propio distinto del que ya deriva de su modo de puntuación (ver el resto del roadmap) — nuevo campo + UI de elección, restringido a premium. |
+| Notificaciones anticipadas de cierre de jornada (antelación mayor que las franjas ya existentes) | ⬜ | Depende del Sprint 9 (recordatorios 24h/5h/1h/30min ya implementados) — añadir una franja premium con más antelación (p.ej. 48h), o permitir elegir antelación libre. |
+
+Validar además: qué pasa con las ventajas premium si la suscripción expira
+(degradar sin borrar datos — p.ej. un avatar exclusivo ya elegido, un
+grupo por encima del límite gratuito), y si alguna ventaja necesita
+aplicarse también en Android/iOS nativo o solo en la valoración del
+backend.
+
 ---
 
 ## Infraestructura — entorno dev/pre (fuera de la numeración de sprints)
