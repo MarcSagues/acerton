@@ -1,8 +1,9 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorCode } from '@capawesome/capacitor-google-sign-in';
+import { Subscription, catchError, interval, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
@@ -10,8 +11,11 @@ import { GOOGLE_RETURN_URL_KEY } from './auth-page.constants';
 
 type AuthMode = 'login' | 'register';
 
+/** Mientras se espera la confirmacion del correo, comprueba cada cuanto si ya se pudo iniciar sesion. */
+const VERIFICATION_POLL_INTERVAL_MS = 4000;
+
 @Injectable()
-export class AuthPageFacade {
+export class AuthPageFacade implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -33,6 +37,7 @@ export class AuthPageFacade {
   readonly unverifiedEmailError = signal(false);
   readonly resendingVerification = signal(false);
   readonly resendMessage = signal<string | null>(null);
+  private verificationPollSub?: Subscription;
 
   readonly form = this.fb.nonNullable.group({
     name: [''],
@@ -45,7 +50,12 @@ export class AuthPageFacade {
     this.setMode(initialMode);
   }
 
+  ngOnDestroy(): void {
+    this.stopVerificationPolling();
+  }
+
   setMode(mode: AuthMode): void {
+    this.stopVerificationPolling();
     this.mode.set(mode);
     this.errorMessage.set(null);
     this.registeredEmail.set(null);
@@ -184,6 +194,7 @@ export class AuthPageFacade {
         next: (res) => {
           this.loading.set(false);
           this.registeredEmail.set(res.email);
+          this.startVerificationPolling(email, password);
         },
         error: (error: HttpErrorResponse) => {
           this.loading.set(false);
@@ -208,5 +219,37 @@ export class AuthPageFacade {
         this.errorMessage.set(error.error?.message ?? 'No se pudo iniciar sesion');
       },
     });
+  }
+
+  /**
+   * La confirmacion del correo puede llegar desde otro dispositivo (p. ej. el
+   * usuario abre el enlace en el ordenador mientras tiene el movil delante en
+   * esta pantalla de "revisa tu correo"). En vez de dejar al usuario atascado
+   * teniendo que volver atras y entrar a mano, reintenta el login en segundo
+   * plano con las credenciales ya introducidas: en cuanto el backend deje de
+   * devolver "correo sin confirmar", ya se puede entrar directamente.
+   */
+  private startVerificationPolling(email: string, password: string): void {
+    this.stopVerificationPolling();
+    this.verificationPollSub = interval(VERIFICATION_POLL_INTERVAL_MS)
+      .pipe(
+        switchMap(() =>
+          this.authService.login({ email, password }).pipe(
+            map(() => true),
+            catchError(() => of(false)),
+          ),
+        ),
+      )
+      .subscribe((verified) => {
+        if (!verified) return;
+        this.stopVerificationPolling();
+        this.registeredEmail.set(null);
+        this.navigateAfterLogin();
+      });
+  }
+
+  private stopVerificationPolling(): void {
+    this.verificationPollSub?.unsubscribe();
+    this.verificationPollSub = undefined;
   }
 }
