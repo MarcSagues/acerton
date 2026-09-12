@@ -12,7 +12,13 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="empty">
-      <piqo-svg [attr.icon]="icon" size="32"></piqo-svg>
+      <div class="hero-icon">
+        <div class="hero-icon-gap">
+          <div class="hero-icon-inner">
+            <piqo-svg [attr.icon]="icon" size="28"></piqo-svg>
+          </div>
+        </div>
+      </div>
       <h2>{{ title }}</h2>
       <p>{{ text }}</p>
       @if (ctaLabel) {
@@ -34,9 +40,38 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
         gap: 12px;
         color: var(--p4-text);
       }
-      piqo-svg {
-        color: var(--p4-muted);
+      .hero-icon {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: var(--p4-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
         margin-bottom: 4px;
+      }
+      /* Mismo patron de circulo (anillo fino + hueco de fondo de pagina +
+         circulo solido con el icono) que la pagina de error y la de
+         Unirse a un grupo, para que cualquier estado vacio de la app se
+         lea igual. */
+      .hero-icon-gap {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: var(--p4-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .hero-icon-inner {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--p4-accent-gradient);
+        color: var(--p4-on-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       h2 {
         margin: 0;
