@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'A que API apunta el build (dev usa dev.acerton.app/api-dev, pensado para probar en TestFlight sin tocar produccion)'
+        description: 'A que API apunta el build (dev usa app-dev.piqo.es/api-dev.piqo.es, pensado para probar en TestFlight sin tocar produccion)'
         required: true
         type: choice
         options:

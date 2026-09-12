@@ -4,8 +4,8 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:acerton.app</string>
-		<string>applinks:dev.acerton.app</string>
+		<string>applinks:app.piqo.es</string>
+		<string>applinks:app-dev.piqo.es</string>
 	</array>
 </dict>
 </plist>

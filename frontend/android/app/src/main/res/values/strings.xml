@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">Piqo</string>
     <string name="title_activity_main">Piqo</string>
-    <string name="package_name">app.acerton.quiniela</string>
-    <string name="custom_url_scheme">app.acerton.quiniela</string>
+    <string name="package_name">app.piqo.es</string>
+    <string name="custom_url_scheme">app.piqo.es</string>
     <!-- Id real de AdMob (produccion). Los builds debug lo sobrescriben con
          el de pruebas de Google via src/debug/res/values/strings.xml, para
          no generar impresiones/clics reales contra la cuenta durante el

@@ -1,10 +1,10 @@
 export const environment = {
   production: true,
-  // Entorno dev/pre (dev.acerton.app): mismo formato que produccion, pero
+  // Entorno dev/pre (app-dev.piqo.es): mismo formato que produccion, pero
   // apuntando al backend de dev, para no compartir sesion/cookies ni datos
   // con produccion (ver comentario en environment.prod.ts sobre por que
   // hace falta la URL completa).
-  apiUrl: 'https://api-dev.acerton.app/api',
+  apiUrl: 'https://api-dev.piqo.es/api',
   googleWebClientId: '533114077011-hgob253v538oejkoq6p99mepu1vlp9i0.apps.googleusercontent.com',
   admob: {
     android: { appId: 'ca-app-pub-1185144357301303~6197649742', bannerAdUnitId: 'ca-app-pub-1185144357301303/4884568079' },

@@ -5,7 +5,7 @@ import { App } from '@capacitor/app';
 
 /**
  * Universal Links (iOS) / App Links (Android): cuando el sistema abre la
- * app a partir de https://acerton.app/... (enlace de confirmacion de
+ * app a partir de https://app.piqo.es/... (enlace de confirmacion de
  * correo, recuperacion de contrasena, invitacion a grupo), Capacitor
  * entrega la URL completa via el evento "appUrlOpen" en vez de navegar el
  * WebView el solo. Aqui se extrae la ruta (path + query) y se navega con
