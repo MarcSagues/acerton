@@ -390,14 +390,34 @@ h1 {
   gap: 10px;
 }
 
-.team-name {
+/* El resultado real (.team-score) ya no vive dentro de .team-name: antes
+   heredaba su tamaño y su ajuste de linea, asi que si el nombre pasaba a
+   una segunda linea el resultado se veia arrastrado con el en vez de
+   quedar fijo y bien visible junto al equipo. */
+.team-block {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  /* center, no baseline: si el nombre pasa a dos lineas, el resultado
+     queda centrado en medio de las dos en vez de pegado a la primera. */
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.team-name {
   min-width: 0;
   text-align: center;
   font: 600 12px/1.3 var(--p4-font-ui);
   /* Igual que .team-home/.team-away: nunca recortar con ellipsis, mejor
      pasar a una segunda linea que esconder el resultado final. */
   overflow-wrap: break-word;
+}
+
+.crests-row .team-score {
+  flex: none;
+  margin: 0;
+  font-size: 17px;
 }
 
 .vs {

@@ -26,7 +26,7 @@
         @for (group of page.groups(); track group.id) {
           <div class="group-row" [class.active]="group.id === page.activeGroupId()">
             <button type="button" class="group-main" (click)="page.goToGroup(group.id)">
-              <span class="avatar">{{ page.initials(group.name) }}</span>
+              <span class="avatar">{{ page.scoringModeBadge(group.scoringMode) }}</span>
               <span class="meta">
                 <span class="name">{{ group.name }}</span>
                 <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>

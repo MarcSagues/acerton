@@ -181,7 +181,7 @@ export class RankingsService {
       this.prisma.rankingSnapshot.findMany({
         where: { groupId, period, competitionId, matchdayId: latest.matchdayId },
         orderBy: { position: 'asc' },
-        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+        include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
       }),
       this.prisma.rankingSnapshot.findFirst({
         where: { groupId, period, competitionId, matchdayId: { not: latest.matchdayId } },
@@ -210,7 +210,7 @@ export class RankingsService {
   private async emptyRanking(groupId: string, period: RankingPeriod, competitionId: string | null) {
     const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
     });
 
     const ranked = rankEntries(members.map((m) => ({ userId: m.userId, points: 0 })));
@@ -251,7 +251,7 @@ export class RankingsService {
     return this.prisma.rankingSnapshot.findMany({
       where: { groupId, period, competitionId, matchdayId },
       orderBy: { position: 'asc' },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
     });
   }
 

@@ -16,7 +16,7 @@
         [attr.aria-selected]="group.id === activeGroupService.activeGroup()?.id"
         (click)="select(group.id)"
       >
-        <span class="avatar">{{ initials(group.name) }}</span>
+        <span class="avatar">{{ scoringModeBadge(group.scoringMode) }}</span>
         <span class="meta">
           <span class="name">{{ group.name }}</span>
           <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>

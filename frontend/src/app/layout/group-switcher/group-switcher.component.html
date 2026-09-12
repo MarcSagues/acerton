@@ -1,6 +1,6 @@
 @if (page.activeGroup(); as g) {
   <button type="button" class="switcher" (click)="open()">
-    <span class="avatar">{{ page.initials(g.name) }}</span>
+    <span class="avatar">{{ page.scoringModeBadge(g.scoringMode) }}</span>
     <span class="meta">
       <span class="name">{{ g.name }}</span>
       <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'público' : 'privado' }}</span>
