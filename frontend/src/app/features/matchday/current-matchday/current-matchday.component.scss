@@ -410,14 +410,15 @@ h1 {
   flex: 1;
   min-width: 0;
   display: flex;
-  /* baseline, no center: con center el resultado (fuente mas grande,
-     Manrope) quedaba con su propio margen inferior de fuente mas grande
-     que el del nombre (Inter), asi que aunque las dos cajas quedaran
-     centradas por igual, el numero se veia varios pixeles mas arriba
-     que el nombre cuando este ocupaba una sola linea — con baseline
-     comparten la misma linea base de verdad, igual que ya pasa en la
-     vista de filas (el resultado va dentro del propio texto). */
-  align-items: baseline;
+  /* center, no baseline: el resultado debe quedar en medio de las dos
+     lineas del nombre cuando este ocupa dos lineas — con baseline se
+     quedaba pegado solo a la primera. El pequeño desajuste óptico que
+     esto deja en el caso de una sola línea (la fuente del numero,
+     Manrope, no reparte su alto igual que la del nombre, Inter, asi que
+     "centrado por caja" no es "centrado a ojo") se corrige aparte con un
+     ajuste fijo en .crests-row .team-score, no cambiando el modo de
+     alinear. */
+  align-items: center;
   gap: 5px;
 
   /* El resultado (.team-score) debe quedar siempre pegado al VS/widget
@@ -448,6 +449,16 @@ h1 {
   flex: none;
   margin: 0;
   font-size: 17px;
+  /* Correccion optica: aunque align-items:center deja las dos cajas
+     centradas exactamente por igual (necesario para que, con nombre a
+     dos lineas, el resultado quede justo en medio de las dos), la
+     fuente del numero (Manrope) reparte su alto por encima/debajo de
+     forma distinta a la del nombre (Inter), asi que "centrado por caja"
+     no queda centrado a ojo con el nombre a una sola linea — se ve unos
+     pixeles por encima. Este pequeño desplazamiento fijo lo corrige sin
+     afectar al caso de dos lineas. */
+  position: relative;
+  top: 4px;
 }
 
 .vs {

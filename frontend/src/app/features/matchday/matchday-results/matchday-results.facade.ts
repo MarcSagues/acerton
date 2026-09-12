@@ -250,7 +250,9 @@ export class MatchdayResultsFacade {
 
   scoreLabel(prediction: Prediction, matchday: Matchday): string {
     const match = matchday.matches.find((m) => m.id === prediction.matchId);
-    return match ? `${match.homeScore} - ${match.awayScore}` : '';
+    if (!match) return '';
+    if (match.homeScore == null || match.awayScore == null) return 'No participado';
+    return `${match.homeScore} - ${match.awayScore}`;
   }
 
   realLabel(prediction: Prediction, matchday: Matchday): string {
