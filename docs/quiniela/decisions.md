@@ -4,6 +4,30 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-12 — Sprint 11 (Piqo Premium, monetización)
+
+Precio decidido con el usuario tras analizar comparables directos
+(Biwenger, Comunio — apps de quiniela/fantasy en español): **0,99 €/mes o
+9,99 €/año**, deliberadamente por debajo de esos comparables (~3-5€/mes)
+porque Piqo es más ligero (social + cosméticos, no un gestor completo de
+fantasy) — precio de impulso, no de suscripción "seria". El plan anual da
+~2 meses gratis frente al mensual, para empujar hacia el plan que más
+retiene.
+
+Alcance explícitamente cosmético/de conveniencia, no pay-to-win: quitar
+anuncios, mascotas/fondos/marcos de avatar exclusivos, comodines extra,
+histórico ampliado, grupos ilimitados, insignias/trofeos exclusivos,
+icono/color de portada de grupo, notificaciones con más antelación.
+Ninguna ventaja toca puntos, aciertos ni quién gana la quiniela — motivo:
+mantener el posicionamiento legal/de marca ya fijado en el producto
+("juego social gratuito, sin apuestas, sin dinero real") — cualquier
+ventaja competitiva real de pago rompería esa promesa.
+
+Bloqueo de partida para todo el sprint: no hay decisión tomada de cómo
+implementar la suscripción (StoreKit/Play Billing directos vs. un
+intermediario tipo RevenueCat) ni modelo `User.isPremium` en el backend —
+ver primera fila de la tabla del sprint en `roadmap.md`.
+
 ## 2026-09-10 — Sprint 5 (fin de temporada) — sustituye la decisión anterior
 
 - **Sustituye la respuesta inicial** ("fecha fija configurable, ej. 1 de
