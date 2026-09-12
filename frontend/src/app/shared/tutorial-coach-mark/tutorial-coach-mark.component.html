@@ -9,22 +9,25 @@
     ></div>
 
     <div
-      class="bubble"
-      [class.placement-top]="step.placement === 'top'"
-      [class.placement-bottom]="step.placement === 'bottom'"
-      [style.top.px]="step.placement === 'bottom' ? r.top + r.height + 14 : null"
-      [style.bottom.px]="step.placement === 'top' ? page.viewportHeight - r.top + 14 : null"
-      [style.left.px]="page.bubbleLeft(r)"
+      #card
+      class="tutorial-card"
+      [class.mascot-below]="step.mascotPosition === 'below'"
+      [style.top.px]="step.placement === 'bottom' ? page.cardTop(r) : null"
+      [style.bottom.px]="step.placement === 'top' ? page.cardBottom(r) : null"
+      [style.left.px]="page.cardLeft(r)"
     >
-      <h2>{{ step.title }}</h2>
-      <p>{{ step.body }}</p>
-      <div class="bubble-actions">
-        <button class="skip" (click)="page.tutorialService.skip()">Saltar tutorial</button>
-        @if (step.advanceOn === 'manual') {
-          <button class="next" (click)="page.tutorialService.next()">
-            {{ page.tutorialService.isLastStep() ? 'Empezar' : 'Siguiente' }}
-          </button>
-        }
+      <img class="mascot-avatar" [src]="'/assets/avatars/mascot/' + step.mascotId + '.png'" alt="" />
+      <div class="bubble">
+        <h2>{{ step.title }}</h2>
+        <p>{{ step.body }}</p>
+        <div class="bubble-actions">
+          <button class="skip" (click)="page.tutorialService.skip()">Saltar tutorial</button>
+          @if (step.advanceOn === 'manual') {
+            <button class="next" (click)="page.tutorialService.next()">
+              {{ page.tutorialService.isLastStep() ? 'Empezar' : 'Siguiente' }}
+            </button>
+          }
+        </div>
       </div>
     </div>
   }

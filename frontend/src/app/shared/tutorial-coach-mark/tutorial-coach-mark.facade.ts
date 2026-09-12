@@ -8,7 +8,14 @@ interface Rect {
   height: number;
 }
 
+interface CardSize {
+  width: number;
+  height: number;
+}
+
 const MAX_FIND_ATTEMPTS = 20; // ~3s a 150ms por intento
+/** Estimacion generosa antes de la primera medicion real (ver ResizeObserver en el componente) — solo evita un primer frame mal encajado. */
+const FALLBACK_CARD_SIZE: CardSize = { width: 360, height: 220 };
 
 @Injectable()
 export class TutorialCoachMarkFacade {
@@ -16,21 +23,46 @@ export class TutorialCoachMarkFacade {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly rect = signal<Rect | null>(null);
-  /** Debe coincidir con el max-width real de .bubble en el scss — solo se usa para no salirse de pantalla. */
-  private readonly bubbleWidth = 280;
+  /**
+   * Tamano real de mascota+burbuja, medido por el componente (ResizeObserver)
+   * en vez de asumido a mano — asi el encaje en pantalla no depende de tener
+   * que mantener sincronizados numeros sueltos con el scss cada vez que
+   * cambia el diseno (padding, tamano de fuente, tamano de la mascota...).
+   */
+  private readonly cardSize = signal<CardSize>(FALLBACK_CARD_SIZE);
   private readonly gutter = 16;
   private pollHandle: ReturnType<typeof setInterval> | null = null;
   private findAttempts = 0;
 
-  get viewportHeight(): number {
-    return window.innerHeight;
+  setCardSize(size: CardSize): void {
+    if (size.width > 0 && size.height > 0) {
+      this.cardSize.set(size);
+    }
   }
 
-  /** Centrada sobre el objetivo, sin salirse de los margenes laterales de la pantalla. */
-  bubbleLeft(r: Rect): number {
-    const centered = r.left + r.width / 2 - this.bubbleWidth / 2;
-    const maxLeft = window.innerWidth - this.bubbleWidth - this.gutter;
+  /** Centrada sobre el objetivo, sin salirse nunca de los margenes de pantalla — en ningun eje. */
+  cardLeft(r: Rect): number {
+    const { width } = this.cardSize();
+    const centered = r.left + r.width / 2 - width / 2;
+    const maxLeft = window.innerWidth - width - this.gutter;
     return Math.min(Math.max(centered, this.gutter), Math.max(maxLeft, this.gutter));
+  }
+
+  /** Solo para placement 'bottom': la tarjeta crece hacia abajo desde el objetivo, recortada si no cabe. */
+  cardTop(r: Rect): number {
+    const { height } = this.cardSize();
+    const naive = r.top + r.height + 14;
+    const maxTop = window.innerHeight - height - this.gutter;
+    return Math.min(Math.max(naive, this.gutter), Math.max(maxTop, this.gutter));
+  }
+
+  /** Solo para placement 'top': la tarjeta crece hacia arriba desde el objetivo, recortada si no cabe. */
+  cardBottom(r: Rect): number {
+    const { height } = this.cardSize();
+    const naive = window.innerHeight - r.top + 14;
+    // Limite superior: que el borde de arriba de la tarjeta no pase del margen.
+    const maxBottom = Math.max(window.innerHeight - this.gutter - height, this.gutter);
+    return Math.min(Math.max(naive, this.gutter), maxBottom);
   }
 
   constructor() {

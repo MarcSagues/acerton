@@ -17,8 +17,38 @@
     height 0.2s ease;
 }
 
-.bubble {
+/* Mascota y mensaje apilados como una sola tarjeta que se mueve junto al
+   objetivo senalado. Cada paso decide si la mascota va encima o debajo del
+   mensaje (ver TutorialStep.mascotPosition) — por defecto encima; con
+   .mascot-below se intercambia el orden visual sin tocar el HTML. El tamano
+   real de toda la tarjeta se mide (ver componente, ResizeObserver) para que
+   el encaje en pantalla sea siempre correcto aunque cambie el contenido. */
+.tutorial-card {
   position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  transition:
+    top 0.2s ease,
+    bottom 0.2s ease,
+    left 0.2s ease;
+}
+
+.mascot-avatar {
+  order: 0;
+  flex: none;
+  width: min(46vw, 180px);
+  height: min(46vw, 180px);
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+}
+
+.bubble {
+  order: 1;
+  position: relative;
   width: 280px;
   max-width: calc(100vw - 32px);
   border-radius: var(--radius-lg);
@@ -26,11 +56,36 @@
   border: 1px solid var(--border);
   padding: 16px;
   box-shadow: var(--shadow-dialog-strong);
-  pointer-events: auto;
-  transition:
-    top 0.2s ease,
-    bottom 0.2s ease,
-    left 0.2s ease;
+}
+
+/* Piquito que conecta la burbuja con la mascota, apuntando hacia donde este:
+   hacia arriba si la mascota va encima, hacia abajo si va debajo. */
+.bubble::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  background: var(--surface);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.tutorial-card:not(.mascot-below) .bubble::before {
+  top: -7px;
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+}
+
+.tutorial-card.mascot-below {
+  .mascot-avatar {
+    order: 2;
+  }
+
+  .bubble::before {
+    bottom: -7px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
 }
 
 h2 {

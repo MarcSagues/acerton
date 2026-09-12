@@ -12,6 +12,16 @@ export interface TutorialStep {
   target: string;
   title: string;
   body: string;
+  /**
+   * Mascota del catalogo de avatares (ver avatar-catalog.ts en el backend)
+   * que "explica" este paso, para que el tutorial se lea como una guia
+   * hecha por un personaje en vez de texto suelto. Solo poses del catalogo
+   * por defecto (nunca las de trofeo: no tiene sentido condicionar el
+   * tutorial a haberlas desbloqueado).
+   */
+  mascotId: string;
+  /** Donde se coloca la mascota respecto al mensaje (no respecto al objetivo senalado). */
+  mascotPosition: 'above' | 'below';
   placement: 'top' | 'bottom';
   /**
    * 'manual': se avanza con el boton del propio aviso.
@@ -29,6 +39,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
       target: '[data-tutorial="rankings-head"]',
       title: 'Bienvenido a Piqo',
       body: 'Esta es la Tabla: aqui ves la clasificacion general del grupo, quien va primero y cuantos puntos lleva cada uno.',
+      mascotId: 'saludo',
+      mascotPosition: 'below',
       placement: 'bottom',
       advanceOn: 'manual',
     },
@@ -38,6 +50,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
       target: '[data-tutorial="nav-jornada"]',
       title: 'Haz tus pronosticos',
       body: 'Pulsa aqui para ver los proximos partidos y elegir tus pronosticos antes de que empiecen.',
+      mascotId: 'corriendo',
+      mascotPosition: 'above',
       placement: 'top',
       advanceOn: 'route',
     },
@@ -48,6 +62,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
           target: '[data-tutorial="first-match"]',
           title: 'Resultado exacto',
           body: 'Para cada partido, escribe el marcador exacto que crees que va a pasar. Cuanto mas te acerques al resultado real, mas puntos consigues.',
+          mascotId: 'pensando',
+          mascotPosition: 'above',
           placement: 'top',
           advanceOn: 'manual',
         }
@@ -57,6 +73,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
           target: '[data-tutorial="first-match"]',
           title: 'Elige 1, X o 2',
           body: 'Para cada partido, elige 1 (gana el local), X (empate) o 2 (gana el visitante) — se guarda solo al pulsar. Si vas por detras en la clasificacion, puede que tengas el comodin de doble oportunidad disponible en algunos partidos.',
+          mascotId: 'pensando',
+          mascotPosition: 'above',
           placement: 'top',
           advanceOn: 'manual',
         },
@@ -66,6 +84,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
       target: '[data-tutorial="nav-perfil"]',
       title: 'Grupos y Perfil',
       body: '"Grupos" te deja cambiar entre tus grupos o crear/unirte a otro. Desde "Perfil" puedes volver a ver este tutorial cuando quieras.',
+      mascotId: 'celebrando',
+      mascotPosition: 'above',
       placement: 'top',
       advanceOn: 'manual',
     },
@@ -133,7 +153,19 @@ export class TutorialService {
     this.currentUrlSignal.set(this.router.url.split('?')[0]);
     this.activeSignal.set(true);
     if (!this.authService.currentUser()?.tutorialCompleted) {
-      this.profileService.completeTutorial().subscribe((user) => this.authService.setCurrentUser(user));
+      // Sin manejador de error aqui, un fallo de red (frecuente en datos
+      // moviles) dejaba esta llamada sin completarse nunca: el usuario
+      // seguia viendo tutorialCompleted=false en cada visita futura a
+      // Tabla y el tutorial volvia a saltar siempre, indefinidamente. Al
+      // fallar simplemente no se actualiza el signal local — el propio
+      // guard de arriba hace que se reintente solo la proxima vez que se
+      // llame a start(), y completeTutorial() es idempotente en el backend.
+      this.profileService.completeTutorial().subscribe({
+        next: (user) => this.authService.setCurrentUser(user),
+        error: () => {
+          /* reintento implicito: la proxima llamada a start() lo repite */
+        },
+      });
     }
   }
 
