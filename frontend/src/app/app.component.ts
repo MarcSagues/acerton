@@ -5,6 +5,7 @@ import { NoRealMoneyNoticeComponent } from './shared/no-real-money-notice/no-rea
 import { TutorialCoachMarkComponent } from './shared/tutorial-coach-mark/tutorial-coach-mark.component';
 import { ToastHostComponent } from './shared/ui/toast/toast-host.component';
 import { ThemeService } from './core/services/theme.service';
+import { DeepLinkService } from './core/services/deep-link.service';
 
 @Component({
   selector: 'app-root',
@@ -23,4 +24,9 @@ export class AppComponent {
   // Inyectado solo para forzar su instanciacion (y por tanto aplicar el
   // atributo data-theme) al arrancar la app, no porque se use aqui.
   private readonly themeService = inject(ThemeService);
+  private readonly deepLinkService = inject(DeepLinkService);
+
+  constructor() {
+    this.deepLinkService.init();
+  }
 }
