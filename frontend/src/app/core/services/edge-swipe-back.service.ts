@@ -54,7 +54,7 @@ export class EdgeSwipeBackService {
 
   private readonly onTouchStart = (event: TouchEvent): void => {
     const touch = event.touches[0];
-    if (!touch || touch.clientX > EDGE_WIDTH_PX) {
+    if (!touch || touch.clientX > EDGE_WIDTH_PX || this.startsInsideHorizontalScroller(event.target)) {
       this.tracking = false;
       return;
     }
@@ -62,6 +62,24 @@ export class EdgeSwipeBackService {
     this.startX = touch.clientX;
     this.startY = touch.clientY;
   };
+
+  /**
+   * Filas con su propio scroll horizontal (trofeos/insignias en Perfil,
+   * selector de liga en Jornada/Tabla/Resultados) a veces empiezan pegadas
+   * al borde izquierdo. Sin este chequeo, arrastrar el dedo dentro de esa
+   * fila para ver más elementos se confundia con el gesto de volver y
+   * cerraba toda la pantalla en vez de solo deslizar la fila.
+   */
+  private startsInsideHorizontalScroller(target: EventTarget | null): boolean {
+    let el = target instanceof Element ? target : null;
+    while (el) {
+      const style = getComputedStyle(el);
+      const canScrollX = (style.overflowX === 'auto' || style.overflowX === 'scroll') && el.scrollWidth > el.clientWidth;
+      if (canScrollX) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
 
   private readonly onTouchEnd = (event: TouchEvent): void => {
     if (!this.tracking) return;
