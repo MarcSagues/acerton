@@ -481,13 +481,19 @@ h1 {
   }
 
   /* Partido en juego: se sigue mostrando el pronostico ya enviado, pero
-     sin poder tocarlo — atenuado salvo la opcion que de verdad se eligio,
-     para que quede claro que sigue siendo "lo tuyo" y no una opcion mas. */
+     sin poder tocarlo — atenuado salvo la opcion que de verdad se eligio.
+     Esa opcion se pinta con el mismo amarillo semi-transparente que el
+     resto de estados "bloqueado" de la app (ver .aviso.warning), no con
+     el acento normal de una opcion todavia elegible, para que se note a
+     simple vista que ya no se puede cambiar. */
   &:disabled {
     opacity: 0.5;
 
     &.selected {
       opacity: 1;
+      background: color-mix(in srgb, var(--p4-warning) 16%, transparent);
+      color: var(--p4-warning);
+      border-color: var(--p4-warning);
     }
   }
 
