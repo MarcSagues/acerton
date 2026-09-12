@@ -30,6 +30,13 @@ export class AuthPageFacade {
   readonly diagnostics = signal<string | null>(null);
   readonly runningDiagnostics = signal(false);
 
+  /** Distinto de null tras un registro correcto: la cuenta existe pero no puede entrar hasta confirmar el correo. */
+  readonly registeredEmail = signal<string | null>(null);
+  /** true solo cuando el ultimo fallo de login fue "email sin confirmar" (403) — ofrece reenviar en vez de un error generico. */
+  readonly unverifiedEmailError = signal(false);
+  readonly resendingVerification = signal(false);
+  readonly resendMessage = signal<string | null>(null);
+
   readonly form = this.fb.nonNullable.group({
     name: [''],
     email: ['', [Validators.required, Validators.email]],
@@ -44,6 +51,9 @@ export class AuthPageFacade {
   setMode(mode: AuthMode): void {
     this.mode.set(mode);
     this.errorMessage.set(null);
+    this.registeredEmail.set(null);
+    this.unverifiedEmailError.set(false);
+    this.resendMessage.set(null);
     if (mode === 'login') {
       this.emailFormOpen.set(false);
     }
@@ -75,11 +85,36 @@ export class AuthPageFacade {
   openEmailForm(): void {
     this.emailFormOpen.set(true);
     this.errorMessage.set(null);
+    this.unverifiedEmailError.set(false);
+    this.resendMessage.set(null);
   }
 
   closeEmailForm(): void {
     this.emailFormOpen.set(false);
     this.errorMessage.set(null);
+    this.unverifiedEmailError.set(false);
+    this.resendMessage.set(null);
+  }
+
+  goToForgotPassword(): void {
+    const email = this.form.controls.email.value;
+    this.router.navigate(['/forgot-password'], { queryParams: email ? { email } : {} });
+  }
+
+  resendVerification(email: string): void {
+    if (this.resendingVerification()) return;
+    this.resendingVerification.set(true);
+    this.resendMessage.set(null);
+    this.authService.resendVerification(email).subscribe({
+      next: () => {
+        this.resendingVerification.set(false);
+        this.resendMessage.set('Te hemos enviado el correo de confirmacion de nuevo.');
+      },
+      error: () => {
+        this.resendingVerification.set(false);
+        this.resendMessage.set('No se ha podido reenviar. Intentalo de nuevo en unos minutos.');
+      },
+    });
   }
 
   /**
@@ -170,22 +205,37 @@ export class AuthPageFacade {
 
     this.loading.set(true);
     this.errorMessage.set(null);
+    this.unverifiedEmailError.set(false);
+    this.resendMessage.set(null);
     const { name, email, password } = this.form.getRawValue();
 
-    const request = this.isRegister()
-      ? this.authService.register({ name: name.trim(), email, password })
-      : this.authService.login({ email, password });
+    if (this.isRegister()) {
+      this.authService.register({ name: name.trim(), email, password }).subscribe({
+        next: (res) => {
+          this.loading.set(false);
+          this.registeredEmail.set(res.email);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.loading.set(false);
+          this.errorMessage.set(error.error?.message ?? 'No se pudo crear la cuenta');
+        },
+      });
+      return;
+    }
 
-    request.subscribe({
+    this.authService.login({ email, password }).subscribe({
       next: () => {
         this.loading.set(false);
         this.navigateAfterLogin();
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(
-          error.error?.message ?? (this.isRegister() ? 'No se pudo crear la cuenta' : 'No se pudo iniciar sesion'),
-        );
+        if (error.status === 403) {
+          this.unverifiedEmailError.set(true);
+          this.errorMessage.set(error.error?.message ?? 'Confirma tu correo antes de iniciar sesion.');
+          return;
+        }
+        this.errorMessage.set(error.error?.message ?? 'No se pudo iniciar sesion');
       },
     });
   }

@@ -39,6 +39,11 @@ export interface AppConfig {
     enabled: boolean;
     pointsPerBonus: number;
   };
+  mail: {
+    resendApiKey: string;
+    /** Remitente tal cual lo espera Resend: "Nombre <direccion@dominio>". */
+    from: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -76,5 +81,11 @@ export default (): AppConfig => ({
     // Cada N puntos de diferencia con el lider dan 1 uso mas del comodin de
     // remontada esa jornada (ver WildcardsService.getComebackStatus).
     pointsPerBonus: parseInt(process.env.COMEBACK_POINTS_PER_BONUS_DEFAULT ?? '10', 10),
+  },
+  mail: {
+    // Sin configurar en local: MailService deja el correo en el log en vez
+    // de enviarlo de verdad (ver MailService.send).
+    resendApiKey: process.env.RESEND_API_KEY ?? '',
+    from: process.env.MAIL_FROM ?? 'Piqo <no-reply@acerton.app>',
   },
 });

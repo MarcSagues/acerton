@@ -6,6 +6,29 @@
         Acceso
       </button>
     </div>
+
+    @if (page.registeredEmail(); as registeredEmail) {
+      <div class="title-row">
+        <h1>Revisa tu correo</h1>
+        <p class="lead">
+          Te hemos enviado un enlace de confirmacion a <strong>{{ registeredEmail }}</strong>. Confirma tu cuenta
+          desde ahi para poder entrar.
+        </p>
+      </div>
+      <div class="form">
+        <button
+          type="button"
+          class="ghost-link"
+          [disabled]="page.resendingVerification()"
+          (click)="page.resendVerification(registeredEmail)"
+        >
+          {{ page.resendingVerification() ? 'Reenviando…' : '¿No te ha llegado? Reenviar correo' }}
+        </button>
+        @if (page.resendMessage(); as resendMessage) {
+          <p class="hint">{{ resendMessage }}</p>
+        }
+      </div>
+    } @else {
     <div class="title-row">
       <h1>Crear cuenta</h1>
       <p class="lead">Tu nombre es el que verá tu grupo en la clasificación.</p>
@@ -54,6 +77,7 @@
         }
       </button>
     </form>
+    }
   </div>
 } @else if (page.emailFormOpen()) {
   <div class="page">
@@ -85,10 +109,26 @@
             {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
           </button>
         </div>
+        <button type="button" class="ghost-link forgot-link" (click)="page.goToForgotPassword()">
+          ¿Olvidaste tu contraseña?
+        </button>
       </label>
 
       @if (page.errorMessage()) {
         <p class="error">{{ page.errorMessage() }}</p>
+        @if (page.unverifiedEmailError()) {
+          <button
+            type="button"
+            class="ghost-link"
+            [disabled]="page.resendingVerification()"
+            (click)="page.resendVerification(page.form.controls.email.value)"
+          >
+            {{ page.resendingVerification() ? 'Reenviando…' : 'Reenviar correo de confirmacion' }}
+          </button>
+        }
+      }
+      @if (page.resendMessage(); as resendMessage) {
+        <p class="hint">{{ resendMessage }}</p>
       }
 
       <button type="submit" class="piqo-primary cta" [disabled]="page.loading()">

@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -14,10 +15,16 @@ import { ConfigService } from '@nestjs/config';
 import type { CookieOptions, Request, Response } from 'express';
 import { AppConfig } from '../config/configuration';
 import { Public } from '../common/decorators/public.decorator';
-import { AuthService, GoogleProfileInput } from './auth.service';
+import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { AuthService, GENERIC_EMAIL_ACTION_MESSAGE, GoogleProfileInput } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { GoogleTokenDto } from './dto/google-token.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { PublicUser } from './auth.types';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 
@@ -30,15 +37,61 @@ export class AuthController {
     private readonly configService: ConfigService<AppConfig, true>,
   ) {}
 
+  /** No inicia sesion: la cuenta queda sin verificar hasta confirmar el correo (ver login y verify-email). */
   @Public()
   @Post('register')
-  async register(
-    @Body() dto: RegisterDto,
+  async register(@Body() dto: RegisterDto): Promise<{ email: string }> {
+    return this.authService.register(dto);
+  }
+
+  /** Confirma la cuenta desde el enlace del correo e inicia sesion de una vez. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('verify-email')
+  async verifyEmail(
+    @Body() dto: VerifyEmailDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser; accessToken: string }> {
-    const { user, tokens } = await this.authService.register(dto);
+    const { user, tokens } = await this.authService.verifyEmail(dto.token);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { user, accessToken: tokens.accessToken };
+  }
+
+  /** Respuesta identica exista o no la cuenta, o ya este verificada: no se puede usar para comprobar si un email esta registrado. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('resend-verification')
+  async resendVerification(@Body() dto: ResendVerificationDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
+    await this.authService.resendVerification(dto.email);
+    return GENERIC_EMAIL_ACTION_MESSAGE;
+  }
+
+  /** Respuesta identica exista o no la cuenta, o sea solo-Google: no se puede usar para comprobar si un email esta registrado. */
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
+    await this.authService.requestPasswordReset(dto.email);
+    return GENERIC_EMAIL_ACTION_MESSAGE;
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ success: true }> {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
+    return { success: true };
+  }
+
+  /** Cambio de contrasena estando ya conectado (Ajustes de Perfil) — distinto del flujo de "olvide mi contrasena". */
+  @HttpCode(HttpStatus.OK)
+  @Patch('me/password')
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ success: true }> {
+    await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+    return { success: true };
   }
 
   @Public()
