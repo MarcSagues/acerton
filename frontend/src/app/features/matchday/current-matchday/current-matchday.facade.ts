@@ -403,26 +403,25 @@ export class CurrentMatchdayFacade {
   /**
    * Como colorear cada opcion (1/X/2) del resumen de resultado 1X2 una vez
    * terminado el partido: 'hit' la que elegiste y acertaste, 'miss' la que
-   * elegiste y fallaste, 'actual' el resultado real cuando no coincide con
-   * tu eleccion (para que se vea cual era la respuesta correcta aunque no
-   * la marcaras), o null si esa opcion no es relevante. Con comodin de
-   * doble oportunidad no hay una unica casilla "tuya": solo se resalta el
-   * resultado real, en verde si tu cobertura lo incluia.
+   * elegiste y fallaste, o null si esa opcion no es relevante. No se resalta
+   * el resultado real cuando no es el tuyo (a peticion explicita: solo se
+   * quiere ver el propio acierto/fallo, no la respuesta correcta ajena).
+   * Con comodin de doble oportunidad no hay una unica casilla "tuya": solo
+   * se resalta el resultado real, y solo si tu cobertura lo incluia.
    */
-  choiceReviewTone(match: Match, option: PredictionChoice): 'hit' | 'miss' | 'actual' | null {
+  choiceReviewTone(match: Match, option: PredictionChoice): 'hit' | 'miss' | null {
     if (match.status !== 'FINISHED' || !match.result) return null;
     const selection = this.predictionState.get(match.id);
     const isActual = option === match.result;
 
     if (selection?.doubleChanceOption) {
       if (!isActual) return null;
-      return isPredictionHit(match, selection, false) ? 'hit' : 'actual';
+      return isPredictionHit(match, selection, false) ? 'hit' : null;
     }
 
     const isMine = option === selection?.choice;
     if (isMine && isActual) return 'hit';
     if (isMine) return 'miss';
-    if (isActual) return 'actual';
     return null;
   }
 

@@ -60,4 +60,8 @@ app-top-bar,
 .shell-content {
   flex: 1;
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
+
+  &.no-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

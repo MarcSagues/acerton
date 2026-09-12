@@ -89,7 +89,7 @@ function buildBackgroundCircles(): BgCircle[] {
   styleUrl: './shell.component.scss',
 })
 export class ShellComponent implements OnInit {
-  private readonly page = inject(ShellFacade);
+  readonly page = inject(ShellFacade);
 
   readonly backgroundCircles = buildBackgroundCircles();
 

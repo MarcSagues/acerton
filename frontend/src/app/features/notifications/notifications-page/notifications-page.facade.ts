@@ -1,12 +1,15 @@
-import { Injectable, signal } from '@angular/core';
-import { DEMO_NOTICES, NOTICE_PERIODS } from '../domain/demo-notice';
+import { Injectable, inject } from '@angular/core';
+import { NOTICE_PERIODS } from '../domain/demo-notice';
+import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 
 @Injectable()
 export class NotificationsPageFacade {
-  readonly notices = signal(DEMO_NOTICES.map((notice) => ({ ...notice })));
+  private readonly feed = inject(NotificationsFeedService);
+
+  readonly notices = this.feed.notices;
   readonly periods = NOTICE_PERIODS;
 
   markAllRead(): void {
-    this.notices.update((items) => items.map((notice) => ({ ...notice, unread: false })));
+    this.feed.markAllRead();
   }
 }
