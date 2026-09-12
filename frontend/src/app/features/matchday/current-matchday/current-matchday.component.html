@@ -38,7 +38,10 @@
         <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
         {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
       </button>
-      <button type="button" class="piqo-secondary sent-btn" (click)="page.editPredictions()">Revisar pronosticos</button>
+      <button type="button" class="piqo-secondary sent-btn" (click)="page.editPredictions()">
+        <piqo-svg icon="atras" size="18"></piqo-svg>
+        Volver
+      </button>
     </main>
   }
 } @else {

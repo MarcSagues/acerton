@@ -22,6 +22,15 @@ import { initials } from '../../utils/initials';
   `,
   styles: [
     `
+      /* Sin esto, <app-avatar> es un elemento inline por defecto (ningun
+         custom element/componente lo es a menos que se declare) y
+         participa en el calculo de linea base del texto igual que una
+         palabra suelta — con una imagen real dentro (que anade el hueco
+         de descendente propio de <img> inline) quedaba unos pixeles mas
+         abajo/arriba que un avatar con solo iniciales en el mismo sitio. */
+      :host {
+        display: inline-flex;
+      }
       .avatar {
         flex: none;
         border-radius: 50%;
