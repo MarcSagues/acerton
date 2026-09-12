@@ -1,6 +1,6 @@
 <main class="onboarding">
   <header class="topbar">
-    <a class="wordmark" routerLink="/" aria-label="Piqo, inicio"><span>pq</span> Piqo</a>
+    <a class="wordmark" routerLink="/" aria-label="Piqo, inicio"><piqo-svg logo size="146"></piqo-svg></a>
     @if (page.currentStep() < page.steps.length - 1) {
       <button type="button" class="skip" (click)="page.goTo(page.steps.length - 1)">Saltar</button>
     }

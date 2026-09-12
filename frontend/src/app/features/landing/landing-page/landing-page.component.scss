@@ -26,19 +26,15 @@
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font: 700 17px/1 var(--font-display);
 
-  span {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: var(--accent);
-    color: var(--accent-on);
-    display: grid;
-    place-items: center;
-    font-size: 15px;
-    letter-spacing: -1px;
+  /* Esta pantalla es siempre de marca (fondo oscuro fijo, --surface-dark,
+     sin seguir el tema claro/oscuro del resto de la app — ver :host mas
+     arriba), asi que el logo tambien se fuerza a sus colores de marca en
+     vez de a --p4-text/--p4-accent (que si siguen el tema y podrian
+     quedar ilegibles aqui en tema claro). */
+  piqo-svg {
+    --text: var(--on-inverse);
+    --accent: var(--champagne);
   }
 }
 
