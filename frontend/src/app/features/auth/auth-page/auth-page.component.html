@@ -1,12 +1,5 @@
 @if (page.isRegister()) {
   <div class="page">
-    <div class="head-row">
-      <button type="button" class="back-link" (click)="page.setMode('login')">
-        <piqo-svg icon="atras" size="20"></piqo-svg>
-        Acceso
-      </button>
-    </div>
-
     <div class="body-center">
       @if (page.registeredEmail(); as registeredEmail) {
         <div class="title-row">
@@ -28,6 +21,10 @@
           @if (page.resendMessage(); as resendMessage) {
             <p class="hint">{{ resendMessage }}</p>
           }
+          <button type="button" class="back-btn-bottom" (click)="page.setMode('login')">
+            <piqo-svg icon="atras" size="16"></piqo-svg>
+            Volver al acceso
+          </button>
         </div>
       } @else {
       <div class="title-row">
@@ -77,18 +74,16 @@
             Crear cuenta
           }
         </button>
+        <button type="button" class="back-btn-bottom" (click)="page.setMode('login')">
+          <piqo-svg icon="atras" size="16"></piqo-svg>
+          Volver al acceso
+        </button>
       </form>
       }
     </div>
   </div>
 } @else if (page.emailFormOpen()) {
   <div class="page">
-    <div class="head-row">
-      <button type="button" class="back-link" (click)="page.closeEmailForm()">
-        <piqo-svg icon="atras" size="20"></piqo-svg>
-        Acceso
-      </button>
-    </div>
     <div class="body-center">
       <div class="title-row">
         <h1>Entrar con correo</h1>
@@ -140,6 +135,10 @@
           } @else {
             Entrar
           }
+        </button>
+        <button type="button" class="back-btn-bottom" (click)="page.closeEmailForm()">
+          <piqo-svg icon="atras" size="16"></piqo-svg>
+          Volver al acceso
         </button>
       </form>
     </div>

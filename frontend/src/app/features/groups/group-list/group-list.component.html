@@ -2,10 +2,12 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
   <div class="page">
-    <div class="title-row">
-      <h1>Tus grupos</h1>
-      <p class="lead">Elige dónde pronosticas esta jornada.</p>
-    </div>
+    @if (page.groups().length > 0) {
+      <div class="title-row">
+        <h1>Tus grupos</h1>
+        <p class="lead">Elige dónde pronosticas esta jornada.</p>
+      </div>
+    }
 
     @if (page.groups().length === 0) {
       <app-empty-state
