@@ -1,10 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 import { Capacitor } from '@capacitor/core';
 
 const EDGE_WIDTH_PX = 24;
 const MIN_DRAG_PX = 80;
 const MAX_VERTICAL_DRIFT_PX = 60;
+
+/**
+ * Pestañas raiz de la barra inferior (ver bottom-nav.component.html): no
+ * tienen una pantalla "anterior" real a la que volver, asi que el gesto no
+ * hace nada ahi — igual que en iOS nativo, donde el swipe-back de un
+ * UINavigationController no actua en la raiz de la pila.
+ */
+const ROOT_ROUTES = ['/matchday', '/groups', '/rankings', '/profile'];
 
 /**
  * Gesto "deslizar desde el borde izquierdo para volver" como en iOS nativo.
@@ -18,15 +27,29 @@ const MAX_VERTICAL_DRIFT_PX = 60;
 @Injectable({ providedIn: 'root' })
 export class EdgeSwipeBackService {
   private readonly location = inject(Location);
+  private readonly router = inject(Router);
 
   private startX = 0;
   private startY = 0;
   private tracking = false;
 
+  /**
+   * Consumido una sola vez por app.config.ts (withViewTransitions) para
+   * animar solo la navegacion que viene de este gesto — no las que vienen
+   * de un enlace/boton normal, que no deben cambiar de comportamiento.
+   */
+  private pendingSwipeAnimation = false;
+
   init(): void {
     if (!Capacitor.isNativePlatform()) return;
     document.addEventListener('touchstart', this.onTouchStart, { passive: true });
     document.addEventListener('touchend', this.onTouchEnd, { passive: true });
+  }
+
+  consumePendingSwipeAnimation(): boolean {
+    const pending = this.pendingSwipeAnimation;
+    this.pendingSwipeAnimation = false;
+    return pending;
   }
 
   private readonly onTouchStart = (event: TouchEvent): void => {
@@ -47,8 +70,12 @@ export class EdgeSwipeBackService {
     if (!touch) return;
     const dx = touch.clientX - this.startX;
     const dy = Math.abs(touch.clientY - this.startY);
-    if (dx > MIN_DRAG_PX && dy < MAX_VERTICAL_DRIFT_PX) {
-      this.location.back();
-    }
+    if (dx <= MIN_DRAG_PX || dy >= MAX_VERTICAL_DRIFT_PX) return;
+
+    const currentPath = this.router.url.split('?')[0];
+    if (ROOT_ROUTES.includes(currentPath)) return;
+
+    this.pendingSwipeAnimation = true;
+    this.location.back();
   };
 }
