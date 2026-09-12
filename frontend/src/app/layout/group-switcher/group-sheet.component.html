@@ -16,7 +16,9 @@
         [attr.aria-selected]="group.id === activeGroupService.activeGroup()?.id"
         (click)="select(group.id)"
       >
-        <span class="avatar">{{ initials(group.name) }}</span>
+        <span class="avatar" [class.exact]="group.scoringMode === 'EXACT_SCORE'">
+          <piqo-svg [attr.icon]="scoringModeIcon(group.scoringMode)" size="20"></piqo-svg>
+        </span>
         <span class="meta">
           <span class="name">{{ group.name }}</span>
           <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>

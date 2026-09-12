@@ -14,7 +14,7 @@ export interface Prediction {
   predictedAwayScore: number | null;
   pointsEarned: number | null;
   submittedAt: string;
-  user?: { id: string; name: string; avatarUrl: string | null };
+  user?: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null };
 }
 
 export interface SubmitPredictionPayload {

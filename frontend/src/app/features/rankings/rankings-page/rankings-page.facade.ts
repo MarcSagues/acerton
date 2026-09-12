@@ -120,14 +120,6 @@ export class RankingsPageFacade {
     return '=';
   }
 
-  initials(name: string): string {
-    return name
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() ?? '')
-      .join('');
-  }
-
   /**
    * Abre las quinielas de un jugador para la jornada cerrada mas reciente de
    * la competicion seleccionada (o de la primera activa si la vista es

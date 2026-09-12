@@ -3,7 +3,8 @@ import { DialogRef } from '@angular/cdk/dialog';
 import { Router } from '@angular/router';
 import { ActiveGroupService } from '../../core/services/active-group.service';
 import { BottomSheetService } from '../../shared/ui/bottom-sheet/bottom-sheet.service';
-import { initials } from '../../shared/utils/initials';
+import { ScoringMode } from '../../core/models/group.model';
+import { scoringModeIcon as scoringModeIconOf } from '../../shared/utils/scoring-mode-badge';
 
 /** Contenido del panel inferior "Selector de grupo". HANDOFF §10. */
 @Component({
@@ -19,8 +20,8 @@ export class GroupSheetComponent {
   private readonly sheet = inject(BottomSheetService);
   private readonly router = inject(Router);
 
-  initials(name: string): string {
-    return initials(name);
+  scoringModeIcon(mode: ScoringMode): string {
+    return scoringModeIconOf(mode);
   }
 
   select(groupId: string): void {

@@ -158,6 +158,11 @@ export class CurrentMatchdayFacade {
     return entry.matchday.status !== 'FINISHED' && entry.matchday.matches.length > 0 && this.doneCount() === entry.matchday.matches.length;
   }
 
+  /** Basta con un pronostico enviado para poder ver el resumen — no hace falta completar toda la jornada. */
+  anyPredicted(entry: CurrentMatchdayEntry): boolean {
+    return entry.matchday.status !== 'FINISHED' && this.doneCount() > 0;
+  }
+
   /** Se abre solo si el usuario pulsa "Ver resumen" — antes se abria solo tras cada guardado, lo que lo hacia reaparecer cada vez que se editaba un pronostico ya completo. */
   openSummary(): void {
     this.submissionConfirmed.set(true);

@@ -95,6 +95,12 @@
   display: flex;
   gap: 7px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .comp-chip {
@@ -301,6 +307,12 @@
 .comparison-scroll {
   padding: 0 20px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .comparison {
@@ -325,6 +337,29 @@
 
 .comparison-member-head {
   text-align: center;
+}
+
+.comparison-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  /* El toque no debe hacer scroll de la pagina mientras se mantiene
+     pulsado para ver el nombre. */
+  touch-action: none;
+}
+
+.comparison-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--p4-text);
+  color: var(--p4-bg);
+  font: 600 11px/1 var(--p4-font-ui);
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .comparison-match {

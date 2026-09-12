@@ -22,13 +22,15 @@
 
       <section class="sent-summary" aria-label="Resumen de pronosticos">
         @for (match of entry.matchday.matches; track match.id) {
-          <div class="sent-match">
-            <div class="sent-teams">
-              <span>{{ match.homeTeam }}</span>
-              <span>{{ match.awayTeam }}</span>
+          @if (page.pickLabel(match.id); as pick) {
+            <div class="sent-match">
+              <div class="sent-teams">
+                <span>{{ match.homeTeam }}</span>
+                <span>{{ match.awayTeam }}</span>
+              </div>
+              <strong class="sent-pick mono">{{ pick }}</strong>
             </div>
-            <strong class="sent-pick mono">{{ page.pickLabel(match.id) }}</strong>
-          </div>
+          }
         }
       </section>
 
@@ -98,7 +100,7 @@
 
       <div class="hero-card" [class.complete]="page.allPredicted(entry)">
         <div class="hero-glow"></div>
-        @if (page.allPredicted(entry)) {
+        @if (page.anyPredicted(entry)) {
           <button type="button" class="ciclo-row ciclo-summary" (click)="page.openSummary()">
             <span class="ciclo-summary-text">
               <span class="ciclo-title">{{ page.cicloTitulo(entry) }}</span>
@@ -168,8 +170,8 @@
               </div>
             } @else {
               <div class="crests-row">
-                <span class="team-name">
-                  {{ match.homeTeam }}
+                <span class="team-block">
+                  <span class="team-name">{{ match.homeTeam }}</span>
                   @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.homeScore }}</span>
                   }
@@ -179,11 +181,11 @@
                 } @else {
                   <span class="vs mono">VS</span>
                 }
-                <span class="team-name">
+                <span class="team-block">
                   @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.awayScore }}</span>
                   }
-                  {{ match.awayTeam }}
+                  <span class="team-name">{{ match.awayTeam }}</span>
                 </span>
               </div>
               @if (!page.isExactScore()) {

@@ -725,3 +725,37 @@ button {
   color: var(--p4-accent);
   font: 700 12px/1 var(--p4-font-ui);
 }
+
+/* ---- Transicion de "deslizar para volver" (EdgeSwipeBackService) -------
+   Solo se activa cuando esta clase esta puesta en <html> (ver
+   app.config.ts, withViewTransitions): para cualquier otra navegacion se
+   llama a transition.skipTransition() y esto no se aplica. La pantalla
+   actual sale deslizandose a la derecha por encima; la anterior entra por
+   debajo desde la izquierda con un ligero paralaje, como el gesto nativo
+   de iOS (curva y duracion calcadas de UINavigationController). */
+.swipe-back-transition::view-transition-old(root) {
+  z-index: 2;
+  animation: piqoSwipeBackExit 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.swipe-back-transition::view-transition-new(root) {
+  z-index: 1;
+  animation: piqoSwipeBackEnter 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes piqoSwipeBackExit {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes piqoSwipeBackEnter {
+  from { transform: translateX(-28%); }
+  to { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-back-transition::view-transition-old(root),
+  .swipe-back-transition::view-transition-new(root) {
+    animation: none;
+  }
+}

@@ -51,6 +51,12 @@ h1 {
   display: flex;
   gap: 7px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .comp-pill {
@@ -193,7 +199,11 @@ h1 {
 }
 
 .table-head {
-  padding: 18px 20px 6px;
+  /* Mismo desplazamiento horizontal que el contenido de .row: .rows aporta
+     20px de padding y cada .row otros 14px propios (20+14=34) — con solo
+     20px aqui los titulos quedaban descentrados respecto a las columnas
+     reales de debajo. */
+  padding: 18px 34px 6px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -201,7 +211,7 @@ h1 {
   color: var(--p4-muted);
 
   .col-pos {
-    width: 26px;
+    width: 42px;
   }
   .col-name {
     flex: 1;
@@ -235,9 +245,27 @@ h1 {
 }
 
 .col-pos {
-  width: 26px;
+  width: 42px;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
   font: 600 13px/1 var(--p4-font-ui);
   color: var(--p4-muted);
+}
+
+/* El movimiento respecto a la jornada anterior ya no es una columna
+   propia: va pegado al puesto, como un numero mas pequeño al lado, en
+   vez de ocupar su propio hueco en la fila. */
+.pos-delta {
+  font: 600 10px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+
+  &.up {
+    color: var(--p4-success);
+  }
+  &.down {
+    color: var(--p4-error);
+  }
 }
 
 .col-name {
@@ -246,19 +274,6 @@ h1 {
   align-items: center;
   gap: 9px;
   min-width: 0;
-}
-
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--p4-soft);
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 600 10px/1 var(--p4-font-ui);
-  color: var(--p4-accent);
 }
 
 .name {
@@ -272,20 +287,6 @@ h1 {
   width: 38px;
   text-align: right;
   font: 700 14px/1 var(--p4-font-ui);
-}
-
-.col-delta {
-  width: 26px;
-  text-align: center;
-  font: 600 11px/1 var(--p4-font-ui);
-  color: var(--p4-muted);
-
-  &.up {
-    color: var(--p4-success);
-  }
-  &.down {
-    color: var(--p4-error);
-  }
 }
 
 .empty {

@@ -72,7 +72,6 @@
 
     <div class="table-head">
       <span class="col-pos mono">#</span>
-      <span class="col-delta mono"></span>
       <span class="col-name mono">JUGADOR</span>
       <span class="col-pts mono">PTS</span>
     </div>
@@ -85,12 +84,14 @@
       <div class="rows">
         @for (row of page.rows(); track row.userId) {
           <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
-            <span class="col-pos mono">{{ row.position }}</span>
-            <span class="col-delta mono" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
-              {{ page.deltaLabel(row.positionDelta) }}
+            <span class="col-pos mono">
+              {{ row.position }}
+              <span class="pos-delta" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
+                {{ page.deltaLabel(row.positionDelta) }}
+              </span>
             </span>
             <span class="col-name">
-              <span class="avatar">{{ page.initials(row.user.name) }}</span>
+              <app-avatar [url]="row.user.avatarUrl" [background]="row.user.avatarBackground" [name]="row.user.name" [size]="28"></app-avatar>
               <span class="name">{{ row.user.name }}</span>
             </span>
             <span class="col-pts mono">{{ row.points }}</span>

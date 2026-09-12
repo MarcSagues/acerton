@@ -87,6 +87,12 @@ h1 {
   display: flex;
   gap: 7px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .comp-chip {
@@ -356,10 +362,12 @@ h1 {
 
 .team-home,
 .team-away {
-  font: 600 13px/1 var(--p4-font-ui);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 600 13px/1.3 var(--p4-font-ui);
+  /* Nunca recortar el nombre con puntos suspensivos: si no cabe en una
+     linea, sigue en la siguiente. Cortarlo con ellipsis podia esconder
+     el resultado final (.team-score va justo detras, dentro del mismo
+     span) cuando el nombre era largo. */
+  overflow-wrap: break-word;
 }
 
 .team-score {
@@ -382,14 +390,34 @@ h1 {
   gap: 10px;
 }
 
-.team-name {
+/* El resultado real (.team-score) ya no vive dentro de .team-name: antes
+   heredaba su tamaño y su ajuste de linea, asi que si el nombre pasaba a
+   una segunda linea el resultado se veia arrastrado con el en vez de
+   quedar fijo y bien visible junto al equipo. */
+.team-block {
   flex: 1;
   min-width: 0;
+  display: flex;
+  /* center, no baseline: si el nombre pasa a dos lineas, el resultado
+     queda centrado en medio de las dos en vez de pegado a la primera. */
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.team-name {
+  min-width: 0;
   text-align: center;
-  font: 600 12px/1 var(--p4-font-ui);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 600 12px/1.3 var(--p4-font-ui);
+  /* Igual que .team-home/.team-away: nunca recortar con ellipsis, mejor
+     pasar a una segunda linea que esconder el resultado final. */
+  overflow-wrap: break-word;
+}
+
+.crests-row .team-score {
+  flex: none;
+  margin: 0;
+  font-size: 17px;
 }
 
 .vs {
@@ -473,13 +501,19 @@ h1 {
   }
 
   /* Partido en juego: se sigue mostrando el pronostico ya enviado, pero
-     sin poder tocarlo — atenuado salvo la opcion que de verdad se eligio,
-     para que quede claro que sigue siendo "lo tuyo" y no una opcion mas. */
+     sin poder tocarlo — atenuado salvo la opcion que de verdad se eligio.
+     Esa opcion se pinta con el mismo amarillo semi-transparente que el
+     resto de estados "bloqueado" de la app (ver .aviso.warning), no con
+     el acento normal de una opcion todavia elegible, para que se note a
+     simple vista que ya no se puede cambiar. */
   &:disabled {
     opacity: 0.5;
 
     &.selected {
       opacity: 1;
+      background: color-mix(in srgb, var(--p4-warning) 16%, transparent);
+      color: var(--p4-warning);
+      border-color: var(--p4-warning);
     }
   }
 
@@ -671,26 +705,26 @@ h1 {
   }
 }
 
-/* En la vista visual (.inline, sin fila de equipos aparte) el input es mas
-   pequeno para dejar sitio al resultado real junto al nombre del equipo
-   (ver .team-score) sin quedar apretado — en filas hay sitio de sobra y
-   encogerlo ahi se ve fuera de lugar comparado con el resto de la fila.
-   Mismo tamano tanto editable como en revision (partido bloqueado/
-   terminado): antes solo se encogia en revision, asi que el input
-   cambiaba de tamano segun el estado del partido dentro de la misma
-   vista. */
+/* En la vista visual (.inline, sin fila de equipos aparte) el input ya no
+   se encoge respecto a la vista de filas: seguia recortando el numero
+   introducido en iPhone real incluso tras un primer ajuste. Con los
+   nombres de equipo ahora pudiendo pasar a una segunda linea (ver
+   .team-name) ya no hace falta ahorrar ese espacio.  Mismo tamano tanto
+   editable como en revision (partido bloqueado/terminado): antes solo se
+   encogia en revision, asi que el input cambiaba de tamano segun el
+   estado del partido dentro de la misma vista. */
 .score-widget.inline {
   .exact-score-box {
     padding: 3px 6px;
     gap: 3px;
   }
   .score-input {
-    width: 20px;
-    height: 25px;
-    font-size: 15px;
+    width: 24px;
+    height: 29px;
+    font-size: 16px;
   }
   .score-sep {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
