@@ -172,10 +172,9 @@
 }
 
 .section-title {
-  padding: 20px 20px 8px;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--p4-muted);
+  padding: 20px 20px 4px;
+  font: 700 15px/1.2 var(--p4-font-ui);
+  color: var(--p4-text);
 }
 
 .predictions {
