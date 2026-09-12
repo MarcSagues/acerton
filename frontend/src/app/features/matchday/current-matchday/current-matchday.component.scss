@@ -196,11 +196,33 @@ h1 {
     color: var(--p4-error);
   }
 
+  span {
+    flex: 1;
+  }
+
   piqo-svg {
     flex: none;
   }
 }
 
+.aviso-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: -2px -4px -2px 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+  opacity: 0.7;
+
+  &:active {
+    opacity: 1;
+  }
+}
 
 .match-list {
   padding: 19px 20px 0;
@@ -481,7 +503,7 @@ h1 {
    ocupa exactamente el mismo ancho sin tener que adivinarlo a mano. */
 .score-sep-spacer {
   visibility: hidden;
-  font: 700 18px/1 var(--p4-font-display);
+  font: 700 16px/1 var(--p4-font-display);
 }
 
 .exact-score-box {
@@ -544,6 +566,17 @@ h1 {
     background: var(--p4-error-bg);
   }
 
+  /* Bloqueado sin pronostico o a la espera de resultado: sin esto se ve
+     igual que la caja editable vacia (mismo borde/fondo por defecto) y
+     confunde cual se puede rellenar todavia. Fondo solido sin borde marca
+     claramente "no interactivo", en vez del anillo con hueco de la caja
+     editable. */
+  &[data-tone='none'],
+  &[data-tone='pending'] {
+    border-color: transparent;
+    background: var(--p4-disabled-bg);
+  }
+
   &.saving::before {
     content: '';
     position: absolute;
@@ -581,13 +614,13 @@ h1 {
 }
 
 .score-input {
-  width: 26px;
-  height: 32px;
+  width: 24px;
+  height: 29px;
   border: none;
   background: none;
   color: var(--p4-text);
   text-align: center;
-  font: 700 18px/1 var(--p4-font-display);
+  font: 700 16px/1 var(--p4-font-display);
 
   &:focus {
     outline: none;
@@ -608,7 +641,7 @@ h1 {
 }
 
 .score-sep {
-  font: 700 18px/1 var(--p4-font-display);
+  font: 700 16px/1 var(--p4-font-display);
   color: var(--p4-muted);
 }
 

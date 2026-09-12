@@ -24,6 +24,8 @@ import {
   predictionSummary,
 } from '../domain/prediction-rules';
 
+const AUTO_SAVE_NOTICE_DISMISSED_KEY = 'acerton.autoSaveNotice.dismissed.v1';
+
 export interface MatchPredictionState extends PredictionSelection {
   saving: boolean;
   saved: boolean;
@@ -76,6 +78,8 @@ export class CurrentMatchdayFacade {
   readonly noNextAvailable = signal(false);
   /** Id de la jornada "en vivo" de cada pestana (competicion), tal como se cargo al entrar — para saber si te has alejado navegando y poder volver. */
   private readonly liveMatchdayIds = signal<Record<number, string>>({});
+  /** Aviso "se guarda automaticamente": una vez cerrado, no se vuelve a mostrar en este dispositivo (HANDOFF no lo exige recurrente). */
+  private readonly autoSaveNoticeDismissed = signal(this.wasAutoSaveNoticeDismissed());
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -184,9 +188,27 @@ export class CurrentMatchdayFacade {
       return { text: 'No se ha guardado algun pronostico. Revisa tu conexion y reintenta.', tone: 'error' };
     }
     if (this.doneCount() < entry.matchday.matches.length) {
+      if (this.autoSaveNoticeDismissed()) return null;
       return { text: 'Se guarda automaticamente al elegir. Puedes editarlo hasta el cierre.', tone: 'info' };
     }
     return { text: `Cierra en ${this.countdownLabel()}. Puedes editar tus elecciones hasta entonces.`, tone: 'warning' };
+  }
+
+  dismissAutoSaveNotice(): void {
+    try {
+      localStorage.setItem(AUTO_SAVE_NOTICE_DISMISSED_KEY, '1');
+    } catch {
+      /* localStorage no disponible: el aviso volvera a salir la proxima vez */
+    }
+    this.autoSaveNoticeDismissed.set(true);
+  }
+
+  private wasAutoSaveNoticeDismissed(): boolean {
+    try {
+      return localStorage.getItem(AUTO_SAVE_NOTICE_DISMISSED_KEY) === '1';
+    } catch {
+      return false;
+    }
   }
 
   constructor() {

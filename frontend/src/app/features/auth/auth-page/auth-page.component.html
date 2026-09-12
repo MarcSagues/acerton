@@ -111,10 +111,11 @@
   </div>
 } @else {
   <div class="access-page">
-    <piqo-svg logo size="190"></piqo-svg>
-    <h1>Mismos partidos. Distintas lecturas. Nuestro pique.</h1>
-    <p class="tagline">Pronostica con tu grupo, jornada a jornada. Se guarda al elegir.</p>
-    <div class="spacer"></div>
+    <div class="access-content">
+      <piqo-svg logo size="240"></piqo-svg>
+      <h1>Mismos partidos. Distintas lecturas. Nuestro pique.</h1>
+      <p class="tagline">Pronostica con tu grupo, jornada a jornada. Se guarda al elegir.</p>
+    </div>
     <div class="actions">
       @if (page.isNativePlatform) {
         <button type="button" class="piqo-primary cta" [disabled]="page.loading()" (click)="page.loginWithGoogleNative()">

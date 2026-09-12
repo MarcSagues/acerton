@@ -117,6 +117,11 @@
         <div class="aviso" [class.warning]="aviso.tone === 'warning'" [class.error]="aviso.tone === 'error'" [class.info]="aviso.tone === 'info'">
           <piqo-svg [attr.icon]="aviso.tone === 'error' ? 'sin-conexion' : aviso.tone === 'warning' ? 'alerta' : 'reloj'" size="20"></piqo-svg>
           <span>{{ aviso.text }}</span>
+          @if (aviso.tone === 'info') {
+            <button type="button" class="aviso-close" aria-label="Cerrar aviso" (click)="page.dismissAutoSaveNotice()">
+              <piqo-svg icon="cerrar" size="16"></piqo-svg>
+            </button>
+          }
         </div>
       }
 
