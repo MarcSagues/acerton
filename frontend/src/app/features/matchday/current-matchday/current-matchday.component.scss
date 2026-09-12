@@ -115,6 +115,40 @@ h1 {
   color: var(--p4-muted);
 }
 
+/* Cabecera de la jornada, convertida en boton cuando ya hay pronostico
+   para todos los partidos: antes el resumen ("Enviado") se abria solo al
+   completar el ultimo pronostico, y volvia a aparecer cada vez que se
+   editaba uno ya completo — ahora solo se abre si se pulsa aqui. */
+.ciclo-summary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.ciclo-summary-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ciclo-summary-cta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 700 12px/1 var(--p4-font-ui);
+  color: var(--p4-success);
+  white-space: nowrap;
+}
+
 .hero-card {
   position: relative;
   overflow: hidden;
@@ -132,6 +166,20 @@ h1 {
   .progress-row {
     position: relative;
     padding: 12px 0 0;
+  }
+
+  &.complete {
+    border-color: color-mix(in srgb, var(--p4-success) 40%, transparent);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--p4-success) 20%, transparent),
+      color-mix(in srgb, var(--p4-success) 8%, transparent) 55%,
+      transparent
+    );
+
+    .hero-glow {
+      background: radial-gradient(circle, color-mix(in srgb, var(--p4-success) 32%, transparent), transparent 65%);
+    }
   }
 }
 
@@ -377,6 +425,13 @@ h1 {
   &.wide {
     flex: 1;
     margin-top: 15px;
+  }
+
+  /* Partido terminado sin ningun pronostico enviado (ver "No participado"
+     en la fila de estado): las tres opciones se ven inertes en vez de con
+     el mismo aspecto que una opcion disponible para elegir. */
+  &.disabled .choice {
+    opacity: 0.5;
   }
 }
 

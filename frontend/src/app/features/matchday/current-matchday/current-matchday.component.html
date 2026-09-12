@@ -96,12 +96,25 @@
         ></app-segmented-control>
       </div>
 
-      <div class="hero-card">
+      <div class="hero-card" [class.complete]="page.allPredicted(entry)">
         <div class="hero-glow"></div>
-        <div class="ciclo-row">
-          <p class="ciclo-title">{{ page.cicloTitulo(entry) }}</p>
-          <p class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</p>
-        </div>
+        @if (page.allPredicted(entry)) {
+          <button type="button" class="ciclo-row ciclo-summary" (click)="page.openSummary()">
+            <span class="ciclo-summary-text">
+              <span class="ciclo-title">{{ page.cicloTitulo(entry) }}</span>
+              <span class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</span>
+            </span>
+            <span class="ciclo-summary-cta">
+              Ver resumen
+              <piqo-svg icon="flecha" size="14"></piqo-svg>
+            </span>
+          </button>
+        } @else {
+          <div class="ciclo-row">
+            <p class="ciclo-title">{{ page.cicloTitulo(entry) }}</p>
+            <p class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</p>
+          </div>
+        }
 
         @if (!page.isLocked(entry)) {
           <div class="progress-row">
@@ -268,7 +281,7 @@
         } @else if (crests) {
           <span class="vs mono">VS</span>
         } @else if (match.status === 'FINISHED') {
-          <div class="options" [class.wide]="wide" role="group" aria-label="Resultado del partido">
+          <div class="options" [class.wide]="wide" [class.disabled]="page.matchAccentTone(match) === 'none'" role="group" aria-label="Resultado del partido">
             @for (opt of oneXTwoOptions; track opt.v) {
               <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
             }

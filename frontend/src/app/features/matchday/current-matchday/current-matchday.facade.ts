@@ -153,6 +153,16 @@ export class CurrentMatchdayFacade {
     }).length;
   }
 
+  /** Todos los partidos de la jornada activa ya tienen pronostico guardado (y aun no ha terminado: eso ya tiene su propio "Ver desglose"). */
+  allPredicted(entry: CurrentMatchdayEntry): boolean {
+    return entry.matchday.status !== 'FINISHED' && entry.matchday.matches.length > 0 && this.doneCount() === entry.matchday.matches.length;
+  }
+
+  /** Se abre solo si el usuario pulsa "Ver resumen" — antes se abria solo tras cada guardado, lo que lo hacia reaparecer cada vez que se editaba un pronostico ya completo. */
+  openSummary(): void {
+    this.submissionConfirmed.set(true);
+  }
+
   progressPct(): string {
     const entry = this.activeEntry();
     if (!entry || entry.matchday.matches.length === 0) return '0%';
@@ -586,7 +596,6 @@ export class CurrentMatchdayFacade {
             if (!exact) {
               this.refreshComeback(groupId);
             }
-            this.showConfirmationIfComplete();
           });
         },
         error: (error: HttpErrorResponse) => {
@@ -598,19 +607,6 @@ export class CurrentMatchdayFacade {
           });
         },
       });
-  }
-
-  private showConfirmationIfComplete(): void {
-    const entry = this.activeEntry();
-    if (!entry || this.isLocked(entry) || entry.matchday.matches.length === 0) return;
-    const allSaved = entry.matchday.matches.every((match) => {
-      const state = this.predictionState.get(match.id);
-      return !!state?.saved && !state.saving && !state.error && this.pickLabel(match.id) !== null;
-    });
-    if (allSaved) {
-      this.submissionConfirmed.set(true);
-      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    }
   }
 
   editPredictions(): void {
