@@ -258,7 +258,16 @@ export class MatchdayResultsFacade {
     return match?.result ? this.choiceLabel(match.result) : '?';
   }
 
-/** Nombre del jugador de la comparativa mostrado al pulsar su avatar — posicion en coordenadas de viewport (position:fixed) para no depender de que ningun contenedor con scroll/overflow lo recorte. */
+  /**
+   * Nombre del jugador de la comparativa mostrado al pulsar su avatar.
+   * Coordenadas relativas a .page (no al viewport): .page ya actua como
+   * "containing block" de cualquier descendiente position:fixed, porque
+   * la animacion de entrada (.page{animation:piqoUp...}, en
+   * styles.scss) anima su transform — eso basta para que fixed deje de
+   * posicionarse contra el viewport real aunque el valor final de
+   * transform sea "none". Con absolute + coordenadas relativas a .page
+   * en vez de pelear contra eso, sale bien colocado.
+   */
   readonly comparisonTooltip = signal<{ userId: string; name: string; top: number; left: number } | null>(null);
 
   toggleComparisonTooltip(userId: string, name: string, target: HTMLElement): void {
@@ -266,8 +275,12 @@ export class MatchdayResultsFacade {
       this.comparisonTooltip.set(null);
       return;
     }
+    const page = target.closest('.page') as HTMLElement | null;
+    const pageRect = page?.getBoundingClientRect();
     const rect = target.getBoundingClientRect();
-    this.comparisonTooltip.set({ userId, name, top: rect.top, left: rect.left + rect.width / 2 });
+    const top = rect.top - (pageRect?.top ?? 0);
+    const left = rect.left + rect.width / 2 - (pageRect?.left ?? 0);
+    this.comparisonTooltip.set({ userId, name, top, left });
   }
 
   closeComparisonTooltip(): void {

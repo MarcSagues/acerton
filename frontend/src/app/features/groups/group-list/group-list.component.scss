@@ -133,15 +133,6 @@ h1 {
   font: 600 10px/1 var(--p4-font-ui);
 }
 
-.active-chip {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--p4-accent);
-  font: 600 11px/1 var(--p4-font-ui);
-}
-
 .settings-btn {
   flex: none;
   width: var(--p4-touch);

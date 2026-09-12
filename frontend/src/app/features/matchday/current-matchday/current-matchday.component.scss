@@ -401,8 +401,21 @@ h1 {
   /* center, no baseline: si el nombre pasa a dos lineas, el resultado
      queda centrado en medio de las dos en vez de pegado a la primera. */
   align-items: center;
-  justify-content: center;
   gap: 5px;
+
+  /* El resultado (.team-score) debe quedar siempre pegado al VS/widget
+     central, no flotando segun lo largo que sea el nombre del equipo
+     — si no, con un nombre corto el resultado se veia mas centrado y
+     con uno largo mas hacia fuera. El equipo local empuja su contenido
+     hacia el final (el resultado, que va despues del nombre, queda
+     junto al centro); el visitante hacia el principio (el resultado,
+     que va antes del nombre ahi, tambien queda junto al centro). */
+  &:first-child {
+    justify-content: flex-end;
+  }
+  &:last-child {
+    justify-content: flex-start;
+  }
 }
 
 .team-name {
@@ -887,7 +900,8 @@ h1 {
   max-width: 350px;
   margin-top: 24px;
   border-radius: var(--p4-radius-md);
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   overflow: hidden;
 }
 
