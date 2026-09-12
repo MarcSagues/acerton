@@ -20,4 +20,9 @@ export class BadgesController {
   getMine(@CurrentUser() user: AuthenticatedUser) {
     return this.badgesService.getForUser(user.id);
   }
+
+  @Get('me/progress')
+  getMyProgress(@CurrentUser() user: AuthenticatedUser) {
+    return this.badgesService.getProgressForUser(user.id);
+  }
 }

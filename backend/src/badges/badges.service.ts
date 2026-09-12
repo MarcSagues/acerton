@@ -10,6 +10,27 @@ export const BADGE_CODES = {
   MATCHDAY_TOP_1: 'MATCHDAY_TOP_1',
 } as const;
 
+/**
+ * Umbral de cada insignia con progreso medible (product-rules.md
+ * "Insignias": "Progreso numerico y barra cuando la condicion sea
+ * medible"). FIRST_MATCHDAY_PLAYED y MATCHDAY_TOP_1 se quedan fuera a
+ * proposito: son logros de un solo evento (jugar una jornada, quedar 1º en
+ * una jornada concreta), no algo que se acumule hacia un numero — un
+ * "0/1" no aporta nada que el propio candado no diga ya. Se reutiliza el
+ * mismo numero aqui y en award() para que el progreso mostrado y la
+ * condicion real de concesion nunca puedan desincronizarse.
+ */
+export const BADGE_TARGETS: Partial<Record<keyof typeof BADGE_CODES, number>> = {
+  STREAK_5: 5,
+  STREAK_10: 10,
+  HOT_STREAK_5: 5,
+};
+
+export interface BadgeProgress {
+  current: number;
+  target: number;
+}
+
 @Injectable()
 export class BadgesService {
   private readonly logger = new Logger(BadgesService.name);
@@ -109,10 +130,10 @@ export class BadgesService {
       return [];
     }
     const awarded: { userId: string; badgeName: string }[] = [];
-    if (streak.currentStreak === 5) {
+    if (streak.currentStreak === BADGE_TARGETS.STREAK_5) {
       awarded.push(...(await this.award(userId, BADGE_CODES.STREAK_5, groupId, matchdayId)));
     }
-    if (streak.currentStreak === 10) {
+    if (streak.currentStreak === BADGE_TARGETS.STREAK_10) {
       awarded.push(...(await this.award(userId, BADGE_CODES.STREAK_10, groupId, matchdayId)));
     }
     return awarded;
@@ -123,20 +144,73 @@ export class BadgesService {
     groupId: string,
     matchdayId: string,
   ): Promise<{ userId: string; badgeName: string }[]> {
+    const target = BADGE_TARGETS.HOT_STREAK_5!;
     const recentScored = await this.prisma.prediction.findMany({
       where: { userId, groupId, pointsEarned: { not: null } },
       orderBy: { match: { kickoff: 'desc' } },
-      take: 5,
+      take: target,
       select: { pointsEarned: true },
     });
 
     const allCorrect =
-      recentScored.length === 5 && recentScored.every((p) => (p.pointsEarned ?? 0) > 0);
+      recentScored.length === target && recentScored.every((p) => (p.pointsEarned ?? 0) > 0);
 
     if (allCorrect) {
       return this.award(userId, BADGE_CODES.HOT_STREAK_5, groupId, matchdayId);
     }
     return [];
+  }
+
+  /**
+   * Progreso hacia cada insignia medible, sobre todos los grupos del
+   * usuario (el mayor valor de cualquiera de ellos, ya que basta con
+   * llegar al umbral en uno solo para desbloquearla — ver award()). Solo
+   * se calcula para quien todavia no la tiene: el frontend no pide esto
+   * para insignias ya conseguidas.
+   */
+  async getProgressForUser(userId: string): Promise<Record<string, BadgeProgress>> {
+    const memberships = await this.prisma.groupMembership.findMany({
+      where: { userId },
+      select: { groupId: true },
+    });
+    const groupIds = memberships.map((m) => m.groupId);
+
+    const streaks = groupIds.length
+      ? await this.prisma.streak.findMany({ where: { userId, groupId: { in: groupIds } } })
+      : [];
+    const bestStreak = streaks.reduce((max, s) => Math.max(max, s.currentStreak), 0);
+
+    const hotStreaks = await Promise.all(
+      groupIds.map((groupId) => this.currentHotStreakForGroup(userId, groupId)),
+    );
+    const bestHotStreak = hotStreaks.reduce((max, value) => Math.max(max, value), 0);
+
+    return {
+      [BADGE_CODES.STREAK_5]: { current: Math.min(bestStreak, BADGE_TARGETS.STREAK_5!), target: BADGE_TARGETS.STREAK_5! },
+      [BADGE_CODES.STREAK_10]: { current: Math.min(bestStreak, BADGE_TARGETS.STREAK_10!), target: BADGE_TARGETS.STREAK_10! },
+      [BADGE_CODES.HOT_STREAK_5]: { current: bestHotStreak, target: BADGE_TARGETS.HOT_STREAK_5! },
+    };
+  }
+
+  /** Aciertos consecutivos mas recientes en este grupo, empezando por el ultimo partido puntuado (0 si el ultimo fallo). */
+  private async currentHotStreakForGroup(userId: string, groupId: string): Promise<number> {
+    const target = BADGE_TARGETS.HOT_STREAK_5!;
+    const recentScored = await this.prisma.prediction.findMany({
+      where: { userId, groupId, pointsEarned: { not: null } },
+      orderBy: { match: { kickoff: 'desc' } },
+      take: target,
+      select: { pointsEarned: true },
+    });
+
+    let streak = 0;
+    for (const prediction of recentScored) {
+      if ((prediction.pointsEarned ?? 0) > 0) {
+        streak += 1;
+      } else {
+        break;
+      }
+    }
+    return streak;
   }
 
   private async checkMatchdayTop1(

@@ -129,7 +129,13 @@ documentos por esto.
 - Sprint 7: nombre bloqueado con input deshabilitado visible (2026-09-12,
   ver reconciliación).
 - Sprint 8: popup de insignia con % real de usuarios (2026-09-12, ver
-  reconciliación).
+  reconciliación). Ampliado el mismo día (a petición explícita del
+  usuario): progreso numérico + barra para las insignias medibles
+  (`GET /badges/me/progress`, mismo umbral que la concesión real vía
+  `BADGE_TARGETS` para que nunca se desincronicen), en la pantalla de
+  Insignias y en el popup de detalle. 4 tests unitarios + verificado en
+  vivo contra la base de datos real de desarrollo (racha real de 3
+  mostrando 3/5 y 3/10) y en navegador.
 - Sprint 9 (incremento 1, 2026-09-12): `NotificationPreference` +
   `GroupMembership.mutedNotifications` (migración aplicada y probada
   contra la base de datos real de desarrollo), pantalla `/notifications/

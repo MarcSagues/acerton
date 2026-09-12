@@ -388,3 +388,57 @@ la subida de foto propia.
 commiteado y empujado tras esta entrada); los documentos de esta entrada
 (`roadmap.md`, `state.md`, `history.md`, `backlog.md`) se han editado en
 esta misma sesión, incluidos en el mismo commit.
+
+---
+
+## 2026-09-12 (continuación) — Sprint 8: progreso numérico + barra en insignias
+
+**Qué se hizo:**
+
+- El usuario pidió explícitamente: "los logros, siempre que sea contable y
+  posible, se añade una barra de progreso" — tarea ya descrita en
+  `product-rules.md`/`roadmap.md` Sprint 8 como pendiente.
+- **Backend**: `BADGE_TARGETS` (nuevo, `badges.service.ts`) fija el umbral
+  de cada insignia medible del catálogo actual (`STREAK_5`→5,
+  `STREAK_10`→10, `HOT_STREAK_5`→5) y se reutiliza tanto en `award()` como
+  en el cálculo de progreso, para que ambos no puedan desincronizarse.
+  `FIRST_MATCHDAY_PLAYED` y `MATCHDAY_TOP_1` se dejaron fuera a propósito:
+  son logros de un solo evento (jugar una jornada, quedar 1º en una
+  jornada concreta), no algo medible que se acumule hacia un número — un
+  "0/1" no aporta nada que el candado no diga ya. Nuevo
+  `BadgesService.getProgressForUser` (mejor racha de grupo entre todos los
+  del usuario para STREAK_5/10; mejor racha de aciertos consecutivos más
+  recientes, por grupo, para HOT_STREAK_5 — basta con llegar al umbral en
+  un grupo para desbloquearla, igual que la concesión real). Nuevo
+  `GET /badges/me/progress`. 4 tests unitarios nuevos
+  (`badges.service.spec.ts`, no existía antes).
+- **Frontend**: `BadgesService.getProgress()`, `BadgeProgress` (modelo
+  compartido), barra de progreso (pista + relleno + "N/M") en la pantalla
+  de Insignias (`/profile/badges`) y en el popup de detalle
+  (`BadgeDetailDialogComponent`, abierto desde la vista previa de 5
+  insignias en Perfil) — reutiliza el mismo patrón visual que la barra de
+  progreso de jornada ya existente. Solo se muestra para insignias no
+  conseguidas con progreso definido.
+- **Pruebas ejecutadas**: `npx jest` completo del backend en verde
+  (146/146, 4 tests nuevos). `ng build` (dev) sin errores. Verificado en
+  vivo: cuenta QA nueva sin grupos → progreso 0/5, 0/10, 0/5 en las tres
+  insignias medibles (por API); cuenta QA con una fila de `Streak` real
+  insertada a mano (`currentStreak: 3`) → progreso 3/5 y 3/10 correctos,
+  confirmado por API y visualmente en navegador real (Chromium): barra de
+  progreso parcial rellenada proporcionalmente, "Jornada perfecta" y
+  "Primeros pasos" (no medibles) sin barra, tal como se esperaba.
+
+**Migraciones:** ninguna (no se tocó el esquema).
+
+**Bloqueos/preguntas dejadas abiertas:** ninguna nueva.
+
+**Siguiente paso:** el que decida el usuario — quedan en Sprint 8 el
+alcance global de insignias (bloqueado por decisión de migración, ver
+`backlog.md`), el catálogo ampliado, renombrar "Jornada perfecta",
+favoritas, y concesión retroactiva.
+
+**Cambios sin commit:** no tras esta entrada — commiteado en la rama
+`feature/sprint-7-avatares` (donde ya estaba trabajando esta sesión) junto
+con los otros dos arreglos sueltos de este bloque de mensajes (racha 0 en
+Perfil, orden de jornadas por cierre más próximo) — ninguno de los tres es
+en realidad parte de Sprint 7, se avisó de esto al usuario.

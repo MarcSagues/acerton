@@ -1,5 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { DIALOG_DATA } from '@angular/cdk/dialog';
+import { BadgeProgress } from '../../core/models/badge-progress.model';
 
 export interface BadgeDetailData {
   artId: string | null;
@@ -7,6 +8,8 @@ export interface BadgeDetailData {
   description: string;
   earned: boolean;
   percentage: number | null;
+  /** Solo para insignias no conseguidas cuya condicion es medible — null si no aplica. */
+  progress: BadgeProgress | null;
 }
 
 @Component({
@@ -23,6 +26,14 @@ export interface BadgeDetailData {
       <p class="name">{{ data.name }}</p>
       <p class="status" [class.earned]="data.earned">{{ data.earned ? 'Conseguida' : 'Todavía sin conseguir' }}</p>
       <p class="rule">{{ data.description }}</p>
+      @if (data.progress; as progress) {
+        <div class="progress-row">
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="(progress.current / progress.target) * 100"></div>
+          </div>
+          <span class="progress-label mono">{{ progress.current }}/{{ progress.target }}</span>
+        </div>
+      }
       @if (data.percentage != null) {
         <p class="stat">La tienen el {{ data.percentage }}% de los jugadores.</p>
       }
@@ -72,6 +83,30 @@ export interface BadgeDetailData {
         background: var(--p4-soft);
         color: var(--p4-accent);
         font: 600 11px/1 var(--p4-font-ui);
+      }
+      .progress-row {
+        width: 100%;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .progress-track {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--p4-soft);
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--p4-accent);
+        transition: width 200ms ease;
+      }
+      .progress-label {
+        flex: none;
+        font-size: 10px;
+        color: var(--p4-muted);
       }
     `,
   ],
