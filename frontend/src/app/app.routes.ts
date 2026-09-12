@@ -96,17 +96,15 @@ export const routes: Routes = [
   },
   {
     path: '',
-    canActivate: [authGuard, usernameGuard, hasGroupGuard],
+    canActivate: [authGuard, usernameGuard],
     loadComponent: () => import('./layout/shell/shell.component').then((m) => m.ShellComponent),
     children: [
       {
-        path: 'groups',
-        loadComponent: () =>
-          import('./features/groups/group-list/group-list.component').then(
-            (m) => m.GroupListComponent,
-          ),
-      },
-      {
+        // Sin guardia de grupo a proposito: son las 3 vias para conseguir el
+        // primer grupo, las que ofrecen los botones de /welcome (ver
+        // GroupListFacade.goToCreate/goToJoinCode/goToExplorePublic) — si
+        // llevaran hasGroupGuard, un usuario sin grupos rebotaria de vuelta a
+        // /welcome nada mas pulsarlos, como si el boton no hiciera nada.
         path: 'groups/create',
         loadComponent: () =>
           import('./features/groups/group-create/group-create.component').then(
@@ -128,7 +126,16 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'groups',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/groups/group-list/group-list.component').then(
+            (m) => m.GroupListComponent,
+          ),
+      },
+      {
         path: 'groups/:groupId/settings',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/groups/group-detail/group-detail.component').then(
             (m) => m.GroupDetailComponent,
@@ -136,6 +143,7 @@ export const routes: Routes = [
       },
       {
         path: 'groups/:groupId/members/:userId',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/groups/member-detail/member-detail.component').then(
             (m) => m.MemberDetailComponent,
@@ -143,6 +151,7 @@ export const routes: Routes = [
       },
       {
         path: 'groups/:groupId/invite',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/groups/group-invite/group-invite.component').then(
             (m) => m.GroupInviteComponent,
@@ -150,6 +159,7 @@ export const routes: Routes = [
       },
       {
         path: 'matchday',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/matchday/current-matchday/current-matchday.component').then(
             (m) => m.CurrentMatchdayComponent,
@@ -157,6 +167,7 @@ export const routes: Routes = [
       },
       {
         path: 'matchday/calendar',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/matchday/matchday-calendar/matchday-calendar.component').then(
             (m) => m.MatchdayCalendarComponent,
@@ -164,6 +175,7 @@ export const routes: Routes = [
       },
       {
         path: 'matchday/history',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/matchday/matchday-history/matchday-history.component').then(
             (m) => m.MatchdayHistoryComponent,
@@ -171,6 +183,7 @@ export const routes: Routes = [
       },
       {
         path: 'matchday/:matchdayId/results',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/matchday/matchday-results/matchday-results.component').then(
             (m) => m.MatchdayResultsComponent,
@@ -178,6 +191,7 @@ export const routes: Routes = [
       },
       {
         path: 'matchday/:matchdayId/results/:userId',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/matchday/matchday-results/matchday-results.component').then(
             (m) => m.MatchdayResultsComponent,
@@ -185,6 +199,7 @@ export const routes: Routes = [
       },
       {
         path: 'rankings',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/rankings/rankings-page/rankings-page.component').then(
             (m) => m.RankingsPageComponent,
@@ -192,6 +207,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-page/profile-page.component').then(
             (m) => m.ProfilePageComponent,
@@ -199,6 +215,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile/avatar',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-avatar/profile-avatar.component').then(
             (m) => m.ProfileAvatarComponent,
@@ -206,6 +223,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile/appearance',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-appearance/profile-appearance.component').then(
             (m) => m.ProfileAppearanceComponent,
@@ -213,6 +231,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile/change-password',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-change-password/profile-change-password.component').then(
             (m) => m.ProfileChangePasswordComponent,
@@ -220,6 +239,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile/badges',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-badges/profile-badges.component').then(
             (m) => m.ProfileBadgesComponent,
@@ -227,6 +247,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile/trophies/:trophyId/:year',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/trophy-season/trophy-season.component').then(
             (m) => m.TrophySeasonComponent,
@@ -234,6 +255,7 @@ export const routes: Routes = [
       },
       {
         path: 'notifications',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/notifications/notifications-page/notifications-page.component').then(
             (m) => m.NotificationsPageComponent,
@@ -241,6 +263,7 @@ export const routes: Routes = [
       },
       {
         path: 'notifications/preferences',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/notifications/notification-settings/notification-settings.component').then(
             (m) => m.NotificationSettingsComponent,
@@ -248,6 +271,7 @@ export const routes: Routes = [
       },
       {
         path: 'rules',
+        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/rules/rules-and-prizes/rules-and-prizes.component').then(
             (m) => m.RulesAndPrizesComponent,
