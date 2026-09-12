@@ -6,6 +6,8 @@ import { TutorialCoachMarkComponent } from './shared/tutorial-coach-mark/tutoria
 import { ToastHostComponent } from './shared/ui/toast/toast-host.component';
 import { ThemeService } from './core/services/theme.service';
 import { DeepLinkService } from './core/services/deep-link.service';
+import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
+import { KeyboardAccessoryComponent } from './shared/ui/keyboard-accessory/keyboard-accessory.component';
 
 @Component({
   selector: 'app-root',
@@ -16,6 +18,7 @@ import { DeepLinkService } from './core/services/deep-link.service';
     NoRealMoneyNoticeComponent,
     TutorialCoachMarkComponent,
     ToastHostComponent,
+    KeyboardAccessoryComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -25,8 +28,10 @@ export class AppComponent {
   // atributo data-theme) al arrancar la app, no porque se use aqui.
   private readonly themeService = inject(ThemeService);
   private readonly deepLinkService = inject(DeepLinkService);
+  private readonly edgeSwipeBackService = inject(EdgeSwipeBackService);
 
   constructor() {
     this.deepLinkService.init();
+    this.edgeSwipeBackService.init();
   }
 }

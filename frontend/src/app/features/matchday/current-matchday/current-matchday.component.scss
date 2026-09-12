@@ -410,10 +410,8 @@ h1 {
   }
 
   /* Resumen de resultado 1X2 una vez terminado el partido (ver
-     choiceReviewTone): la que elegiste y acertaste en verde, la que
-     elegiste y fallaste en rojo, y el resultado real en acento cuando no
-     coincide con tu eleccion, para que se vea cual era la respuesta
-     correcta aunque no la marcaras. */
+     choiceReviewTone): solo la propia eleccion se resalta, en verde si
+     acertaste o en rojo si fallaste. */
   &.hit {
     background: var(--p4-success-bg);
     color: var(--p4-success);
@@ -423,11 +421,6 @@ h1 {
     background: var(--p4-error-bg);
     color: var(--p4-error);
     border-color: var(--p4-error);
-  }
-  &.actual {
-    background: var(--p4-soft);
-    color: var(--p4-accent);
-    border-color: var(--p4-accent);
   }
 }
 
@@ -593,23 +586,26 @@ h1 {
   }
 }
 
-/* En modo revision (partido bloqueado/terminado), SOLO en la vista visual
-   (.inline, sin fila de equipos aparte) el input puede ser mas pequeno para
-   dejar sitio al resultado real junto al nombre del equipo (ver
-   .team-score) sin quedar apretado — en filas hay sitio de sobra y
-   encogerlo ahi se ve fuera de lugar comparado con el resto de la fila. */
-.score-widget.review.inline {
+/* En la vista visual (.inline, sin fila de equipos aparte) el input es mas
+   pequeno para dejar sitio al resultado real junto al nombre del equipo
+   (ver .team-score) sin quedar apretado — en filas hay sitio de sobra y
+   encogerlo ahi se ve fuera de lugar comparado con el resto de la fila.
+   Mismo tamano tanto editable como en revision (partido bloqueado/
+   terminado): antes solo se encogia en revision, asi que el input
+   cambiaba de tamano segun el estado del partido dentro de la misma
+   vista. */
+.score-widget.inline {
   .exact-score-box {
     padding: 3px 6px;
     gap: 3px;
   }
   .score-input {
-    width: 15px;
-    height: 20px;
-    font-size: 13px;
+    width: 17px;
+    height: 22px;
+    font-size: 14px;
   }
   .score-sep {
-    font-size: 13px;
+    font-size: 14px;
   }
 }
 

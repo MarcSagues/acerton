@@ -6,8 +6,10 @@
     }
   </div>
   <app-top-bar></app-top-bar>
-  <div class="shell-content">
+  <div class="shell-content" [class.no-bottom-nav]="page.hideBottomNav()">
     <router-outlet></router-outlet>
   </div>
-  <app-bottom-nav></app-bottom-nav>
+  @if (!page.hideBottomNav()) {
+    <app-bottom-nav></app-bottom-nav>
+  }
 </div>
