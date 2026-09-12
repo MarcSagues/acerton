@@ -257,6 +257,13 @@ piqo-svg {
 html,
 body {
   height: 100%;
+  /* Salvaguarda: ningun elemento suelto (icono/avatar ligeramente mas
+     ancho que su marco, circulo decorativo de fondo, etc.) debe poder
+     forzar scroll horizontal de la pagina entera — cualquier scroll
+     horizontal real y con proposito (carrusel de partidos, tabla de
+     clasificacion) vive en su propio contenedor con su propio
+     overflow-x:auto, que esto no afecta. */
+  overflow-x: hidden;
 }
 
 body {
