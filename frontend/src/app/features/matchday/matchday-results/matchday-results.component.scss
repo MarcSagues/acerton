@@ -95,6 +95,12 @@
   display: flex;
   gap: 7px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .comp-chip {
@@ -301,6 +307,12 @@
 .comparison-scroll {
   padding: 0 20px;
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .comparison {
