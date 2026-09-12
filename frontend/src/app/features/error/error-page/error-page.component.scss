@@ -1,5 +1,13 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .page {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   color: var(--p4-text);
   display: flex;
   flex-direction: column;
