@@ -3,6 +3,8 @@ export interface User {
   email: string;
   name: string;
   avatarUrl: string | null;
+  /** Color de fondo detras del avatar de catalogo (null = sin color propio). */
+  avatarBackground: string | null;
   /** false solo para cuentas de Google recien creadas: el nombre vino del perfil de Google, no lo eligio el usuario. */
   usernameConfirmed: boolean;
   /** ISO date a partir de la cual se puede volver a cambiar el nombre, o null si ya se puede ahora. */

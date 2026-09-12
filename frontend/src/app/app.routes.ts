@@ -172,6 +172,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile/avatar',
+        loadComponent: () =>
+          import('./features/profile/profile-avatar/profile-avatar.component').then(
+            (m) => m.ProfileAvatarComponent,
+          ),
+      },
+      {
         path: 'profile/appearance',
         loadComponent: () =>
           import('./features/profile/profile-appearance/profile-appearance.component').then(

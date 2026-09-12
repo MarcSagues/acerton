@@ -93,6 +93,11 @@ model User {
   /// como forma de troll en las clasificaciones del grupo.
   nameChangedAt       DateTime?
   avatarUrl           String?
+  /// Color de fondo detras del avatar (catalogo de mascota con fondo
+  /// transparente, o cualquier avatar futuro). Null = sin color propio
+  /// (fondo neutro por defecto en el render). Restringido a la paleta de
+  /// AVATAR_BACKGROUNDS (ver users.constants.ts) — validado en el DTO.
+  avatarBackground    String?
   /// Cuando el usuario termino u omitio el tutorial por primera vez — no se
   /// reinicia al repetirlo manualmente desde Perfil (ver TutorialService),
   /// solo marca que ya no debe aparecer solo al entrar a un grupo.

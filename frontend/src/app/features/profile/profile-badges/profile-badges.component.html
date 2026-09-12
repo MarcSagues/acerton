@@ -25,6 +25,14 @@
             <span class="name">{{ item.badge.name }}</span>
             <span class="desc">{{ item.badge.description }}</span>
             <span class="chip" [class.earned]="item.earned">{{ item.earned ? 'Conseguida' : 'Pendiente' }}</span>
+            @if (item.progress; as progress) {
+              <div class="progress-row">
+                <div class="progress-track">
+                  <div class="progress-fill" [style.width.%]="(progress.current / progress.target) * 100"></div>
+                </div>
+                <span class="progress-label mono">{{ progress.current }}/{{ progress.target }}</span>
+              </div>
+            }
             @if (item.percentage != null) {
               <span class="percentage">La tienen el {{ item.percentage }}% de los jugadores</span>
             }

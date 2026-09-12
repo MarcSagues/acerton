@@ -8,7 +8,15 @@
     </div>
 
     <div class="identity-row">
-      <span class="avatar">{{ page.initials(page.authService.currentUser()?.name ?? '') }}</span>
+      <a routerLink="/profile/avatar" class="avatar-link" aria-label="Cambiar avatar">
+        <app-avatar
+          [url]="page.authService.currentUser()?.avatarUrl ?? null"
+          [background]="page.authService.currentUser()?.avatarBackground ?? null"
+          [name]="page.authService.currentUser()?.name ?? ''"
+          [size]="64"
+        ></app-avatar>
+        <span class="avatar-edit-badge"><piqo-svg icon="camara" size="14"></piqo-svg></span>
+      </a>
       <span class="meta">
         <span class="name-row">
           <span class="name">{{ page.authService.currentUser()?.name }}</span>
@@ -20,12 +28,12 @@
     <div class="stats-row">
       <div class="stat-card">
         <p class="stat-label">Racha actual</p>
-        <p class="stat-value mono">{{ page.globalCurrentStreak() > 0 ? page.globalCurrentStreak() : '' }}</p>
+        <p class="stat-value mono">{{ page.globalCurrentStreak() }}</p>
         <p class="stat-hint">jornadas seguidas en tus grupos</p>
       </div>
       <div class="stat-card">
         <p class="stat-label">Mejor racha</p>
-        <p class="stat-value mono">{{ page.globalLongestStreak() > 0 ? page.globalLongestStreak() : '' }}</p>
+        <p class="stat-value mono">{{ page.globalLongestStreak() }}</p>
         <p class="stat-hint">en cualquiera de tus grupos</p>
       </div>
     </div>

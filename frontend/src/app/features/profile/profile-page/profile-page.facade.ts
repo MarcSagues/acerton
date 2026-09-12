@@ -8,8 +8,8 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
 import { TutorialService } from '../../../core/services/tutorial.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
+import { BadgeProgress } from '../../../core/models/badge-progress.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
-import { initials } from '../../../shared/utils/initials';
 import { badgeArtId } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
@@ -35,6 +35,7 @@ export class ProfilePageFacade {
   readonly profile = signal<UserProfile | null>(null);
   private readonly badgeCatalog = signal<Badge[]>([]);
   private readonly badgeStats = signal<Record<string, number>>({});
+  private readonly badgeProgress = signal<Record<string, BadgeProgress>>({});
 
   /** Hasta 5 insignias: primero las conseguidas, y de faltar se completa con las pendientes en gris. */
   readonly badgePreview = computed<BadgePreviewItem[]>(() => {
@@ -59,6 +60,7 @@ export class ProfilePageFacade {
         description: item.badge.description,
         earned: item.earned,
         percentage: this.badgeStats()[item.badge.code] ?? null,
+        progress: item.earned ? null : (this.badgeProgress()[item.badge.code] ?? null),
       },
     });
   }
@@ -153,10 +155,6 @@ export class ProfilePageFacade {
     });
   }
 
-  initials(name: string): string {
-    return initials(name);
-  }
-
   init(): void {
     this.nameInput.set(this.authService.currentUser()?.name ?? '');
     this.profileService.getMyProfile().subscribe({
@@ -168,5 +166,6 @@ export class ProfilePageFacade {
     });
     this.badgesService.getCatalog().subscribe((catalog) => this.badgeCatalog.set(catalog));
     this.badgesService.getStats().subscribe((stats) => this.badgeStats.set(stats));
+    this.badgesService.getProgress().subscribe((progress) => this.badgeProgress.set(progress));
   }
 }

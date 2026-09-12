@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { UserProfile } from '../models/profile.model';
 import { User } from '../models/user.model';
+import { AvatarCatalog } from '../models/avatar-catalog.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
@@ -14,6 +15,14 @@ export class ProfileService {
 
   updateName(name: string) {
     return this.http.patch<User>(`${environment.apiUrl}/users/me/name`, { name });
+  }
+
+  getAvatarCatalog() {
+    return this.http.get<AvatarCatalog>(`${environment.apiUrl}/users/me/avatar-catalog`);
+  }
+
+  updateAvatar(mascotId: string, background: string) {
+    return this.http.patch<User>(`${environment.apiUrl}/users/me/avatar`, { mascotId, background });
   }
 
   completeTutorial() {
