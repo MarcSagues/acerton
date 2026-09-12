@@ -117,7 +117,7 @@ export class PredictionsService {
 
     return this.prisma.prediction.findMany({
       where: { groupId, match: { matchdayId } },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
     });
   }
 

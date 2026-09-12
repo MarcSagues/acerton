@@ -147,7 +147,20 @@
               <tr>
                 <th class="comparison-match-head">Partido</th>
                 @for (member of page.comparisonMembers(); track member.userId) {
-                  <th class="comparison-member-head mono">{{ page.initials(member.name) }}</th>
+                  <th class="comparison-member-head">
+                    <span
+                      class="comparison-avatar-wrap"
+                      (pointerdown)="page.startComparisonTooltip(member.userId)"
+                      (pointerup)="page.endComparisonTooltip()"
+                      (pointerleave)="page.endComparisonTooltip()"
+                      (pointercancel)="page.endComparisonTooltip()"
+                    >
+                      <app-avatar [url]="member.avatarUrl" [background]="member.avatarBackground" [name]="member.name" [size]="28"></app-avatar>
+                      @if (page.comparisonTooltipUserId() === member.userId) {
+                        <span class="comparison-tooltip">{{ member.name }}</span>
+                      }
+                    </span>
+                  </th>
                 }
               </tr>
             </thead>
