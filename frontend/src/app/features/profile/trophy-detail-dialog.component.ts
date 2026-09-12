@@ -24,7 +24,12 @@ export interface TrophyDetailData {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="trophy-dialog">
-      <piqo-svg [attr.trophy]="data.id" variant="detalle" size="96" [class.earned]="data.count > 0"></piqo-svg>
+      <img
+        class="trophy-media"
+        [class.earned]="data.count > 0"
+        [src]="'assets/avatars/mascot/animated/cups/trophy-' + data.id + '-cup-animated.gif'"
+        [alt]="data.name"
+      />
       <p class="name">{{ data.name }}</p>
       @if (data.count === 0) {
         <p class="status">Todavía sin conseguir</p>
@@ -56,12 +61,17 @@ export interface TrophyDetailData {
         text-align: center;
         gap: 10px;
       }
-      piqo-svg {
-        color: var(--p4-disabled);
+      .trophy-media {
+        width: 140px;
+        height: 140px;
+        object-fit: contain;
         margin-bottom: 4px;
+        /* Sin conseguir: en gris apagado, igual que el resto de la
+           vitrina, hasta que si haya un modelo de datos real detras. */
+        filter: grayscale(1) opacity(0.45);
 
         &.earned {
-          color: var(--p4-accent);
+          filter: none;
         }
       }
       .name {
