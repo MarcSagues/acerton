@@ -1,0 +1,80 @@
+<div class="sheet-handle"></div>
+
+@if (page.previewLoading()) {
+  <div class="state"><app-spinner [size]="28"></app-spinner></div>
+} @else if (page.previewError()) {
+  <div class="state error">
+    <p>No se ha podido cargar este grupo.</p>
+    <button type="button" class="piqo-secondary" (click)="page.openPreview(page.previewGroupId()!)">Reintentar</button>
+  </div>
+} @else {
+  @if (page.preview(); as group) {
+  <div class="sheet-body">
+    <div class="head">
+      <h2>{{ group.name }}</h2>
+      <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</span>
+    </div>
+
+    @if (group.description) {
+      <p class="description">{{ group.description }}</p>
+    }
+
+    <div class="meta-row">
+      <span>{{ group.memberCount }} {{ group.memberCount === 1 ? 'miembro' : 'miembros' }}</span>
+      <span>Creado el {{ group.createdAt | date: 'd MMM y' }}</span>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Reglas</p>
+      <p class="rule-text">
+        @if (group.scoringMode === 'EXACT_SCORE') {
+          5 puntos por marcador exacto, 2 por acertar solo el ganador.
+        } @else {
+          1 punto por acertar 1X2.
+        }
+      </p>
+      @if (group.comebackPointsPerBonus !== null) {
+        <p class="rule-text">
+          Comodín de remontada activo: doble oportunidad cada {{ group.comebackPointsPerBonus }} puntos de diferencia con el líder.
+        </p>
+      }
+    </div>
+
+    <div class="section">
+      <p class="section-title">Ligas</p>
+      <div class="leagues">
+        @for (comp of group.competitions; track comp.id) {
+          <span class="league-chip">{{ comp.name }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="section">
+      <p class="section-title">Clasificación general</p>
+      @if (group.topRanking.length === 0) {
+        <p class="rule-text muted">Todavía no hay clasificación en este grupo.</p>
+      } @else {
+        <div class="ranking-list">
+          @for (row of group.topRanking; track row.userId) {
+            <div class="ranking-row">
+              <span class="pos mono">{{ row.position }}</span>
+              <span class="avatar">{{ initials(row.name) }}</span>
+              <span class="name">{{ row.name }}</span>
+              <span class="pts mono">{{ row.points }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="piqo-primary join-btn"
+      [disabled]="page.joiningGroupId() === group.id"
+      (click)="join(group.id)"
+    >
+      {{ page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirme' }}
+    </button>
+  </div>
+  }
+}

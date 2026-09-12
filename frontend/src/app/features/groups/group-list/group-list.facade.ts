@@ -1,9 +1,8 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { ProfileService } from '../../../core/services/profile.service';
-import { Group } from '../../../core/models/group.model';
 import { initials } from '../../../shared/utils/initials';
 
 @Injectable()
@@ -19,14 +18,6 @@ export class GroupListFacade {
   /** Racha actual por grupo (jornadas seguidas participando), para el chip de fuego en la tarjeta. */
   private readonly groupStreaks = signal<Record<string, number>>({});
 
-  readonly publicGroups = signal<Group[]>([]);
-  readonly joiningGroupId = signal<string | null>(null);
-  /** Solo los publicos a los que todavia no perteneces — unirte no tiene sentido si ya eres miembro. */
-  readonly discoverableGroups = computed(() => {
-    const myIds = new Set(this.groups().map((g) => g.id));
-    return this.publicGroups().filter((g) => !myIds.has(g.id));
-  });
-
   init(): void {
     this.groupsService.loadMyGroups().subscribe({
       next: (groups) => {
@@ -35,7 +26,6 @@ export class GroupListFacade {
       },
       error: () => this.loading.set(false),
     });
-    this.groupsService.loadPublicGroups().subscribe((groups) => this.publicGroups.set(groups));
     this.profileService.getMyProfile().subscribe((profile) => {
       const byGroup: Record<string, number> = {};
       for (const summary of profile.groups) {
@@ -50,16 +40,8 @@ export class GroupListFacade {
     return streak > 0 ? streak : null;
   }
 
-  joinPublicGroup(groupId: string): void {
-    if (this.joiningGroupId()) return;
-    this.joiningGroupId.set(groupId);
-    this.groupsService.joinPublic(groupId).subscribe({
-      next: (group) => {
-        this.joiningGroupId.set(null);
-        this.goToGroup(group.id);
-      },
-      error: () => this.joiningGroupId.set(null),
-    });
+  goToExplorePublic(): void {
+    this.router.navigate(['/groups/public']);
   }
 
   initials(name: string): string {

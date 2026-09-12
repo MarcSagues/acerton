@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
+import { PublicGroupPreviewModule } from './groups/public-group-preview/public-group-preview.module';
 import { CompetitionsModule } from './competitions/competitions.module';
 import { FootballDataModule } from './football-data/football-data.module';
 import { MatchdaysModule } from './matchdays/matchdays.module';
@@ -37,6 +38,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     PredictionsModule,
     WildcardsModule,
     RankingsModule,
+    PublicGroupPreviewModule,
     SeasonsModule,
     EligibilityModule,
     MemberProfileModule,

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -7,6 +7,7 @@ import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { SetGroupMutedDto } from './dto/set-group-muted.dto';
+import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
 
 @Controller('groups')
 export class GroupsController {
@@ -23,8 +24,8 @@ export class GroupsController {
   }
 
   @Get('public')
-  findPublic() {
-    return this.groupsService.findPublicGroups();
+  findPublic(@Query() query: SearchPublicGroupsDto) {
+    return this.groupsService.searchPublicGroups(query);
   }
 
   @Get(':id')

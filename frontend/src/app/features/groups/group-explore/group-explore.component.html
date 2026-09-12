@@ -1,0 +1,157 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-link" (click)="goBack()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+      Grupos
+    </button>
+  </div>
+
+  <div class="title-row">
+    <h1>Grupos públicos</h1>
+    <p class="lead">Busca uno compatible con lo que quieres jugar.</p>
+  </div>
+
+  <div class="search-row">
+    <label class="search-input">
+      <piqo-svg icon="buscar" size="18"></piqo-svg>
+      <input
+        type="text"
+        placeholder="Buscar por nombre"
+        [value]="page.filters().q"
+        (input)="page.setSearchText($any($event.target).value)"
+      />
+    </label>
+    <button type="button" class="filters-btn" [class.active]="filtersOpen()" (click)="toggleFilters()">
+      <piqo-svg icon="filtro" size="18"></piqo-svg>
+    </button>
+  </div>
+
+  @if (filtersOpen()) {
+    <div class="filters-panel">
+      <app-segmented-control
+        [options]="modeOptions"
+        [value]="page.filters().scoringMode"
+        (valueChange)="page.setScoringMode($event)"
+      ></app-segmented-control>
+
+      @if (page.catalog().length > 0) {
+        <div class="league-grid">
+          @for (comp of page.catalog(); track comp.id) {
+            <button
+              type="button"
+              class="league-toggle"
+              [class.checked]="page.filters().competitionIds.includes(comp.id)"
+              (click)="page.toggleCompetition(comp.id)"
+            >
+              {{ comp.name }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (page.hasActiveFilters()) {
+    <div class="active-chips">
+      @if (page.filters().q) {
+        <span class="chip">
+          "{{ page.filters().q }}"
+          <button type="button" (click)="page.removeFilter('q')" aria-label="Quitar filtro de busqueda">
+            <piqo-svg icon="cerrar" size="10"></piqo-svg>
+          </button>
+        </span>
+      }
+      @if (page.filters().scoringMode; as mode) {
+        <span class="chip">
+          {{ mode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2' }}
+          <button type="button" (click)="page.removeFilter('scoringMode')" aria-label="Quitar filtro de modo">
+            <piqo-svg icon="cerrar" size="10"></piqo-svg>
+          </button>
+        </span>
+      }
+      @for (id of page.filters().competitionIds; track id) {
+        <span class="chip">
+          {{ page.competitionName(id) }}
+          <button type="button" (click)="page.removeFilter('competitionId', id)" aria-label="Quitar liga">
+            <piqo-svg icon="cerrar" size="10"></piqo-svg>
+          </button>
+        </span>
+      }
+      <button type="button" class="clear-link" (click)="page.clearFilters()">Limpiar</button>
+    </div>
+  }
+
+  @if (page.loading()) {
+    <div class="skeleton-list">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton-card"></div>
+      }
+    </div>
+  } @else if (page.error()) {
+    <app-empty-state
+      icon="sin-conexion"
+      title="No se ha podido cargar"
+      text="Revisa tu conexión e inténtalo de nuevo."
+      ctaLabel="Reintentar"
+      (cta)="page.retry()"
+    ></app-empty-state>
+  } @else if (page.items().length === 0) {
+    <app-empty-state
+      icon="grupos"
+      title="Sin resultados"
+      [text]="page.hasActiveFilters() ? 'Prueba con otros filtros.' : 'Todavía no hay grupos públicos.'"
+      [ctaLabel]="page.hasActiveFilters() ? 'Limpiar filtros' : undefined"
+      (cta)="page.clearFilters()"
+    ></app-empty-state>
+  } @else {
+    <div class="groups">
+      @for (group of page.items(); track group.id) {
+        <div class="group-card">
+          <div class="card-main" role="button" tabindex="0" (click)="openPreview(group.id)" (keydown.enter)="openPreview(group.id)">
+            <div class="card-head">
+              <span class="name">{{ group.name }}</span>
+              <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</span>
+            </div>
+            @if (group.description) {
+              <p class="description">{{ group.description }}</p>
+            }
+            <div class="meta-row">
+              <span>{{ group.memberCount }} {{ group.memberCount === 1 ? 'miembro' : 'miembros' }}</span>
+              @if (group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled) {
+                <span class="comeback-chip">
+                  <piqo-svg icon="comodin" size="13"></piqo-svg>
+                  Remontada activa
+                </span>
+              }
+            </div>
+            <div class="leagues-row">
+              @for (comp of group.competitions.slice(0, 3); track comp.id) {
+                <span class="league-chip-sm">{{ comp.name }}</span>
+              }
+              @if (group.competitions.length > 3) {
+                <span class="league-chip-sm more">+{{ group.competitions.length - 3 }}</span>
+              }
+            </div>
+          </div>
+          <div class="card-actions">
+            <button type="button" class="piqo-secondary sm" (click)="openPreview(group.id)">Ver grupo</button>
+            <button
+              type="button"
+              class="piqo-primary sm"
+              [disabled]="page.joiningGroupId() === group.id"
+              (click)="page.join(group.id)"
+            >
+              {{ page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirme' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (page.hasMore()) {
+      <button type="button" class="piqo-secondary load-more" [disabled]="page.loadingMore()" (click)="page.loadMore()">
+        {{ page.loadingMore() ? 'Cargando…' : 'Cargar más' }}
+      </button>
+    }
+  }
+</div>

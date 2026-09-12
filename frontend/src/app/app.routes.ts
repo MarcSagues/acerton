@@ -102,6 +102,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'groups/public',
+        loadComponent: () =>
+          import('./features/groups/group-explore/group-explore.component').then(
+            (m) => m.GroupExploreComponent,
+          ),
+      },
+      {
         path: 'groups/:groupId/settings',
         loadComponent: () =>
           import('./features/groups/group-detail/group-detail.component').then(

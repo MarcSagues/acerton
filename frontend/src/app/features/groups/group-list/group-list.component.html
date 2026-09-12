@@ -51,31 +51,13 @@
       </div>
     }
 
-    @if (page.discoverableGroups().length > 0) {
-      <div class="section-head">
-        <h2>Grupos públicos</h2>
-      </div>
-      <div class="groups">
-        @for (group of page.discoverableGroups(); track group.id) {
-          <div class="group-row">
-            <div class="group-main">
-              <span class="avatar">{{ page.initials(group.name) }}</span>
-              <span class="meta">
-                <span class="name">{{ group.name }}</span>
-                <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · público</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              class="piqo-secondary join-btn"
-              [disabled]="page.joiningGroupId() === group.id"
-              (click)="page.joinPublicGroup(group.id)"
-            >
-              {{ page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirse' }}
-            </button>
-          </div>
-        }
-      </div>
-    }
+    <button type="button" class="explore-public-btn" (click)="page.goToExplorePublic()">
+      <span class="explore-icon"><piqo-svg icon="publico" size="20"></piqo-svg></span>
+      <span class="explore-text">
+        <span class="explore-title">Explorar grupos públicos</span>
+        <span class="explore-sub">Busca uno por liga, modo o nombre</span>
+      </span>
+      <piqo-svg icon="flecha" size="18"></piqo-svg>
+    </button>
   </div>
 }

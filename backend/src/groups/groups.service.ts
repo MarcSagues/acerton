@@ -9,17 +9,62 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Group, GroupRole, ScoringMode } from '@prisma/client';
+import { Group, GroupRole, Prisma, ScoringMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
+import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
 import { generateInviteCode } from './invite-code.util';
 
 /** Todo lo publicado por debajo debe excluir grupos eliminados (borrado logico). */
 const NOT_DELETED = { deletedAt: null } as const;
+
+export const PUBLIC_GROUP_INCLUDE = {
+  _count: { select: { memberships: true } },
+  groupCompetitions: { where: { isActive: true }, include: { competition: true } },
+} satisfies Prisma.GroupInclude;
+
+export type PublicGroupRecord = Prisma.GroupGetPayload<{ include: typeof PUBLIC_GROUP_INCLUDE }>;
+
+export interface PublicGroupCompetitionSummary {
+  id: string;
+  code: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+export interface PublicGroupSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  scoringMode: ScoringMode;
+  comebackEnabled: boolean;
+  createdAt: Date;
+  competitions: PublicGroupCompetitionSummary[];
+}
+
+/** Fuera de la clase para poder reutilizarse sin instanciar GroupsService (ver PublicGroupPreviewService). */
+export function toPublicGroupSummary(group: PublicGroupRecord): PublicGroupSummary {
+  return {
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    memberCount: group._count.memberships,
+    scoringMode: group.scoringMode,
+    comebackEnabled: group.comebackEnabled,
+    createdAt: group.createdAt,
+    competitions: group.groupCompetitions.map((gc) => ({
+      id: gc.competition.id,
+      code: gc.competition.code,
+      name: gc.competition.name,
+      logoUrl: gc.competition.logoUrl,
+    })),
+  };
+}
 
 @Injectable()
 export class GroupsService {
@@ -138,11 +183,60 @@ export class GroupsService {
     );
   }
 
-  findPublicGroups() {
-    return this.prisma.group.findMany({
-      where: { ...NOT_DELETED, isPublic: true },
-      include: { _count: { select: { memberships: true } } },
-      orderBy: { createdAt: 'desc' },
+  /**
+   * Busqueda paginada de grupos publicos para la vista de exploracion
+   * (distinta del listado sin filtros que antes se mostraba dentro de Mis
+   * grupos). No expone inviteCode ni ownerId: el DTO de salida solo incluye
+   * lo necesario para decidir si unirse.
+   */
+  async searchPublicGroups(
+    filters: SearchPublicGroupsDto,
+  ): Promise<{ items: PublicGroupSummary[]; nextCursor: string | null }> {
+    const limit = filters.limit ?? 20;
+    const where: Prisma.GroupWhereInput = {
+      ...NOT_DELETED,
+      isPublic: true,
+      ...(filters.q ? { name: { contains: filters.q, mode: 'insensitive' } } : {}),
+      ...(filters.scoringMode ? { scoringMode: filters.scoringMode } : {}),
+      // Un grupo debe cumplir TODAS las ligas seleccionadas, no solo alguna:
+      // una condicion AND independiente por cada una en vez de un unico "in".
+      ...(filters.competitionIds && filters.competitionIds.length > 0
+        ? {
+            AND: filters.competitionIds.map((competitionId) => ({
+              groupCompetitions: { some: { competitionId, isActive: true } },
+            })),
+          }
+        : {}),
+    };
+
+    const groups = await this.prisma.group.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+      include: PUBLIC_GROUP_INCLUDE,
+    });
+
+    const hasMore = groups.length > limit;
+    const page = hasMore ? groups.slice(0, limit) : groups;
+    return {
+      items: page.map((group) => toPublicGroupSummary(group)),
+      nextCursor: hasMore ? page[page.length - 1].id : null,
+    };
+  }
+
+  /**
+   * Un unico grupo publico por id, con la misma forma que searchPublicGroups
+   * (sin inviteCode ni ownerId). Usado por PublicGroupPreviewService para
+   * componer la vista previa junto con la clasificacion (ver ese servicio:
+   * vive en su propio modulo para no crear un ciclo Groups<->Rankings).
+   * Null si no existe, es privado o esta eliminado — el llamador decide el
+   * 404, igual que el resto de accesos por id.
+   */
+  findPublicGroupById(groupId: string): Promise<PublicGroupRecord | null> {
+    return this.prisma.group.findFirst({
+      where: { id: groupId, ...NOT_DELETED, isPublic: true },
+      include: PUBLIC_GROUP_INCLUDE,
     });
   }
 

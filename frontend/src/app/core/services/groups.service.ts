@@ -35,10 +35,6 @@ export class GroupsService {
     return this.loadMyGroups().pipe(map((groups) => (groups.length > 1 ? ['/groups'] : ['/matchday'])));
   }
 
-  loadPublicGroups() {
-    return this.http.get<Group[]>(`${environment.apiUrl}/groups/public`);
-  }
-
   getById(groupId: string) {
     return this.http.get<Group>(`${environment.apiUrl}/groups/${groupId}`);
   }

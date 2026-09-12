@@ -112,12 +112,8 @@ h1 {
   font: 600 11px/1 var(--p4-font-ui);
 }
 
-.settings-btn,
-.join-btn {
-  flex: none;
-}
-
 .settings-btn {
+  flex: none;
   width: var(--p4-touch);
   height: var(--p4-touch);
   display: flex;
@@ -126,13 +122,6 @@ h1 {
   background: none;
   border: 0;
   color: var(--p4-muted);
-}
-
-.join-btn {
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font: 600 12px/1 var(--p4-font-ui);
 }
 
 .actions {
@@ -152,11 +141,46 @@ h1 {
   gap: 8px;
 }
 
-.section-head {
-  padding: 20px 20px 0;
+.explore-public-btn {
+  margin: 20px 20px 0;
+  width: calc(100% - 40px);
+  min-height: 64px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--p4-text);
+  text-align: left;
 }
 
-h2 {
-  margin: 0;
-  font: 600 20px/1 var(--p4-font-ui);
+.explore-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.explore-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.explore-title {
+  font: 600 14px/1.2 var(--p4-font-ui);
+}
+
+.explore-sub {
+  font: 400 11px/1.3 var(--p4-font-ui);
+  color: var(--p4-muted);
 }

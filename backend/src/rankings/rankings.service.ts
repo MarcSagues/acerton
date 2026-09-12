@@ -229,6 +229,19 @@ export class RankingsService {
     }));
   }
 
+  /**
+   * Existe alguna fila calculada para este scope, sin traerla entera —
+   * usado por la vista previa de grupos publicos para decidir si mostrar
+   * un top real o el estado vacio (ver PublicGroupPreviewService).
+   */
+  async hasRanking(groupId: string, period: RankingPeriod, competitionId: string | null): Promise<boolean> {
+    const snapshot = await this.prisma.rankingSnapshot.findFirst({
+      where: { groupId, period, competitionId },
+      select: { id: true },
+    });
+    return snapshot !== null;
+  }
+
   async getRankingForMatchday(
     groupId: string,
     period: RankingPeriod,
