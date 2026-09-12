@@ -15,6 +15,13 @@ export class GroupListFacade {
   readonly groups = this.groupsService.myGroups;
   readonly activeGroupId = this.activeGroupService.activeId;
   readonly loading = signal(true);
+  /**
+   * /welcome vive fuera del shell (sin barra superior con logo): el estado
+   * vacio reserva ahi ese hueco a mano. /groups (mismo componente, dentro
+   * del shell) ya tiene su propia barra superior real — repetir el hueco
+   * duplicaria el espacio por encima del icono.
+   */
+  readonly isStandaloneWelcome = this.router.url.startsWith('/welcome');
   /** Racha actual por grupo (jornadas seguidas participando), para el chip de fuego en la tarjeta. */
   private readonly groupStreaks = signal<Record<string, number>>({});
 

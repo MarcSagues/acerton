@@ -11,7 +11,7 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div class="empty" [class.large]="large">
+    <div class="empty" [class.large]="large" [class.standalone]="standalone">
       <div class="hero-icon" [class.large]="large">
         <div class="hero-icon-gap">
           <div class="hero-icon-inner">
@@ -44,13 +44,17 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
          (group-join-code), usado como referencia para el estado vacio de
          "Todavia no estas en ningun grupo". */
       .empty.large {
-        /* Esta pantalla (welcome) vive fuera del shell, sin la barra
-           superior ni la cabecera con boton de volver que si tiene
-           "Unirse a un grupo" (group-join-code) — se reserva ese mismo
-           hueco a mano (medido: 142px con safe-area-inset-top en 0) para
-           que el icono no salte de posicion al navegar entre pantallas. */
-        padding: calc(env(safe-area-inset-top) + 128px) 20px 40px;
+        padding: 24px 20px 40px;
         gap: 14px;
+      }
+      /* Solo en /welcome (fuera del shell, sin barra superior ni cabecera
+         con boton de volver que si tiene "Unirse a un grupo") se reserva
+         ese mismo hueco a mano (medido: 142px con safe-area-inset-top en
+         0) para que el icono no salte de posicion al navegar entre
+         pantallas. Dentro del shell (/groups) ya hay una barra superior
+         real encima — usar este mismo padding ahi duplicaria el hueco. */
+      .empty.large.standalone {
+        padding-top: calc(env(safe-area-inset-top) + 128px);
       }
       .hero-icon {
         width: 96px;
@@ -128,6 +132,8 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
 export class EmptyStateComponent {
   @Input() icon = 'info';
   @Input() large = false;
+  /** true solo cuando este componente vive en una ruta sin barra superior propia (ver .empty.large.standalone). */
+  @Input() standalone = false;
   @Input() title = '';
   @Input() text = '';
   @Input() ctaLabel?: string;
