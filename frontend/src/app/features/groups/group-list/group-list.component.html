@@ -26,13 +26,15 @@
         @for (group of page.groups(); track group.id) {
           <div class="group-row" [class.active]="group.id === page.activeGroupId()">
             <button type="button" class="group-main" (click)="page.goToGroup(group.id)">
-              <span class="avatar">{{ page.scoringModeBadge(group.scoringMode) }}</span>
+              <span class="avatar" [class.exact]="group.scoringMode === 'EXACT_SCORE'">{{ page.scoringModeBadge(group.scoringMode) }}</span>
               <span class="meta">
                 <span class="name">{{ group.name }}</span>
-                <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
-                @if (page.streakFor(group.id); as streak) {
-                  <span class="streak-chip"><piqo-svg icon="racha" size="14"></piqo-svg>{{ streak }} jornadas</span>
-                }
+                <span class="sub-row">
+                  <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
+                  @if (page.streakFor(group.id); as streak) {
+                    <span class="streak-chip"><piqo-svg icon="racha" size="14"></piqo-svg>{{ streak }}</span>
+                  }
+                </span>
               </span>
               @if (group.id === page.activeGroupId()) {
                 <span class="active-chip"><piqo-svg icon="check" size="18"></piqo-svg>Activo</span>

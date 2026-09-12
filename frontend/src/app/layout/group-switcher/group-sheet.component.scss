@@ -75,6 +75,11 @@
   background: var(--p4-soft);
   color: var(--p4-accent);
   font: 700 11px/1 var(--p4-font-ui);
+
+  &.exact {
+    background: var(--p4-accent);
+    color: var(--p4-on-accent);
+  }
 }
 
 .meta {
