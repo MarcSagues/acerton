@@ -69,7 +69,7 @@ export class AuthService {
       },
     });
 
-    await this.sendVerificationEmail(user.id, user.email, user.name);
+    await this.sendVerificationEmail(user.id, user.email);
     return { email: user.email };
   }
 
@@ -117,7 +117,7 @@ export class AuthService {
     if (!user || user.emailVerifiedAt) {
       return;
     }
-    await this.sendVerificationEmail(user.id, user.email, user.name);
+    await this.sendVerificationEmail(user.id, user.email);
   }
 
   /** No revela si la cuenta existe, si es solo-Google o si el envio fallo: siempre "hecho" desde fuera. */
@@ -139,7 +139,7 @@ export class AuthService {
 
     const resetUrl = `${this.configService.get('corsOrigin', { infer: true })}/reset-password?token=${token}`;
     try {
-      await this.mailService.sendPasswordResetEmail(user.email, user.name, resetUrl);
+      await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
     } catch {
       // No se relanza: la respuesta al frontend es siempre generica (ver AuthController).
     }
@@ -185,7 +185,7 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   }
 
-  private async sendVerificationEmail(userId: string, email: string, name: string): Promise<void> {
+  private async sendVerificationEmail(userId: string, email: string): Promise<void> {
     const token = randomBytes(32).toString('hex');
     await this.prisma.authToken.create({
       data: {
@@ -198,7 +198,7 @@ export class AuthService {
 
     const verifyUrl = `${this.configService.get('corsOrigin', { infer: true })}/verify-email?token=${token}`;
     try {
-      await this.mailService.sendVerificationEmail(email, name, verifyUrl);
+      await this.mailService.sendVerificationEmail(email, verifyUrl);
     } catch {
       // No se bloquea el registro por un fallo de envio: el usuario puede pedir "reenviar".
     }
