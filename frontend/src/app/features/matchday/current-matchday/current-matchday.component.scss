@@ -363,6 +363,10 @@ h1 {
     color: var(--p4-accent);
     border-color: var(--p4-accent);
   }
+
+  &:disabled {
+    opacity: 0.5;
+  }
 }
 
 .options {
@@ -403,7 +407,22 @@ h1 {
     border-color: var(--p4-accent);
   }
 
+  /* Partido en juego: se sigue mostrando el pronostico ya enviado, pero
+     sin poder tocarlo — atenuado salvo la opcion que de verdad se eligio,
+     para que quede claro que sigue siendo "lo tuyo" y no una opcion mas. */
+  &:disabled {
+    opacity: 0.5;
+
+    &.selected {
+      opacity: 1;
+    }
+  }
+
   &.saving {
+    /* Sin transicion: igual que en .exact-score-box.saving, el borde
+       transparente debe desaparecer en el mismo frame en que arranca el
+       anillo animado, sin un fundido perceptible antes de que empiece. */
+    transition: none;
     background: var(--p4-soft);
     color: var(--p4-accent);
     border-color: transparent;
@@ -422,25 +441,26 @@ h1 {
     color: var(--p4-error);
     border-color: var(--p4-error);
   }
-}
 
-.ring {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-
-  rect {
-    fill: none;
-    stroke: var(--p4-accent);
-    stroke-width: 2;
-    stroke-dasharray: 100;
+  /* Contorno animado mientras se guarda: mismo conic-gradient recortado a
+     un anillo que .exact-score-box.saving (ver ahi el porque) — un <rect>
+     de SVG estirado de forma no uniforme para llenar un boton "wide" (vista
+     visual) deformaba el radio de las esquinas, que aqui en cambio sigue
+     el border-radius real del boton sin distorsion. */
+  &.saving::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(from 0deg, var(--p4-accent) var(--progress, 0%), transparent 0);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
-}
-
-.choice:not(.saving) .ring {
-  display: none;
 }
 
 /* .score-widget envuelve solo la caja de resultado (la que cambia de
@@ -520,11 +540,11 @@ h1 {
      "pendiente de resultado" que el borde superior de la tarjeta
      (matchAccentTone 'pending'). Mientras guarda, el borde propio se
      oculta y en su lugar se dibuja un contorno animado que empieza arriba
-     y da la vuelta en sentido horario (--progress, actualizado en cada
-     frame desde el mismo drawOffset que ya anima el aro de los botones
-     1X2 — aqui como conic-gradient recortado a un anillo en vez de un
-     <rect> de SVG, porque esta caja no es cuadrada y estirar un trazo SVG
-     de forma no uniforme para llenarla deformaba su grosor). */
+     y da la vuelta en sentido horario (--progress, calculado igual que en
+     los botones 1X2, ver .choice.saving::before mas abajo — mismo
+     conic-gradient recortado a un anillo con mask, que sigue el
+     border-radius real del elemento en vez de deformarse en cajas no
+     cuadradas como esta). */
   &.saving {
     /* Sin esto, el borde gris se ve desvanecerse durante 160ms antes de
        que el anillo animado empiece a dibujarse — un hueco perceptible

@@ -50,15 +50,37 @@
     que esto solo se ve mientras no hay nada mas que mostrar.
   -->
   <style>
-    /* --accent inline para que <piqo-svg logo> (usa var(--accent)) pinte
-       bien desde el primer frame, antes de que cargue styles.scss. */
-    :root { --accent: #d2be94; }
-    /* Pantalla de marca: siempre oscura (grafito + champan), en los dos temas. */
+    /* --accent/--text inline para que <piqo-svg logo> (usa ambas variables)
+       pinte bien desde el primer frame, antes de que cargue styles.scss.
+       Claro por defecto, igual que --p4-* en styles.scss: automatico sigue
+       prefers-color-scheme, y data-theme (puesto por el script de arriba,
+       antes de este bloque) manda siempre que este explicito. */
+    :root {
+      --accent: #786039;
+      --text: #121619;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme='claro']) {
+        --accent: #d2be94;
+        --text: #f1f0ea;
+      }
+    }
+    :root[data-theme='oscuro'] {
+      --accent: #d2be94;
+      --text: #f1f0ea;
+    }
+    :root[data-theme='claro'] {
+      --accent: #786039;
+      --text: #121619;
+    }
+    /* Pantalla de marca: sigue el mismo tema que el resto de la app (antes
+       era siempre oscura, "grafito + champan" fijo en los dos temas, pero
+       eso desentonaba al arrancar en claro). */
     #boot-loader {
       position: fixed;
       inset: 0;
-      background: #121619;
-      color: #f1f0ea;
+      background: #f4f2ec;
+      color: #121619;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -71,30 +93,42 @@
       width: 160px;
       height: 4px;
       border-radius: 2px;
-      background: rgba(241, 240, 234, 0.12);
+      background: rgba(18, 22, 25, 0.12);
       overflow: hidden;
     }
     #boot-loader .boot-fill {
       height: 100%;
       width: 0%;
       border-radius: 2px;
-      background: #d2be94;
+      background: #786039;
       animation: boot-progress 40s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
     }
     #boot-loader .boot-label {
       font: 600 11px/1.4 'Inter', system-ui, sans-serif;
-      color: rgba(241, 240, 234, 0.55);
+      color: rgba(18, 22, 25, 0.55);
       letter-spacing: 0.04em;
     }
     #boot-loader .boot-hint {
       font: 400 10px/1.5 'Inter', system-ui, sans-serif;
-      color: rgba(241, 240, 234, 0.35);
+      color: rgba(18, 22, 25, 0.35);
       max-width: 220px;
       text-align: center;
       opacity: 0;
       animation: boot-hint-in 0.4s ease forwards;
       animation-delay: 4s;
     }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme='claro']) #boot-loader { background: #121619; color: #f1f0ea; }
+      :root:not([data-theme='claro']) #boot-loader .boot-track { background: rgba(241, 240, 234, 0.12); }
+      :root:not([data-theme='claro']) #boot-loader .boot-fill { background: #d2be94; }
+      :root:not([data-theme='claro']) #boot-loader .boot-label { color: rgba(241, 240, 234, 0.55); }
+      :root:not([data-theme='claro']) #boot-loader .boot-hint { color: rgba(241, 240, 234, 0.35); }
+    }
+    :root[data-theme='oscuro'] #boot-loader { background: #121619; color: #f1f0ea; }
+    :root[data-theme='oscuro'] #boot-loader .boot-track { background: rgba(241, 240, 234, 0.12); }
+    :root[data-theme='oscuro'] #boot-loader .boot-fill { background: #d2be94; }
+    :root[data-theme='oscuro'] #boot-loader .boot-label { color: rgba(241, 240, 234, 0.55); }
+    :root[data-theme='oscuro'] #boot-loader .boot-hint { color: rgba(241, 240, 234, 0.35); }
     @keyframes boot-progress {
       0% { width: 0%; }
       3% { width: 35%; }

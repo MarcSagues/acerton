@@ -210,8 +210,9 @@
       </div>
 
       <ng-template #choices let-match="match" let-wide="wide" let-crests="crests">
-        @if (page.isMatchLocked(match) || !page.pickingAllowed()) {
-          @if (page.isExactScore()) {
+        @let locked = page.isMatchLocked(match) || !page.pickingAllowed();
+        @if (page.isExactScore()) {
+          @if (locked) {
             <div class="score-widget review" [class.standalone]="wide" [class.inline]="crests">
               @if (!crests) {
                 <div class="score-labels">
@@ -226,60 +227,65 @@
                 <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedAwayScore" />
               </div>
             </div>
-          } @else if (crests) {
-            <span class="vs mono">VS</span>
-          } @else if (match.status === 'FINISHED') {
-            <div class="options" [class.wide]="wide" role="group" aria-label="Resultado del partido">
-              @for (opt of oneXTwoOptions; track opt.v) {
-                <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
+          } @else {
+            <div class="score-widget" [class.standalone]="wide" [class.inline]="crests">
+              @if (!crests) {
+                <div class="score-labels">
+                  <span class="score-label mono">L</span>
+                  <span class="score-sep-spacer mono">-</span>
+                  <span class="score-label mono">V</span>
+                </div>
               }
+              <div
+                class="exact-score-box"
+                [class.saving]="page.stateFor(match.id).saving"
+                [class.error]="page.stateFor(match.id).error"
+                [class.confirmed]="page.stateFor(match.id).saved"
+                [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+              >
+                <input
+                  class="score-input mono"
+                  type="number"
+                  min="0"
+                  max="20"
+                  inputmode="numeric"
+                  [value]="page.stateFor(match.id).predictedHomeScore"
+                  (input)="page.updatePredictedScore(match, 'home', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
+                />
+                <span class="score-sep mono">-</span>
+                <input
+                  class="score-input mono"
+                  type="number"
+                  min="0"
+                  max="20"
+                  inputmode="numeric"
+                  [value]="page.stateFor(match.id).predictedAwayScore"
+                  (input)="page.updatePredictedScore(match, 'away', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
+                />
+              </div>
             </div>
           }
-          <!-- filas / comodin: sin controles, el estado se resuelve en la fila de estado. -->
-        } @else if (page.isExactScore()) {
-          <div class="score-widget" [class.standalone]="wide" [class.inline]="crests">
-            @if (!crests) {
-              <div class="score-labels">
-                <span class="score-label mono">L</span>
-                <span class="score-sep-spacer mono">-</span>
-                <span class="score-label mono">V</span>
-              </div>
+        } @else if (crests) {
+          <span class="vs mono">VS</span>
+        } @else if (match.status === 'FINISHED') {
+          <div class="options" [class.wide]="wide" role="group" aria-label="Resultado del partido">
+            @for (opt of oneXTwoOptions; track opt.v) {
+              <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
             }
-            <div
-              class="exact-score-box"
-              [class.saving]="page.stateFor(match.id).saving"
-              [class.error]="page.stateFor(match.id).error"
-              [class.confirmed]="page.stateFor(match.id).saved"
-              [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
-            >
-              <input
-                class="score-input mono"
-                type="number"
-                min="0"
-                max="20"
-                inputmode="numeric"
-                [value]="page.stateFor(match.id).predictedHomeScore"
-                (input)="page.updatePredictedScore(match, 'home', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
-              />
-              <span class="score-sep mono">-</span>
-              <input
-                class="score-input mono"
-                type="number"
-                min="0"
-                max="20"
-                inputmode="numeric"
-                [value]="page.stateFor(match.id).predictedAwayScore"
-                (input)="page.updatePredictedScore(match, 'away', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
-              />
-            </div>
           </div>
         } @else {
+          <!-- Partido en juego/bloqueado sin terminar todavia: se sigue
+               viendo lo que se eligio (clase .selected sobre el pick real),
+               solo que sin poder interactuar — antes esta rama no pintaba
+               nada y el pronostico enviado desaparecia de la vista hasta
+               que el partido acababa. -->
           <div class="wc-row">
             @if ((page.comeback()?.enabled && (page.comeback()?.remaining ?? 0) > 0) || page.stateFor(match.id).doubleChanceOption) {
               <button
                 type="button"
                 class="wc-btn"
                 [class.active]="!!page.stateFor(match.id).doubleChanceOption"
+                [disabled]="locked"
                 [attr.aria-label]="'Comodin de remontada (quedan ' + (page.comeback()?.remaining ?? 0) + ')'"
                 (click)="page.toggleDoubleChance(match)"
               >
@@ -294,12 +300,11 @@
                     class="choice"
                     [class.selected]="page.stateFor(match.id).doubleChanceOption === opt.v"
                     [class.saving]="page.stateFor(match.id).doubleChanceOption === opt.v && page.stateFor(match.id).saving"
+                    [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+                    [disabled]="locked"
                     [attr.aria-pressed]="page.stateFor(match.id).doubleChanceOption === opt.v"
                     (click)="page.selectDoubleChance(match, $any(opt.v))"
                   >
-                    <svg class="ring" viewBox="0 0 48 48" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="1" y="1" width="46" height="46" rx="10" pathLength="100" [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"></rect>
-                    </svg>
                     {{ opt.l }}
                   </button>
                 }
@@ -310,12 +315,11 @@
                     class="choice"
                     [class.selected]="page.stateFor(match.id).choice === opt.v"
                     [class.saving]="page.stateFor(match.id).choice === opt.v && page.stateFor(match.id).saving"
+                    [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+                    [disabled]="locked"
                     [attr.aria-pressed]="page.stateFor(match.id).choice === opt.v"
                     (click)="page.selectChoice(match, $any(opt.v))"
                   >
-                    <svg class="ring" viewBox="0 0 48 48" preserveAspectRatio="none" aria-hidden="true">
-                      <rect x="1" y="1" width="46" height="46" rx="10" pathLength="100" [attr.stroke-dashoffset]="page.stateFor(match.id).drawOffset"></rect>
-                    </svg>
                     {{ opt.l }}
                   </button>
                 }
