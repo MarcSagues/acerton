@@ -122,6 +122,35 @@ export class TutorialService {
 
   readonly isLastStep = computed(() => this.stepIndexSignal() === this.steps().length - 1);
 
+  /**
+   * Respaldo local (ademas de user.tutorialCompleted en el backend): en
+   * iOS se vio el aviso reaparecer en cada pulsacion de "Tabla" porque el
+   * PATCH de completeTutorial fallaba en silencio (red del dispositivo) y
+   * el flag del servidor nunca llegaba a ponerse a true — sin nada mas que
+   * lo recuerde, el guard de RankingsPageFacade volvia a intentarlo cada
+   * vez. localStorage no depende de la red: una vez mostrado en este
+   * dispositivo, no se le vuelve a interrumpir aunque el PATCH seguido
+   * siga fallando (que se sigue reintentando en segundo plano igual).
+   */
+  private readonly LOCAL_SEEN_KEY = 'piqo-tutorial-seen';
+
+  private markSeenLocally(): void {
+    try {
+      localStorage.setItem(this.LOCAL_SEEN_KEY, '1');
+    } catch {
+      /* Sin localStorage (modo privado, cuota llena): sin respaldo local, solo el flag del backend. */
+    }
+  }
+
+  hasSeenTutorial(): boolean {
+    if (this.authService.currentUser()?.tutorialCompleted) return true;
+    try {
+      return localStorage.getItem(this.LOCAL_SEEN_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
   constructor() {
     this.router.events.subscribe((event) => {
       if (!(event instanceof NavigationEnd)) return;
@@ -152,6 +181,7 @@ export class TutorialService {
     this.stepIndexSignal.set(0);
     this.currentUrlSignal.set(this.router.url.split('?')[0]);
     this.activeSignal.set(true);
+    this.markSeenLocally();
     if (!this.authService.currentUser()?.tutorialCompleted) {
       // Sin manejador de error aqui, un fallo de red (frecuente en datos
       // moviles) dejaba esta llamada sin completarse nunca: el usuario

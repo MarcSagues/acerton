@@ -1,3 +1,10 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .loading {
   min-height: 60vh;
   display: flex;
@@ -7,13 +14,17 @@
 
 /* Pantalla de marca: siempre oscura, en los dos temas. */
 .page {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   background: #121619;
   color: #f1f0ea;
 }
 
 .head-row {
-  padding: calc(env(safe-area-inset-top) + 14px) 20px 8px;
+  /* Sin env(safe-area-inset-top) aqui: esta pantalla vive dentro del shell
+     (ver app.routes.ts), que ya reserva ese hueco una vez encima de la
+     barra superior — repetirlo aqui duplicaba el margen bajo el logo. */
+  padding: 14px 20px 8px;
 }
 
 .back {

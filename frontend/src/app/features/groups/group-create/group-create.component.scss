@@ -1,11 +1,23 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .page {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
   color: var(--p4-text);
   padding-bottom: 28px;
 }
 
 .head-row {
-  padding: calc(env(safe-area-inset-top) + 8px) 20px 0;
+  /* Sin env(safe-area-inset-top) aqui: esta pantalla vive dentro del shell
+     (ver app.routes.ts), que ya reserva ese hueco una vez el mismo encima
+     de la barra superior — repetirlo aqui duplicaba el margen bajo el
+     logo. */
+  padding: 8px 20px 0;
 }
 
 .back-link {

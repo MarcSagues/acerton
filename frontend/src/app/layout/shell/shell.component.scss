@@ -59,6 +59,15 @@ app-top-bar,
 
 .shell-content {
   flex: 1;
+  /* display:flex (no solo flex:1) para que la pantalla routeada pueda
+     usar flex:1 y rellenar toda la altura disponible con flex, en vez de
+     min-height:100% — un porcentaje de altura no se resuelve de forma
+     fiable a traves de un host de componente enmedio (ver .page en cada
+     pantalla), asi que cuando el contenido es mas corto que la pantalla
+     quedaba un hueco del fondo del shell debajo. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 
   &.no-bottom-nav {

@@ -35,6 +35,7 @@
               }
             ],
             "styles": [
+              "@angular/cdk/overlay-prebuilt.css",
               "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],
@@ -124,6 +125,7 @@
               }
             ],
             "styles": [
+              "@angular/cdk/overlay-prebuilt.css",
               "@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles.scss"
             ],

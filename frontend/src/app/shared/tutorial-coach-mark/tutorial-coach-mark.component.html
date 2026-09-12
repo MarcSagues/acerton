@@ -23,7 +23,7 @@
         <div class="bubble-actions">
           <button class="skip" (click)="page.tutorialService.skip()">Saltar tutorial</button>
           @if (step.advanceOn === 'manual') {
-            <button class="next" (click)="page.tutorialService.next()">
+            <button class="piqo-primary next" (click)="page.tutorialService.next()">
               {{ page.tutorialService.isLastStep() ? 'Empezar' : 'Siguiente' }}
             </button>
           }

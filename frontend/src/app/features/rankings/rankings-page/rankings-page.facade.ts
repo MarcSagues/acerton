@@ -87,7 +87,7 @@ export class RankingsPageFacade {
         error: () => this.currentSeasonLabel.set(null),
       });
 
-      if (!this.tutorialHandledThisSession && !this.authService.currentUser()?.tutorialCompleted) {
+      if (!this.tutorialHandledThisSession && !this.tutorialService.hasSeenTutorial()) {
         this.tutorialHandledThisSession = true;
         this.tutorialService.start(group.scoringMode);
       }

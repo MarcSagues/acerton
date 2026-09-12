@@ -116,12 +116,11 @@ p {
   cursor: pointer;
 }
 
+/* Colores (fondo/texto) los pone la clase compartida .piqo-primary — aqui
+   solo el tamano/forma propios de este botón pequeño. */
 .next {
   padding: 9px 16px;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
-  color: var(--accent-on);
-  border: none;
-  font: 600 12px/1 var(--font-ui);
+  border-radius: var(--p4-radius-pill);
+  font: 600 12px/1 var(--p4-font-ui);
   cursor: pointer;
 }
