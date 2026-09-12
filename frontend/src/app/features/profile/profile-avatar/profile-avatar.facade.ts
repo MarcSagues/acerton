@@ -4,6 +4,7 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AvatarMascotOption } from '../../../core/models/avatar-catalog.model';
 import { mascotIdFromUrl } from '../domain/avatar-catalog.util';
+import { TROPHIES } from '../domain/trophies';
 
 @Injectable()
 export class ProfileAvatarFacade {
@@ -51,8 +52,22 @@ export class ProfileAvatarFacade {
     });
   }
 
-  selectMascot(mascotId: string): void {
-    this.selectedMascotId.set(mascotId);
+  /**
+   * Las mascotas de trofeo solo se pueden elegir con el trofeo
+   * correspondiente conseguido. Ver el aviso en avatar-catalog.ts
+   * (backend): "conseguido" hoy es el mismo catalogo de muestra que ya se
+   * ve en la Vitrina de Perfil (recuento fijo, igual para todos), no un
+   * dato real por usuario todavia.
+   */
+  isMascotLocked(mascot: AvatarMascotOption): boolean {
+    if (!mascot.requiresTrophyId) return false;
+    const trophy = TROPHIES.find((t) => t.id === mascot.requiresTrophyId);
+    return !trophy || trophy.count <= 0;
+  }
+
+  selectMascot(mascot: AvatarMascotOption): void {
+    if (this.isMascotLocked(mascot)) return;
+    this.selectedMascotId.set(mascot.id);
   }
 
   selectBackground(background: string): void {

@@ -4,7 +4,7 @@ import { UsersService } from './users.service';
 import { RegisterNotificationTokenDto } from './dto/register-notification-token.dto';
 import { UpdateNameDto } from './dto/update-name.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
-import { AVATAR_BACKGROUNDS, AVATAR_MASCOT_IDS, mascotAssetPath } from './avatar-catalog';
+import { AVATAR_BACKGROUNDS, AVATAR_MASCOT_IDS, AVATAR_TROPHY_REQUIREMENT, mascotAssetPath } from './avatar-catalog';
 
 @Controller('users')
 export class UsersController {
@@ -23,7 +23,11 @@ export class UsersController {
   @Get('me/avatar-catalog')
   getAvatarCatalog() {
     return {
-      mascots: AVATAR_MASCOT_IDS.map((id) => ({ id, url: mascotAssetPath(id) })),
+      mascots: AVATAR_MASCOT_IDS.map((id) => ({
+        id,
+        url: mascotAssetPath(id),
+        requiresTrophyId: (AVATAR_TROPHY_REQUIREMENT as Record<string, string>)[id] ?? null,
+      })),
       backgrounds: AVATAR_BACKGROUNDS,
     };
   }

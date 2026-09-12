@@ -442,3 +442,68 @@ favoritas, y concesión retroactiva.
 con los otros dos arreglos sueltos de este bloque de mensajes (racha 0 en
 Perfil, orden de jornadas por cierre más próximo) — ninguno de los tres es
 en realidad parte de Sprint 7, se avisó de esto al usuario.
+
+---
+
+## 2026-09-12 (continuación) — Avatares de trofeo, gateados por copa conseguida
+
+**Qué se hizo:**
+
+- El usuario aportó 7 imágenes nuevas de la mascota sosteniendo un trofeo
+  (`C:\Users\34655\Downloads\01-champions-levantando.png` … `07-copa-piqo-
+  reverencia.png`), pidiendo que cada una solo se pueda usar como avatar
+  si el usuario tiene esa copa concreta — "con el nombre de la imagen se
+  puede saber" cuál es cuál, y en efecto los 7 nombres mapean 1:1 con los
+  7 ids ya existentes en el catálogo de trofeos de la Vitrina
+  (`features/profile/domain/trophies.ts`: champions, laliga, bundesliga,
+  ligue1, europa, seriea, piqo).
+- Procesadas igual que las 13 mascotas normales (`sharp`: recorte,
+  centrado, 512×512, ~44-70 KB cada una), guardadas como
+  `trophy-<id>.png` en el mismo directorio de assets.
+- **Backend**: `avatar-catalog.ts` reestructurado en `DEFAULT_MASCOT_IDS`
+  (las 13 de siempre) + `TROPHY_MASCOT_IDS` (las 7 nuevas) +
+  `AVATAR_TROPHY_REQUIREMENT` (mapa mascota→id de trofeo necesario).
+  `randomCatalogAvatar` (asignación automática al registrarse) solo elige
+  entre `DEFAULT_MASCOT_IDS` — una cuenta nueva nunca puede tocarle en
+  suerte una mascota de trofeo. `GET /users/me/avatar-catalog` añade
+  `requiresTrophyId` a cada mascota.
+- **Limitación documentada explícitamente, no resuelta hoy**: los trofeos
+  todavía no son un dato real por usuario (Sprint 6 sigue bloqueado sin
+  modelo de datos) — "tener esa copa" se comprueba en el frontend contra
+  el mismo catálogo de muestra ya usado para la Vitrina (recuento fijo,
+  igual para todos los usuarios). El backend, en consecuencia, **no**
+  rechaza hoy elegir una mascota de trofeo por API directa — no hay
+  todavía una fuente de verdad de trofeos contra la que validarlo. Anotado
+  en un comentario largo en `avatar-catalog.ts` para que quien retome esto
+  con el Sprint 6 real sepa exactamente qué mover y por qué.
+- **Frontend**: `profile-avatar.facade.ts` añade `isMascotLocked()`
+  (consulta `TROPHIES`, la misma constante que ya pinta la Vitrina) y
+  bloquea `selectMascot()` para las mascotas sin trofeo conseguido. Mismo
+  tratamiento visual que ya existía para trofeos/insignias sin conseguir
+  (escala de grises + insignia de candado), reutilizado tal cual en la
+  rejilla de mascotas.
+- **Pruebas ejecutadas**: `npx tsc --noEmit` y `npx jest` completos del
+  backend en verde (146/146, sin tests nuevos porque la lógica de bloqueo
+  vive en el frontend). `ng build` (dev) sin errores. Verificado en vivo:
+  `GET /users/me/avatar-catalog` por API directa confirma
+  `requiresTrophyId` correcto en las 7 mascotas nuevas; en navegador real,
+  las mascotas de Champions y Copa Piqo (las dos con `count > 0` en el
+  catálogo de muestra) aparecen seleccionables con normalidad, las otras
+  5 aparecen en gris con candado y un clic no cambia la selección.
+
+**Migraciones:** ninguna (no se tocó el esquema — `avatarUrl`/
+`avatarBackground` ya existían).
+
+**Bloqueos/preguntas dejadas abiertas:** ninguna nueva — la limitación de
+"trofeos todavía no son reales" ya estaba registrada desde el
+incremento anterior de avatares.
+
+**Siguiente paso:** el que decida el usuario. Cuando se aborde el Sprint 6
+(trofeos reales), recordar mover la comprobación de `AVATAR_TROPHY_
+REQUIREMENT` también al backend (`UpdateAvatarDto`/`UsersService.
+updateAvatar`) para que perder un trofeo (si algún día fuera posible)
+también pueda revocar el avatar, no solo impedir elegirlo de nuevo.
+
+**Cambios sin commit:** no tras esta entrada — commiteado en la rama
+`feature/sprint-7-avatares` (esta vez sí es, genuinamente, trabajo de
+Sprint 7/avatares).

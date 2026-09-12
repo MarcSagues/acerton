@@ -52,11 +52,17 @@
           <button
             type="button"
             class="mascot-tile"
-            [style.background]="page.selectedBackground() || 'var(--p4-soft)'"
+            [class.locked]="page.isMascotLocked(mascot)"
+            [style.background]="page.isMascotLocked(mascot) ? 'var(--p4-soft)' : (page.selectedBackground() || 'var(--p4-soft)')"
             [class.selected]="page.selectedMascotId() === mascot.id"
-            (click)="page.selectMascot(mascot.id)"
+            [attr.aria-disabled]="page.isMascotLocked(mascot)"
+            [attr.aria-label]="page.isMascotLocked(mascot) ? 'Mascota bloqueada: gana el trofeo correspondiente para desbloquearla' : null"
+            (click)="page.selectMascot(mascot)"
           >
             <img [src]="mascot.url" alt="" />
+            @if (page.isMascotLocked(mascot)) {
+              <span class="lock-badge"><piqo-svg icon="candado" size="12"></piqo-svg></span>
+            }
           </button>
         }
         <div class="mascot-tile upload-tile" aria-disabled="true">
@@ -64,6 +70,7 @@
           <span>Subir foto<br />(próximamente)</span>
         </div>
       </div>
+      <p class="trophy-hint">Las mascotas con candado se desbloquean al ganar el trofeo de esa competición.</p>
     </div>
 
     @if (page.error()) {
