@@ -11,11 +11,11 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
   standalone: true,
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    <div class="empty">
-      <div class="hero-icon">
+    <div class="empty" [class.large]="large">
+      <div class="hero-icon" [class.large]="large">
         <div class="hero-icon-gap">
           <div class="hero-icon-inner">
-            <piqo-svg [attr.icon]="icon" size="28"></piqo-svg>
+            <piqo-svg [attr.icon]="icon" [attr.size]="large ? 44 : 28"></piqo-svg>
           </div>
         </div>
       </div>
@@ -39,6 +39,18 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
         text-align: center;
         gap: 12px;
         color: var(--p4-text);
+      }
+      /* Mismo padding lateral y tamano de botones que "Unirse a un grupo"
+         (group-join-code), usado como referencia para el estado vacio de
+         "Todavia no estas en ningun grupo". */
+      .empty.large {
+        /* Esta pantalla (welcome) vive fuera del shell, sin la barra
+           superior ni la cabecera con boton de volver que si tiene
+           "Unirse a un grupo" (group-join-code) — se reserva ese mismo
+           hueco a mano (medido: 142px con safe-area-inset-top en 0) para
+           que el icono no salte de posicion al navegar entre pantallas. */
+        padding: calc(env(safe-area-inset-top) + 128px) 20px 40px;
+        gap: 14px;
       }
       .hero-icon {
         width: 96px;
@@ -73,6 +85,21 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
         align-items: center;
         justify-content: center;
       }
+      /* Mismo tamano que el circulo de "Unirse a un grupo"
+         (group-join-code), usado como referencia para el estado vacio de
+         "Todavia no estas en ningun grupo". */
+      .hero-icon.large {
+        width: 144px;
+        height: 144px;
+      }
+      .hero-icon.large .hero-icon-gap {
+        width: 136px;
+        height: 136px;
+      }
+      .hero-icon.large .hero-icon-inner {
+        width: 88px;
+        height: 88px;
+      }
       h2 {
         margin: 0;
         font: 700 16px/1.3 var(--p4-font-display);
@@ -90,11 +117,17 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output } from '
         font: 600 14px/1 var(--p4-font-ui);
         margin-top: 8px;
       }
+      .empty.large .cta {
+        width: 100%;
+        margin-top: 0;
+        font: 600 15px/1 var(--p4-font-ui);
+      }
     `,
   ],
 })
 export class EmptyStateComponent {
   @Input() icon = 'info';
+  @Input() large = false;
   @Input() title = '';
   @Input() text = '';
   @Input() ctaLabel?: string;
