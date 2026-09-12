@@ -6,7 +6,6 @@ import { ErrorCode } from '@capawesome/capacitor-google-sign-in';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
-import { environment } from '../../../../environments/environment';
 import { GOOGLE_RETURN_URL_KEY } from './auth-page.constants';
 
 type AuthMode = 'login' | 'register';
@@ -27,8 +26,6 @@ export class AuthPageFacade {
   readonly passwordVisible = signal(false);
   readonly googleLoginUrl = this.authService.googleLoginUrl;
   readonly isNativePlatform = this.authService.isNativePlatform;
-  readonly diagnostics = signal<string | null>(null);
-  readonly runningDiagnostics = signal(false);
 
   /** Distinto de null tras un registro correcto: la cuenta existe pero no puede entrar hasta confirmar el correo. */
   readonly registeredEmail = signal<string | null>(null);
@@ -168,33 +165,6 @@ export class AuthPageFacade {
         }
       },
     });
-  }
-
-  /** Temporal: diagnostico de red en el propio dispositivo, sin acceso a un Mac/inspector. */
-  async runDiagnostics(): Promise<void> {
-    this.runningDiagnostics.set(true);
-    this.diagnostics.set(null);
-    const lines: string[] = [];
-    lines.push(`onLine: ${navigator.onLine}`);
-    lines.push(`UA: ${navigator.userAgent}`);
-
-    const probe = async (label: string, url: string, init?: RequestInit) => {
-      const start = Date.now();
-      try {
-        const res = await fetch(url, init);
-        lines.push(`${label}: OK status=${res.status} (${Date.now() - start}ms)`);
-      } catch (err) {
-        lines.push(`${label}: FALLO ${(err as Error)?.name ?? ''} ${(err as Error)?.message ?? String(err)} (${Date.now() - start}ms)`);
-      }
-    };
-
-    await probe('mismo origen (manifest)', 'https://acerton.app/manifest.webmanifest');
-    await probe('api sin credenciales', `${environment.apiUrl}/competitions`);
-    await probe('api con credenciales', `${environment.apiUrl}/competitions`, { credentials: 'include' });
-    await probe('api directa https', 'https://api.acerton.app/api/competitions');
-
-    this.diagnostics.set(lines.join('\n'));
-    this.runningDiagnostics.set(false);
   }
 
   submit(): void {

@@ -139,15 +139,6 @@
         }
       </button>
     </form>
-
-    @if (page.isNativePlatform) {
-      <button type="button" class="ghost-link diagnostics-link" [disabled]="page.runningDiagnostics()" (click)="page.runDiagnostics()">
-        {{ page.runningDiagnostics() ? 'Probando...' : 'Diagnóstico de red' }}
-      </button>
-      @if (page.diagnostics(); as result) {
-        <pre class="diagnostics">{{ result }}</pre>
-      }
-    }
   </div>
 } @else {
   <div class="access-page">

@@ -160,22 +160,6 @@
   margin-top: 8px;
 }
 
-.diagnostics-link {
-  margin: 4px 20px 0;
-}
-
-.diagnostics {
-  margin: 12px 20px 0;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--p4-surface);
-  border: 1px solid var(--p4-border);
-  font: 400 10px/1.5 var(--p4-font-ui);
-  color: var(--p4-muted);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 .hint {
   font: 400 11px/15px var(--p4-font-ui);
   color: var(--p4-muted);
