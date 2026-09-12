@@ -1,101 +1,180 @@
-<div class="auth-page">
-  <div class="auth-content">
-    <div class="brand">1X2</div>
-    <h1>La quiniela<br />del grupo</h1>
-    <p class="tagline">Pronostica 1X2 cada jornada, gana puntos y pica a tus amigos en la tabla.</p>
-
-    <div class="tabs">
-      <button
-        type="button"
-        class="tab"
-        [class.active]="!isRegister()"
-        (click)="setMode('login')"
-      >
-        Entrar
-      </button>
-      <button
-        type="button"
-        class="tab"
-        [class.active]="isRegister()"
-        (click)="setMode('register')"
-      >
-        Crear cuenta
-      </button>
-    </div>
-
-    <form [formGroup]="form" (ngSubmit)="submit()" class="form">
-      @if (isRegister()) {
-        <label class="field">
-          <span class="field-label">Nombre de usuario</span>
-          <input class="field-input" type="text" formControlName="name" autocomplete="username" maxlength="24" />
-        </label>
-        @if (nameHint(); as hint) {
-          <p class="error">{{ hint }}</p>
-        }
-      }
-
-      <label class="field">
-        <span class="field-label">Email</span>
-        <input class="field-input" type="email" formControlName="email" autocomplete="email" />
-      </label>
-
-      <label class="field">
-        <span class="field-label">Contrasena</span>
-        <div class="field-input password-input">
-          <input
-            [type]="passwordVisible() ? 'text' : 'password'"
-            formControlName="password"
-            [autocomplete]="isRegister() ? 'new-password' : 'current-password'"
-          />
-          <button type="button" class="ghost-link" (click)="togglePasswordVisibility()">
-            {{ passwordVisible() ? 'ocultar' : 'ver' }}
+@if (page.isRegister()) {
+  <div class="page">
+    <div class="body-center">
+      @if (page.registeredEmail(); as registeredEmail) {
+        <div class="title-row">
+          <h1>Revisa tu correo</h1>
+          <p class="lead">
+            Te hemos enviado un enlace de confirmacion a <strong>{{ registeredEmail }}</strong>. Confirma tu cuenta
+            desde ahi para poder entrar.
+          </p>
+        </div>
+        <div class="form">
+          <button
+            type="button"
+            class="ghost-link"
+            [disabled]="page.resendingVerification()"
+            (click)="page.resendVerification(registeredEmail)"
+          >
+            {{ page.resendingVerification() ? 'Reenviando…' : '¿No te ha llegado? Reenviar correo' }}
+          </button>
+          @if (page.resendMessage(); as resendMessage) {
+            <p class="hint">{{ resendMessage }}</p>
+          }
+          <button type="button" class="back-btn-bottom" (click)="page.setMode('login')">
+            <piqo-svg icon="atras" size="16"></piqo-svg>
+            Volver al acceso
           </button>
         </div>
-      </label>
-      @if (isRegister()) {
-        <div class="hint">Minimo 8 caracteres.</div>
-      }
+      } @else {
+      <div class="title-row">
+        <h1>Crear cuenta</h1>
+        <p class="lead">Tu nombre es el que verá tu grupo en la clasificación.</p>
+      </div>
 
-      @if (errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
-      }
+      <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
+        <label class="field">
+          <span class="field-label">Nombre visible <span class="required">· obligatorio</span></span>
+          <input class="field-input" type="text" formControlName="name" autocomplete="username" maxlength="24" placeholder="Alex" />
+          @if (page.nameHint(); as hint) {
+            <span class="hint error">{{ hint }}</span>
+          } @else {
+            <span class="hint">Podrás cambiarlo una vez cada 30 días.</span>
+          }
+        </label>
 
-      <button type="submit" class="cta" [disabled]="loading()">
-        @if (loading()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          {{ isRegister() ? 'Crear cuenta' : 'Entrar' }}
+        <label class="field">
+          <span class="field-label">Correo <span class="required">· obligatorio</span></span>
+          <input class="field-input" type="email" formControlName="email" autocomplete="email" placeholder="tu@correo.com" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Contraseña <span class="required">· obligatorio</span></span>
+          <div class="field-input password-input">
+            <input
+              [type]="page.passwordVisible() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+              placeholder="Mínimo 8 caracteres"
+            />
+            <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
+              {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
+            </button>
+          </div>
+        </label>
+
+        @if (page.errorMessage()) {
+          <p class="error">{{ page.errorMessage() }}</p>
         }
-      </button>
-    </form>
 
-    <div class="divider">
-      <span></span>
-      <span class="divider-label">O</span>
-      <span></span>
-    </div>
-
-    @if (isNativePlatform) {
-      <button type="button" class="google-btn" [disabled]="loading()" (click)="loginWithGoogleNative()">
-        <span class="google-dot">G</span>
-        Continuar con Google
-      </button>
-    } @else {
-      <a class="google-btn" [href]="googleLoginUrl" (click)="saveReturnUrlForGoogleRedirect()">
-        <span class="google-dot">G</span>
-        Continuar con Google
-      </a>
-    }
-
-    <p class="legal">Al continuar aceptas los terminos<br />y la <a routerLink="/privacy">politica de privacidad</a>.</p>
-
-    @if (isNativePlatform) {
-      <button type="button" class="ghost-link" [disabled]="runningDiagnostics()" (click)="runDiagnostics()">
-        {{ runningDiagnostics() ? 'Probando...' : 'Diagnostico de red' }}
-      </button>
-      @if (diagnostics(); as result) {
-        <pre class="diagnostics">{{ result }}</pre>
+        <button type="submit" class="piqo-primary cta" [disabled]="page.loading()">
+          @if (page.loading()) {
+            <app-spinner [size]="20"></app-spinner>
+          } @else {
+            Crear cuenta
+          }
+        </button>
+        <button type="button" class="back-btn-bottom" (click)="page.setMode('login')">
+          <piqo-svg icon="atras" size="16"></piqo-svg>
+          Volver al acceso
+        </button>
+      </form>
       }
-    }
+    </div>
+    <img class="mascot-wave" src="assets/avatars/mascot/animated/ola-estadio.gif" alt="" aria-hidden="true" />
   </div>
-</div>
+} @else if (page.emailFormOpen()) {
+  <div class="page">
+    <div class="body-center">
+      <div class="title-row">
+        <h1>Entrar con correo</h1>
+      </div>
+
+      <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
+        <label class="field">
+          <span class="field-label">Correo</span>
+          <input class="field-input" type="email" formControlName="email" autocomplete="email" placeholder="tu@correo.com" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Contraseña</span>
+          <div class="field-input password-input">
+            <input
+              [type]="page.passwordVisible() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+            />
+            <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
+              {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
+            </button>
+          </div>
+          <button type="button" class="ghost-link forgot-link" (click)="page.goToForgotPassword()">
+            ¿Olvidaste tu contraseña?
+          </button>
+        </label>
+
+        @if (page.errorMessage()) {
+          <p class="error">{{ page.errorMessage() }}</p>
+          @if (page.unverifiedEmailError()) {
+            <button
+              type="button"
+              class="ghost-link"
+              [disabled]="page.resendingVerification()"
+              (click)="page.resendVerification(page.form.controls.email.value)"
+            >
+              {{ page.resendingVerification() ? 'Reenviando…' : 'Reenviar correo de confirmacion' }}
+            </button>
+          }
+        }
+        @if (page.resendMessage(); as resendMessage) {
+          <p class="hint">{{ resendMessage }}</p>
+        }
+
+        <button type="submit" class="piqo-primary cta" [disabled]="page.loading()">
+          @if (page.loading()) {
+            <app-spinner [size]="20"></app-spinner>
+          } @else {
+            Entrar
+          }
+        </button>
+        <button type="button" class="back-btn-bottom" (click)="page.closeEmailForm()">
+          <piqo-svg icon="atras" size="16"></piqo-svg>
+          Volver al acceso
+        </button>
+      </form>
+    </div>
+    <img class="mascot-wave" src="assets/avatars/mascot/animated/ola-estadio.gif" alt="" aria-hidden="true" />
+  </div>
+} @else {
+  <div class="access-page">
+    <div class="access-page-inner">
+      <div class="access-content">
+        <img class="mascot-hero" src="assets/avatars/mascot/tumbado-balon.png" alt="" aria-hidden="true" />
+        <piqo-svg logo size="240"></piqo-svg>
+        <h1>Mismos partidos. Distintas lecturas. Nuestro pique.</h1>
+        <p class="tagline">Pronostica con tu grupo, jornada a jornada. Se guarda al elegir.</p>
+      </div>
+      <div class="actions">
+        @if (page.isNativePlatform) {
+          <button type="button" class="piqo-primary cta" [disabled]="page.loading()" (click)="page.loginWithGoogleNative()">
+            Continuar con Google
+          </button>
+        } @else {
+          <a class="piqo-primary cta" [href]="page.googleLoginUrl" (click)="page.saveReturnUrlForGoogleRedirect()">
+            Continuar con Google
+          </a>
+        }
+        <button type="button" class="cta secondary" (click)="page.openEmailForm()">
+          <piqo-svg icon="correo" size="20"></piqo-svg>
+          Entrar con correo
+        </button>
+        <button type="button" class="cta link" (click)="page.setMode('register')">Crear una cuenta</button>
+      </div>
+      <p class="legal">Al continuar aceptas los términos y la <a routerLink="/privacy">política de privacidad</a> de Piqo.</p>
+
+      @if (page.errorMessage()) {
+        <p class="error">{{ page.errorMessage() }}</p>
+      }
+    </div>
+  </div>
+}

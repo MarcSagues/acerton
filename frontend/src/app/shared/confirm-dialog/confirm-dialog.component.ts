@@ -1,5 +1,5 @@
-import { Component, Inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Component, inject } from '@angular/core';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 
 export interface ConfirmDialogData {
   title: string;
@@ -11,15 +11,12 @@ export interface ConfirmDialogData {
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [MatDialogModule],
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
 })
 export class ConfirmDialogComponent {
-  constructor(
-    private readonly dialogRef: MatDialogRef<ConfirmDialogComponent, boolean>,
-    @Inject(MAT_DIALOG_DATA) readonly data: ConfirmDialogData,
-  ) {}
+  private readonly dialogRef = inject(DialogRef<boolean>);
+  readonly data = inject<ConfirmDialogData>(DIALOG_DATA);
 
   cancel(): void {
     this.dialogRef.close(false);

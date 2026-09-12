@@ -5,6 +5,15 @@ name: iOS Build
 # a mano desde la pestana "Actions" de GitHub.
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'A que API apunta el build (dev usa app-dev.piqo.es/api-dev.piqo.es, pensado para probar en TestFlight sin tocar produccion)'
+        required: true
+        type: choice
+        options:
+          - production
+          - dev
+        default: production
 
 jobs:
   build:
@@ -40,11 +49,27 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
-          npm run build
+          if [ "${{ inputs.environment }}" = "dev" ]; then
+            npm run build:dev
+          else
+            npm run build
+          fi
 
       - name: Sincronizar Capacitor (iOS)
         working-directory: frontend
         run: npx cap sync ios
+
+      # Para que un build de dev no se confunda con el de produccion en el
+      # dispositivo (TestFlight/pantalla de inicio) una vez instalado. El
+      # client id que usa Google Sign-In (environment.googleWebClientId) se
+      # deja igual en todos los environment.*.ts: es el mismo en todos los
+      # builds nativos (ver auth.service.ts frontend/backend), el backend de
+      # dev es el que aprende a aceptarlo via GOOGLE_NATIVE_CLIENT_ID.
+      - name: Renombrar la app para el build de dev
+        if: inputs.environment == 'dev'
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Piqo (dev)" \
+            frontend/ios/App/App/Info.plist
 
       # Certificado de distribucion + perfil de aprovisionamiento, ambos
       # guardados como secretos del repo (nunca en el codigo). Se importan
@@ -71,7 +96,7 @@ jobs:
 
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILE_DIR"
-          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_DIR/quiniela.mobileprovision"
+          echo "$IOS_PROVISIONING_PROFILE_BASE64" | base64 --decode -o "$PROFILE_DIR/piqo.mobileprovision"
 
       - name: Archivar (xcodebuild archive)
         working-directory: frontend/ios/App
@@ -114,8 +139,8 @@ jobs:
             <string>manual</string>
             <key>provisioningProfiles</key>
             <dict>
-              <key>app.acerton.quiniela</key>
-              <string>Sagui</string>
+              <key>app.piqo.es</key>
+              <string>Piqo</string>
             </dict>
             <key>destination</key>
             <string>upload</string>
@@ -134,7 +159,7 @@ jobs:
       - name: Subir el .ipa como artefacto de este workflow
         uses: actions/upload-artifact@v4
         with:
-          name: Quiniela-ios-${{ github.run_number }}
+          name: Piqo-ios-${{ inputs.environment }}-${{ github.run_number }}
           path: ${{ runner.temp }}/export/*.ipa
           retention-days: 30
 
@@ -146,11 +171,11 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            TITLE="iOS Build #${{ github.run_number }} completado"
+            TITLE="iOS Build #${{ github.run_number }} (${{ inputs.environment }}) completado"
             TAGS="white_check_mark"
             PRIORITY="default"
           else
-            TITLE="iOS Build #${{ github.run_number }} fallo"
+            TITLE="iOS Build #${{ github.run_number }} (${{ inputs.environment }}) fallo"
             TAGS="x"
             PRIORITY="high"
           fi

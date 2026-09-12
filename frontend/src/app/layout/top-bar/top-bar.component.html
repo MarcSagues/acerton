@@ -1,0 +1,14 @@
+<div class="top-bar">
+  <piqo-svg logo size="146"></piqo-svg>
+  <div class="spacer"></div>
+  <!-- Campanita escondida: el feed de avisos (/notifications) es una lista
+       de muestra sin historial real detras (ver domain/demo-notice.ts) —
+       ver issue de GitHub para acabar de implementarla y volver a
+       mostrarla. "Preferencias de avisos" (ajustes reales, en Perfil) no
+       se toca. -->
+  <button type="button" class="avatar-btn" aria-label="Tu perfil" (click)="page.goProfile()">
+    @if (page.currentUser(); as user) {
+      <app-avatar [url]="user.avatarUrl" [background]="user.avatarBackground" [name]="user.name" [size]="36"></app-avatar>
+    }
+  </button>
+</div>

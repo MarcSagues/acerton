@@ -6,19 +6,6 @@ marcarla resuelta) de aquí.
 
 ## Preguntas que hay que resolver con el usuario antes de cada sprint afectado
 
-- **Sprint 3 (roles)**: ¿cómo se modela el "creador"? Opciones vistas:
-  (a) añadir `OWNER` al enum `GroupRole` como un tercer nivel por encima de
-  `ADMIN`, o (b) añadir un campo `ownerId` directo en `Group` y dejar
-  `GroupRole` como está para el resto de permisos. (b) hace trivial "el
-  creador nunca puede ser expulsado ni degradado"; (a) es más uniforme con
-  el resto del sistema de roles. A decidir antes de tocar schema.
-- **Sprint 3 (borrado de grupo)**: ¿se implementa como borrado lógico
-  (`deletedAt` en `Group`, se sigue pudiendo consultar para historia y
-  trofeos pero desaparece de listados activos) o se separa el historial a
-  otra tabla antes de borrar físicamente? El borrado lógico es más simple
-  y menos arriesgado (no toca las relaciones `onDelete: Cascade`
-  existentes); a confirmar que no hay objeción de negocio a "conservar
-  datos de un grupo borrado indefinidamente".
 - **Sprint 5 (temporadas)**: el encargo pide "orden estable de jornadas
   por cierre de pronósticos, independiente de la llegada de resultados" y
   explícitamente pide **explicar y resolver antes de implementar** los
@@ -52,6 +39,16 @@ marcarla resuelta) de aquí.
   No se ha investigado a fondo en esta sesión; si hiciera falta
   infraestructura de pago o un servicio adicional, requiere autorización
   explícita del usuario antes de contratarlo.
+- **Sprint 7 (subida de foto propia)**: no existe ningún almacenamiento de
+  imágenes hoy (sin S3/Cloudinary/similar, sin `multer`, Render sin disco
+  persistente utilizable). El catálogo de avatares (mascota + color) no lo
+  necesitaba porque son assets estáticos del propio frontend, pero "subir
+  una foto del carrete" sí requiere decidir un proveedor (coste, cuenta,
+  credenciales) antes de escribir código — igual que se hizo con el
+  entorno dev/pre (ver `roadmap.md` § Infraestructura). No investigado a
+  fondo en esta sesión: pendiente de traer opciones concretas (coste,
+  límites del plan gratuito si lo hay) cuando el usuario quiera retomar
+  este punto.
 
 ## Notas de contraste que no son bloqueantes pero conviene tener presentes
 
@@ -96,6 +93,15 @@ hacer desde esta sesión en cuanto el usuario confirme que se ejecute.
   de alcance del roadmap de producto, pero merece un vistazo rápido en
   algún momento por higiene (evitar ruido de errores en consola/Sentry si
   hubiera).
+- El backend local se cayó una vez (proceso terminado, no solo un 500)
+  durante esta sesión en `rankings.service.ts`: `createMany` de
+  `RankingSnapshot` violó su restricción única
+  `(groupId, competitionId, matchdayId, period, userId)` — probablemente
+  una carrera entre dos ejecuciones del cron de recálculo, agravada por
+  el volumen inusual de grupos de prueba creados en esta sesión (QA de
+  Sprint 2/3). No se ha investigado la causa raíz ni tocado ese servicio;
+  no relacionado con el trabajo de esta sesión, pero conviene revisarlo
+  antes de que un patrón similar ocurra en producción con datos reales.
 
 ## Ampliaciones futuras (no forman parte del roadmap actual)
 

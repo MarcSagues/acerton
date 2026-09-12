@@ -1,4 +1,4 @@
-@if (visible()) {
+@if (page.visible()) {
   <div class="banner">
     <p>
       Usamos cookies propias necesarias para tu sesion y, si lo aceptas, cookies de Google para
@@ -6,8 +6,8 @@
       <a routerLink="/privacy">politica de privacidad</a>.
     </p>
     <div class="actions">
-      <button class="btn ghost" (click)="reject()">Solo necesarias</button>
-      <button class="btn primary" (click)="accept()">Aceptar</button>
+      <button class="btn ghost" (click)="page.reject()">Solo necesarias</button>
+      <button class="btn primary" (click)="page.accept()">Aceptar</button>
     </div>
   </div>
 }

@@ -1,0 +1,77 @@
+.shell {
+  position: relative;
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--p4-bg);
+  padding-top: env(safe-area-inset-top);
+}
+
+.shell-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.shell-bg-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, var(--p4-dot) 1px, transparent 0);
+  background-size: 26px 26px;
+  opacity: 0.5;
+}
+
+/* Campo de circulos/anillos generado en shell.component.ts: posicion,
+   tamano y ritmo de deriva aleatorios en cada apertura de la app (ver
+   buildBackgroundCircles), para que queden descolocados y a veces
+   cruzandose entre si en vez de una composicion simetrica y fija. */
+.shell-bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  animation-name: piqoDrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.shell-bg-circle.ring {
+  border: 1px solid var(--p4-border);
+}
+
+.shell-bg-circle.orb {
+  filter: blur(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-bg-circle {
+    animation: none;
+  }
+}
+
+app-top-bar,
+.shell-content {
+  position: relative;
+  z-index: 1;
+}
+
+.shell-content {
+  flex: 1;
+  /* display:flex (no solo flex:1) para que la pantalla routeada pueda
+     usar flex:1 y rellenar toda la altura disponible con flex, en vez de
+     min-height:100% — un porcentaje de altura no se resuelve de forma
+     fiable a traves de un host de componente enmedio (ver .page en cada
+     pantalla), asi que cuando el contenido es mas corto que la pantalla
+     quedaba un hueco del fondo del shell debajo. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+
+  &.no-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

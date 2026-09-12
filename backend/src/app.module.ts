@@ -8,12 +8,16 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
+import { PublicGroupPreviewModule } from './groups/public-group-preview/public-group-preview.module';
 import { CompetitionsModule } from './competitions/competitions.module';
 import { FootballDataModule } from './football-data/football-data.module';
 import { MatchdaysModule } from './matchdays/matchdays.module';
 import { PredictionsModule } from './predictions/predictions.module';
 import { WildcardsModule } from './wildcards/wildcards.module';
 import { RankingsModule } from './rankings/rankings.module';
+import { SeasonsModule } from './seasons/seasons.module';
+import { EligibilityModule } from './eligibility/eligibility.module';
+import { MemberProfileModule } from './member-profile/member-profile.module';
 import { StreaksModule } from './streaks/streaks.module';
 import { BadgesModule } from './badges/badges.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -34,6 +38,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     PredictionsModule,
     WildcardsModule,
     RankingsModule,
+    PublicGroupPreviewModule,
+    SeasonsModule,
+    EligibilityModule,
+    MemberProfileModule,
     StreaksModule,
     BadgesModule,
     NotificationsModule,

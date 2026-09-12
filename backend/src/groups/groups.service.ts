@@ -9,14 +9,62 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Group, GroupRole, ScoringMode } from '@prisma/client';
+import { Group, GroupRole, Prisma, ScoringMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
+import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
 import { generateInviteCode } from './invite-code.util';
+
+/** Todo lo publicado por debajo debe excluir grupos eliminados (borrado logico). */
+const NOT_DELETED = { deletedAt: null } as const;
+
+export const PUBLIC_GROUP_INCLUDE = {
+  _count: { select: { memberships: true } },
+  groupCompetitions: { where: { isActive: true }, include: { competition: true } },
+} satisfies Prisma.GroupInclude;
+
+export type PublicGroupRecord = Prisma.GroupGetPayload<{ include: typeof PUBLIC_GROUP_INCLUDE }>;
+
+export interface PublicGroupCompetitionSummary {
+  id: string;
+  code: string;
+  name: string;
+  logoUrl: string | null;
+}
+
+export interface PublicGroupSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  memberCount: number;
+  scoringMode: ScoringMode;
+  comebackEnabled: boolean;
+  createdAt: Date;
+  competitions: PublicGroupCompetitionSummary[];
+}
+
+/** Fuera de la clase para poder reutilizarse sin instanciar GroupsService (ver PublicGroupPreviewService). */
+export function toPublicGroupSummary(group: PublicGroupRecord): PublicGroupSummary {
+  return {
+    id: group.id,
+    name: group.name,
+    description: group.description,
+    memberCount: group._count.memberships,
+    scoringMode: group.scoringMode,
+    comebackEnabled: group.comebackEnabled,
+    createdAt: group.createdAt,
+    competitions: group.groupCompetitions.map((gc) => ({
+      id: gc.competition.id,
+      code: gc.competition.code,
+      name: gc.competition.name,
+      logoUrl: gc.competition.logoUrl,
+    })),
+  };
+}
 
 @Injectable()
 export class GroupsService {
@@ -38,7 +86,7 @@ export class GroupsService {
     // resultado exacto se fuerza desactivado pase lo que llegue en el DTO.
     const isExactScore = scoringMode === 'EXACT_SCORE';
 
-    return this.prisma.group.create({
+    const group = await this.prisma.group.create({
       data: {
         name: dto.name,
         description: dto.description,
@@ -47,11 +95,17 @@ export class GroupsService {
         scoringMode,
         comebackEnabled: isExactScore ? false : (dto.comebackEnabled ?? defaults.enabled),
         comebackPointsPerBonus: dto.comebackPointsPerBonus ?? defaults.pointsPerBonus,
+        ownerId: userId,
         memberships: {
           create: { userId, role: GroupRole.ADMIN },
         },
       },
     });
+    // Sin al menos una competicion activa un grupo nunca llega a tener
+    // clasificacion (ver GroupsService.findMineForUser) — se obliga a elegir
+    // desde la propia creacion en vez de dejarlo como paso opcional posterior.
+    await this.setCompetitions(group.id, dto.competitionIds);
+    return this.findByIdForMember(group.id, userId);
   }
 
   /** Solo se usa para decidir la validacion del pronostico (ver PredictionsService.submit). */
@@ -100,7 +154,7 @@ export class GroupsService {
    */
   async findMineForUser(userId: string) {
     const groups = await this.prisma.group.findMany({
-      where: { memberships: { some: { userId } } },
+      where: { ...NOT_DELETED, memberships: { some: { userId } } },
       include: {
         _count: { select: { memberships: true } },
         groupCompetitions: { include: { competition: true } },
@@ -129,17 +183,71 @@ export class GroupsService {
     );
   }
 
-  findPublicGroups() {
-    return this.prisma.group.findMany({
-      where: { isPublic: true },
-      include: { _count: { select: { memberships: true } } },
-      orderBy: { createdAt: 'desc' },
+  /**
+   * Busqueda paginada de grupos publicos para la vista de exploracion
+   * (distinta del listado sin filtros que antes se mostraba dentro de Mis
+   * grupos). No expone inviteCode ni ownerId: el DTO de salida solo incluye
+   * lo necesario para decidir si unirse.
+   */
+  async searchPublicGroups(
+    filters: SearchPublicGroupsDto,
+  ): Promise<{ items: PublicGroupSummary[]; nextCursor: string | null }> {
+    const limit = filters.limit ?? 20;
+    const where: Prisma.GroupWhereInput = {
+      ...NOT_DELETED,
+      isPublic: true,
+      ...(filters.q ? { name: { contains: filters.q, mode: 'insensitive' } } : {}),
+      ...(filters.scoringMode ? { scoringMode: filters.scoringMode } : {}),
+      // Un grupo debe cumplir TODAS las ligas seleccionadas, no solo alguna:
+      // una condicion AND independiente por cada una en vez de un unico "in".
+      ...(filters.competitionIds && filters.competitionIds.length > 0
+        ? {
+            AND: filters.competitionIds.map((competitionId) => ({
+              groupCompetitions: { some: { competitionId, isActive: true } },
+            })),
+          }
+        : {}),
+    };
+
+    const groups = await this.prisma.group.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
+      include: PUBLIC_GROUP_INCLUDE,
+    });
+
+    const hasMore = groups.length > limit;
+    const page = hasMore ? groups.slice(0, limit) : groups;
+    return {
+      items: page.map((group) => toPublicGroupSummary(group)),
+      nextCursor: hasMore ? page[page.length - 1].id : null,
+    };
+  }
+
+  /**
+   * Un unico grupo publico por id, con la misma forma que searchPublicGroups
+   * (sin inviteCode ni ownerId). Usado por PublicGroupPreviewService para
+   * componer la vista previa junto con la clasificacion (ver ese servicio:
+   * vive en su propio modulo para no crear un ciclo Groups<->Rankings).
+   * Null si no existe, es privado o esta eliminado — el llamador decide el
+   * 404, igual que el resto de accesos por id.
+   */
+  findPublicGroupById(groupId: string): Promise<PublicGroupRecord | null> {
+    return this.prisma.group.findFirst({
+      where: { id: groupId, ...NOT_DELETED, isPublic: true },
+      include: PUBLIC_GROUP_INCLUDE,
     });
   }
 
+  /**
+   * Un grupo eliminado (borrado logico) se trata como inexistente para
+   * cualquier acceso normal — su historial sigue en base de datos para
+   * temporadas/trofeos, pero deja de resolverse por esta via.
+   */
   async findByIdForMember(groupId: string, userId: string) {
-    const group = await this.prisma.group.findUnique({
-      where: { id: groupId },
+    const group = await this.prisma.group.findFirst({
+      where: { id: groupId, ...NOT_DELETED },
       include: {
         groupCompetitions: { include: { competition: true } },
         _count: { select: { memberships: true } },
@@ -157,7 +265,7 @@ export class GroupsService {
   }
 
   async joinByInviteCode(inviteCode: string, userId: string): Promise<Group> {
-    const group = await this.prisma.group.findUnique({ where: { inviteCode } });
+    const group = await this.prisma.group.findFirst({ where: { inviteCode, ...NOT_DELETED } });
     if (!group) {
       throw new NotFoundException('Codigo de invitacion invalido');
     }
@@ -166,7 +274,7 @@ export class GroupsService {
   }
 
   async joinPublicGroup(groupId: string, userId: string): Promise<Group> {
-    const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+    const group = await this.prisma.group.findFirst({ where: { id: groupId, ...NOT_DELETED } });
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
     }
@@ -194,6 +302,25 @@ export class GroupsService {
     }
   }
 
+  /**
+   * Silencia/reactiva los avisos de este grupo solo para quien lo pide
+   * (product-rules.md "Notificaciones": opcion de silenciar grupos). No
+   * requiere ser admin: cualquier miembro decide esto sobre su propia
+   * membresia.
+   */
+  async setMuted(groupId: string, userId: string, muted: boolean): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('No perteneces a este grupo');
+    }
+    await this.prisma.groupMembership.update({
+      where: { userId_groupId: { userId, groupId } },
+      data: { mutedNotifications: muted },
+    });
+  }
+
   async assertIsAdmin(groupId: string, userId: string): Promise<void> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
@@ -201,6 +328,114 @@ export class GroupsService {
     if (!membership || membership.role !== GroupRole.ADMIN) {
       throw new ForbiddenException('Solo un administrador del grupo puede hacer esto');
     }
+  }
+
+  /** El creador tiene control total: nombrar/quitar admins, transferir propiedad, eliminar el grupo. */
+  async assertIsOwner(groupId: string, userId: string): Promise<void> {
+    const group = await this.prisma.group.findUnique({ where: { id: groupId }, select: { ownerId: true } });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    if (group.ownerId !== userId) {
+      throw new ForbiddenException('Solo el creador del grupo puede hacer esto');
+    }
+  }
+
+  /** El creador debe transferir la propiedad o eliminar el grupo antes de poder salir. */
+  async leaveGroup(groupId: string, userId: string): Promise<void> {
+    const group = await this.prisma.group.findFirst({ where: { id: groupId, ...NOT_DELETED } });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    if (group.ownerId === userId) {
+      throw new BadRequestException(
+        'El creador debe transferir la propiedad o eliminar el grupo antes de salir',
+      );
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('No perteneces a este grupo');
+    }
+    // Predicciones, rachas e insignias cuelgan de userId+groupId directamente,
+    // no de esta membership, asi que salir no arrastra el historial.
+    await this.prisma.groupMembership.delete({ where: { id: membership.id } });
+  }
+
+  /**
+   * Expulsa a un miembro normal. Ni un admin ni el propio creador pueden
+   * expulsar a otro admin o al creador por esta via: primero hay que quitarle
+   * el rol de admin (updateMemberRole), que es una operacion exclusiva del
+   * creador.
+   */
+  async kickMember(groupId: string, requesterId: string, targetUserId: string): Promise<void> {
+    await this.assertIsAdmin(groupId, requesterId);
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId: targetUserId, groupId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Ese usuario no es miembro del grupo');
+    }
+    if (membership.role === GroupRole.ADMIN) {
+      throw new ForbiddenException('No se puede expulsar a un administrador ni al creador del grupo');
+    }
+    await this.prisma.groupMembership.delete({ where: { id: membership.id } });
+  }
+
+  /** Nombrar o quitar administradores es una potestad exclusiva del creador. */
+  async updateMemberRole(
+    groupId: string,
+    requesterId: string,
+    targetUserId: string,
+    role: GroupRole,
+  ): Promise<void> {
+    await this.assertIsOwner(groupId, requesterId);
+    const group = await this.prisma.group.findUniqueOrThrow({ where: { id: groupId } });
+    if (targetUserId === group.ownerId) {
+      throw new ForbiddenException(
+        'El creador siempre es administrador; transfiere la propiedad para cambiar esto',
+      );
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId: targetUserId, groupId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Ese usuario no es miembro del grupo');
+    }
+    await this.prisma.groupMembership.update({ where: { id: membership.id }, data: { role } });
+  }
+
+  /** El nuevo propietario debe ser ya miembro del grupo; queda como admin. */
+  async transferOwnership(groupId: string, requesterId: string, newOwnerUserId: string): Promise<Group> {
+    await this.assertIsOwner(groupId, requesterId);
+    if (newOwnerUserId === requesterId) {
+      throw new BadRequestException('Ya eres el propietario de este grupo');
+    }
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId: newOwnerUserId, groupId } },
+    });
+    if (!membership) {
+      throw new BadRequestException('El nuevo propietario debe ser ya miembro del grupo');
+    }
+    const [, , group] = await this.prisma.$transaction([
+      this.prisma.groupMembership.update({
+        where: { id: membership.id },
+        data: { role: GroupRole.ADMIN },
+      }),
+      this.prisma.groupMembership.update({
+        where: { userId_groupId: { userId: requesterId, groupId } },
+        data: { role: GroupRole.ADMIN },
+      }),
+      this.prisma.group.update({ where: { id: groupId }, data: { ownerId: newOwnerUserId } }),
+    ]);
+    return group;
+  }
+
+  /** Borrado logico: el grupo desaparece de vistas activas pero conserva su historial. */
+  async deleteGroup(groupId: string, requesterId: string): Promise<void> {
+    await this.assertIsOwner(groupId, requesterId);
+    await this.prisma.group.update({ where: { id: groupId }, data: { deletedAt: new Date() } });
   }
 
   /**

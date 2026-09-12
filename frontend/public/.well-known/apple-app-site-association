@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["L8A488AW3G.app.piqo.es"],
+        "components": [
+          { "/": "/verify-email", "comment": "Confirmar cuenta tras registrarse" },
+          { "/": "/reset-password", "comment": "Restablecer contrasena" },
+          { "/": "/groups/join/*", "comment": "Unirse a un grupo por invitacion" }
+        ]
+      }
+    ]
+  }
+}

@@ -13,8 +13,13 @@ function buildDeps() {
   const predictionsService = { scoreFinishedMatchday: jest.fn() };
   const rankingsService = { computeForFinishedMatchday: jest.fn() };
   const streaksService = { updateAfterMatchdayClose: jest.fn() };
-  const badgesService = { evaluateAfterMatchdayClose: jest.fn() };
-  const notificationsService = { notifyMatchdayClosingSoon: jest.fn(), notifyMatchdayFinished: jest.fn() };
+  const badgesService = { evaluateAfterMatchdayClose: jest.fn().mockResolvedValue([]) };
+  const notificationsService = {
+    notifyMatchdayClosingSoon: jest.fn(),
+    notifyMatchdayFinished: jest.fn(),
+    notifyBadgeEarned: jest.fn(),
+  };
+  const seasonsService = { checkSeasonClosureAfterMatchdayFinished: jest.fn() };
 
   const service = new JobsService(
     prisma as never,
@@ -24,6 +29,7 @@ function buildDeps() {
     streaksService as never,
     badgesService as never,
     notificationsService as never,
+    seasonsService as never,
   );
 
   return {
@@ -35,6 +41,7 @@ function buildDeps() {
     streaksService,
     badgesService,
     notificationsService,
+    seasonsService,
   };
 }
 
@@ -99,5 +106,45 @@ describe('JobsService.syncResultsAndFinalize', () => {
     expect(streaksService.updateAfterMatchdayClose).toHaveBeenCalledWith('md-done');
     expect(badgesService.evaluateAfterMatchdayClose).toHaveBeenCalledWith('group-1', 'md-done');
     expect(notificationsService.notifyMatchdayFinished).toHaveBeenCalledWith('group-1', 'md-done', 'Jornada 1');
+  });
+});
+
+describe('JobsService.sendClosingReminders', () => {
+  it('manda solo el aviso de la franja cuyo margen coincide, con la preferencia de esa franja', async () => {
+    const { service, prisma, notificationsService } = buildDeps();
+    const now = new Date('2026-01-01T00:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+
+    const matchday = {
+      id: 'md-1',
+      name: 'Jornada 1',
+      status: 'OPEN',
+      competitionId: 'comp-1',
+      // Cierra en 23h: dentro de la ventana de 24h, fuera de las de 5h/1h/30min.
+      closesAt: new Date(now.getTime() + 23 * 60 * 60 * 1000),
+      reminder24hSentAt: null,
+      reminder5hSentAt: null,
+      reminder1hSentAt: null,
+      reminder30mSentAt: null,
+    };
+    prisma.matchday.findMany.mockResolvedValue([matchday]);
+    prisma.groupCompetition.findMany.mockResolvedValue([{ groupId: 'group-1' }]);
+
+    await service.sendClosingReminders();
+
+    expect(notificationsService.notifyMatchdayClosingSoon).toHaveBeenCalledTimes(1);
+    expect(notificationsService.notifyMatchdayClosingSoon).toHaveBeenCalledWith(
+      'group-1',
+      'md-1',
+      'Jornada 1',
+      '24 horas',
+      'reminder24h',
+    );
+    expect(prisma.matchday.update).toHaveBeenCalledWith({
+      where: { id: 'md-1' },
+      data: { reminder24hSentAt: now },
+    });
+
+    jest.useRealTimers();
   });
 });

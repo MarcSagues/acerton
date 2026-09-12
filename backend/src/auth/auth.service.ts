@@ -1,17 +1,30 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
+import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthTokens, JwtAccessPayload, JwtRefreshPayload, PublicUser } from './auth.types';
 import { hashToken } from './token-hash.util';
 import { toPublicUser } from './public-user.util';
+import { mascotAssetPath, defaultCatalogAvatar } from '../users/avatar-catalog';
 
 const SALT_ROUNDS = 12;
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+/** Mensaje generico e identico exista o no la cuenta, para no confirmar por temporizacion ni por contenido si un email esta registrado. */
+export const GENERIC_EMAIL_ACTION_MESSAGE = { message: 'Si la cuenta existe, te hemos enviado un correo.' };
 
 export interface GoogleProfileInput {
   googleId: string;
@@ -28,23 +41,36 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly mailService: MailService,
   ) {
     this.googleOAuthClient = new OAuth2Client(this.configService.get('google.clientId', { infer: true }));
   }
 
-  async register(dto: RegisterDto): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+  /**
+   * No inicia sesion: la cuenta se crea sin verificar y queda bloqueada
+   * (ver login) hasta confirmar el correo. Un fallo al enviar el email no
+   * revierte la creacion — el usuario puede pedir que se reenvie.
+   */
+  async register(dto: RegisterDto): Promise<{ email: string }> {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
       throw new ConflictException('Ya existe una cuenta con ese email');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const { mascotId, background } = defaultCatalogAvatar();
     const user = await this.prisma.user.create({
-      data: { email: dto.email, passwordHash, name: dto.name },
+      data: {
+        email: dto.email,
+        passwordHash,
+        name: dto.name,
+        avatarUrl: mascotAssetPath(mascotId),
+        avatarBackground: background,
+      },
     });
 
-    const tokens = await this.issueTokens(user.id, user.email, user.name);
-    return { user: toPublicUser(user), tokens };
+    await this.sendVerificationEmail(user.id, user.email);
+    return { email: user.email };
   }
 
   async login(dto: LoginDto): Promise<{ user: PublicUser; tokens: AuthTokens }> {
@@ -58,8 +84,124 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales invalidas');
     }
 
+    if (!user.emailVerifiedAt) {
+      throw new ForbiddenException('Confirma tu correo antes de iniciar sesion. Revisa tu bandeja de entrada.');
+    }
+
     const tokens = await this.issueTokens(user.id, user.email, user.name);
     return { user: toPublicUser(user), tokens };
+  }
+
+  /** Confirma la cuenta y, de paso, inicia sesion — evita pedir la contrasena otra vez justo despues de confirmar. */
+  async verifyEmail(token: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+    const tokenHash = hashToken(token);
+    const record = await this.prisma.authToken.findFirst({
+      where: { tokenHash, purpose: 'EMAIL_VERIFICATION', usedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (!record) {
+      throw new BadRequestException('El enlace de confirmacion no es valido o ha caducado');
+    }
+
+    const [user] = await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } }),
+      this.prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    ]);
+
+    const tokens = await this.issueTokens(user.id, user.email, user.name);
+    return { user: toPublicUser(user), tokens };
+  }
+
+  /** No revela si la cuenta existe o ya esta verificada: siempre "hecho" desde fuera (ver AuthController). */
+  async resendVerification(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || user.emailVerifiedAt) {
+      return;
+    }
+    await this.sendVerificationEmail(user.id, user.email);
+  }
+
+  /** No revela si la cuenta existe, si es solo-Google o si el envio fallo: siempre "hecho" desde fuera. */
+  async requestPasswordReset(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user?.passwordHash) {
+      return;
+    }
+
+    const token = randomBytes(32).toString('hex');
+    await this.prisma.authToken.create({
+      data: {
+        userId: user.id,
+        purpose: 'PASSWORD_RESET',
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
+      },
+    });
+
+    const resetUrl = `${this.configService.get('corsOrigin', { infer: true })}/reset-password?token=${token}`;
+    try {
+      await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
+    } catch {
+      // No se relanza: la respuesta al frontend es siempre generica (ver AuthController).
+    }
+  }
+
+  /** Revoca todas las sesiones activas: tras un reset, cualquier dispositivo ya conectado tiene que volver a iniciar sesion. */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = hashToken(token);
+    const record = await this.prisma.authToken.findFirst({
+      where: { tokenHash, purpose: 'PASSWORD_RESET', usedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (!record) {
+      throw new BadRequestException('El enlace para restablecer la contrasena no es valido o ha caducado');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+      this.prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+  }
+
+  /** Cambio de contrasena estando ya conectado (Ajustes de Perfil), distinto del flujo de "olvide mi contrasena". */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+    if (!user.passwordHash) {
+      throw new BadRequestException('Esta cuenta usa Google para iniciar sesion y no tiene contrasena que cambiar');
+    }
+
+    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new UnauthorizedException('La contrasena actual no es correcta');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  }
+
+  private async sendVerificationEmail(userId: string, email: string): Promise<void> {
+    const token = randomBytes(32).toString('hex');
+    await this.prisma.authToken.create({
+      data: {
+        userId,
+        purpose: 'EMAIL_VERIFICATION',
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
+      },
+    });
+
+    const verifyUrl = `${this.configService.get('corsOrigin', { infer: true })}/verify-email?token=${token}`;
+    try {
+      await this.mailService.sendVerificationEmail(email, verifyUrl);
+    } catch {
+      // No se bloquea el registro por un fallo de envio: el usuario puede pedir "reenviar".
+    }
   }
 
   async validateOrCreateGoogleUser(
@@ -75,7 +217,12 @@ export class AuthService {
       user = existingByEmail
         ? await this.prisma.user.update({
             where: { id: existingByEmail.id },
-            data: { googleId: profile.googleId },
+            data: {
+              googleId: profile.googleId,
+              // Enlazar con Google prueba que el email es suyo, aunque la
+              // cuenta se creara antes por email/contrasena sin confirmar.
+              emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+            },
           })
         : await this.prisma.user.create({
             data: {
@@ -86,6 +233,8 @@ export class AuthService {
               // El nombre viene del perfil de Google, no lo eligio el usuario:
               // se le pide confirmarlo/cambiarlo en el onboarding.
               usernameConfirmed: false,
+              // Google ya verifico este email: no hace falta el paso de confirmacion.
+              emailVerifiedAt: new Date(),
             },
           });
     }
@@ -98,16 +247,24 @@ export class AuthService {
    * Login con Google desde la app nativa (Capacitor): a diferencia del flujo
    * web (redireccion via passport-google-oauth20), aqui el SDK nativo de
    * Google Sign-In ya entrega un idToken firmado directamente en el
-   * dispositivo. Se verifica su firma y audiencia contra el mismo client id
-   * "web" usado en todas las plataformas (asi lo exige el SDK nativo,
-   * pensado justo para poder verificar en un backend compartido) antes de
-   * confiar en ningun dato del payload.
+   * dispositivo. Se verifica su firma y audiencia contra el client id que el
+   * frontend le pasa a `GoogleSignIn.initialize({ clientId })`
+   * (`environment.googleWebClientId` — hoy igual en todos los `environment.*.ts`,
+   * asi que es el mismo pase lo que pase con la API a la que apunte el build;
+   * OJO: no es el `GIDClientID` de Info.plist, que es un id de app iOS
+   * distinto usado solo para el flujo nativo con Google, no para la
+   * audiencia del idToken) ademas del propio de este backend
+   * (`google.nativeClientId`), antes de confiar en ningun dato del payload —
+   * asi un backend de pre/dev con un client id "web" distinto tambien puede
+   * verificar tokens nativos.
    */
   async loginWithGoogleIdToken(idToken: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const clientId = this.configService.get('google.clientId', { infer: true });
+    const nativeClientId = this.configService.get('google.nativeClientId', { infer: true });
+    const audience = [...new Set([clientId, nativeClientId].filter((id): id is string => !!id))];
     let payload;
     try {
-      const ticket = await this.googleOAuthClient.verifyIdToken({ idToken, audience: clientId });
+      const ticket = await this.googleOAuthClient.verifyIdToken({ idToken, audience });
       payload = ticket.getPayload();
     } catch {
       throw new UnauthorizedException('Token de Google invalido');

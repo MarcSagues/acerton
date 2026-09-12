@@ -1,0 +1,101 @@
+<div class="page">
+  <div class="head-row">
+    <a routerLink="/profile" class="back-btn" aria-label="Volver a Perfil">
+      <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+    </a>
+  </div>
+  <div class="title-row">
+    <p class="eyebrow">Cómo se juega</p>
+    <h1>Normas y premios</h1>
+  </div>
+
+  @if (page.group(); as g) {
+    <div class="section">
+      <div class="card group-context">
+        <span class="group-avatar">{{ g.name.slice(0, 1).toUpperCase() }}</span>
+        <div class="meta">
+          <span class="label">Reglas del grupo activo</span>
+          <span class="name">{{ g.name }}</span>
+        </div>
+        <span class="mode-pill">{{ g.scoringMode === 'EXACT_SCORE' ? 'Exacto' : '1X2' }}</span>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <span class="section-n mono">01</span>
+      <div>
+        <p class="eyebrow-sm">Puntuación</p>
+        <h2>{{ page.modeLabel() }}</h2>
+      </div>
+    </div>
+    <div class="section">
+      <div class="score-grid">
+        @for (rule of page.rules(); track rule.points) {
+          <div class="score-card" [class.featured]="rule.featured">
+            <strong>{{ rule.points }}</strong>
+            <span>{{ rule.label }}</span>
+            <small>{{ rule.description }}</small>
+          </div>
+        }
+      </div>
+      <p class="rule-note">
+        <piqo-svg icon="reloj" size="16"></piqo-svg>
+        Los pronósticos se guardan al elegir y pueden cambiarse hasta que empiece cada partido.
+      </p>
+    </div>
+
+    @if (page.showComeback()) {
+      <div class="section-head">
+        <span class="section-n mono">02</span>
+        <div>
+          <p class="eyebrow-sm">Ayuda para remontar</p>
+          <h2>Comodín de remontada</h2>
+        </div>
+      </div>
+      <div class="section">
+        <div class="card comeback-card" [class.disabled]="!g.comebackEnabled">
+          <div class="comeback-top">
+            <piqo-svg icon="comodin" size="20"></piqo-svg>
+            <strong>{{ g.comebackEnabled ? 'Activado' : 'Desactivado' }}</strong>
+          </div>
+          @if (g.comebackEnabled) {
+            <p class="comeback-body">
+              Por cada <b>{{ g.comebackPointsPerBonus }} puntos</b> de diferencia con el líder recibes un uso
+              adicional esa jornada.
+            </p>
+            <div class="double-options">
+              <span>1X</span><span>X2</span><span>12</span>
+            </div>
+            <p class="comeback-hint">
+              Cada uso permite cubrir dos signos en un partido. Se calcula automáticamente según la clasificación.
+            </p>
+          } @else {
+            <p class="comeback-body">Este grupo juega sin doble oportunidad de remontada.</p>
+          }
+        </div>
+      </div>
+    }
+
+    <div class="section-head">
+      <span class="section-n mono">{{ page.prizeSectionNumber() }}</span>
+      <div>
+        <p class="eyebrow-sm">Al final de la temporada</p>
+        <h2>Premios del grupo</h2>
+      </div>
+    </div>
+    <div class="section">
+      <div class="card prizes-card">
+        <div class="podium" aria-hidden="true"><span>2</span><span>1</span><span>3</span></div>
+        <h3>Vosotros ponéis el premio</h3>
+        <p>Una cena, una copa o simplemente poder presumir: cada grupo acuerda sus premios fuera de Piqo.</p>
+        <div class="callout info">
+          <piqo-svg icon="info" size="20"></piqo-svg>
+          <span>
+            Piqo no registra ni gestiona premios pactados, dinero ni pagos. La clasificación y los trofeos de la
+            app sirven para reconocer el resultado.
+          </span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

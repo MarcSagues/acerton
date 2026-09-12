@@ -1,7 +1,17 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
 .onboarding-page {
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text-primary);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  background: var(--p4-bg);
+  color: var(--p4-text);
   display: flex;
   justify-content: center;
 }
@@ -14,28 +24,15 @@
   flex-direction: column;
 }
 
-.brand {
-  width: 52px;
-  height: 52px;
-  border-radius: 15px;
-  background: var(--accent);
-  color: var(--accent-on);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 18px/1 var(--font-mono);
-  margin-bottom: 22px;
-}
-
 h1 {
-  font: 700 28px/1.15 var(--font-ui);
+  font: 700 28px/1.15 var(--p4-font-display);
   letter-spacing: -0.02em;
-  margin: 0 0 8px;
+  margin: 24px 0 8px;
 }
 
 .tagline {
-  font: 400 13px/1.6 var(--font-ui);
-  color: var(--text-secondary);
+  font: 400 13px/1.6 var(--p4-font-ui);
+  color: var(--p4-muted);
   margin: 0 0 30px;
 }
 
@@ -52,49 +49,40 @@ h1 {
 }
 
 .field-label {
-  font: 500 10px/1 var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  font: 600 11px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
 }
 
 .field-input {
-  height: 52px;
-  border-radius: 13px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  display: flex;
-  align-items: center;
-  padding: 0 15px;
-  font: 400 14px/1 var(--font-ui);
-  color: var(--text-primary);
+  height: 48px;
+  border-radius: 12px;
+  background: var(--p4-surface);
+  border: 1px solid var(--p4-border);
+  padding: 0 14px;
+  font: 400 14px/1 var(--p4-font-ui);
+  color: var(--p4-text);
 
   &:focus-within {
-    border-color: var(--accent);
+    border-color: var(--p4-accent);
   }
 }
 
 .error {
-  font: 500 12px/1.5 var(--font-ui);
-  color: var(--danger);
+  font: 500 12px/1.5 var(--p4-font-ui);
+  color: var(--p4-error);
   margin: 0;
 }
 
 .cta {
-  height: 52px;
-  border-radius: 14px;
-  background: var(--accent);
-  color: var(--accent-on);
-  border: none;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 600 15px/1 var(--font-ui);
-  cursor: pointer;
+  font: 600 15px/1 var(--p4-font-ui);
   margin-top: 8px;
 
   &:disabled {
     opacity: 0.7;
-    cursor: default;
   }
 }

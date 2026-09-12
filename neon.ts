@@ -10,7 +10,7 @@ export default defineConfig({
       return {};
     }
     if (branch.name === "dev") {
-      // Entorno dev/pre de larga duracion (dev.acerton.app): nunca expira.
+      // Entorno dev/pre de larga duracion (app-dev.piqo.es): nunca expira.
       return {};
     }
     if (!branch.exists) {

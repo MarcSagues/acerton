@@ -1,95 +1,207 @@
 # Estado actual
 
-_Última actualización: 2026-09-10 (Sprint 2 completo y verificado en web, más un ajuste de UX posterior en Ajustes del grupo — botón "Guardar cambios" unificado — pendiente de que el usuario lo pruebe en dev.acerton.app antes de mergear a main — sesión todavía abierta, no cerrada con `/quiniela cerrar`)._
+_Última actualización: 2026-09-12. Sprint 3 y Sprint 4 completos en `dev`,
+Sprint 5 con sus tres primeros incrementos (base de temporadas,
+elegibilidad, racha global) en `dev` — **todavía pendiente de que el
+usuario los pruebe antes de mergear a `main`** (sin cambios en este punto
+desde el 2026-09-10). Entretanto, una sesión de rediseño visual
+("Piqo Mobile 4.0" → "Piqo App 4.1", fuera del alcance de esta skill) ha
+seguido subiendo commits directos a `dev`; ver más abajo la reconciliación
+de lo que, de paso, sí tocaba reglas de producto de este roadmap._
 
 ## Sprint activo
 
-**Sprint 1 — Interfaz de juego**: cerrado, mergeado a `main`, confirmado
-funcionando en `dev.acerton.app`.
+**Sprint 1 y 2**: cerrados, mergeados a `main`, confirmados en producción.
 
-**Sprint 2 — Grupos y navegación**: **completo**, las 11 tareas
-implementadas y verificadas en web (navegador real, no solo capturas).
-Ver `roadmap.md` Sprint 2 para el detalle de cada una. Resumen de lo más
-relevante:
-- Selector Público/Privado de dos opciones + detalle ampliable del
-  comodín de remontada, en el formulario de creación.
-- `GroupsService.postLoginRoute()`: con 1 grupo entras en Jornada, con
-  varios en Grupos (antes siempre Jornada).
-- Pulsar un grupo en la lista lleva a su Tabla (antes a Jornada).
-- Preview de cada grupo con tu posición general real (backend nuevo:
-  `myPosition` en `/groups/mine`, mismo criterio de scope que Tabla) —
-  de paso arregló que los chips de competiciones nunca se mostraban.
-- Grupo activo marcado con un check en el selector desplegable.
-- **Enlaces directos respetados**: `authGuard`/`usernameGuard` guardan la
-  URL original (`returnUrl`) y los 4 flujos de login (+ confirmación de
-  nombre de cuentas nuevas de Google) vuelven ahí — antes, un enlace de
-  invitación pulsado sin sesión iniciada se perdía sin más. Verificado
-  con datos reales: un usuario sin cuenta que entra por un link de
-  invitación acaba siendo miembro real del grupo tras registrarse.
-- "Guardar reglas" ahora también exige un cambio real, igual que ya
-  pasaba con competiciones.
-- Ajustes del grupo: el botón "Editar" de Reglas se movió al final de la
-  lista de reglas (antes salía arriba, junto al título). Y se unificó el
-  guardado: un único botón "Guardar cambios" que guarda competiciones y
-  reglas juntas en un solo click (ya no hay un botón por sección), y
-  además ahora flota fijo encima de la barra de navegación, apareciendo
-  solo cuando hay un cambio pendiente (antes vivía al final del todo, tras
-  Miembros). "Grupo privado" y "Comodín de remontada" ya no guardan al
-  toque (petición inmediata) — ahora también quedan pendientes y se
-  guardan junto a todo lo demás con "Guardar cambios".
-- La lista "Mis grupos" ahora marca visualmente la tarjeta del grupo
-  activo (fondo + borde verdes, insignia "Activo") — antes solo se veía
-  en el desplegable superior (`group-switcher`), no al entrar en la
-  pestaña Grupos.
+**Sprint 3 — Roles y membresías**: completo en `dev`, verificado (17
+comprobaciones de permisos por HTTP directo + navegador con dos sesiones
+reales). Ver `roadmap.md` Sprint 3. Issue #8 en Status "Test".
 
-Sin verificar todavía: iOS/Android (solo web).
+**Sprint 4 — Tutorial**: completo en `dev`, verificado en web. Ver
+`roadmap.md` Sprint 4. Issue #9 en Status "Test". Nota: una sesión de
+rediseño visual posterior corrigió un bug real no relacionado con el
+roadmap (`TutorialService.start()` no marcaba `tutorialCompletedAt` hasta
+terminar el recorrido completo, así que si el usuario navegaba fuera a
+mitad del tutorial volvía a aparecer en la siguiente jornada/grupo) — ahora
+se marca "visto" en cuanto arranca. Refuerza la fila ya ✅ "No reaparece en
+cada grupo", no añade una tarea nueva.
 
-**Infraestructura — entorno dev/pre**: sigue como en el cierre anterior
-— `dev.acerton.app` funcionando (login incluido), pendiente subir
-producción a Render Starter y Cloudflare Access. Ver issue #16.
+**Sprint 5 — Temporadas, estadísticas y rachas**: **en curso**, primer
+incremento (base de temporada), segundo (elegibilidad) y tercero (racha
+global) completos en `dev`. Ver `roadmap.md` Sprint 5 para el detalle
+exacto. Issue #10 actualizado con las casillas hechas, **sigue en Status
+"New features"** (el sprint no está completo).
+
+Pendiente del mismo sprint, en incrementos siguientes: orden estable de
+jornadas por cierre de pronósticos (necesita investigación con datos
+reales antes de implementar, ver `backlog.md`), estadísticas agregadas
+por temporada. Ninguno de los dos se ha tocado desde el 2026-09-10.
+
+Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
+
+**Sprint 9 — Notificaciones**: **en curso**, primer incremento completo,
+mergeado a `dev` y empujado a `origin/dev` (con autorización explícita del
+usuario). Ver `roadmap.md` Sprint 9 para el detalle exacto. Issue #14
+actualizado con las casillas hechas (7 de 12), **sigue en Status "New
+features"** (el sprint no está completo).
+
+Pendiente del mismo sprint, en incrementos siguientes: aviso de apertura
+de jornada (necesita un disparador nuevo — hoy no existe ningún evento de
+"jornada abierta" que un cron pueda detectar, ver `roadmap.md`), aviso de
+partido individual terminado con puntos, agrupar el mismo partido jugado
+en varios grupos en un solo aviso, aviso de temporada/trofeos (bloqueado
+por Sprints 5-6), y la comprobación de regularidad del hosting.
+
+**Sprint 7 — Perfil y avatares**: **en curso**, primer incremento de
+avatares (catálogo de mascota + color, asignación automática al
+registrarse) completo en la rama `feature/sprint-7-avatares` (creada a
+partir de `dev`, **no fusionada a `dev` todavía** — pendiente de
+autorización explícita del usuario para subirla). El usuario aportó las
+13 imágenes de la mascota "Piqo" y pidió también color de fondo
+elegible + subir foto propia; la parte de foto propia queda bloqueada
+por una decisión de almacenamiento de imágenes sin tomar (ver
+`backlog.md`). Ver `roadmap.md` Sprint 7 para el detalle exacto. Issue
+#12 actualizado con las casillas hechas (4 de 8), **sigue en Status "New
+features"**.
+
+**Infraestructura — entorno dev/pre**: sin cambios desde el cierre
+anterior (ver `roadmap.md` para el plan completo) — `dev.acerton.app`
+funcionando, pendiente subir producción a Render Starter y Cloudflare
+Access. Issue #16.
+
+## Reconciliación 2026-09-12 (trabajo ajeno a esta skill que sí tocaba el roadmap)
+
+Entre el 2026-09-10 y hoy hubo una sesión larga de rediseño visual del
+frontend (commits `bc62782`…`6379286`, "Piqo Mobile 4.0"/"Piqo App 4.1")
+que **no se hizo bajo `/quiniela continuar`** y es, en su inmensa mayoría,
+una reconstrucción puramente de presentación (tokens de diseño,
+gradientes, animaciones, reestructuración de pantallas) sin relación con
+`product-rules.md`. No se ha registrado sprint por sprint porque no lo es.
+
+Al comprobar el código contra el roadmap (siguiendo el punto 2 del
+protocolo de `/quiniela continuar`: "no asumir que el estado coincide con
+lo anotado"), dos piezas de ese trabajo sí resuelven tareas reales de
+sprints bloqueados en "falta este detalle":
+
+- **Sprint 7 — "Nombre bloqueado 7 días"**: pasó de 🟡 a ✅ web. El input
+  de nombre ya no se oculta cuando no se puede cambiar — se muestra
+  `[disabled]` con el nombre actual dentro, más el hint de fecha debajo.
+  Ver `roadmap.md` Sprint 7 y issue #12 (casilla marcada).
+- **Sprint 8 — "Popup con descripción y % de usuarios que la tienen"**:
+  pasó de ⬜ a ✅ web. `GET /badges/stats` (nuevo, `BadgesService.
+  getEarnStats`) calcula el % sobre el total de usuarios registrados,
+  deduplicado por usuario (no cuenta dos veces a quien ganó la insignia en
+  varios grupos); `BadgeDetailDialogComponent` lo muestra junto a la
+  descripción y el estado conseguida/pendiente. Ver `roadmap.md` Sprint 8
+  e issue #13 (casilla marcada).
+
+Ninguno de los dos sprints queda completo con esto — quedan más tareas
+pendientes en ambos (ver `roadmap.md`) — así que ninguno de los dos issues
+cambia de columna en el Project (siguen en "New features").
+
+**Todo lo demás de esa sesión de rediseño** (sistema visual Piqo 4.1,
+reconstrucción de Avisos/Histórico de jornadas/Normas y premios,
+insignias/trofeos como vitrina visual — los "años" y el "resumen de
+temporada" de un trofeo son datos de muestra explícitos, no implementan el
+Sprint 6 real, que sigue 🔒 sin modelo de datos —, toggles de Ajustes de
+grupo, icono de cabecera en Unirse a un grupo, página de error de
+muestra) es presentación pura sin relación con ninguna tarea de
+`product-rules.md`/`roadmap.md` — no se ha tocado nada más en los
+documentos por esto.
 
 ## Último trabajo verificado
 
-- Sprint 2 completo: 4 commits en `dev` (privacidad+rutas de login,
-  posición en la tarjeta de grupo, grupo activo+enlaces directos, guardar
-  reglas), todo con evidencia real de navegador (no solo build):
-  - Registro→0 grupos→`/welcome`; 2 grupos→reingreso→`/groups`; pulsar
-    una tarjeta→`/rankings`.
-  - Posición real leída de `ranking_snapshots` generados por los crons de
-    fondo durante la propia sesión de pruebas (no solo datos sintéticos).
-  - Usuario sin cuenta previa que entra por `/groups/join/TUWA8P8Q`
-    estando desconectado acaba siendo miembro real del grupo tras
-    registrarse — confirmado directamente en la base de datos.
-- Sprint 1 (ver entradas anteriores).
-- Entorno de desarrollo local: se cayó una vez durante esta sesión (al
-  correr `nest build` mientras `nest start --watch` seguía activo) y se
-  reinició sin problema — sigue corriendo en segundo plano.
+- Sprint 3: migración de schema (`ownerId`, `deletedAt` con backfill), 5
+  endpoints nuevos (leave/kick/role/transfer/delete), 17 comprobaciones de
+  permisos por HTTP directo, flujo completo de UI con dos sesiones de
+  navegador reales.
+- Sprint 4: `TutorialService` + `TutorialCoachMarkComponent`, persistido
+  por cuenta. Reforzado 2026-09-12 (ver reconciliación arriba).
+- Sprint 5 (incremento 1): `GroupSeason` + `Competition.seasonEndPreviewAt`
+  + `SeasonsService` (preview, cierre real, 9 tests) + etiqueta de
+  temporada en Tabla.
+- Sprint 5 (incremento 2): `EligibilityService` (50% inclusive, exclusión
+  por fecha de incorporación, deduplicación por jornada) + endpoint, 8
+  tests unitarios + verificado en vivo.
+- Sprint 5 (incremento 3): racha global (`GlobalStreak`,
+  `updateGlobalStreaks`/`getGlobalForUser`), 4 tests unitarios +
+  verificado en vivo en Perfil (navegador).
+- Sprint 7: nombre bloqueado con input deshabilitado visible (2026-09-12,
+  ver reconciliación).
+- Sprint 8: popup de insignia con % real de usuarios (2026-09-12, ver
+  reconciliación). Ampliado el mismo día (a petición explícita del
+  usuario): progreso numérico + barra para las insignias medibles
+  (`GET /badges/me/progress`, mismo umbral que la concesión real vía
+  `BADGE_TARGETS` para que nunca se desincronicen), en la pantalla de
+  Insignias y en el popup de detalle. 4 tests unitarios + verificado en
+  vivo contra la base de datos real de desarrollo (racha real de 3
+  mostrando 3/5 y 3/10) y en navegador.
+- Sprint 9 (incremento 1, 2026-09-12): `NotificationPreference` +
+  `GroupMembership.mutedNotifications` (migración aplicada y probada
+  contra la base de datos real de desarrollo), pantalla `/notifications/
+  preferences`, recordatorios de cierre con 4 franjas independientes,
+  jornada terminada con posición real, insignia conseguida. 10 tests
+  unitarios nuevos/actualizados (`notifications.service.spec.ts`,
+  `jobs.service.spec.ts`) + verificado en navegador real (cuenta nueva:
+  toggle, recarga, mute de grupo). Sin verificar entrega real de push
+  (requiere Firebase configurado + dispositivo). Mergeado a `dev` y
+  empujado a `origin/dev`.
+- Sprint 7 (incremento 1 de avatares, 2026-09-12): catálogo cerrado de 13
+  mascotas + 8 colores de fondo (`User.avatarBackground`, migración
+  aplicada), `GET /users/me/avatar-catalog` + `PATCH /users/me/avatar`
+  con validación de catálogo cerrado en servidor, asignación aleatoria al
+  registrarse (`AuthService.register`), pantalla `/profile/avatar`,
+  componente compartido `app-avatar` (foto/mascota+color o iniciales)
+  usado en top-bar y Perfil. 1 test unitario nuevo
+  (`users.service.spec.ts`) + verificado en navegador real (cuenta nueva:
+  selección, guardado, persistencia) y por API directa (registro con
+  asignación automática, rechazo de `mascotId`/`background` fuera del
+  catálogo). Subida de foto propia explícitamente bloqueada (ver
+  `backlog.md`). Rama `feature/sprint-7-avatares`, no fusionada a `dev`
+  todavía.
 
 ## Siguiente paso concreto
 
-**Inmediato, del usuario**: probar el Sprint 2 completo (en local o en
-`dev.acerton.app`, una vez el commit llegue ahí) antes de decidir si se
-mergea a `main`. Todo está en `dev`, empujado a `origin/dev`, **no
-mergeado a `main` todavía** — a la espera de que se pruebe primero.
+**Inmediato, del usuario**: tres decisiones pendientes, independientes
+entre sí:
 
-El issue #7 (Sprint 2) ya está en Status "Test" en el GitHub Project
-(corregido 2026-09-10: la regla de la skill pasa a moverlo a Test al
-subir a `dev`, no al mergear a `main` — ver `decisions.md`). Cuando el
-usuario confirme que funciona: mergear a `main` (con autorización
-explícita, como siempre); el paso de Test a Done lo decide el usuario
-explícitamente después.
+1. Sigue pendiente desde el 2026-09-10 — probar Sprint 3, Sprint 4 y los
+   incrementos 1-3 del Sprint 5 (temporadas, elegibilidad, racha global)
+   en local o en `dev.acerton.app`, y confirmar si se mergea a `main`.
+   Todo sigue en `dev`, empujado a `origin/dev`, **no mergeado a `main`
+   todavía**. Los issues #8 y #9 ya están en Status "Test"; el #10
+   (Sprint 5) se queda en "New features" hasta que el sprint entero esté
+   completo.
+2. Confirmar si se sube el incremento 1 de avatares del Sprint 7
+   (`feature/sprint-7-avatares`) a `dev` para poder probarlo ahí (dispara
+   la regla de "Seguimiento en GitHub": marcar el Project cuando se suba,
+   aunque el issue #12 seguirá en "New features" porque el sprint no
+   queda completo con este incremento).
+3. Decidir proveedor de almacenamiento de imágenes (coste, cuenta,
+   credenciales) para poder implementar "subir foto propia" del Sprint 7
+   — sin esto, esa tarea y las que dependen de ella (sustituir foto,
+   validar/limpiar metadatos) no se pueden empezar. Ver `backlog.md`.
 
-Después, Sprint 3 (Roles y membresías, issue #8) está bloqueado por
-decisiones de modelo de datos — ver `backlog.md` — o seguir con
-infraestructura pendiente (issue #16).
+Después: siguientes incrementos del Sprint 5 (orden estable de jornadas,
+estadísticas agregadas), resto de tareas del Sprint 8 (alcance global de
+insignias, catálogo ampliado, favoritas, progreso numérico), siguientes
+incrementos del Sprint 9 (apertura de jornada, partido individual
+terminado, agrupar avisos entre grupos), o el resto del Sprint 7 (perfil
+ajeno, historial entre dos usuarios) — ver `roadmap.md` para el detalle
+de cada uno.
 
 ## Bloqueos y preguntas pendientes
 
-Ver `backlog.md`. Sin cambios.
+Ver `backlog.md`. Nuevo desde el 2026-09-12: proveedor de almacenamiento
+de imágenes para la subida de foto propia del Sprint 7 (sin resolver, no
+bloquea nada más — el resto del sprint sigue avanzando).
 
 ## Cambios sin commit
 
-No — los 4 commits del Sprint 2 están hechos localmente en `dev`.
-**Pendiente de `git push origin dev`** (se hace junto con este commit de
-documentación). El entorno local (Docker + backend + frontend) sigue
-corriendo en segundo plano.
+No en `dev`: todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3
+del Sprint 5, el Sprint 9 (incremento 1), y la sesión de rediseño visual
+completa (incluida la reconciliación de este documento) está commiteado y
+empujado a `origin/dev`. El incremento 1 de avatares del Sprint 7 está
+commiteado y empujado a `origin/feature/sprint-7-avatares`, una rama
+aparte que **todavía no se ha fusionado a `dev`** (pendiente de
+autorización explícita).

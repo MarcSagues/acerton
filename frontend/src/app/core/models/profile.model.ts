@@ -37,4 +37,6 @@ export interface GroupProfileSummary {
 export interface UserProfile {
   badges: UserBadge[];
   groups: GroupProfileSummary[];
+  /** Racha global: cada jornada de cada competicion presente en los grupos del usuario cuenta una vez, sin duplicar. */
+  globalStreak: Streak;
 }

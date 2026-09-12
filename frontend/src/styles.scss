@@ -1,68 +1,276 @@
-/* Tokens de diseño de Quiniela. Oscuro por defecto (marca principal);
-   variante clara vía prefers-color-scheme, mismos tokens semánticos. */
+/* Tokens de diseño de Piqo. Dos temas (claro/oscuro) sobre la misma
+   marca. El tema activo se decide así, en este orden:
+   1) atributo data-theme en <html> puesto por ThemeService según la
+      preferencia guardada (Claro/Oscuro/Automatico, ver Perfil > Ajustes)
+   2) si no hay preferencia guardada ("Automatico"), sigue prefers-color-scheme
+   Los nombres de variable "viejos" (--text-primary, --accent, --surface-alt,
+   etc.) se mantienen como alias hacia los tokens nuevos para no tener que
+   editar cada componente: cambiar esos alias aquí basta para retemizar
+   toda la app. */
 
-:root {
-  --bg: #0e1114;
-  --surface: #171b20;
-  --surface-alt: #1e242b;
-  --surface-alt-2: #232a31;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --text-primary: #f2f4f3;
-  --text-secondary: #8c949b;
-  --text-tertiary: #5e666d;
-  --accent: #12b76a;
-  --accent-on: #0e1114;
-  --accent-bg: #0f1a14;
-  --accent-border: rgba(18, 183, 106, 0.25);
-  --danger: #ff5a3c;
-  --danger-bg: #241a18;
-  --danger-border: rgba(255, 90, 60, 0.3);
+@mixin light-tokens {
+  --bg: #f1f0ea;
+  --surface: #ffffff;
+  --surface-2: rgba(18, 22, 25, 0.06);
+  --border-c: rgba(18, 22, 25, 0.07);
+  --divider-c: rgba(18, 22, 25, 0.1);
+  --ink: #121619;
+  --ink-muted: rgba(18, 22, 25, 0.55);
+  --ink-faint: rgba(18, 22, 25, 0.4);
+  --accent-c: #786039;
+  --accent-soft: rgba(120, 96, 57, 0.12);
+  --inverse-surface: #121619;
+  --on-inverse: #f1f0ea;
+  --on-inverse-accent: #d2be94;
+  --champagne: #d2be94;
+  --on-champagne: #121619;
+  --danger-c: #c25b45;
+  --danger-bg-c: rgba(194, 91, 69, 0.1);
+  --danger-border-c: rgba(194, 91, 69, 0.3);
 
-  --font-ui: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
 
-  --radius-lg: 16px;
-  --radius-md: 14px;
-  --radius-sm: 10px;
-  --radius-pill: 20px;
+@mixin dark-tokens {
+  --bg: #0b0e10;
+  --surface: #15191c;
+  --surface-2: rgba(241, 240, 234, 0.07);
+  --border-c: rgba(241, 240, 234, 0.09);
+  --divider-c: rgba(241, 240, 234, 0.12);
+  --ink: #f1f0ea;
+  --ink-muted: rgba(241, 240, 234, 0.55);
+  --ink-faint: rgba(241, 240, 234, 0.35);
+  --accent-c: #d2be94;
+  --accent-soft: rgba(210, 190, 148, 0.14);
+  --inverse-surface: #1d2226;
+  --on-inverse: #f1f0ea;
+  --on-inverse-accent: #d2be94;
+  --champagne: #d2be94;
+  --on-champagne: #121619;
+  --danger-c: #c25b45;
+  --danger-bg-c: rgba(194, 91, 69, 0.18);
+  --danger-border-c: rgba(194, 91, 69, 0.4);
 
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f6f7f5;
-    --surface: #ffffff;
-    --surface-alt: #eef0ee;
-    --surface-alt-2: #eaf7f0;
-    --border: rgba(0, 0, 0, 0.08);
-    --border-strong: rgba(0, 0, 0, 0.12);
-    --text-primary: #14171a;
-    --text-secondary: #6b7278;
-    --text-tertiary: #9aa1a6;
-    --accent: #0a7a48;
-    --accent-on: #ffffff;
-    --accent-bg: #eaf7f0;
-    --accent-border: rgba(10, 122, 72, 0.25);
-    --danger: #d6472e;
-    --danger-bg: #fdeeea;
-    --danger-border: rgba(214, 71, 46, 0.25);
+:root {
+  @include light-tokens;
+}
 
-    color-scheme: light;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='claro']) {
+    @include dark-tokens;
   }
+}
+
+:root[data-theme='oscuro'] {
+  @include dark-tokens;
+}
+
+:root[data-theme='claro'] {
+  @include light-tokens;
+}
+
+/* ---- Piqo 4.0 ----------------------------------------------------------
+   Tokens del nuevo sistema de diseño (proyecto "Piqo Mobile 4.0"), con el
+   prefijo `--p4-` para no chocar con los alias de arriba mientras conviven
+   ambos sistemas durante la reconstrucción de la app. Los componentes
+   nuevos usan estos; los que aún no se han reconstruido siguen con los de
+   arriba hasta que les toque su lote. Valores calcados de `tema.css`. */
+@mixin piqo4-claro {
+  --p4-bg: #f4f2ec;
+  --p4-surface: #ffffff;
+  --p4-surface-2: #f7f5ef;
+  --p4-glass: rgba(18, 22, 25, 0.04);
+  --p4-text: #121619;
+  --p4-muted: #5f676b;
+  --p4-accent: #786039;
+  --p4-accent-gradient: linear-gradient(135deg, #a98a55, #786039 55%, #4f3e22);
+  --p4-on-accent: #ffffff;
+  --p4-border: rgba(18, 22, 25, 0.1);
+  --p4-soft: #eae2d2;
+  /* Mas alta que en oscuro: un punto oscuro sobre crema necesita bastante
+     mas alpha que uno claro sobre negro para leerse igual de visible. */
+  --p4-dot: rgba(18, 22, 25, 0.32);
+  --p4-nav-bg: rgba(255, 255, 255, 0.78);
+  --p4-sheet-bg: rgba(255, 255, 255, 0.92);
+  /* Manchas/anillos del fondo del shell: en claro deben ser tonos oscuros
+     y saturados (no el champan claro de oscuro, que apenas se veria sobre
+     un fondo crema) para tener contraste real contra --p4-bg. */
+  --p4-bloom-1: 120, 96, 57;
+  --p4-bloom-2: 87, 68, 38;
+  --p4-success: #236b4d;
+  --p4-success-bg: #e0eee7;
+  --p4-error: #a53240;
+  --p4-error-bg: #f8e5e8;
+  --p4-warning: #805900;
+  --p4-warning-bg: #f6ebcf;
+  --p4-info: #285e91;
+  --p4-info-bg: #e3edf8;
+  --p4-disabled: #788184;
+  --p4-disabled-bg: #e2e5e4;
+}
+
+@mixin piqo4-oscuro {
+  --p4-bg: #0c0f11;
+  --p4-surface: #151a1d;
+  --p4-surface-2: #1b2125;
+  --p4-glass: rgba(241, 240, 234, 0.06);
+  --p4-text: #f1f0ea;
+  --p4-muted: #9aa0a3;
+  --p4-accent: #d2be94;
+  --p4-accent-gradient: linear-gradient(135deg, #ebdcb8, #d2be94 50%, #a98a55);
+  --p4-on-accent: #121619;
+  --p4-border: rgba(241, 240, 234, 0.1);
+  --p4-soft: #373126;
+  --p4-dot: rgba(241, 240, 234, 0.14);
+  --p4-nav-bg: rgba(12, 15, 17, 0.72);
+  --p4-sheet-bg: rgba(21, 26, 29, 0.92);
+  --p4-bloom-1: 210, 190, 148;
+  --p4-bloom-2: 120, 96, 57;
+  --p4-success: #91c7ae;
+  --p4-success-bg: #193c30;
+  --p4-error: #f1a4aa;
+  --p4-error-bg: #43272e;
+  --p4-warning: #e3bd75;
+  --p4-warning-bg: #3b321e;
+  --p4-info: #a4c7ec;
+  --p4-info-bg: #203247;
+  --p4-disabled: #718083;
+  --p4-disabled-bg: #273033;
+}
+
+:root {
+  @include piqo4-claro;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='claro']) {
+    @include piqo4-oscuro;
+  }
+}
+
+:root[data-theme='oscuro'] {
+  @include piqo4-oscuro;
+}
+
+:root[data-theme='claro'] {
+  @include piqo4-claro;
+}
+
+:root {
+  --p4-font-ui: 'Inter', system-ui, sans-serif;
+  --p4-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+  --p4-radius-lg: 22px;
+  --p4-radius-md: 16px;
+  --p4-radius-sm: 12px;
+  --p4-radius-pill: 20px;
+  --p4-touch: 48px;
+}
+
+:root {
+  /* Alias hacia los nombres ya usados en los componentes: no renombrar
+     estos en cada archivo, solo aquí. */
+  --surface-alt: var(--surface-2);
+  --surface-alt-2: var(--accent-soft);
+  --surface-dark: var(--inverse-surface);
+  --border: var(--border-c);
+  --border-strong: var(--divider-c);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-muted);
+  --text-tertiary: var(--ink-faint);
+  --text-on-dark: var(--on-inverse);
+  --text-on-dark-secondary: var(--on-inverse);
+  --text-on-dark-tertiary: var(--on-inverse);
+  --accent: var(--champagne);
+  --accent-on: var(--on-champagne);
+  --accent-bg: var(--accent-soft);
+  --accent-border: var(--divider-c);
+  --accent-secondary: var(--accent-c);
+  --danger: var(--danger-c);
+  --danger-bg: var(--danger-bg-c);
+  --danger-border: var(--danger-border-c);
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+  --font-mono: 'Inter', system-ui, sans-serif;
+
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --radius-pill: 20px;
+
+  --shadow-elevated: 0 10px 30px rgba(18, 22, 25, 0.16);
+
+  /* Transparencias fijas para superficies de marca siempre oscuras. */
+  --surface-on-dark-subtle: rgba(241, 240, 234, 0.06);
+  --surface-on-dark: rgba(241, 240, 234, 0.07);
+  --surface-on-dark-hover: rgba(241, 240, 234, 0.08);
+  --divider-on-dark: rgba(241, 240, 234, 0.09);
+  --surface-on-dark-raised: rgba(241, 240, 234, 0.1);
+  --border-on-dark: rgba(241, 240, 234, 0.12);
+  --border-on-dark-medium: rgba(241, 240, 234, 0.14);
+  --border-on-dark-strong: rgba(241, 240, 234, 0.16);
+  --on-dark-disabled: rgba(241, 240, 234, 0.24);
+  --accent-on-dark-border: rgba(210, 190, 148, 0.18);
+
+  /* Scrims y elevaciones compartidos por modales y pantallas de marca. */
+  --scrim: rgba(0, 0, 0, 0.6);
+  --spotlight-scrim: 0 0 0 9999px rgba(0, 0, 0, 0.65);
+  --shadow-banner: 0 -4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-brand: 0 24px 60px rgba(0, 0, 0, 0.3);
+  --shadow-dialog: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --shadow-dialog-strong: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Piqo 4.0: compatibilidad de nombres para <piqo-svg> --------------
+   El arte importado del kit (assets/art.js, insignias/trofeos/logo) trae
+   horneados var(--accent), var(--text), var(--muted), etc. — los nombres
+   exactos de tema.css, sin prefijo. Esos nombres ya estan tomados por el
+   sistema de alias antiguo (--accent fijo en champan, --border, --bg...)
+   con semantica distinta, asi que en vez de redefinirlos globalmente
+   (rompería componentes aun no migrados) se definen SOLO sobre el propio
+   elemento <piqo-svg>: sus hijos en shadow DOM heredan estos valores sin
+   afectar a nada mas del arbol. */
+piqo-svg {
+  --bg: var(--p4-bg);
+  --surface: var(--p4-surface);
+  --text: var(--p4-text);
+  --muted: var(--p4-muted);
+  --accent: var(--p4-accent);
+  --onAccent: var(--p4-on-accent);
+  --border: var(--p4-border);
+  --soft: var(--p4-soft);
+  --success: var(--p4-success);
+  --successBg: var(--p4-success-bg);
+  --error: var(--p4-error);
+  --errorBg: var(--p4-error-bg);
+  --warning: var(--p4-warning);
+  --warningBg: var(--p4-warning-bg);
+  --info: var(--p4-info);
+  --infoBg: var(--p4-info-bg);
+  --disabled: var(--p4-disabled);
+  --disabledBg: var(--p4-disabled-bg);
 }
 
 html,
 body {
   height: 100%;
+  /* Salvaguarda: ningun elemento suelto (icono/avatar ligeramente mas
+     ancho que su marco, circulo decorativo de fondo, etc.) debe poder
+     forzar scroll horizontal de la pagina entera — cualquier scroll
+     horizontal real y con proposito (carrusel de partidos, tabla de
+     clasificacion) vive en su propio contenedor con su propio
+     overflow-x:auto, que esto no afecta. */
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: var(--font-ui);
+  background: var(--p4-bg);
+  color: var(--p4-text);
+  font-family: var(--p4-font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -75,8 +283,36 @@ a {
   text-decoration: none;
 }
 
+/* Reset de <button>: sin este reset, un boton que solo define
+   border-bottom (filas/tarjetas clicables) conserva el border-top/
+   left/right nativo del navegador en el color del tema del SO, que en
+   modo oscuro se ve como una linea blanca no deseada. */
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  /* No "inherit": un boton de solo texto sin su propio display:flex
+     (ej. logout-btn, replay-btn) heredaba el text-align izquierdo del
+     contenedor en vez de centrarse como hacia un <button> nativo. Los
+     botones flex (icono + texto) no se ven afectados: su alineacion la
+     deciden justify-content/align-items, no text-align. Los que de
+     verdad necesitan texto a la izquierda (back-link, filas de lista)
+     ya fijan su propio text-align y ganan por especificidad. */
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .mono {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  font-family: var(--font-display);
 }
 
 /* Sobrescritura ligera de Material: mismo tema, tokens de la marca en vez del indigo-pink por defecto */
@@ -106,7 +342,7 @@ a {
   --mdc-dialog-supporting-text-font: var(--font-ui);
 }
 
-/* Atomos reutilizados por las pantallas (ver Quiniela.dc.html) */
+/* Atomos reutilizados por las pantallas (ver Piqo Prototipo.dc.html) */
 @keyframes pulseDot {
   0%,
   100% {
@@ -131,13 +367,13 @@ a {
   gap: 6px;
   padding: 5px 10px;
   border-radius: var(--radius-pill);
-  font: 500 10px/1 var(--font-mono);
+  font: 600 10px/1 var(--font-mono);
 }
 
 .pill-open {
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--divider-c);
+  color: var(--accent-c);
 }
 
 .pill-urgent {
@@ -164,4 +400,310 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   padding: 14px;
+}
+
+/* ---- Piqo 4.0: utilidades base (calcadas de tema.css) ------------------ */
+.piqo-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--p4-muted);
+  flex: none;
+}
+
+.piqo-icon-button {
+  min-width: var(--p4-touch);
+  min-height: var(--p4-touch);
+}
+
+.piqo-primary,
+.piqo-choice[aria-pressed='true'] {
+  background: var(--p4-accent-gradient);
+  color: var(--p4-on-accent);
+  border-color: var(--p4-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.piqo-secondary,
+.piqo-choice {
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  border: 1px solid var(--p4-border);
+}
+
+.piqo-choice {
+  min-width: var(--p4-touch);
+  min-height: var(--p4-touch);
+  border-radius: 10px;
+}
+
+.piqo-view[aria-pressed='true'] {
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+}
+
+.piqo-success {
+  color: var(--p4-success);
+  background: var(--p4-success-bg);
+}
+
+.piqo-error {
+  color: var(--p4-error);
+  background: var(--p4-error-bg);
+}
+
+.piqo-warning {
+  color: var(--p4-warning);
+  background: var(--p4-warning-bg);
+}
+
+.piqo-info {
+  color: var(--p4-info);
+  background: var(--p4-info-bg);
+}
+
+.piqo-page button:disabled {
+  background: var(--p4-disabled-bg);
+  color: var(--p4-disabled);
+  cursor: default;
+}
+
+.piqo-page button:focus-visible {
+  outline: 2px solid var(--p4-accent);
+  outline-offset: 3px;
+}
+
+.piqo-match-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 156px;
+  gap: 10px;
+  padding: 14px;
+}
+
+.piqo-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(48px, 1fr));
+  gap: 6px;
+}
+
+@media (max-width: 359px) {
+  .piqo-match-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes piqoSheetIn {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes piqoFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes piqoAcento {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.4;
+  }
+  55% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes piqoSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Piqo 4.1: degradados, cristal y movimiento ------------------------
+   Calcado del proyecto de diseño "Piqo App 4.1": fondo con constelacion de
+   puntos y orbes a la deriva, tarjetas en degradado diagonal, cristal
+   esmerilado en superposiciones, y las animaciones de entrada/brillo que
+   lo acompanan. Mismo sistema de marca que Piqo 4.0, solo mas luz. */
+@keyframes piqoUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes piqoShimmer {
+  0% {
+    transform: translateX(-140%) skewX(-14deg);
+  }
+  55%,
+  100% {
+    transform: translateX(320%) skewX(-14deg);
+  }
+}
+
+@keyframes piqoDrift {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(var(--dx, -18px), var(--dy, 14px)) rotate(var(--dr, 0deg));
+  }
+}
+
+@keyframes piqoBreathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes piqoHalo {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes piqoParticle {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--px), var(--py)) scale(1);
+  }
+}
+
+/* Entrada suave de cada pantalla: .page es la clase raiz compartida por
+   (casi) todas las pantallas, asi que esta unica regla anima toda la app
+   sin tocar cada componente. */
+.page {
+  animation: piqoUp 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piqo-choice,
+  .piqo-view {
+    transition: none;
+    animation: none;
+  }
+
+  .page {
+    animation: none;
+  }
+}
+
+/* ---- Piqo 4.0: overlays de @angular/cdk/dialog -------------------------
+   Estas clases se aplican a elementos que CDK adjunta a <body> (fuera del
+   encapsulamiento de cualquier componente), asi que van globales aqui. */
+.piqo-dialog-backdrop {
+  background: rgba(6, 8, 9, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.piqo-dialog-panel {
+  max-width: 340px;
+  width: calc(100vw - 40px);
+  border-radius: var(--p4-radius-lg);
+  background: var(--p4-sheet-bg);
+  backdrop-filter: blur(26px);
+  border: 1px solid var(--p4-border);
+  color: var(--p4-text);
+  padding: 20px;
+  animation: piqoFade 120ms ease;
+}
+
+.piqo-sheet-panel {
+  width: 100%;
+  max-width: 430px;
+  border-radius: 24px 24px 0 0;
+  background: var(--p4-sheet-bg);
+  backdrop-filter: blur(26px);
+  border: 1px solid var(--p4-border);
+  border-bottom: 0;
+  color: var(--p4-text);
+  padding: 20px 0 max(24px, env(safe-area-inset-bottom));
+  animation: piqoSheetIn 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.piqo-sheet-panel.piqo-sheet-leaving {
+  animation: piqoSheetIn 180ms cubic-bezier(0.4, 0, 1, 1) reverse forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piqo-dialog-panel,
+  .piqo-sheet-panel,
+  .piqo-sheet-panel.piqo-sheet-leaving {
+    animation: none;
+  }
+}
+
+/* ---- Piqo 4.0: toasts --------------------------------------------------- */
+.piqo-toast-host {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.piqo-toast {
+  pointer-events: auto;
+  max-width: 390px;
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--p4-radius-sm);
+  background: var(--p4-text);
+  color: var(--p4-bg);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font: 500 13px/1.4 var(--p4-font-ui);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: piqoFade 120ms ease;
+}
+
+.piqo-toast button {
+  flex: none;
+  background: none;
+  border: 0;
+  color: var(--p4-accent);
+  font: 700 12px/1 var(--p4-font-ui);
 }

@@ -4,6 +4,7 @@ import {
   parseRoundOrder,
   shouldCloseMatchday,
   shouldSendReminder,
+  sortCurrentMatchdayEntries,
 } from './matchday.util';
 
 describe('shouldCloseMatchday', () => {
@@ -157,5 +158,34 @@ describe('parseRoundOrder', () => {
 
   it('usa el indice de fallback si la ronda no tiene numero', () => {
     expect(parseRoundOrder('Round of 16', 3)).toBe(3);
+  });
+});
+
+describe('sortCurrentMatchdayEntries', () => {
+  it('pone primero la jornada pendiente que cierra antes, sin importar el orden de entrada', () => {
+    const entries = [
+      { competitionId: 'far', matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-10T20:00:00Z') } },
+      { competitionId: 'near', matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-05T20:00:00Z') } },
+    ];
+    const sorted = sortCurrentMatchdayEntries(entries);
+    expect(sorted.map((e) => e.competitionId)).toEqual(['near', 'far']);
+  });
+
+  it('deja las competiciones ya terminadas del todo al final, sin importar el orden de entrada', () => {
+    const entries = [
+      { competitionId: 'finished', matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-01-01T20:00:00Z') } },
+      { competitionId: 'pending', matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-05T20:00:00Z') } },
+    ];
+    const sorted = sortCurrentMatchdayEntries(entries);
+    expect(sorted.map((e) => e.competitionId)).toEqual(['pending', 'finished']);
+  });
+
+  it('entre dos competiciones ya terminadas, muestra primero la que termino mas recientemente', () => {
+    const entries = [
+      { competitionId: 'old', matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-01-01T20:00:00Z') } },
+      { competitionId: 'recent', matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-03-01T20:00:00Z') } },
+    ];
+    const sorted = sortCurrentMatchdayEntries(entries);
+    expect(sorted.map((e) => e.competitionId)).toEqual(['recent', 'old']);
   });
 });

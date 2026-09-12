@@ -1,0 +1,15 @@
+<div class="shell">
+  <div class="shell-bg" aria-hidden="true">
+    <div class="shell-bg-dots"></div>
+    @for (circle of backgroundCircles; track $index) {
+      <div class="shell-bg-circle" [class.ring]="circle.kind === 'ring'" [class.orb]="circle.kind === 'orb'" [style]="circle.style"></div>
+    }
+  </div>
+  <app-top-bar></app-top-bar>
+  <div class="shell-content" [class.no-bottom-nav]="page.hideBottomNav()">
+    <router-outlet></router-outlet>
+  </div>
+  @if (!page.hideBottomNav()) {
+    <app-bottom-nav></app-bottom-nav>
+  }
+</div>

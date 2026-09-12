@@ -395,4 +395,41 @@ export class MatchdaysService {
     const decorated = await this.attachCanPredict(matchday);
     return decorated.canPredict && new Date(decorated.opensAt).getTime() <= Date.now();
   }
+
+  /**
+   * Todas las jornadas ya guardadas en BBDD de una competicion (no se
+   * sincroniza nada nuevo contra el proveedor: es solo para el selector de
+   * jornada, no para traer partidos), con los puntos que un usuario concreto
+   * se llevo en cada una dentro de un grupo — null si esa jornada todavia no
+   * tiene ningun pronostico suyo (futura, o se unio despues).
+   */
+  async listForCompetitionWithUserPoints(competitionId: string, userId: string, groupId: string) {
+    const matchdays = await this.prisma.matchday.findMany({
+      where: { competitionId },
+      orderBy: { order: 'asc' },
+    });
+    if (matchdays.length === 0) {
+      return [];
+    }
+
+    const matchdayIds = matchdays.map((m) => m.id);
+    const predictions = await this.prisma.prediction.findMany({
+      where: { userId, groupId, match: { matchdayId: { in: matchdayIds } } },
+      select: { pointsEarned: true, match: { select: { matchdayId: true } } },
+    });
+
+    const pointsByMatchday = new Map<string, number>();
+    for (const prediction of predictions) {
+      const matchdayId = prediction.match.matchdayId;
+      pointsByMatchday.set(matchdayId, (pointsByMatchday.get(matchdayId) ?? 0) + (prediction.pointsEarned ?? 0));
+    }
+
+    return matchdays.map((matchday) => ({
+      id: matchday.id,
+      order: matchday.order,
+      status: matchday.status,
+      closesAt: matchday.closesAt,
+      points: pointsByMatchday.has(matchday.id) ? pointsByMatchday.get(matchday.id)! : null,
+    }));
+  }
 }

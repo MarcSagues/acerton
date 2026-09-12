@@ -2,16 +2,44 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Quiniela</title>
+  <title>Piqo</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#0E1114">
+  <meta name="theme-color" content="#121619">
+
+  <!--
+    Sistema de arte de Piqo 4.0 (iconos, insignias, trofeos y firma) como
+    custom element <piqo-svg>, cargado antes de Angular para poder pintar
+    la firma incluso en el loader estatico de mas abajo.
+  -->
+  <script src="piqo/icons.js"></script>
+  <script src="piqo/art.js"></script>
+  <script src="piqo/piqo-svg.js"></script>
+
+  <!--
+    Aplica la preferencia de tema (Claro/Oscuro/Automatico, guardada por
+    ThemeService) antes de que cargue nada mas, para no pintar primero un
+    tema y luego cambiar a otro de golpe. "Automatico" = sin atributo,
+    resuelto por prefers-color-scheme en styles.scss. Valores de atributo
+    en español ("claro"/"oscuro") para coincidir 1:1 con tema.css del kit
+    de diseño, sin capa de traduccion.
+  -->
+  <script>
+    (function () {
+      try {
+        var pref = localStorage.getItem('piqo-theme');
+        if (pref === 'light' || pref === 'dark') {
+          document.documentElement.setAttribute('data-theme', pref === 'light' ? 'claro' : 'oscuro');
+        }
+      } catch (e) {}
+    })();
+  </script>
 
   <!--
     Loader estatico, sin depender de Angular ni de styles.css: pinta al
@@ -22,58 +50,85 @@
     que esto solo se ve mientras no hay nada mas que mostrar.
   -->
   <style>
+    /* --accent/--text inline para que <piqo-svg logo> (usa ambas variables)
+       pinte bien desde el primer frame, antes de que cargue styles.scss.
+       Claro por defecto, igual que --p4-* en styles.scss: automatico sigue
+       prefers-color-scheme, y data-theme (puesto por el script de arriba,
+       antes de este bloque) manda siempre que este explicito. */
+    :root {
+      --accent: #786039;
+      --text: #121619;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme='claro']) {
+        --accent: #d2be94;
+        --text: #f1f0ea;
+      }
+    }
+    :root[data-theme='oscuro'] {
+      --accent: #d2be94;
+      --text: #f1f0ea;
+    }
+    :root[data-theme='claro'] {
+      --accent: #786039;
+      --text: #121619;
+    }
+    /* Pantalla de marca: sigue el mismo tema que el resto de la app (antes
+       era siempre oscura, "grafito + champan" fijo en los dos temas, pero
+       eso desentonaba al arrancar en claro). */
     #boot-loader {
       position: fixed;
       inset: 0;
-      background: #0e1114;
-      color: #f2f4f3;
+      background: #f4f2ec;
+      color: #121619;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 20px;
-      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       z-index: 9999;
-    }
-    #boot-loader .boot-mark {
-      width: 52px;
-      height: 52px;
-      border-radius: 15px;
-      background: #12b76a;
-      color: #0e1114;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font: 700 18px/1 'JetBrains Mono', ui-monospace, monospace;
     }
     #boot-loader .boot-track {
       width: 160px;
       height: 4px;
       border-radius: 2px;
-      background: #1e242b;
+      background: rgba(18, 22, 25, 0.12);
       overflow: hidden;
     }
     #boot-loader .boot-fill {
       height: 100%;
       width: 0%;
       border-radius: 2px;
-      background: #12b76a;
+      background: #786039;
       animation: boot-progress 40s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
     }
     #boot-loader .boot-label {
-      font: 400 11px/1.4 'JetBrains Mono', ui-monospace, monospace;
-      color: #8c949b;
+      font: 600 11px/1.4 'Inter', system-ui, sans-serif;
+      color: rgba(18, 22, 25, 0.55);
       letter-spacing: 0.04em;
     }
     #boot-loader .boot-hint {
-      font: 400 10px/1.5 'Space Grotesk', system-ui, sans-serif;
-      color: #5e666d;
+      font: 400 10px/1.5 'Inter', system-ui, sans-serif;
+      color: rgba(18, 22, 25, 0.35);
       max-width: 220px;
       text-align: center;
       opacity: 0;
       animation: boot-hint-in 0.4s ease forwards;
       animation-delay: 4s;
     }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme='claro']) #boot-loader { background: #121619; color: #f1f0ea; }
+      :root:not([data-theme='claro']) #boot-loader .boot-track { background: rgba(241, 240, 234, 0.12); }
+      :root:not([data-theme='claro']) #boot-loader .boot-fill { background: #d2be94; }
+      :root:not([data-theme='claro']) #boot-loader .boot-label { color: rgba(241, 240, 234, 0.55); }
+      :root:not([data-theme='claro']) #boot-loader .boot-hint { color: rgba(241, 240, 234, 0.35); }
+    }
+    :root[data-theme='oscuro'] #boot-loader { background: #121619; color: #f1f0ea; }
+    :root[data-theme='oscuro'] #boot-loader .boot-track { background: rgba(241, 240, 234, 0.12); }
+    :root[data-theme='oscuro'] #boot-loader .boot-fill { background: #d2be94; }
+    :root[data-theme='oscuro'] #boot-loader .boot-label { color: rgba(241, 240, 234, 0.55); }
+    :root[data-theme='oscuro'] #boot-loader .boot-hint { color: rgba(241, 240, 234, 0.35); }
     @keyframes boot-progress {
       0% { width: 0%; }
       3% { width: 35%; }
@@ -116,7 +171,7 @@
 <body class="mat-typography">
   <app-root>
     <div id="boot-loader">
-      <div class="boot-mark">1X2</div>
+      <piqo-svg logo size="150"></piqo-svg>
       <div class="boot-track"><div class="boot-fill"></div></div>
       <div class="boot-label">CARGANDO</div>
       <div class="boot-hint">El servidor puede tardar unos segundos en despertar</div>

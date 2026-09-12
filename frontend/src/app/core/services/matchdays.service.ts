@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, switchMap, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CurrentMatchdayEntry, Matchday } from '../models/matchday.model';
+import { CurrentMatchdayEntry, Matchday, MatchdaySummary } from '../models/matchday.model';
 
 const LOCKED_STATUSES = ['CLOSED', 'FINISHED'];
 
@@ -33,6 +33,13 @@ export class MatchdaysService {
    * Usado para poder ver las quinielas de otro miembro (nunca se muestra una
    * jornada sin cerrar, ver getGroupPredictionsForMatchday en el backend).
    */
+  /** Jornadas ya guardadas de una competicion, con los puntos del usuario actual en cada una (null si no pronostico). */
+  listForCompetition(groupId: string, competitionId: string) {
+    return this.http.get<MatchdaySummary[]>(
+      `${environment.apiUrl}/groups/${groupId}/competitions/${competitionId}/matchdays`,
+    );
+  }
+
   getLatestLockedMatchday(groupId: string, competitionId: string) {
     return this.getCurrentForGroup(groupId).pipe(
       switchMap((entries) => {

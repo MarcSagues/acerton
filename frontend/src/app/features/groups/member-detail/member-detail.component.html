@@ -1,0 +1,68 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  @if (page.profile(); as p) {
+    <div class="page">
+      <div class="head-row">
+        <a [routerLink]="['/rankings']" class="back">
+          <piqo-svg icon="atras" size="18"></piqo-svg>Clasificación
+        </a>
+      </div>
+
+      <div class="identity">
+        <span class="avatar">{{ page.initials(p.name) }}</span>
+        <div>
+          <p class="name">{{ p.name }}</p>
+          <p class="sub mono">{{ p.role === 'ADMIN' ? 'Administrador' : 'Miembro' }} desde {{ p.joinedAt | date: 'MMM yyyy' }}</p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-tile">
+          <p class="stat-value mono accent">{{ p.streak.currentStreak > 0 ? p.streak.currentStreak : '' }}</p>
+          <p class="stat-label mono">RACHA ACTUAL</p>
+        </div>
+        <div class="stat-tile">
+          <p class="stat-value mono">{{ page.hitRatePercent() !== null ? page.hitRatePercent() + '%' : '-' }}</p>
+          <p class="stat-label mono">ACIERTOS</p>
+        </div>
+        <div class="stat-tile">
+          <p class="stat-value mono">{{ p.badges.length }}</p>
+          <p class="stat-label mono">INSIGNIAS</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <p class="card-title">Últimas jornadas</p>
+          @if (p.recentMatchdays.length === 0) {
+            <p class="empty mono">Todavía no ha jugado ninguna jornada en este grupo.</p>
+          } @else {
+            <div class="matchday-rows">
+              @for (md of p.recentMatchdays; track md.matchdayId) {
+                <button type="button" class="matchday-row" (click)="page.openMatchday(md.matchdayId)">
+                  <span class="md-order mono">J{{ md.order }}</span>
+                  <span class="md-position mono">{{ md.position }}.º</span>
+                  <span class="md-points mono">{{ md.points }} pts</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (p.badges.length > 0) {
+        <div class="section">
+          <div class="card">
+            <p class="card-title">Sus insignias</p>
+            <div class="badges-row">
+              @for (userBadge of p.badges; track userBadge.id) {
+                <piqo-svg icon="medalla" size="24" [attr.title]="userBadge.badge.description"></piqo-svg>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+}

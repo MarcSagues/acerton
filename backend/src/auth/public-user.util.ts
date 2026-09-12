@@ -8,8 +8,12 @@ type UserForPublic = {
   email: string;
   name: string;
   avatarUrl: string | null;
+  avatarBackground: string | null;
   usernameConfirmed: boolean;
   nameChangedAt: Date | null;
+  tutorialCompletedAt: Date | null;
+  emailVerifiedAt: Date | null;
+  passwordHash: string | null;
 };
 
 export function toPublicUser(user: UserForPublic): PublicUser {
@@ -22,10 +26,14 @@ export function toPublicUser(user: UserForPublic): PublicUser {
     email: user.email,
     name: user.name,
     avatarUrl: user.avatarUrl,
+    avatarBackground: user.avatarBackground,
     usernameConfirmed: user.usernameConfirmed,
     nameChangeAvailableAt:
       nameChangeAvailableAt && nameChangeAvailableAt.getTime() > Date.now()
         ? nameChangeAvailableAt.toISOString()
         : null,
+    tutorialCompleted: user.tutorialCompletedAt !== null,
+    emailVerified: user.emailVerifiedAt !== null,
+    hasPassword: user.passwordHash !== null,
   };
 }

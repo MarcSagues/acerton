@@ -1,28 +1,26 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatIconModule } from '@angular/material/icon';
-import { ActiveGroupService } from '../../core/services/active-group.service';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, Input, inject } from '@angular/core';
+import { GroupSwitcherFacade } from './group-switcher.facade';
+import { GroupSheetComponent } from './group-sheet.component';
+import { BottomSheetService } from '../../shared/ui/bottom-sheet/bottom-sheet.service';
 
 @Component({
   selector: 'app-group-switcher',
   standalone: true,
-  imports: [RouterLink, MatMenuModule, MatIconModule],
+  providers: [GroupSwitcherFacade],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './group-switcher.component.html',
   styleUrl: './group-switcher.component.scss',
 })
 export class GroupSwitcherComponent {
-  readonly activeGroupService = inject(ActiveGroupService);
+  readonly page = inject(GroupSwitcherFacade);
+  private readonly sheet = inject(BottomSheetService);
 
-  initials(name: string): string {
-    return name
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() ?? '')
-      .join('');
-  }
+  /** Ya no cambia el aspecto (el nuevo diseño no tiene variante oscura para
+   * esta tarjeta) — se mantiene solo para que las pantallas aun no
+   * reconstruidas que lo pasan sigan compilando. */
+  @Input() onDark = false;
 
-  select(groupId: string): void {
-    this.activeGroupService.setActive(groupId);
+  open(): void {
+    this.sheet.open(GroupSheetComponent);
   }
 }

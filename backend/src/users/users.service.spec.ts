@@ -62,3 +62,28 @@ describe('UsersService.updateName', () => {
     expect(result.name).toBe('Otro');
   });
 });
+
+describe('UsersService.updateAvatar', () => {
+  it('guarda la ruta del mascota elegido y el color de fondo', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.update.mockResolvedValue({
+      id: 'u1',
+      email: 'a@a.com',
+      name: 'Alex',
+      avatarUrl: '/assets/avatars/mascot/guino.png',
+      avatarBackground: '#d2be94',
+      usernameConfirmed: true,
+      nameChangedAt: null,
+    });
+
+    const service = new UsersService(prisma as never);
+    const result = await service.updateAvatar('u1', 'guino' as never, '#d2be94' as never);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { avatarUrl: '/assets/avatars/mascot/guino.png', avatarBackground: '#d2be94' },
+    });
+    expect(result.avatarUrl).toBe('/assets/avatars/mascot/guino.png');
+    expect(result.avatarBackground).toBe('#d2be94');
+  });
+});

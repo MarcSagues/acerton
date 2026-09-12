@@ -1,22 +1,20 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { GroupsService } from '../../../core/services/groups.service';
-import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { Component, OnInit, inject } from '@angular/core';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
+import { GroupJoinFacade } from './group-join.facade';
 
 @Component({
   selector: 'app-group-join',
   standalone: true,
-  imports: [MatProgressSpinnerModule],
+  imports: [SpinnerComponent],
+  providers: [GroupJoinFacade],
   template: `
     <div class="join-page">
-      @if (errorMessage()) {
-        <p>{{ errorMessage() }}</p>
-        <button class="cta" (click)="goToGroups()">Ir a mis grupos</button>
+      @if (page.errorMessage()) {
+        <p>{{ page.errorMessage() }}</p>
+        <button class="cta" (click)="page.goToGroups()">Ir a mis grupos</button>
       } @else {
-        <mat-spinner diameter="32"></mat-spinner>
-        <p>Uniendote al grupo...</p>
+        <app-spinner [size]="32"></app-spinner>
+        <p>Uniéndote al grupo...</p>
       }
     </div>
   `,
@@ -24,9 +22,9 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
     `
       .join-page {
         min-height: 100vh;
-        background: var(--bg);
-        color: var(--text-primary);
-        font-family: var(--font-ui);
+        background: var(--p4-bg);
+        color: var(--p4-text);
+        font-family: var(--p4-font-ui);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -39,42 +37,18 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
         height: 48px;
         padding: 0 20px;
         border-radius: 14px;
-        background: var(--accent);
-        color: var(--accent-on);
+        background: var(--p4-accent);
+        color: var(--p4-on-accent);
         border: none;
-        font: 600 14px/1 var(--font-ui);
-        cursor: pointer;
+        font: 600 14px/1 var(--p4-font-ui);
       }
     `,
   ],
 })
 export class GroupJoinComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly groupsService = inject(GroupsService);
-  private readonly activeGroupService = inject(ActiveGroupService);
-
-  readonly errorMessage = signal<string | null>(null);
+  readonly page = inject(GroupJoinFacade);
 
   ngOnInit(): void {
-    const inviteCode = this.route.snapshot.paramMap.get('inviteCode');
-    if (!inviteCode) {
-      this.errorMessage.set('Link de invitacion invalido');
-      return;
-    }
-
-    this.groupsService.joinByInviteCode(inviteCode).subscribe({
-      next: (group) => {
-        this.activeGroupService.setActive(group.id);
-        this.router.navigate(['/matchday']);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la invitacion');
-      },
-    });
-  }
-
-  goToGroups(): void {
-    this.router.navigate(['/groups']);
+    this.page.init();
   }
 }

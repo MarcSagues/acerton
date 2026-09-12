@@ -100,7 +100,7 @@ todavía en iOS/Android.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Formulario único de creación de grupo | ✅ web | `group-list.component.html`, bottom sheet `sheet-form`: nombre, descripción, modo de puntuación, privacidad, comodín, botón al final — todo en un único paso, sin distinguir cuenta nueva/existente. |
+| Formulario único de creación de grupo | ✅ web | `group-list.component.html`, bottom sheet `sheet-form`: nombre, descripción, modo de puntuación, privacidad, comodín, botón al final — todo en un único paso, sin distinguir cuenta nueva/existente. Ampliado (issue #18, causa raíz de "no veo puntos ni posición"): sin ninguna competición activa un grupo nunca llega a tener clasificación, y activarlas era un paso opcional posterior en Ajustes. Ahora es obligatorio elegir al menos una liga como primer paso del propio formulario de creación — el resto de campos (nombre, modo, privacidad) queda bloqueado hasta que se elige al menos una. Backend: `CreateGroupDto.competitionIds` obligatorio (`@ArrayMinSize(1)`), `GroupsService.create` activa esas competiciones en el momento (reutiliza `setCompetitions`, incluida la sincronización de jornada). Verificado: backend rechaza creación sin competiciones (400) tanto con el campo ausente como con array vacío; navegador confirma que el paso 2 del formulario no es accesible hasta elegir al menos una, y que el grupo creado ya tiene esas competiciones activas en Ajustes. |
 | Selector Público/Privado de dos opciones | ✅ web | Cambiado el checkbox por un selector de dos botones (mismo patrón visual que el de modo de puntuación), con descripción de lo que implica cada opción y nota de que se puede cambiar después. Verificado en navegador: alterna correctamente entre los dos estados. |
 | Privado por defecto | ✅ | Confirmado: `isPublic` en Prisma tiene `@default(false)`, y el form de creación arranca con "Privado" marcado. |
 | Comodín con resumen + detalle ampliable | ✅ web | Añadido un enlace "¿Cómo funciona el comodín?" (solo visible en modo 1X2) que despliega un párrafo explicando la doble oportunidad y el recálculo semanal según la diferencia de puntos con el líder, coherente con `WildcardsService.getComebackStatus`. Verificado en navegador: se expande y contrae correctamente. |
@@ -109,77 +109,73 @@ todavía en iOS/Android.
 | Rueda de ajustes para acceder | ✅ | Decisión: se mantiene el icono de "sliders" actual (`settings-link`) — cumple el mismo propósito que una rueda literal, cambiarlo sería puramente cosmético y no lo pidió el usuario al revisar el sprint completo. |
 | Entrada según nº de grupos (0 → crear/unirse, 1 → Jornada, varios → Grupos) | ✅ web | 0 grupos ya funcionaba (`hasGroupGuard` manda a `/welcome`). Añadido `GroupsService.postLoginRoute()`, usado en los 3 sitios donde se navega tras iniciar sesión (login/registro, Google nativo, callback de Google web): con 1 grupo va a Jornada, con varios a Grupos. Verificado en navegador: registro→0 grupos→`/welcome`; con 2 grupos ya unidos, reingresar lleva a `/groups`. |
 | Pulsar un grupo lleva a su Tabla | ✅ web | `goToGroup()` en `group-list.component.ts` navegaba a `/matchday`, ahora navega a `/rankings`. Verificado en navegador. |
-| Preview del grupo con posición general del usuario | ✅ web | Backend: `GroupsService.findMineForUser` adjunta ahora `myPosition` (posición + puntos de la última clasificación TOTAL), con el mismo criterio de scope que usa Tabla (competición única vs. general si hay varias activas). Frontend: la tarjeta de grupo muestra "Vas N.º · P pts" en vez del texto genérico cuando ya hay clasificación. Verificado con datos reales (no solo capturas): se comprobó que el endpoint recoge la clasificación más reciente generada por los crons de fondo. Efecto colateral bueno: de paso se corrigió que los chips de competiciones de la tarjeta nunca se mostraban (la consulta no incluía esa relación). |
+| Preview del grupo con posición general del usuario | ✅ web | Backend: `GroupsService.findMineForUser` adjunta ahora `myPosition` (posición + puntos de la última clasificación TOTAL), con el mismo criterio de scope que usa Tabla (competición única vs. general si hay varias activas). Frontend: la tarjeta de grupo muestra "Vas N.º · P pts" en vez del texto genérico cuando ya hay clasificación. Verificado con datos reales (no solo capturas): se comprobó que el endpoint recoge la clasificación más reciente generada por los crons de fondo. Efecto colateral bueno: de paso se corrigió que los chips de competiciones de la tarjeta nunca se mostraban (la consulta no incluía esa relación). Rediseño posterior (issue #18): la posición y los puntos ya no viven solo en el pie de la tarjeta — ahora hay una columna a la izquierda con la posición grande ("1º") y los puntos debajo en pequeño ("122pts"), separada del resto por una barra vertical; el resto de la tarjeta (avatar, nombre, chips, pie) sigue igual. Solo se muestra cuando `myPosition` existe (grupo sin competición activa todavía no tiene nada que mostrar ahí, es esperado). Verificado con datos reales del usuario: backend confirma posición reciente para sus grupos con competición activa (recalculada por el cron cada pocos minutos); el único caso sin posición era un grupo sin ninguna competición activada, no un fallo. |
 | Grupo activo diferenciado en el selector | ✅ web | El menú desplegable de `group-switcher` marca ahora el grupo activo en verde con un check, el resto en gris. Verificado en navegador. Además, la propia lista "Mis grupos" (no solo el desplegable) marca la tarjeta del grupo activo con fondo y borde en verde y una insignia "Activo" — antes, al entrar en Grupos, no había forma de saber cuál era tu grupo activo sin abrir el desplegable. Verificado: solo una tarjeta marcada a la vez, y la marca se mueve correctamente al pulsar otro grupo. |
 | Respetar destinos de enlaces directos | ✅ web | `authGuard` y `usernameGuard` ahora guardan la URL original como `returnUrl` (query param, o `sessionStorage` para el login de Google en web, que hace una redirección completa fuera de la app) y se vuelve ahí tras iniciar sesión, en los 4 flujos de login (email/password, registro, Google nativo, Google web) y en la confirmación de nombre de cuentas nuevas de Google. Antes, un enlace de invitación pulsado sin sesión iniciada se perdía sin más. Corregido de paso un bug real que rompía esto: `auth-page` renavegaba a `/login` sin conservar query params nada más cargar. Verificado con datos reales: un usuario sin cuenta que entra por un link de invitación acaba siendo miembro real del grupo tras registrarse. **Límite conocido, no cubierto**: si `hasGroupGuard` interrumpe (0 grupos, en una ruta que si lo exige) no se conserva el destino — caso raro, un link a algo de un grupo concreto no tiene mucho sentido sin pertenecer ya a él. |
 
 Validar también: enlaces directos (invitación, deep link) y estados
 vacíos (sin grupos, grupo sin competiciones activas).
 
-## Sprint 3 — Roles y membresías 🔒
+## Sprint 3 — Roles y membresías ✅ (web)
 
-**Bloqueado por una decisión de modelo de datos**: hoy `GroupRole` solo
-tiene `ADMIN` y `MEMBER` (`schema.prisma`) — no existe el concepto de
-"creador/propietario" como algo distinto de administrador, ni un campo de
-propietario en `Group`. Ver `backlog.md` para la pregunta concreta antes
-de tocar schema.
-
-También bloqueado en parte por el borrado de grupo: hoy `Group` tiene
-`onDelete: Cascade` hacia `GroupMembership`, `GroupCompetition`,
-`Prediction`, `RankingSnapshot`, `Streak` y `UserBadge` — es decir, borrar
-un grupo hoy borra físicamente todo su historial, lo contrario de "eliminar
-retira de vistas activas, conservando historia y trofeos". Hace falta
-introducir borrado lógico (p. ej. `deletedAt` en `Group`) antes de
-implementar esta regla. Ver `backlog.md`.
+Decisiones de schema tomadas el 2026-09-10 (ver `decisions.md`): `Group`
+tiene ahora `ownerId` (campo directo, no un rol nuevo en `GroupRole`) y
+`deletedAt` (borrado lógico).
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Rol de creador/propietario distinto de admin | 🔒 | No existe. Requiere decisión de schema (ver backlog). |
-| Permisos de creador (nombrar/quitar admins, transferir, eliminar) | ⬜ | No hay endpoints: `groups.controller.ts` no tiene `leave`, `kick`, `transfer` ni `delete`. |
-| Permisos de admin (editar ajustes, expulsar miembros normales) | 🟡 | Editar ajustes ya existe y respeta `isAdmin()` en frontend (`toggleCompetition`, `toggleComebackEnabled`, etc.) — verificar que el backend también lo exige, no solo el frontend. Expulsar no existe. |
-| Admins no pueden expulsar/degradar a otros admins o al creador | ⬜ | No implementado (no existe expulsión todavía). |
-| Miembros ven opciones deshabilitadas, no ocultas | 🟡 | Ya es el patrón visual actual en `group-detail` (`class.disabled`) para competiciones/reglas — extender al resto de acciones nuevas. |
-| Permisos aplicados en backend, no solo interfaz | ⬜ | A verificar/reforzar caso por caso al añadir cada endpoint nuevo. |
-| Salir del grupo con confirmación | ⬜ | No existe endpoint ni UI. |
-| Creador debe transferir o eliminar antes de salir | ⬜ | Depende de que exista transferencia y borrado lógico. |
-| Eliminar grupo conservando historia y trofeos | 🔒 | Bloqueado por el cascade delete actual — ver arriba. |
-| Salir/expulsión conserva resultados | 🟡 | Las predicciones/rachas/insignias cuelgan de `userId`+`groupId` directamente, no de `GroupMembership`, así que borrar la membresía (si se implementa así) no debería arrastrar el historial — a confirmar al implementar. |
-| Reincorporación no reinicia fecha de participación | ⬜ | Depende del modelo de temporadas (Sprint 5) para tener algo que "reiniciar o no". |
+| Rol de creador/propietario distinto de admin | ✅ | `Group.ownerId`, distinto de `GroupRole.ADMIN`. El propietario mantiene además `role=ADMIN` en su membership. Migración con backfill: el propietario de cada grupo ya existente es su admin más antiguo. |
+| Permisos de creador (nombrar/quitar admins, transferir, eliminar) | ✅ | Endpoints `PATCH /groups/:id/members/:userId/role`, `POST /groups/:id/transfer-ownership`, `DELETE /groups/:id`, todos exclusivos del propietario (`assertIsOwner`). |
+| Permisos de admin (editar ajustes, expulsar miembros normales) | ✅ | Ya existía para ajustes; añadido `DELETE /groups/:id/members/:userId` (expulsar), exclusivo de admin (`assertIsAdmin`). |
+| Admins no pueden expulsar/degradar a otros admins o al creador | ✅ | `kickMember` rechaza si el objetivo tiene `role=ADMIN` (incluye al propietario, que siempre es admin) — para quitarle el rol a un admin hace falta `updateMemberRole`, exclusivo del propietario. |
+| Miembros ven opciones deshabilitadas, no ocultas | ✅ | "Salir del grupo" siempre visible, deshabilitado + texto de ayuda para el propietario. El menú de acciones por miembro (`more_vert`) solo aparece cuando el usuario actual tiene alguna acción disponible sobre esa fila. |
+| Permisos aplicados en backend, no solo interfaz | ✅ | Verificado con peticiones HTTP directas (17 casos), no solo desde la interfaz — ver criterio de verificación abajo. |
+| Salir del grupo con confirmación | ✅ | `POST /groups/:id/leave` + diálogo de confirmación en frontend. |
+| Creador debe transferir o eliminar antes de salir | ✅ | Backend rechaza (400) si el propietario intenta salir sin transferir/eliminar antes; frontend deshabilita el botón directamente para el propietario. |
+| Eliminar grupo conservando historia y trofeos | ✅ | Borrado lógico (`deletedAt`): el grupo deja de aparecer en `mine`/`public`/`findOne`/unirse por invitación, pero la fila y su historial (predicciones, rachas, insignias, clasificaciones) no se tocan. |
+| Salir/expulsión conserva resultados | ✅ | Confirmado por esquema: `Prediction`, `Streak`, `UserBadge`, `RankingSnapshot` cuelgan de `userId`+`groupId` directamente, no de `GroupMembership.id` — borrar la membresía no arrastra nada de eso. |
+| Reincorporación no reinicia fecha de participación | 🔒 | Sigue dependiendo del modelo de temporadas (Sprint 5) para tener algo que "reiniciar o no". |
 
-Probar permisos mediante peticiones directas al backend, no solo a través
-de la interfaz.
+**Verificado**: 17 comprobaciones de permisos por HTTP directo (owner/admin/miembro/ajeno intentando cada operación, incluyendo los casos que deben fallar) + flujo completo en navegador con dos sesiones reales simultáneas (propietario y miembro): insignias Creador/Admin, contenido exacto del menú de acciones según rol del objetivo, promover, degradar, transferir propiedad, salir, eliminar grupo y comprobación de que desaparece de "Mis grupos". Sin verificar todavía: iOS/Android (solo web).
 
-## Sprint 4 — Tutorial ⬜
+## Sprint 4 — Tutorial ✅ (web)
 
-No existe ningún componente de tutorial/onboarding de producto hoy (solo
-`onboarding/username`, que es para confirmar el nombre de cuentas de
-Google, no un tutorial de la app).
+**Diseño (corregido tras feedback del usuario)**: no es un modal centrado con texto suelto, es un recorrido guiado real — cada paso resalta (spotlight) un elemento de verdad en pantalla (`data-tutorial="..."` en la plantilla) con una burbuja anclada junto a él. `TutorialService` (global) lleva el estado; `TutorialCoachMarkComponent` (montado una vez en `app.component.html`, como el aviso de "sin dinero real") lo dibuja. El paso que señala el botón "Jornada" no tiene botón "Siguiente": avanza solo cuando el usuario pulsa de verdad ese botón (navegación real detectada por `Router`, no una pulsación interceptada), así que ese paso concreto sí depende de una acción real del usuario — pero nunca una que envíe un pronóstico.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Guía breve adaptada al modo (1X2 / resultado exacto) | ⬜ | — |
-| Se inicia en la primera entrada a un grupo | ⬜ | — |
-| Omitir, finalizar y repetir desde Perfil | ⬜ | — |
-| Persistencia por cuenta (no solo dispositivo) | ⬜ | Requiere guardar un flag en el backend (`User` no tiene campo para esto hoy). |
-| No obliga a enviar un pronóstico real | ⬜ | — |
+| Guía breve de botones principales | ✅ | `TutorialCoachMarkComponent` + `TutorialService`, 4 pasos: Tabla, botón Jornada, cómo puntuar, Grupos/Perfil — cada uno señalando el elemento real correspondiente. |
+| Se inicia en la primera entrada a un grupo | ✅ | Se dispara desde `RankingsPageComponent` (Tabla, donde se aterriza al elegir un grupo) la primera vez que `user.tutorialCompleted` es `false`, sea cual sea el grupo. |
+| Empieza en Tabla y explica el acceso a Jornada | ✅ | Paso 1 señala la cabecera de Tabla, paso 2 señala el botón "Jornada" del menú inferior — orden pedido por `product-rules.md`. |
+| Adaptada al modo (1X2 / resultado exacto) | ✅ | Paso 3 (señala el primer partido de Jornada) cambia de contenido según `group.scoringMode` (elegir 1/X/2 + comodín vs. escribir marcador exacto). |
+| Omitir, finalizar y repetir desde Perfil | ✅ | "Saltar tutorial" en cualquier paso; último paso dice "Empezar" en vez de "Siguiente". Perfil tiene "Ver tutorial de nuevo", que navega a Tabla y lo reabre desde el principio sin tocar el flag del backend (repetirlo no lo "des-completa"). |
+| Persistencia por cuenta (no solo dispositivo) | ✅ | `User.tutorialCompletedAt` (migración `add_user_tutorial_completed_at`), `PATCH /users/me/tutorial-completed` (idempotente: no adelanta la fecha si ya estaba completado). |
+| No reaparece en cada grupo | ✅ | La condición de disparo es el flag de cuenta, no algo por grupo — entrar a un segundo grupo no lo vuelve a mostrar. |
+| No obliga a enviar un pronóstico real | ✅ | El único paso disparado por una acción real es pulsar el botón de navegación "Jornada" (no envía nada); el paso sobre elegir 1/X/2 o marcador exacto es solo explicativo, se avanza con "Siguiente" sin tocar ningún partido real. |
+| Sin objetivo en pantalla (grupo sin partidos todavía) | ✅ | Si el elemento señalado no aparece en ~3s (sondeo cada 150ms), el paso se salta solo en vez de dejar el tutorial bloqueado con un hueco resaltando nada. |
 
-Validar: grupos sin partidos disponibles todavía, y pantallas pequeñas.
+Verificado en navegador (cuentas nuevas, no solo capturas, incluyendo la posición real del resaltado sobre cada elemento vía `getBoundingClientRect`): aparece al entrar por primera vez en Tabla tras crear un grupo; el paso "Jornada" no tiene botón propio y avanza solo al pulsar de verdad ese enlace del menú (navegación real a `/matchday` confirmada); el paso de partidos muestra el texto correcto tanto para modo 1X2 como para resultado exacto; recargar la página no lo vuelve a mostrar (persistido en servidor); desde Perfil, "Ver tutorial de nuevo" navega a Tabla y lo reabre desde el paso 1. Sin verificar: el caso de "sin partidos disponibles" (salto automático revisado en código, no provocado en navegador) e iOS/Android.
 
-## Sprint 5 — Temporadas, estadísticas y rachas 🔒
+## Sprint 5 — Temporadas, estadísticas y rachas 🟡 en curso
 
-**Bloqueado por modelo de datos**: no existe ningún concepto de
-"temporada" en el schema — `Competition.currentSeason` es un único `Int`
-por competición, sin historial ni ventana de fechas, y no hay relación
-grupo↔temporada. Toda la sección de "Temporadas y participación" de
-`product-rules.md` requiere diseño de schema nuevo antes de tocar UI. Ver
-`backlog.md`.
+**Decisión de modelo tomada con el usuario 2026-09-10** (ver
+`decisions.md`): la temporada de un grupo termina cuando se cuenta el
+último partido de todas sus competiciones activas (no una fecha fija) —
+se puede dar un preview de cuándo, pero el cierre es definitivo solo tras
+el recuento; si un partido se aplaza, se recalcula. Modelo nuevo
+`GroupSeason` (por grupo, no global). Alcance de este sprint dividido en
+incrementos por tamaño: primero la base de temporada, después
+elegibilidad, racha global y estadísticas.
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Modelo y migración de temporadas | 🔒 | No existe nada que migrar; es diseño desde cero. |
+| Modelo y migración de temporadas | ✅ | `GroupSeason` (por grupo, `endedAt` null mientras está en curso) + `Competition.seasonEndPreviewAt`. `SeasonsService.getOpenSeason` crea la temporada la primera vez que se puntúa una jornada del grupo (no al crear el grupo — un grupo recién creado sin ninguna jornada puntuada todavía no tiene fila en `GroupSeason`, es el comportamiento esperado). `RankingSnapshot.groupSeasonId` vinculado automáticamente en `RankingsService.persist`. |
+| Preview y cierre real de fin de temporada | ✅ | `SeasonsService.refreshCompetitionPreview` pide el calendario completo de la competición al proveedor (una petición, no una por jornada) y guarda la fecha del partido más tardío conocido. `checkSeasonClosureAfterMatchdayFinished` (enganchado en `JobsService.finalizeMatchday`) solo gasta esa petición cuando una jornada terminada alcanza el preview conocido — si tras refrescar la competición sigue sin estar 100% `FINISHED`/`CANCELLED` (aplazamiento, algo nuevo en el calendario), no cierra nada y solo actualiza el preview. Cuando TODAS las competiciones activas de un grupo están así de terminadas, cierra su `GroupSeason`. 9 tests cubriendo: no cierre si otra competición del grupo sigue activa, cierre cuando todas terminan, y el caso de aplazamiento (recalcula sin cerrar) — no se puede provocar un cierre real en esta sesión (ninguna liga termina pronto), así que esta lógica se verifica por tests, no en vivo. |
+| Etiqueta de temporada visible | ✅ web | "Temporada 2026/27" en la cabecera de Tabla (`GET /groups/:id/seasons`, la fila sin `endedAt`). Verificado en navegador. |
+| Temporadas anteriores consultables | ⬜ | Backend ya guarda el historial (`SeasonsController.listSeasons` devuelve todas), falta UI para navegar a una temporada cerrada — ninguna se ha cerrado todavía en datos reales para poder diseñar esa pantalla con un caso real delante. |
 | Añadir competiciones durante la temporada sin retroactividad | 🟡 | El toggle de competiciones activas ya existe (`GroupCompetition.isActive`), pero no hay noción de "desde qué jornada cuenta" ligada a temporada. |
-| Elegibilidad de participación (50 %, jornadas ya cerradas al incorporarse) | ⬜ | No existe ningún cálculo de elegibilidad hoy. |
-| Racha global (todas las competiciones, deduplicando jornadas repetidas entre grupos) | 🔒 | El modelo `Streak` actual es único por `(userId, groupId)` — no hay agregación entre grupos ni deduplicación de jornadas repetidas. Requiere lógica y probablemente modelo nuevos. |
+| Elegibilidad de participación (50 %, jornadas ya cerradas al incorporarse) | ✅ | `EligibilityService.computeMemberEligibility`: jornadas disponibles = cerradas/finalizadas de las competiciones activas del grupo con `closesAt > joinedAt` (excluye las que ya habían cerrado al incorporarse); un pronóstico en cualquier partido de una jornada basta para contarla como participada (deduplicado); elegible con ≥ 50 % inclusive. `GET /groups/:id/eligibility` para toda la lista de miembros — base para "candidatos válidos" (mínimo 3) del reparto de premios en el Sprint 6. 8 tests unitarios (límite exacto del 50 %, exclusión por fecha de incorporación, deduplicación de jornada con varios partidos pronosticados). Verificado también en vivo contra el backend real (grupo recién creado → 0 disponibles, no elegible). |
+| Racha global (todas las competiciones, deduplicando jornadas repetidas entre grupos) | ✅ | Modelo nuevo `GlobalStreak` (uno por usuario, no por grupo). `StreaksService.updateGlobalStreaks` se dispara tras el cierre de cada jornada (mismo evento que ya dispara las rachas por grupo), calcula la unión de grupos afectados y deduplica por `userId` con `distinct` tanto en la pertenencia a grupos como en las predicciones — así una misma jornada compartida por varios grupos del usuario no se cuenta dos veces. Mismo patrón de idempotencia (`lastMatchdayId`) y mismo cálculo de racha (`streak-calculator.ts`) que las rachas por grupo. `getGlobalForUser` expuesto en `GET /users/me/profile`; sustituye en Perfil la aproximación anterior (`Math.max` de las rachas por grupo, que podía sobreestimar si un grupo llevaba más jornadas que otro). 4 tests unitarios (forma exacta de las queries deduplicadas, participar en cualquier grupo cuenta, faltar una jornada la rompe, idempotencia) + verificado en vivo en el navegador. |
 | Orden estable de jornadas por cierre de pronósticos | ⬜ | Pendiente de analizar casos simultáneos antes de implementar, como pide `product-rules.md`. |
 | Estadísticas por temporada, globales y por grupo | ⬜ | No existe agregación de estadísticas más allá de `RankingSnapshot` (puntos/posición por jornada). |
 | Separar estadísticas 1X2 / resultado exacto | 🟡 | El dato existe a nivel de grupo (`scoringMode` es fijo por grupo), pero no hay una vista agregada que las separe explícitamente. |
@@ -205,17 +201,17 @@ ningún modelo de trofeo/premio en el schema actual.
 Probar todos los ejemplos de empates dados en `product-rules.md` y el
 caso del líder no elegible.
 
-## Sprint 7 — Perfil y avatares
+## Sprint 7 — Perfil y avatares 🟡 en curso (incremento 1 de avatares, 2026-09-12)
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Nombre bloqueado 7 días | 🟡 | Ya implementado en backend y frontend: `User.nameChangedAt`, hint "Ya lo has cambiado..." en `profile-page.component.html`. Falta el detalle nuevo: mostrar el nombre actual **dentro de un input bloqueado** (hoy se oculta el input entero y solo se muestra el texto de aviso). |
+| Nombre bloqueado 7 días | ✅ web | `User.nameChangedAt` (backend) + `profile-page.component.html`: el input de nombre ya no se oculta cuando no se puede cambiar — se muestra `[disabled]` con el nombre actual dentro, y el hint "Ya lo has cambiado. Podrás hacerlo de nuevo el dd/MM/yyyy" debajo. Implementado durante el repaso visual Piqo 4.1 (rama `dev`, no como incremento explícito de este sprint), detectado al reconciliar el roadmap. Sin verificar iOS/Android. |
 | Restricción aplicada en servidor | ✅ | Ya existe (`UsersService.updateName`, según referenciado en el código). |
-| Catálogo de avatares predeterminados | ⬜ | Solo existe `User.avatarUrl` como string libre, sin catálogo. |
-| Asignación automática al registrarse | ⬜ | — |
-| Subida de foto, recorte, previsualización circular | ⬜ | — |
-| Sustituir foto o volver a avatar del catálogo | ⬜ | — |
-| Validar formato/tamaño y quitar metadatos privados (EXIF, etc.) | ⬜ | — |
+| Catálogo de avatares predeterminados | ✅ web | El usuario aportó 13 imágenes de la mascota "Piqo" (`C:\Users\34655\Downloads\piqopetimg`), procesadas con `sharp` (recortadas, centradas, 512×512, fondo transparente, ~55-68 KB cada una — el original pesaba hasta 1.6 MB) y servidas desde `frontend/public/assets/avatars/mascot/<id>.png`. Paleta cerrada de 8 colores de fondo a juego con la marca (champán/grafito + 6 tonos apagados complementarios, no los tokens semánticos `--p4-success` etc. para no mezclar significado funcional con personalización). Catálogo cerrado (no URLs/colores libres) validado en servidor (`class-validator` `@IsIn`) — ver nota de "Subida de foto" sobre por qué no se acepta aún cualquier imagen. `GET /users/me/avatar-catalog` expone la lista para que frontend y backend no diverjan. Nueva pantalla `/profile/avatar` (grid de mascotas + swatches de color + vista previa en vivo), enlazada desde el avatar de Perfil. Nuevo componente compartido `app-avatar` (foto/mascota + color, o iniciales si no hay nada elegido) usado en top-bar y Perfil — pendiente extenderlo a Tabla/miembros de grupo, que hoy siguen solo con iniciales. Verificado en navegador real (cuenta nueva): selección, vista previa, guardado, persistencia tras volver a Perfil y recargar. **Ampliado el mismo día**: 7 mascotas más sosteniendo un trofeo (una por cada trofeo del catálogo de Vitrina — Champions, LaLiga, Bundesliga, Ligue 1, Europa League, Serie A, Copa Piqo), solo elegibles si el usuario tiene esa copa. **Límite conocido, documentado en el código** (`avatar-catalog.ts`): "tener esa copa" hoy se comprueba en el frontend contra el mismo catálogo de muestra de la Vitrina (recuento fijo, igual para todos — ver fila de Sprint 6 en este mismo roadmap), no un dato real por usuario; el backend acepta cualquier mascota de trofeo sin comprobar nada porque no existe todavía una fuente de verdad de trofeos con la que hacerlo. En cuanto exista un modelo real (Sprint 6), la comprobación debe moverse también al backend. La asignación aleatoria al registrarse (fila de abajo) nunca elige una mascota de trofeo. Verificado en navegador real: mascotas sin trofeo en gris con candado y sin poder seleccionarse; las que sí están "conseguidas" en la Vitrina de muestra (Champions, Copa Piqo) seleccionables con normalidad. |
+| Asignación automática al registrarse | ✅ | `AuthService.register` asigna una mascota y un color aleatorios del catálogo (`randomCatalogAvatar`) sin ningún paso extra en el formulario. Las cuentas de Google no lo necesitan: ya llegan con la foto real de su perfil de Google. Verificado por API (registro real, `avatarUrl`/`avatarBackground` no nulos en la respuesta). |
+| Subida de foto, recorte, previsualización circular | 🔒 | Bloqueado por una decisión de infraestructura sin tomar: no existe ningún almacenamiento de imágenes hoy (sin S3/Cloudinary/similar configurado, sin `multer` ni librería de subida instalada) y Render (donde vive el backend) no tiene disco persistente utilizable para esto. La pantalla `/profile/avatar` ya deja un hueco visible ("Subir foto — próximamente") para no prometer algo que no hace. Antes de implementarlo hay que decidir proveedor y coste con el usuario, como se hizo con el entorno dev/pre. |
+| Sustituir foto o volver a avatar del catálogo | 🔒 | Depende de la subida de foto de arriba — hoy solo hay "avatar de catálogo", no hay "foto propia" que sustituir. |
+| Validar formato/tamaño y quitar metadatos privados (EXIF, etc.) | 🔒 | Depende de la subida de foto de arriba. |
 | Abrir perfiles desde nombre/avatar en Tabla | 🟡 | Hoy `rankings-page` ya navega a `matchday/:matchdayId/results/:userId` al pulsar una fila (`viewUserPicks`), que muestra los pronósticos de esa persona — pero no es una "página de perfil" con avatar/trofeos/estadísticas, es la vista de resultados de jornada ajena. |
 | Perfil ajeno (avatar, nombre, favoritas, trofeos, estadísticas, rachas) | ⬜ | No existe como pantalla propia todavía. |
 | Historial reciente entre dos usuarios del mismo grupo | 🟡 | El usuario indica que esta lógica ya existe — a confirmar qué es exactamente (posiblemente la vista de resultados de jornada ajena de arriba) y ajustar su presentación, sin reescribirla si ya funciona. |
@@ -233,34 +229,45 @@ de fallos de subida de imagen.
 | Renombrar "Jornada perfecta" → "En lo más alto" | ⬜ | Ver nota de `backlog.md`: la condición actual (`MATCHDAY_TOP_1`) premia empates; el nuevo catálogo la define "en solitario" — decidir cuál se aplica antes de renombrar. |
 | Hasta 3 favoritas, solo entre conseguidas | ⬜ | — |
 | Favoritas visibles como logos bajo el nombre en Perfil | ⬜ | — |
-| Popup con descripción y % de usuarios que la tienen (sobre el total de registrados) | ⬜ | — |
-| Progreso numérico + barra cuando sea medible | ⬜ | — |
+| Popup con descripción y % de usuarios que la tienen (sobre el total de registrados) | ✅ web | Backend: `GET /badges/stats` (`BadgesService.getEarnStats`) — % de usuarios con al menos una fila de `UserBadge` para cada insignia, deduplicado por `userId`+`badgeId` (no cuenta dos veces a quien la ganó en varios grupos), sobre `User.count()` total. Frontend: `BadgeDetailDialogComponent` muestra descripción, estado conseguida/pendiente y "La tienen el N% de los jugadores." Implementado durante el repaso visual Piqo 4.1 (rama `dev`), detectado al reconciliar el roadmap. Sin verificar iOS/Android. |
+| Progreso numérico + barra cuando sea medible | ✅ web | `BADGE_TARGETS` (backend, `badges.service.ts`) fija el umbral de cada insignia medible (STREAK_5→5, STREAK_10→10, HOT_STREAK_5→5) y lo reutiliza tanto para conceder la insignia como para calcular el progreso — no pueden desincronizarse. `GET /badges/me/progress` devuelve, para cada una, la mejor racha/racha de aciertos entre todos los grupos del usuario (basta con llegar al umbral en uno para desbloquearla). `FIRST_MATCHDAY_PLAYED` y `MATCHDAY_TOP_1` se quedan explícitamente sin barra: son logros de un solo evento, no algo que se acumule hacia un número. Barra + "N/M" en la pantalla de Insignias y en el popup de detalle. 4 tests unitarios + verificado en vivo contra la base de datos real de desarrollo (racha real de 3 mostrando 3/5 y 3/10) y en navegador. |
 | Concesión retroactiva cuando los datos lo permitan | ⬜ | A evaluar insignia por insignia qué datos históricos existen. |
 | Conservar desbloqueos existentes durante la migración a global | 🔒 | Depende de resolver primero la deduplicación mencionada arriba. |
 
 Probar que el cálculo de progreso y el de desbloqueo usan exactamente la
 misma regla (para que no se desincronicen).
 
-## Sprint 9 — Notificaciones
+## Sprint 9 — Notificaciones 🟡 en curso (incremento 1, 2026-09-12)
+
+**Incremento 1 (completo, rama `feature/sprint-9-notificaciones`)**: modelo de
+preferencias por cuenta, silenciar grupo, y aplicar ambos a los avisos que
+ya existían (recordatorios de cierre y jornada terminada) más uno nuevo
+(insignia conseguida). Deja fuera, para incrementos siguientes, todo lo que
+requiere un disparador nuevo que no existe hoy en `jobs.service.ts`
+(apertura de jornada, partido individual terminado, agrupar mismo partido
+entre grupos) y lo que depende de sprints no implementados (temporada/
+trofeos, Sprints 5-6).
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Preferencias por cuenta + silenciar grupo | 🔒 | No existe ningún modelo de preferencias de notificación — solo `NotificationToken` (token de dispositivo). Requiere modelo nuevo. |
-| Interfaz desplegable con controles independientes | ⬜ | — |
-| Apertura de jornada (activada por defecto) | ⬜ | No se ha visto este evento en `jobs.service.ts` — hoy solo hay recordatorios de cierre y aviso de resultados. |
-| Recordatorios 24h/5h/1h/30min, selección múltiple, solo 1h por defecto | 🟡 | Hoy existen 5h/1h/30min fijos para todos (`reminder5hSentAt`/`reminder1hSentAt`/`reminder30mSentAt` en `Matchday`), sin preferencia por usuario y sin la franja de 24h. Cambiar esto a "por usuario y configurable" es un cambio de modelo, no solo de UI. |
-| Recordatorios solo si faltan pronósticos | ✅ (probable) | El propio README describe que los recordatorios van "a quien todavía no ha completado su quiniela" — confirmar que se mantiene al añadir preferencias. |
-| Partido terminado con puntos (desactivado por defecto) | ⬜ | No existe este tipo de notificación hoy. |
-| Jornada terminada con resultado y posición (activada) | 🟡 | El README menciona que al finalizar una jornada se dispara "la notificación de resultados publicados" — a confirmar que incluye posición y que se puede desactivar. |
-| Insignia conseguida (activada) | ⬜ | No se ha visto este disparo en `notifications`/`badges`. |
-| Temporada terminada y trofeos (activada) | 🔒 | Depende de que exista el concepto de temporada y trofeo (Sprints 5-6). |
-| Agrupar mismo partido jugado en varios grupos en un solo aviso | ⬜ | — |
-| No duplicar ni reenviar recordatorios antiguos al cambiar preferencias | ⬜ | — |
-| No avisar de grupos silenciados o abandonados | ⬜ | — |
-| Verificar regularidad del hosting del backend para los crons necesarios | ⬜ | Backend en Render (plan gratuito, se duerme) — ver `backlog.md`, puede no ser sensible a los intervalos actuales pero sí a franjas nuevas más finas (p. ej. 24h en punto para muchos usuarios). No introducir infraestructura de pago sin autorización explícita. |
+| Preferencias por cuenta + silenciar grupo, en interfaz desplegable con controles independientes | ✅ web | Modelo `NotificationPreference` (1:1 con `User`, creado de forma perezosa como `GlobalStreak`) + `GroupMembership.mutedNotifications`. Backend: `GET/PATCH /users/me/notification-preferences`, `PATCH /groups/:id/mute`. Frontend: pantalla `/notifications/preferences` (enlazada desde Perfil) con secciones `<details>` plegables ("Jornadas", "Actividad", "Grupos silenciados") y un toggle independiente por preferencia, más la lista de grupos propios con su mute. Distingue explícitamente el permiso del dispositivo (tarjeta separada arriba, mismo componente que ya existía en Perfil) de las preferencias de cuenta. Verificado en navegador real (cuenta nueva): toggle óptimo con reversión si falla la petición, persistencia tras recargar, mute en rojo para diferenciarlo visualmente de los demás toggles. |
+| Apertura de jornada (activada por defecto) | 🟡 | La preferencia existe (con su default `true`) pero **no envía nada todavía**: no hay ningún evento de "jornada abierta" en `jobs.service.ts` — el `status` de `Matchday` nunca pasa por `SCHEDULED` en la práctica (`deriveInitialStatus` la crea ya `OPEN`), así que "abrirse para pronosticar" es hoy una función calculada en cada petición (`canPredict`+`opensAt` en `MatchdaysService`), no un cambio de estado que un cron pueda detectar una vez. Implementarlo bien requiere una comprobación periódica de esa misma regla por competición, con su propio campo "ya avisado" — pendiente de incremento futuro. |
+| Recordatorios 24h/5h/1h/30min, selección múltiple, solo 1h por defecto | ✅ | `Matchday.reminder24hSentAt` añadido (antes solo 5h/1h/30min). `JobsService.REMINDER_TIERS` con 4 franjas, cada una ligada a su propia preferencia (`reminder24h/5h/1h/30m`) — seleccionar varias es independiente por diseño (son 4 booleanos sueltos). Defaults iguales a los del encargo (todas `false` salvo `reminder1h`). 1 test unitario nuevo (`sendClosingReminders`) que confirma que con un cierre a 23h solo dispara la franja de 24h con su preferencia correcta. |
+| Recordatorios solo cuando falten pronósticos | ✅ | Sin cambios en esta parte de la lógica (`pendingUserIds` ya lo hacía) — reconfirmado con los 7 tests existentes/nuevos de `notifications.service.spec.ts`, que siguen pasando tras añadir el filtro de preferencias por encima. |
+| Partido terminado con puntos (desactivado por defecto) | ⬜ | Preferencia creada (`matchFinishedPoints`, default `false`) pero sin disparador: es un aviso por partido individual ya terminado, distinto del de jornada completa que ya existía — no se ha tocado `MatchdaysService`/`JobsService` para detectar "este partido concreto acaba de terminar" a nivel de usuario. Pendiente de incremento futuro. |
+| Jornada terminada con resultado y posición (activada) | ✅ web | `NotificationsService.notifyMatchdayFinished` ahora incluye la posición real (`getPositionForUser`, mismo criterio de alcance general/por competición que `GroupsService.findMineForUser`) además de los puntos, y se filtra por la preferencia `matchdayFinishedResult` + grupo no silenciado. 2 tests nuevos (incluye posición cuando hay snapshot; no avisa si la preferencia está desactivada). |
+| Insignia conseguida (activada) | ✅ | Nuevo `NotificationsService.notifyBadgeEarned`, filtrado solo por la preferencia de cuenta `badgeEarned` (no por grupo silenciado — una insignia es de la cuenta, no del grupo, ver comentario en el código). `BadgesService.award` ahora distingue "ya la tenía" de "recién concedida" (antes un `upsert` no lo permitía saber) y `evaluateAfterMatchdayClose` devuelve las insignias nuevas de esa pasada para que `JobsService` avise solo de logros genuinamente nuevos. 2 tests nuevos. |
+| Temporada terminada y trofeos (activada) | 🔒 | Preferencia creada con su default (`true`) pero sin efecto: sigue dependiendo de que exista temporada cerrada de verdad (Sprint 5, sin cerrar ninguna real todavía) y trofeos (Sprint 6, sin modelo). |
+| Agrupar mismo partido jugado en varios grupos en un solo aviso | ⬜ | Sin tocar — `notifyMatchdayClosingSoon`/`notifyMatchdayFinished` se siguen llamando una vez por cada `GroupCompetition` que usa la competición, así que un usuario en dos grupos con la misma liga sigue recibiendo dos avisos separados para el mismo partido/jornada. |
+| No duplicar ni reenviar recordatorios antiguos al cambiar preferencias | ✅ | Verificado por diseño: los campos `reminderXSentAt` siguen siendo por jornada+franja (no por usuario), así que cambiar una preferencia nunca reabre un envío ya hecho — solo decide si un envío nuevo, futuro, te incluye o no. |
+| No avisar de grupos silenciados o abandonados | ✅ | `filterByPreference` descarta a quien tiene `GroupMembership.mutedNotifications` para ese grupo, en recordatorios de cierre y en jornada terminada. Abandonados ya se excluían solos (las consultas parten de `GroupMembership`, que no existe tras salir del grupo). 1 test nuevo (no avisa a quien silenció el grupo). |
+| Verificar regularidad del hosting del backend para los crons necesarios | ⬜ | Sin tocar — sigue igual que el 2026-09-10 (ver `backlog.md`). |
 
 Validar permisos de notificación y entrega real en las tres plataformas
-cuando haya dispositivos y credenciales disponibles.
+cuando haya dispositivos y credenciales disponibles. Migración aplicada y
+probada contra la base de datos real de desarrollo (no solo tests): fila de
+preferencias creada de forma perezosa al primer `PATCH`, mute de grupo
+verificado por API y por navegador (ver `history.md`).
 
 ## Sprint 10 — Validación integrada ⬜
 

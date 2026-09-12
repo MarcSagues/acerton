@@ -1,0 +1,118 @@
+.sheet-inner {
+  padding: 0 20px;
+}
+
+.sheet-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--p4-border);
+  margin: 0 auto 18px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheet-header h2 {
+  flex: 1;
+  margin: 0;
+  font: 600 18px/1 var(--p4-font-display);
+}
+
+.close-btn {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: var(--p4-muted);
+}
+
+.sheet-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  height: 74px;
+  border-radius: 14px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* El panel del sheet ya usa --p4-sheet-bg (el mismo tono que --p4-surface,
+     solo con alpha), asi que una fila en --p4-surface a secas quedaba
+     invisible encima. El degradado con --p4-surface-2 + borde real la
+     distingue del fondo del panel. */
+  background: linear-gradient(165deg, var(--p4-surface-2), var(--p4-surface));
+  border: 1px solid var(--p4-border);
+  color: var(--p4-text);
+  text-align: left;
+
+  &.active {
+    background: var(--p4-soft);
+    border-color: var(--p4-accent);
+    color: var(--p4-accent);
+  }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+  font: 600 15px/1 var(--p4-font-ui);
+}
+
+.meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.name {
+  font: 600 14px/18px var(--p4-font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  font: 400 11px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.row.active .sub {
+  color: var(--p4-accent);
+}
+
+.row piqo-svg {
+  flex: none;
+  color: var(--p4-accent);
+}
+
+.all-groups-btn {
+  margin-top: 12px;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  border: 1px solid var(--p4-border);
+  font: 600 14px/1 var(--p4-font-ui);
+}

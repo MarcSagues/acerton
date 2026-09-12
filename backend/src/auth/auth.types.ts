@@ -19,7 +19,14 @@ export interface PublicUser {
   email: string;
   name: string;
   avatarUrl: string | null;
+  avatarBackground: string | null;
   usernameConfirmed: boolean;
   /** Fecha (ISO) a partir de la cual se puede volver a cambiar el nombre, o null si ya se puede ahora. */
   nameChangeAvailableAt: string | null;
+  /** true tras terminar u omitir el tutorial por primera vez (por cuenta, no por dispositivo ni por grupo). */
+  tutorialCompleted: boolean;
+  /** false hasta confirmar el email (cuentas de Google nacen ya verificadas). */
+  emailVerified: boolean;
+  /** false en cuentas solo-Google: no tienen contrasena que cambiar (ver AuthController "me/password"). */
+  hasPassword: boolean;
 }

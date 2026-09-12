@@ -1,0 +1,164 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  color: var(--p4-text);
+  padding-bottom: 28px;
+}
+
+.loading {
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.head-row {
+  padding: 12px 20px 0;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 13px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.identity {
+  padding: 18px 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 18px/1 var(--p4-font-ui);
+}
+
+.name {
+  margin: 0;
+  font: 700 20px/1 var(--p4-font-display);
+}
+
+.sub {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--p4-muted);
+}
+
+.stats {
+  padding: 20px 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.stat-tile {
+  flex: 1;
+  border-radius: 14px;
+  background: var(--p4-surface);
+  padding: 12px;
+  text-align: center;
+}
+
+.stat-value {
+  margin: 0;
+  font: 700 20px/1 var(--p4-font-display);
+
+  &.accent {
+    color: var(--p4-accent);
+  }
+}
+
+.stat-label {
+  margin: 8px 0 0;
+  font-size: 9px;
+  color: var(--p4-muted);
+}
+
+.section {
+  padding: 16px 20px 0;
+}
+
+.card {
+  border-radius: 16px;
+  background: var(--p4-surface);
+  padding: 16px;
+}
+
+.card-title {
+  margin: 0 0 10px;
+  font: 600 14px/1 var(--p4-font-ui);
+}
+
+.empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--p4-muted);
+}
+
+.matchday-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.matchday-row {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--p4-border);
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  color: var(--p4-text);
+  text-align: left;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.md-order {
+  width: 32px;
+  font-size: 12px;
+  color: var(--p4-muted);
+}
+
+.md-position {
+  flex: 1;
+  font-size: 13px;
+}
+
+.md-points {
+  font: 600 13px/1 var(--p4-font-ui);
+}
+
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  piqo-svg {
+    color: var(--p4-accent);
+  }
+}

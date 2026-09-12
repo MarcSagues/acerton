@@ -1,0 +1,45 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  @if (page.group(); as g) {
+    <div class="page">
+      <header class="head-row">
+        <a [routerLink]="['/groups', page.groupId, 'settings']" class="back">
+          <piqo-svg icon="atras" size="18"></piqo-svg>{{ g.name }}
+        </a>
+      </header>
+
+      <div class="content">
+        <piqo-svg logo size="120"></piqo-svg>
+        <h1>Falta gente<br />para el pique</h1>
+        <p class="tagline">Comparte el código. Entran directos a {{ g.name }}.</p>
+
+        <div class="code-card">
+          <p class="code-label mono">CÓDIGO DEL GRUPO</p>
+          <p class="code mono">{{ g.inviteCode }}</p>
+          <div class="code-actions">
+            <button type="button" class="code-btn primary" [disabled]="page.justCopiedCode()" (click)="page.copyCode()">
+              <piqo-svg [attr.icon]="page.justCopiedCode() ? 'check' : 'copiar'" size="18"></piqo-svg>
+              {{ page.justCopiedCode() ? 'Copiado' : 'Copiar código' }}
+            </button>
+            <button type="button" class="code-btn ghost" [disabled]="page.justCopiedLink()" (click)="page.copyLink()">
+              <piqo-svg [attr.icon]="page.justCopiedLink() ? 'check' : 'compartir'" size="18"></piqo-svg>
+              {{ page.justCopiedLink() ? 'Copiado' : 'Compartir enlace' }}
+            </button>
+          </div>
+        </div>
+
+        <p class="link-row mono">{{ page.inviteLink() }}</p>
+
+        <div class="members-block">
+          <p class="members-title">Ya dentro · {{ page.members().length }}</p>
+          <div class="members-row">
+            @for (member of page.members(); track member.id) {
+              <span class="member-avatar">{{ page.initials(member.user.name) }}</span>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+}

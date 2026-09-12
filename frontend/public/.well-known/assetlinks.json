@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.piqo.es",
+      "sha256_cert_fingerprints": ["PENDIENTE_HUELLA_SHA256_DEL_CERTIFICADO_DE_FIRMA"]
+    }
+  }
+]

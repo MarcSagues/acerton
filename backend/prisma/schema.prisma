@@ -77,34 +77,79 @@ enum ScoringMode {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  passwordHash      String? // null cuando el usuario solo usa Google OAuth
-  googleId          String?   @unique
-  name              String
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  passwordHash        String? // null cuando el usuario solo usa Google OAuth
+  googleId            String?   @unique
+  name                String
   /// false solo para cuentas de Google recien creadas, cuyo nombre viene
   /// del perfil de Google sin que el usuario lo haya elegido — se les pide
   /// confirmarlo/cambiarlo en el onboarding antes de entrar a la app. Las
   /// cuentas registradas con email ya piden el nombre en el propio
   /// formulario, asi que nacen con esto en true.
-  usernameConfirmed Boolean   @default(true)
+  usernameConfirmed   Boolean   @default(true)
   /// Ultima vez que se cambio `name` tras el onboarding — limita la
   /// frecuencia de cambio (ver UsersService.updateName) para que no se use
   /// como forma de troll en las clasificaciones del grupo.
-  nameChangedAt     DateTime?
-  avatarUrl         String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  nameChangedAt       DateTime?
+  avatarUrl           String?
+  /// Color de fondo detras del avatar (catalogo de mascota con fondo
+  /// transparente, o cualquier avatar futuro). Null = sin color propio
+  /// (fondo neutro por defecto en el render). Restringido a la paleta de
+  /// AVATAR_BACKGROUNDS (ver users.constants.ts) — validado en el DTO.
+  avatarBackground    String?
+  /// Cuando el usuario termino u omitio el tutorial por primera vez — no se
+  /// reinicia al repetirlo manualmente desde Perfil (ver TutorialService),
+  /// solo marca que ya no debe aparecer solo al entrar a un grupo.
+  tutorialCompletedAt DateTime?
+  /// Null = no ha confirmado el correo todavia: no puede iniciar sesion
+  /// (ver AuthService.login). Las cuentas de Google se marcan verificadas
+  /// en el momento de crearse (Google ya verifico ese email). Backfill de
+  /// la migracion que anadio esta columna: todas las cuentas ya existentes
+  /// se marcaron verificadas con su propio createdAt, para no dejar a nadie
+  /// fuera retroactivamente.
+  emailVerifiedAt    DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   memberships        GroupMembership[]
+  ownedGroups        Group[]
   predictions        Prediction[]
   userBadges         UserBadge[]
   streaks            Streak[]
+  globalStreak       GlobalStreak?
   rankingSnapshots   RankingSnapshot[]
-  refreshTokens      RefreshToken[]
-  notificationTokens NotificationToken[]
+  refreshTokens          RefreshToken[]
+  notificationTokens     NotificationToken[]
+  notificationPreference NotificationPreference?
+  authTokens             AuthToken[]
 
   @@map("users")
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+/// Tokens de un solo uso para confirmar email y para restablecer contrasena
+/// (mismo esquema que RefreshToken: solo se guarda el hash, nunca el valor
+/// enviado por correo). `usedAt` evita reutilizar un enlace ya consumido;
+/// `expiresAt` limita su validez (ver MailService para el texto de cada
+/// correo).
+model AuthToken {
+  id        String            @id @default(cuid())
+  userId    String
+  purpose   AuthTokenPurpose
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_tokens")
 }
 
 /// Refresh tokens en tabla propia (en vez de un unico hash en User) para
@@ -135,6 +180,40 @@ model NotificationToken {
   @@map("notification_tokens")
 }
 
+/// Preferencias de aviso por cuenta (product-rules.md "Notificaciones"),
+/// distintas del permiso de notificaciones del dispositivo (NotificationToken
+/// registra si hay algun dispositivo suscrito; esto decide QUE se le manda).
+/// Fila creada de forma perezosa con los valores por defecto acordados, igual
+/// que GlobalStreak — no existe hasta que el usuario visita sus ajustes de
+/// avisos o hasta que hace falta comprobarla para un envio.
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  /// Aviso de que una jornada nueva ya se puede pronosticar.
+  matchdayOpening Boolean @default(true)
+  /// Recordatorios de cierre por franja, cada uno independiente (seleccion multiple).
+  reminder24h Boolean @default(false)
+  reminder5h  Boolean @default(false)
+  reminder1h  Boolean @default(true)
+  reminder30m Boolean @default(false)
+  /// Aviso por partido propio ya terminado con los puntos ya calculados.
+  matchFinishedPoints Boolean @default(false)
+  /// Aviso de jornada terminada con resultado y posicion en la clasificacion.
+  matchdayFinishedResult Boolean @default(true)
+  /// Insignia conseguida.
+  badgeEarned Boolean @default(true)
+  /// Fin de temporada de un grupo y trofeos otorgados (sin efecto todavia: depende del Sprint 6).
+  seasonFinishedTrophies Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
 // ---------------------------------------------------------------------------
 // Grupos
 // ---------------------------------------------------------------------------
@@ -152,17 +231,50 @@ model Group {
   comebackPointsPerBonus Int         @default(6)
   /// Modo de puntuacion del grupo, fijado al crearlo. Sin migracion entre modos.
   scoringMode            ScoringMode @default(ONE_X_TWO)
+  /// Creador del grupo: control total (nombrar/quitar admins, transferir
+  /// propiedad, eliminar el grupo), distinto de GroupRole.ADMIN. El
+  /// propietario mantiene ademas role=ADMIN en su membership.
+  ownerId                String
+  /// Borrado logico: un grupo eliminado desaparece de listados activos pero
+  /// conserva su historial (predicciones, rachas, insignias, clasificaciones)
+  /// para no perder trofeos ya concedidos. Nunca se borra fisicamente.
+  deletedAt              DateTime?
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 
+  owner             User               @relation(fields: [ownerId], references: [id])
   memberships       GroupMembership[]
   groupCompetitions GroupCompetition[]
   predictions       Prediction[]
   rankingSnapshots  RankingSnapshot[]
   streaks           Streak[]
   userBadges        UserBadge[]
+  seasons           GroupSeason[]
 
   @@map("groups")
+}
+
+/// Una temporada de un grupo concreto (no global: cada grupo tiene sus
+/// propias competiciones activas y por tanto puede terminar en fechas
+/// distintas a las de otro grupo). Termina cuando se cuenta el ultimo
+/// partido de todas las competiciones activas del grupo en ese momento —
+/// ver decisions.md "Sprint 5 (fin de temporada)". `endedAt` null mientras
+/// esta en curso; solo puede haber una fila abierta por grupo.
+model GroupSeason {
+  id        String    @id @default(cuid())
+  groupId   String
+  /// Etiqueta "2026/27" derivada del currentSeason de las competiciones
+  /// activas al abrirse esta temporada — solo para mostrar, no se usa para
+  /// calcular nada.
+  label     String
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  group            Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  rankingSnapshots RankingSnapshot[]
+
+  @@index([groupId, endedAt])
+  @@map("group_seasons")
 }
 
 model GroupMembership {
@@ -171,6 +283,11 @@ model GroupMembership {
   groupId  String
   role     GroupRole @default(MEMBER)
   joinedAt DateTime  @default(now())
+  /// Silencia los avisos de este grupo para este usuario (product-rules.md
+  /// "Notificaciones": no avisar de grupos silenciados). No afecta a otros
+  /// miembros ni a la preferencia global de tipo de aviso — se combinan
+  /// (hace falta que el tipo este activado Y el grupo no silenciado).
+  mutedNotifications Boolean @default(false)
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -185,15 +302,24 @@ model GroupMembership {
 // ---------------------------------------------------------------------------
 
 model Competition {
-  id            String          @id @default(cuid())
-  code          CompetitionCode @unique
-  name          String
+  id                 String          @id @default(cuid())
+  code               CompetitionCode @unique
+  name               String
   /// Id de la competicion en el proveedor de datos activo (ver FootballProvider).
   /// No es especifico de ningun proveedor concreto pese al nombre generico:
   /// cambiar de proveedor implica volver a poblar este campo via seed.
-  externalId    Int             @unique
-  logoUrl       String?
-  currentSeason Int
+  externalId         Int             @unique
+  logoUrl            String?
+  currentSeason      Int
+  /// Estimacion de cuando termina la temporada en curso: fecha del partido
+  /// mas tardio conocido en el calendario completo (ver
+  /// FootballProvider.getFullSeasonMatches), refrescada periodicamente, no
+  /// en cada peticion (limite del plan gratuito). Es solo un preview: puede
+  /// cambiar si el proveedor anade/reprograma partidos (fases de
+  /// eliminatoria cuya fecha final no se conoce hasta jugarse rondas
+  /// previas). El cierre real de temporada de un grupo no depende de esta
+  /// fecha, depende de jornadas FINISHED — ver GroupSeason.
+  seasonEndPreviewAt DateTime?
 
   groupCompetitions GroupCompetition[]
   matchdays         Matchday[]
@@ -231,17 +357,21 @@ model Matchday {
   status            MatchdayStatus @default(SCHEDULED)
   /// Recordatorios push de cierre escalonados (null = ese aviso aun no se ha
   /// enviado). Cada uno se dispara como mucho una vez, independientemente de
-  /// los demas; ver JobsService.REMINDER_TIERS.
+  /// los demas; ver JobsService.REMINDER_TIERS. El envio real a cada usuario
+  /// ademas se filtra por NotificationPreference (que franjas quiere) y por
+  /// GroupMembership.mutedNotifications (grupos silenciados).
+  reminder24hSentAt DateTime?
   reminder5hSentAt  DateTime?
   reminder1hSentAt  DateTime?
   reminder30mSentAt DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  competition       Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  matches           Match[]
-  rankingSnapshots  RankingSnapshot[]
-  streaksLastPlayed Streak[]          @relation("StreakLastMatchday")
+  competition             Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  matches                 Match[]
+  rankingSnapshots        RankingSnapshot[]
+  streaksLastPlayed       Streak[]          @relation("StreakLastMatchday")
+  globalStreaksLastPlayed GlobalStreak[]    @relation("GlobalStreakLastMatchday")
 
   @@unique([competitionId, season, name])
   @@index([competitionId, status])
@@ -330,11 +460,17 @@ model RankingSnapshot {
   points        Int
   position      Int
   createdAt     DateTime      @default(now())
+  /// Temporada del grupo a la que pertenece esta clasificacion. Null en
+  /// filas anteriores a que existiera este concepto (no se han
+  /// reatribuido retroactivamente); las nuevas siempre lo llevan — ver
+  /// RankingsService.
+  groupSeasonId String?
 
   group       Group        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   competition Competition? @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groupSeason GroupSeason? @relation(fields: [groupSeasonId], references: [id], onDelete: SetNull)
 
   @@unique([groupId, competitionId, matchdayId, period, userId])
   @@index([groupId, period, competitionId])
@@ -402,4 +538,23 @@ model Streak {
 
   @@unique([userId, groupId])
   @@map("streaks")
+}
+
+/// Racha global (todas las competiciones presentes en los grupos del
+/// usuario, no una por grupo): cada jornada de cada competicion cuenta una
+/// vez, aunque este repetida en varios de sus grupos — ver
+/// StreaksService.updateAfterMatchdayClose y decisions.md "Sprint 5 (racha
+/// global)". Una fila por usuario (no por userId+groupId como Streak).
+model GlobalStreak {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastMatchdayId String?
+  updatedAt      DateTime @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastMatchday Matchday? @relation("GlobalStreakLastMatchday", fields: [lastMatchdayId], references: [id])
+
+  @@map("global_streaks")
 }

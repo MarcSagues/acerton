@@ -1,0 +1,34 @@
+@if (page.tutorialService.currentStep(); as step) {
+  @if (page.rect(); as r) {
+    <div
+      class="spotlight"
+      [style.top.px]="r.top - 6"
+      [style.left.px]="r.left - 6"
+      [style.width.px]="r.width + 12"
+      [style.height.px]="r.height + 12"
+    ></div>
+
+    <div
+      #card
+      class="tutorial-card"
+      [class.mascot-below]="step.mascotPosition === 'below'"
+      [style.top.px]="step.placement === 'bottom' ? page.cardTop(r) : null"
+      [style.bottom.px]="step.placement === 'top' ? page.cardBottom(r) : null"
+      [style.left.px]="page.cardLeft(r)"
+    >
+      <img class="mascot-avatar" [src]="'/assets/avatars/mascot/' + step.mascotId + '.png'" alt="" />
+      <div class="bubble">
+        <h2>{{ step.title }}</h2>
+        <p>{{ step.body }}</p>
+        <div class="bubble-actions">
+          <button class="skip" (click)="page.tutorialService.skip()">Saltar tutorial</button>
+          @if (step.advanceOn === 'manual') {
+            <button class="piqo-primary next" (click)="page.tutorialService.next()">
+              {{ page.tutorialService.isLastStep() ? 'Empezar' : 'Siguiente' }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+}

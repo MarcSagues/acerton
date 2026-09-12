@@ -1,341 +1,349 @@
-@if (loading()) {
-  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
-} @else if (entries().length === 0) {
-  <div class="page empty-page">
-    <app-group-switcher></app-group-switcher>
-    <p class="empty">
-      Todavia no hay jornada sincronizada para las competiciones de este grupo. Vuelve mas tarde.
-    </p>
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else if (page.entries().length === 0) {
+  <div class="page">
+    <div class="head-row">
+      <app-group-switcher></app-group-switcher>
+    </div>
+    <app-empty-state
+      icon="jornada"
+      title="Todavia no hay jornada sincronizada"
+      text="Las competiciones de este grupo todavia no tienen una jornada sincronizada. Vuelve mas tarde."
+    ></app-empty-state>
   </div>
+} @else if (page.submissionConfirmed()) {
+  @if (page.activeEntry(); as entry) {
+    <main class="sent-page">
+      <piqo-svg logo size="120"></piqo-svg>
+      <div class="sent-check" aria-hidden="true"><piqo-svg icon="check" size="28"></piqo-svg></div>
+      <p class="sent-eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</p>
+      <h1>Enviado</h1>
+      <p class="sent-lead">Tus pronosticos estan guardados. Puedes volver a cambiarlos hasta que empiece cada partido.</p>
+
+      <section class="sent-summary" aria-label="Resumen de pronosticos">
+        @for (match of entry.matchday.matches; track match.id) {
+          <div class="sent-match">
+            <div class="sent-teams">
+              <span>{{ match.homeTeam }}</span>
+              <span>{{ match.awayTeam }}</span>
+            </div>
+            <strong class="sent-pick mono">{{ page.pickLabel(match.id) }}</strong>
+          </div>
+        }
+      </section>
+
+      <button type="button" class="piqo-primary sent-btn" [disabled]="page.justCopiedSummary()" (click)="page.copySummary()">
+        <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
+        {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
+      </button>
+      <button type="button" class="piqo-secondary sent-btn" (click)="page.editPredictions()">Revisar pronosticos</button>
+    </main>
+  }
 } @else {
   <div class="page">
-    <header class="head">
+    <div class="head-row">
       <app-group-switcher></app-group-switcher>
-      @if (activeEntry(); as entry) {
-        @if (isLocked(entry)) {
-          <span class="pill pill-neutral">{{ entry.matchday.status === 'FINISHED' ? 'FINALIZADA' : 'CERRADA' }}</span>
-        } @else {
-          <span class="pill pill-open"><span class="pulse-dot"></span>ABIERTA</span>
-        }
-      }
-    </header>
+    </div>
 
-    @if (entries().length > 1) {
-      <div class="comp-switcher">
-        @for (entry of entries(); track entry.competition.id; let i = $index) {
-          <button class="comp-chip" [class.active]="i === activeTabIndex()" (click)="selectTab(i)">
-            {{ entry.competition.name }} · {{ entry.matchday.matches.length }}
-          </button>
-        }
-      </div>
-    }
-
-    @if (activeEntry(); as entry) {
-      <div class="summary">
+    @if (page.activeEntry(); as entry) {
+      <div class="title-row">
+        <h1>Tu jornada</h1>
         <div class="eyebrow-row">
           <button
+            type="button"
             class="nav-btn"
-            [disabled]="navigating() || entry.matchday.order <= 1"
-            (click)="navigatePrevious()"
-            title="Jornada anterior"
+            [disabled]="page.navigating() || entry.matchday.order <= 1"
+            (click)="page.navigatePrevious()"
+            aria-label="Jornada anterior"
           >
-            <span class="chevron chevron-left"></span>
+            <piqo-svg icon="atras" size="16"></piqo-svg>
           </button>
-          <div class="eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</div>
+          <button type="button" class="eyebrow" (click)="page.goToCalendar()">
+            {{ entry.competition.name | uppercase }} · JORNADA {{ entry.matchday.order }}
+            <piqo-svg icon="abajo" size="14"></piqo-svg>
+          </button>
           <button
+            type="button"
             class="nav-btn"
-            [disabled]="navigating() || noNextAvailable()"
-            (click)="navigateNext()"
-            title="Jornada siguiente"
+            [disabled]="page.navigating() || page.noNextAvailable()"
+            (click)="page.navigateNext()"
+            aria-label="Jornada siguiente"
           >
-            <span class="chevron chevron-right"></span>
+            <piqo-svg icon="arriba" size="16" style="transform: rotate(90deg)"></piqo-svg>
           </button>
         </div>
-        @if (!isViewingLive()) {
-          <button class="live-link mono" (click)="goToLive()">&lt; Volver a la jornada actual</button>
+        @if (!page.isViewingLive()) {
+          <button type="button" class="live-link mono" (click)="page.goToLive()">&lt; Volver a la jornada actual</button>
         }
-        <div class="summary-top">
-          <div class="headline" [class.pending]="!isLocked(entry) && !isMatchdayOpenByTime()">
-            @if (isLocked(entry)) {
-              Cerrada
-            } @else if (!isMatchdayOpenByTime()) {
-              La jornada se abre en
-            } @else {
-              La jornada cierra en
-            }
-          </div>
-          @if (isLocked(entry)) {
-            <div class="countdown mono">{{ totalPoints() }} pts</div>
-          } @else if (!isMatchdayOpenByTime()) {
-            <div class="countdown mono pending">{{ opensInLabel() }}</div>
-          } @else {
-            <div class="countdown mono">{{ countdownLabel() }}</div>
+      </div>
+
+      @if (page.entries().length > 1) {
+        <div class="comp-switcher">
+          @for (e of page.entries(); track e.competition.id; let i = $index) {
+            <button type="button" class="comp-chip" [class.active]="i === page.activeTabIndex()" (click)="page.selectTab(i)">
+              {{ e.competition.name }} · {{ e.matchday.matches.length }}
+            </button>
           }
         </div>
-        <div class="progress-row">
-          <div class="progress-track">
-            <div class="progress-fill" [style.width]="progressPct()"></div>
+      }
+
+      <div class="view-row">
+        <app-segmented-control
+          [options]="viewOptions"
+          [value]="page.view()"
+          ariaLabel="Vista de jornada"
+          (valueChange)="page.setView($event)"
+        ></app-segmented-control>
+      </div>
+
+      <div class="hero-card" [class.complete]="page.allPredicted(entry)">
+        <div class="hero-glow"></div>
+        @if (page.allPredicted(entry)) {
+          <button type="button" class="ciclo-row ciclo-summary" (click)="page.openSummary()">
+            <span class="ciclo-summary-text">
+              <span class="ciclo-title">{{ page.cicloTitulo(entry) }}</span>
+              <span class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</span>
+            </span>
+            <span class="ciclo-summary-cta">
+              Ver resumen
+              <piqo-svg icon="flecha" size="14"></piqo-svg>
+            </span>
+          </button>
+        } @else {
+          <div class="ciclo-row">
+            <p class="ciclo-title">{{ page.cicloTitulo(entry) }}</p>
+            <p class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</p>
           </div>
-          <div class="progress-label mono">{{ doneCount() }}/{{ entry.matchday.matches.length }} enviados</div>
-        </div>
-        @if (!isLocked(entry) && anyMatchFinished()) {
-          <div class="live-points mono">
-            Llevas {{ totalPoints() }} {{ totalPoints() === 1 ? 'punto' : 'puntos' }} en los partidos ya jugados
+        }
+
+        @if (!page.isLocked(entry)) {
+          <div class="progress-row">
+            <div class="progress-track">
+              <div class="progress-fill" [style.width]="page.progressPct()"></div>
+            </div>
+            <div class="progress-label mono">{{ page.doneCount() }}/{{ entry.matchday.matches.length }}</div>
           </div>
         }
       </div>
 
-      @if (isExactScore()) {
-        <div class="exact-score-columns">
-          <div class="exact-score-columns-fields">
-            <span class="exact-score-columns-label">L</span>
-            <span class="exact-score-columns-sepspace"></span>
-            <span class="exact-score-columns-label">V</span>
-          </div>
+      @if (page.cicloAviso(entry); as aviso) {
+        <div class="aviso" [class.warning]="aviso.tone === 'warning'" [class.error]="aviso.tone === 'error'" [class.info]="aviso.tone === 'info'">
+          <piqo-svg [attr.icon]="aviso.tone === 'error' ? 'sin-conexion' : aviso.tone === 'warning' ? 'alerta' : 'reloj'" size="20"></piqo-svg>
+          <span>{{ aviso.text }}</span>
+          @if (aviso.tone === 'info') {
+            <button type="button" class="aviso-close" aria-label="Cerrar aviso" (click)="page.dismissAutoSaveNotice()">
+              <piqo-svg icon="cerrar" size="16"></piqo-svg>
+            </button>
+          }
         </div>
       }
-      <div class="match-list">
-        @for (match of entry.matchday.matches; track match.id) {
-          <div class="match-row">
-            <div class="kickoff mono">
-              <span>{{ matchDayLabel(match.kickoff) }}</span>
-              <span>{{ match.kickoff | date: 'HH:mm' }}</span>
-            </div>
 
-            <span class="crest">{{ match.homeTeam.slice(0, 3).toUpperCase() }}</span>
-            <div class="teams">
-              <span class="team-home">{{ match.homeTeam }}</span>
-              <span class="team-away">{{ match.awayTeam }}</span>
-            </div>
+      <div class="match-list" [class.visual]="page.view() === 'visual'">
+        @for (match of entry.matchday.matches; track match.id; let first = $first) {
+          <div
+            class="match-card"
+            [class.visual]="page.view() === 'visual'"
+            [attr.data-tone]="page.matchAccentTone(match)"
+            [attr.data-tutorial]="first ? 'first-match' : null"
+          >
+            <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
 
-            @if (match.status === 'FINISHED') {
-              <div class="result-block">
-                <div class="result mono">{{ match.homeScore }}-{{ match.awayScore }}</div>
-                <div class="pick-line mono">
-                  <span class="badge pick" [class.hit]="isPickHit(match) === true" [class.miss]="isPickHit(match) === false">
-                    {{ pickLabel(match.id) ?? 'N/A' }}
+            @if (page.view() === 'filas') {
+              <div class="teams-row">
+                <div class="teams">
+                  <span class="team-home">
+                    {{ match.homeTeam }}
+                    @if (match.status === 'FINISHED') {
+                      <span class="team-score mono">{{ match.homeScore }}</span>
+                    }
                   </span>
-                  <span class="badge points" [class.earned]="pointsFor(match) > 0">
-                    {{ pointsFor(match) > 0 ? '+' : '' }}{{ pointsFor(match) }}
+                  <span class="team-away">
+                    {{ match.awayTeam }}
+                    @if (match.status === 'FINISHED') {
+                      <span class="team-score mono">{{ match.awayScore }}</span>
+                    }
                   </span>
                 </div>
-              </div>
-            } @else if (isMatchLocked(match)) {
-              <div class="result mono dim">{{ matchLockedLabel(match) }}</div>
-            } @else if (!pickingAllowed()) {
-              <div class="result mono dim">Aun no</div>
-            } @else if (isExactScore()) {
-              <div
-                class="exact-score-box"
-                [class.pending]="stateFor(match.id).saving"
-                [class.confirmed]="stateFor(match.id).saved && !stateFor(match.id).saving"
-                [class.error]="stateFor(match.id).error"
-              >
-                <svg class="choice-progress" viewBox="0 0 112 38" aria-hidden="true">
-                  <rect
-                    x="1"
-                    y="1"
-                    width="110"
-                    height="36"
-                    rx="9"
-                    pathLength="100"
-                    [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                  ></rect>
-                </svg>
-                <div class="exact-score-field">
-                  <input
-                    class="score-input mono"
-                    type="number"
-                    min="0"
-                    max="20"
-                    inputmode="numeric"
-                    [disabled]="isMatchLocked(match)"
-                    [value]="stateFor(match.id).predictedHomeScore"
-                    (input)="updatePredictedScore(match, 'home', $any($event.target).value)"
-                    (blur)="save(match.id, stateFor(match.id))"
-                  />
-                </div>
-                <span class="score-sep mono">-</span>
-                <div class="exact-score-field">
-                  <input
-                    class="score-input mono"
-                    type="number"
-                    min="0"
-                    max="20"
-                    inputmode="numeric"
-                    [disabled]="isMatchLocked(match)"
-                    [value]="stateFor(match.id).predictedAwayScore"
-                    (input)="updatePredictedScore(match, 'away', $any($event.target).value)"
-                    (blur)="save(match.id, stateFor(match.id))"
-                  />
-                </div>
+                <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: false }"></ng-container>
               </div>
             } @else {
-              <div class="wc-icons">
-                @if ((comeback()?.enabled && (comeback()?.remaining ?? 0) > 0) || stateFor(match.id).doubleChanceOption) {
-                  <button
-                    class="wc-icon-btn rescue"
-                    [class.active]="!!stateFor(match.id).doubleChanceOption"
-                    [title]="'Remontada (quedan ' + (comeback()?.remaining ?? 0) + ')'"
-                    (click)="toggleDoubleChance(match)"
-                  >
-                    <mat-icon inline>health_and_safety</mat-icon>
-                  </button>
+              <div class="crests-row">
+                <span class="team-name">
+                  {{ match.homeTeam }}
+                  @if (match.status === 'FINISHED') {
+                    <span class="team-score mono">{{ match.homeScore }}</span>
+                  }
+                </span>
+                @if (page.isExactScore()) {
+                  <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: false, crests: true }"></ng-container>
+                } @else {
+                  <span class="vs mono">VS</span>
                 }
+                <span class="team-name">
+                  @if (match.status === 'FINISHED') {
+                    <span class="team-score mono">{{ match.awayScore }}</span>
+                  }
+                  {{ match.awayTeam }}
+                </span>
               </div>
-
-              @if (stateFor(match.id).doubleChanceOption) {
-                <div class="choices compact">
-                  <button
-                    class="choice-btn"
-                    [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW'"
-                    [class.pending]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).doubleChanceOption === 'HOME_OR_DRAW' && stateFor(match.id).error"
-                    (click)="selectDoubleChance(match, 'HOME_OR_DRAW')"
-                  >
-                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="1"
-                        width="28"
-                        height="28"
-                        rx="7"
-                        pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                      ></rect>
-                    </svg>
-                    1X
-                  </button>
-                  <button
-                    class="choice-btn"
-                    [class.selected]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY'"
-                    [class.pending]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).doubleChanceOption === 'DRAW_OR_AWAY' && stateFor(match.id).error"
-                    (click)="selectDoubleChance(match, 'DRAW_OR_AWAY')"
-                  >
-                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="1"
-                        width="28"
-                        height="28"
-                        rx="7"
-                        pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                      ></rect>
-                    </svg>
-                    X2
-                  </button>
-                  <button
-                    class="choice-btn"
-                    [class.selected]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY'"
-                    [class.pending]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).doubleChanceOption === 'HOME_OR_AWAY' && stateFor(match.id).error"
-                    (click)="selectDoubleChance(match, 'HOME_OR_AWAY')"
-                  >
-                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="1"
-                        width="28"
-                        height="28"
-                        rx="7"
-                        pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                      ></rect>
-                    </svg>
-                    12
-                  </button>
-                </div>
-              } @else {
-                <div class="choices compact">
-                  <button
-                    class="choice-btn"
-                    [class.selected]="stateFor(match.id).choice === 'HOME'"
-                    [class.pending]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).choice === 'HOME' && stateFor(match.id).error"
-                    (click)="selectChoice(match, 'HOME')"
-                  >
-                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="1"
-                        width="28"
-                        height="28"
-                        rx="7"
-                        pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                      ></rect>
-                    </svg>
-                    1
-                  </button>
-                  <button
-                    class="choice-btn"
-                    [class.selected]="stateFor(match.id).choice === 'DRAW'"
-                    [class.pending]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).choice === 'DRAW' && stateFor(match.id).error"
-                    (click)="selectChoice(match, 'DRAW')"
-                  >
-                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="1"
-                        width="28"
-                        height="28"
-                        rx="7"
-                        pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                      ></rect>
-                    </svg>
-                    X
-                  </button>
-                  <button
-                    class="choice-btn"
-                    [class.selected]="stateFor(match.id).choice === 'AWAY'"
-                    [class.pending]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).saving"
-                    [class.confirmed]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).saved && !stateFor(match.id).saving"
-                    [class.error]="stateFor(match.id).choice === 'AWAY' && stateFor(match.id).error"
-                    (click)="selectChoice(match, 'AWAY')"
-                  >
-                    <svg class="choice-progress" viewBox="0 0 30 30" aria-hidden="true">
-                      <rect
-                        x="1"
-                        y="1"
-                        width="28"
-                        height="28"
-                        rx="7"
-                        pathLength="100"
-                        [attr.stroke-dashoffset]="stateFor(match.id).drawOffset"
-                      ></rect>
-                    </svg>
-                    2
-                  </button>
-                </div>
+              @if (!page.isExactScore()) {
+                <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: true }"></ng-container>
               }
             }
+
+            <div class="status-row">
+              @if (match.status === 'FINISHED' && page.matchAccentTone(match) === 'none') {
+                <span class="points-badge mono" data-tone="none">No participado</span>
+              } @else if (match.status === 'FINISHED') {
+                <span class="points-badge mono" [attr.data-tone]="page.matchAccentTone(match)">
+                  {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
+                </span>
+              } @else if (page.isMatchLocked(match)) {
+                <piqo-svg icon="candado" size="16"></piqo-svg>
+                <span>{{ page.matchLockedLabel(match) }}</span>
+              } @else if (!page.pickingAllowed()) {
+                <piqo-svg icon="reloj" size="16"></piqo-svg>
+                <span>Aun no</span>
+              } @else if (page.stateFor(match.id).error) {
+                <piqo-svg icon="sin-conexion" size="16" class="miss"></piqo-svg>
+                <span class="miss">No se ha guardado</span>
+                <button type="button" class="retry-btn" (click)="page.save(match.id, page.stateFor(match.id))">Reintentar</button>
+              } @else if (page.stateFor(match.id).saving) {
+                <app-spinner [size]="16"></app-spinner>
+                <span>Guardando…</span>
+              } @else if (page.stateFor(match.id).saved && !page.isExactScore()) {
+                <piqo-svg icon="check" size="16" class="hit"></piqo-svg>
+                <span class="hit">Guardado</span>
+              } @else {
+                <span></span>
+              }
+            </div>
           </div>
         }
       </div>
 
-      @if (entry.matchday.status === 'FINISHED') {
-        <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">Ver resultados de esta jornada</a>
-      } @else if (!isLocked(entry)) {
-        <div class="cta-bar">
-          <span>
-            @if (doneCount() === entry.matchday.matches.length) {
-              <mat-icon class="cta-check" inline>check_circle</mat-icon>
-              Completado
-            } @else {
-              Faltan {{ entry.matchday.matches.length - doneCount() }} por enviar
+      <ng-template #choices let-match="match" let-wide="wide" let-crests="crests">
+        @let locked = page.isMatchLocked(match) || !page.pickingAllowed();
+        @if (page.isExactScore()) {
+          @if (locked) {
+            <div class="score-widget review" [class.standalone]="wide" [class.inline]="crests">
+              @if (!crests) {
+                <div class="score-labels">
+                  <span class="score-label mono">L</span>
+                  <span class="score-sep-spacer mono">-</span>
+                  <span class="score-label mono">V</span>
+                </div>
+              }
+              <div class="exact-score-box" [attr.data-tone]="page.matchAccentTone(match)">
+                <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedHomeScore" />
+                <span class="score-sep mono">-</span>
+                <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedAwayScore" />
+              </div>
+            </div>
+          } @else {
+            <div class="score-widget" [class.standalone]="wide" [class.inline]="crests">
+              @if (!crests) {
+                <div class="score-labels">
+                  <span class="score-label mono">L</span>
+                  <span class="score-sep-spacer mono">-</span>
+                  <span class="score-label mono">V</span>
+                </div>
+              }
+              <div
+                class="exact-score-box"
+                [class.saving]="page.stateFor(match.id).saving"
+                [class.error]="page.stateFor(match.id).error"
+                [class.confirmed]="page.stateFor(match.id).saved"
+                [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+              >
+                <input
+                  class="score-input mono"
+                  type="number"
+                  min="0"
+                  max="20"
+                  inputmode="numeric"
+                  [value]="page.stateFor(match.id).predictedHomeScore"
+                  (input)="page.updatePredictedScore(match, 'home', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
+                />
+                <span class="score-sep mono">-</span>
+                <input
+                  class="score-input mono"
+                  type="number"
+                  min="0"
+                  max="20"
+                  inputmode="numeric"
+                  [value]="page.stateFor(match.id).predictedAwayScore"
+                  (input)="page.updatePredictedScore(match, 'away', $any($event.target).value); page.save(match.id, page.stateFor(match.id))"
+                />
+              </div>
+            </div>
+          }
+        } @else if (crests) {
+          <span class="vs mono">VS</span>
+        } @else if (match.status === 'FINISHED') {
+          <div class="options" [class.wide]="wide" [class.disabled]="page.matchAccentTone(match) === 'none'" role="group" aria-label="Resultado del partido">
+            @for (opt of oneXTwoOptions; track opt.v) {
+              <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
             }
-          </span>
+          </div>
+        } @else {
+          <!-- Partido en juego/bloqueado sin terminar todavia: se sigue
+               viendo lo que se eligio (clase .selected sobre el pick real),
+               solo que sin poder interactuar — antes esta rama no pintaba
+               nada y el pronostico enviado desaparecia de la vista hasta
+               que el partido acababa. -->
+          <div class="wc-row">
+            <!-- Boton de activar el comodin escondido (ver issue de GitHub
+                 para acabar de implementarlo y volver a mostrarlo): si una
+                 prediccion ya tenia un doubleChanceOption guardado de antes,
+                 se sigue mostrando abajo tal cual, solo que ya no se puede
+                 activar uno nuevo desde aqui. -->
+            <div class="options" [class.wide]="wide" role="group" [attr.aria-label]="'Pronostico ' + match.homeTeam + ' contra ' + match.awayTeam">
+              @if (page.stateFor(match.id).doubleChanceOption) {
+                @for (opt of [{ v: 'HOME_OR_DRAW', l: '1X' }, { v: 'DRAW_OR_AWAY', l: 'X2' }, { v: 'HOME_OR_AWAY', l: '12' }]; track opt.v) {
+                  <button
+                    type="button"
+                    class="choice"
+                    [class.selected]="page.stateFor(match.id).doubleChanceOption === opt.v"
+                    [class.saving]="page.stateFor(match.id).doubleChanceOption === opt.v && page.stateFor(match.id).saving"
+                    [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+                    [disabled]="locked"
+                    [attr.aria-pressed]="page.stateFor(match.id).doubleChanceOption === opt.v"
+                    (click)="page.selectDoubleChance(match, $any(opt.v))"
+                  >
+                    {{ opt.l }}
+                  </button>
+                }
+              } @else {
+                @for (opt of [{ v: 'HOME', l: '1' }, { v: 'DRAW', l: 'X' }, { v: 'AWAY', l: '2' }]; track opt.v) {
+                  <button
+                    type="button"
+                    class="choice"
+                    [class.selected]="page.stateFor(match.id).choice === opt.v"
+                    [class.saving]="page.stateFor(match.id).choice === opt.v && page.stateFor(match.id).saving"
+                    [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
+                    [disabled]="locked"
+                    [attr.aria-pressed]="page.stateFor(match.id).choice === opt.v"
+                    (click)="page.selectChoice(match, $any(opt.v))"
+                  >
+                    {{ opt.l }}
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        }
+      </ng-template>
+
+      @if (entry.matchday.status === 'FINISHED') {
+        <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">
+          <piqo-svg icon="historial" size="20"></piqo-svg>Ver desglose de resultados
+        </a>
+      } @else if (!page.isLocked(entry) && page.pickingAllowed() && page.doneCount() === entry.matchday.matches.length) {
+        <div class="cta-bar">
+          <piqo-svg icon="check" size="18" class="hit"></piqo-svg>
+          <span>Completado</span>
         </div>
-        <p class="autosave-hint">Se guarda automaticamente al elegir · editable hasta el cierre</p>
       }
     }
   </div>

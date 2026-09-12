@@ -1,0 +1,154 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pantalla de marca: siempre oscura, en los dos temas. */
+.page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  background: #121619;
+  color: #f1f0ea;
+}
+
+.head-row {
+  /* Sin env(safe-area-inset-top) aqui: esta pantalla vive dentro del shell
+     (ver app.routes.ts), que ya reserva ese hueco una vez encima de la
+     barra superior — repetirlo aqui duplicaba el margen bajo el logo. */
+  padding: 14px 20px 8px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 15px/1 var(--p4-font-ui);
+  color: #d2be94;
+}
+
+.content {
+  padding: 12px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+h1 {
+  font: 700 30px/1.15 var(--p4-font-display);
+  margin: 0;
+}
+
+.tagline {
+  font: 400 15px/1.5 var(--p4-font-ui);
+  color: rgba(241, 240, 234, 0.65);
+  margin: -12px 0 0;
+}
+
+.code-card {
+  width: 100%;
+  background: #1d2426;
+  border-radius: 22px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.code-label {
+  margin: 0;
+  font: 600 12px/1 var(--p4-font-ui);
+  letter-spacing: 0.08em;
+  color: rgba(241, 240, 234, 0.55);
+}
+
+.code {
+  margin: 0;
+  font: 800 34px/1 var(--p4-font-display);
+  letter-spacing: 0.12em;
+}
+
+.code-actions {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+}
+
+.code-btn {
+  flex: 1;
+  height: 46px;
+  border-radius: 16px;
+  border: 0;
+  font: 600 14px/1 var(--p4-font-ui);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  &.primary {
+    background: #d2be94;
+    color: #121619;
+  }
+
+  &.ghost {
+    background: transparent;
+    border: 1px solid rgba(241, 240, 234, 0.16);
+    color: #f1f0ea;
+  }
+
+  &:disabled {
+    opacity: 0.75;
+  }
+}
+
+.link-row {
+  width: 100%;
+  background: rgba(241, 240, 234, 0.07);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: rgba(241, 240, 234, 0.65);
+  word-break: break-all;
+  margin: -6px 0 0;
+}
+
+.members-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.members-title {
+  font: 700 14px/1 var(--p4-font-ui);
+  margin: 0;
+}
+
+.members-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.member-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(241, 240, 234, 0.09);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 13px/1 var(--p4-font-ui);
+}

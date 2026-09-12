@@ -1,25 +1,25 @@
 <div class="onboarding-page">
   <div class="onboarding-content">
-    <div class="brand">1X2</div>
-    <h1>Como quieres<br />que te vean</h1>
-    <p class="tagline">Este es el nombre que veran tus amigos en la tabla y en los grupos. Podras cambiarlo mas adelante, una vez por semana.</p>
+    <piqo-svg logo size="120"></piqo-svg>
+    <h1>Cómo quieres<br />que te vean</h1>
+    <p class="tagline">Este es el nombre que verán tus amigos en la tabla y en los grupos. Podrás cambiarlo más adelante, una vez por semana.</p>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+    <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
       <label class="field">
         <span class="field-label">Nombre de usuario</span>
         <input class="field-input" type="text" formControlName="name" autocomplete="nickname" maxlength="24" autofocus />
       </label>
-      @if (nameHint(); as hint) {
+      @if (page.nameHint(); as hint) {
         <p class="error">{{ hint }}</p>
       }
 
-      @if (errorMessage()) {
-        <p class="error">{{ errorMessage() }}</p>
+      @if (page.errorMessage()) {
+        <p class="error">{{ page.errorMessage() }}</p>
       }
 
-      <button type="submit" class="cta" [disabled]="loading()">
-        @if (loading()) {
-          <mat-spinner diameter="20"></mat-spinner>
+      <button type="submit" class="piqo-primary cta" [disabled]="page.loading()">
+        @if (page.loading()) {
+          <app-spinner [size]="20"></app-spinner>
         } @else {
           Continuar
         }

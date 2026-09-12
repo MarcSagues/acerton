@@ -1,120 +1,168 @@
-@if (loading()) {
-  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
-  @if (profile(); as p) {
+  @if (page.profile(); as p) {
   <div class="page">
-    <header class="head">
-      <span class="avatar">{{ initials(authService.currentUser()?.name ?? '') }}</span>
-      <div class="meta">
-        <div class="name">{{ authService.currentUser()?.name }}</div>
-        <div class="email mono">{{ authService.currentUser()?.email }}</div>
-      </div>
-    </header>
+    <div class="title-row">
+      <h1>Tu perfil</h1>
+    </div>
 
-    <div class="stats">
-      <div class="stat-tile">
-        <div class="stat-value mono accent">{{ bestCurrentStreak() }}</div>
-        <div class="stat-label mono">RACHA ACTUAL</div>
+    <div class="identity-row">
+      <a routerLink="/profile/avatar" class="avatar-link" aria-label="Cambiar avatar">
+        <app-avatar
+          [url]="page.authService.currentUser()?.avatarUrl ?? null"
+          [background]="page.authService.currentUser()?.avatarBackground ?? null"
+          [name]="page.authService.currentUser()?.name ?? ''"
+          [size]="64"
+        ></app-avatar>
+        <span class="avatar-edit-badge"><piqo-svg icon="camara" size="14"></piqo-svg></span>
+      </a>
+      <span class="meta">
+        <span class="name-row">
+          <span class="name">{{ page.authService.currentUser()?.name }}</span>
+        </span>
+        <span class="email mono">{{ page.authService.currentUser()?.email }}</span>
+      </span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <p class="stat-label">Racha actual</p>
+        <p class="stat-value mono">{{ page.globalCurrentStreak() }}</p>
+        <p class="stat-hint">jornadas seguidas en tus grupos</p>
       </div>
-      <div class="stat-tile">
-        <div class="stat-value mono">{{ bestLongestStreak() }}</div>
-        <div class="stat-label mono">MEJOR RACHA</div>
+      <div class="stat-card">
+        <p class="stat-label">Mejor racha</p>
+        <p class="stat-value mono">{{ page.globalLongestStreak() }}</p>
+        <p class="stat-hint">en cualquiera de tus grupos</p>
       </div>
     </div>
 
+    <div class="section-head">
+      <h2>Insignias</h2>
+      <a routerLink="/profile/badges" class="link">Ver colección</a>
+    </div>
+    <p class="section-hint">{{ page.badgeCount() }} conseguidas hasta ahora.</p>
+    <div class="badges-row">
+      @for (item of page.badgePreview(); track item.badge.id) {
+        <button
+          type="button"
+          class="badge-preview"
+          [class.earned]="item.earned"
+          [attr.aria-label]="item.badge.name + (item.earned ? '' : ', por desbloquear')"
+          (click)="page.openBadge(item)"
+        >
+          @if (page.artId(item.badge.code); as artId) {
+            <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="48"></piqo-svg>
+          } @else {
+            <piqo-svg icon="medalla" size="26"></piqo-svg>
+          }
+          @if (!item.earned) {
+            <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="section-head">
+      <h2>Vitrina</h2>
+    </div>
+    <p class="section-hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
+    <div class="trophies-row">
+      @for (trophy of page.trophies; track trophy.id) {
+        <button
+          type="button"
+          class="trophy-btn"
+          [class.earned]="trophy.count > 0"
+          [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
+          (click)="page.openTrophy(trophy)"
+        >
+          <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
+          @if (trophy.count > 1) {
+            <span class="trophy-count mono">{{ trophy.count }}</span>
+          } @else if (trophy.count === 0) {
+            <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="section-head">
+      <h2>Ajustes</h2>
+    </div>
     <div class="section">
       <div class="card">
-        <div class="card-title">Nombre</div>
-        @if (nameChangeAvailableAt(); as availableAt) {
-          <div class="notif-hint mono">Ya lo has cambiado. Podras hacerlo de nuevo el {{ availableAt | date: 'dd/MM/yyyy' }}.</div>
-        } @else {
-          <div class="name-edit-row">
-            <input
-              class="name-input mono"
-              type="text"
-              maxlength="24"
-              [ngModel]="nameInput()"
-              (ngModelChange)="nameInput.set($event)"
-              (keydown.enter)="saveName()"
-            />
-            <button class="notif-btn" [disabled]="!canSaveName()" (click)="saveName()">
-              {{ nameSaving() ? 'Guardando...' : 'Guardar' }}
+        <p class="card-title">Nombre</p>
+        <div class="name-edit-row">
+          <input
+            class="name-input mono"
+            type="text"
+            maxlength="24"
+            [disabled]="!!page.nameChangeAvailableAt()"
+            [ngModel]="page.nameInput()"
+            (ngModelChange)="page.nameInput.set($event)"
+            (keydown.enter)="page.saveName()"
+          />
+          @if (!page.nameChangeAvailableAt()) {
+            <button type="button" class="piqo-primary save-btn" [disabled]="!page.canSaveName()" (click)="page.saveName()">
+              {{ page.nameSaving() ? 'Guardando…' : 'Guardar' }}
             </button>
-          </div>
-          @if (nameHint(); as hint) {
-            <div class="notif-error mono">{{ hint }}</div>
+          }
+        </div>
+        @if (page.nameChangeAvailableAt(); as availableAt) {
+          <p class="hint mono">Ya lo has cambiado. Podras hacerlo de nuevo el {{ availableAt | date: 'dd/MM/yyyy' }}.</p>
+        } @else {
+          @if (page.nameHint(); as hint) {
+            <p class="error mono">{{ hint }}</p>
           }
         }
-        @if (nameError()) {
-          <div class="notif-error mono">{{ nameError() }}</div>
+        @if (page.nameError()) {
+          <p class="error mono">{{ page.nameError() }}</p>
         }
       </div>
     </div>
 
     <div class="section">
-      <div class="card notif-card">
+      <a class="card settings-link" routerLink="/profile/appearance">
         <div>
-          <div class="card-title">Notificaciones push</div>
-          @if (!pushNotifications.supported) {
-            <div class="notif-hint mono">Este navegador no las soporta.</div>
-          } @else if (!pushNotifications.configured) {
-            <div class="notif-hint mono">No configuradas en este entorno.</div>
-          } @else if (pushNotifications.permission() === 'granted') {
-            <div class="notif-hint mono">Activadas: recordatorios de cierre y resultados.</div>
-          } @else if (pushNotifications.permission() === 'denied') {
-            <div class="notif-hint mono">Bloqueadas en los permisos del navegador.</div>
-          } @else {
-            <div class="notif-hint mono">Avisa antes del cierre de jornada y cuando hay resultados.</div>
-          }
-          @if (pushNotifications.error()) {
-            <div class="notif-error mono">{{ pushNotifications.error() }}</div>
-          }
+          <p class="card-title">Apariencia</p>
+          <p class="hint mono">Claro, oscuro o según el sistema</p>
         </div>
-        @if (pushNotifications.supported && pushNotifications.configured && pushNotifications.permission() !== 'granted' && pushNotifications.permission() !== 'denied') {
-          <button class="notif-btn" [disabled]="pushNotifications.loading()" (click)="enablePushNotifications()">
-            {{ pushNotifications.loading() ? 'Activando...' : 'Activar' }}
-          </button>
-        }
-      </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
     </div>
-
-    @if (p.groups.length > 0) {
-      <div class="section">
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">Racha por grupo</span>
-          </div>
-          <div class="group-streaks">
-            @for (summary of p.groups; track summary.group.id) {
-              <div class="group-streak-row">
-                <div class="group-streak-top">
-                  <span class="group-name">{{ summary.group.name }}</span>
-                  <span class="mono">{{ summary.streak.currentStreak }} jornadas (mejor {{ summary.streak.longestStreak }})</span>
-                </div>
-              </div>
-            }
-          </div>
-          <div class="hint mono">La racha se rompe si no envias ninguna prediccion en una jornada.</div>
+    <div class="section">
+      <a class="card settings-link" routerLink="/notifications/preferences">
+        <div>
+          <p class="card-title">Preferencias de avisos</p>
+          <p class="hint mono">Qué avisos recibir y qué grupos silenciar</p>
         </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
+    </div>
+    <div class="section">
+      <a class="card settings-link" routerLink="/rules">
+        <div>
+          <p class="card-title">Normas y premios</p>
+          <p class="hint mono">Puntuación real y acuerdos del grupo</p>
+        </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
+    </div>
+    @if (page.authService.currentUser()?.hasPassword) {
+      <div class="section">
+        <a class="card settings-link" routerLink="/profile/change-password">
+          <div>
+            <p class="card-title">Cambiar contraseña</p>
+            <p class="hint mono">Actualiza la contraseña de tu cuenta</p>
+          </div>
+          <piqo-svg icon="flecha" size="18"></piqo-svg>
+        </a>
       </div>
     }
 
-    <div class="section-head">
-      <span class="eyebrow">INSIGNIAS</span>
-      <span class="count mono">{{ p.badges.length }} de {{ catalog().length }}</span>
-    </div>
-    <div class="badges-grid">
-      @for (item of badgeStates(); track item.badge.id) {
-        <div class="badge-tile" [class.earned]="item.earned">
-          <span class="badge-medal mono">{{ item.badge.name.slice(0, 2).toUpperCase() }}</span>
-          <span class="badge-name">{{ item.badge.name }}</span>
-          <span class="badge-hint mono">{{ item.badge.description }}</span>
-        </div>
-      }
-    </div>
-    <p class="footnote mono">El catalogo de insignias es extensible: cada una es una regla evaluada al cerrar la jornada.</p>
-
-    <button class="logout-btn" (click)="logout()">Cerrar sesion</button>
+    <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">Ver tutorial de nuevo</button>
+    <button type="button" class="logout-btn" (click)="page.logout()">Cerrar sesión</button>
   </div>
   }
 }

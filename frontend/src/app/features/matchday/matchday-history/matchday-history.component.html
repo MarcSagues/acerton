@@ -1,0 +1,64 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  <div class="page">
+    <div class="head-row">
+      <a routerLink="/rankings" class="back-btn">
+        <piqo-svg icon="atras" size="20"></piqo-svg>Clasificación
+      </a>
+    </div>
+    <div class="title-row">
+      <h1>Histórico de jornadas</h1>
+      @if (page.history(); as h) {
+        <p class="sub mono">{{ page.competitionName }} · {{ h.matchdays.length }} jornadas jugadas</p>
+      }
+    </div>
+
+    @if (page.history(); as h) {
+      @if (h.matchdays.length === 0) {
+        <app-empty-state
+          icon="historial"
+          title="Todavía no hay jornadas"
+          text="Todavía no hay ninguna jornada finalizada de esta competición."
+        ></app-empty-state>
+      } @else {
+        <div class="section">
+          <div class="rows">
+            @for (entry of h.matchdays; track entry.matchdayId) {
+              <button type="button" class="row" (click)="page.openMatchday(entry.matchdayId)">
+                <span class="order-badge">
+                  <span class="order-n mono">J{{ entry.order }}</span>
+                </span>
+                <span class="meta">
+                  @if (entry.winner) {
+                    <span class="title">Ganó {{ page.isMine(entry.winner.userId) ? 'tú' : entry.winner.name }}</span>
+                  } @else {
+                    <span class="title">Sin ganador registrado</span>
+                  }
+                  <span class="note mono">
+                    @if (entry.myPoints === null) {
+                      No participaste
+                    } @else {
+                      Tu puntuación: {{ entry.myPoints }}
+                    }
+                  </span>
+                </span>
+                <span class="pts">
+                  <span class="pts-value mono" [class.accent]="entry.winner && page.isMine(entry.winner.userId)">
+                    {{ entry.myPoints ?? '-' }}
+                  </span>
+                  <span class="pts-label mono">tus pts</span>
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <p class="footnote">
+          Media del grupo: {{ h.groupAverage !== null ? (h.groupAverage | number: '1.1-1') : '-' }} puntos por
+          jornada. Tu media: {{ h.userAverage !== null ? (h.userAverage | number: '1.1-1') : '-' }}.
+        </p>
+      }
+    }
+  </div>
+}

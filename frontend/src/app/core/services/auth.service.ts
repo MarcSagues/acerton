@@ -40,16 +40,48 @@ export class AuthService {
 
   constructor(private readonly http: HttpClient) {}
 
-  register(payload: RegisterPayload): Observable<AuthResponse> {
-    return this.http
-      .post<AuthResponse>(`${environment.apiUrl}/auth/register`, payload, { withCredentials: true })
-      .pipe(tap((res) => this.setSession(res)));
+  /**
+   * No inicia sesion: la cuenta queda sin verificar hasta confirmar el
+   * correo (ver login, que la bloquea, y verifyEmail, que la confirma e
+   * inicia sesion de una vez).
+   */
+  register(payload: RegisterPayload): Observable<{ email: string }> {
+    return this.http.post<{ email: string }>(`${environment.apiUrl}/auth/register`, payload);
   }
 
   login(payload: LoginPayload): Observable<AuthResponse> {
     return this.http
       .post<AuthResponse>(`${environment.apiUrl}/auth/login`, payload, { withCredentials: true })
       .pipe(tap((res) => this.setSession(res)));
+  }
+
+  /** Confirma la cuenta desde el enlace del correo e inicia sesion de una vez. */
+  verifyEmail(token: string): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${environment.apiUrl}/auth/verify-email`, { token }, { withCredentials: true })
+      .pipe(tap((res) => this.setSession(res)));
+  }
+
+  /** Respuesta identica exista o no la cuenta, o ya este verificada: nunca revela si un email esta registrado. */
+  resendVerification(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/auth/resend-verification`, { email });
+  }
+
+  /** Respuesta identica exista o no la cuenta, o sea solo-Google: nunca revela si un email esta registrado. */
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<{ success: true }> {
+    return this.http.post<{ success: true }>(`${environment.apiUrl}/auth/reset-password`, { token, newPassword });
+  }
+
+  /** Cambio de contrasena estando ya conectado (Ajustes de Perfil) — distinto de forgotPassword/resetPassword. */
+  changePassword(currentPassword: string, newPassword: string): Observable<{ success: true }> {
+    return this.http.patch<{ success: true }>(`${environment.apiUrl}/auth/me/password`, {
+      currentPassword,
+      newPassword,
+    });
   }
 
   /** Intenta recuperar sesion a partir de la cookie de refresh (arranque de la app o F5). */

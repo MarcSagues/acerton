@@ -1,21 +1,19 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { AuthService } from '../../../core/services/auth.service';
-import { GroupsService } from '../../../core/services/groups.service';
-import { GOOGLE_RETURN_URL_KEY } from '../auth-page/auth-page.component';
+import { Component, OnInit, inject } from '@angular/core';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
+import { AuthCallbackFacade } from './auth-callback.facade';
 
 @Component({
   selector: 'app-auth-callback',
   standalone: true,
-  imports: [MatProgressSpinnerModule],
+  imports: [SpinnerComponent],
+  providers: [AuthCallbackFacade],
   template: `
     <div class="callback-page">
-      @if (errorMessage()) {
-        <p>{{ errorMessage() }}</p>
+      @if (page.errorMessage()) {
+        <p>{{ page.errorMessage() }}</p>
       } @else {
-        <mat-spinner></mat-spinner>
-        <p>Completando inicio de sesion...</p>
+        <app-spinner [size]="32"></app-spinner>
+        <p>Completando inicio de sesión...</p>
       }
     </div>
   `,
@@ -23,9 +21,9 @@ import { GOOGLE_RETURN_URL_KEY } from '../auth-page/auth-page.component';
     `
       .callback-page {
         min-height: 100vh;
-        background: var(--bg);
-        color: var(--text-primary);
-        font-family: var(--font-ui);
+        background: var(--p4-bg);
+        color: var(--p4-text);
+        font-family: var(--p4-font-ui);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -36,38 +34,9 @@ import { GOOGLE_RETURN_URL_KEY } from '../auth-page/auth-page.component';
   ],
 })
 export class AuthCallbackComponent implements OnInit {
-  readonly errorMessage = signal<string | null>(null);
-
-  constructor(
-    private readonly route: ActivatedRoute,
-    private readonly router: Router,
-    private readonly authService: AuthService,
-    private readonly groupsService: GroupsService,
-  ) {}
+  readonly page = inject(AuthCallbackFacade);
 
   ngOnInit(): void {
-    const accessToken = this.route.snapshot.queryParamMap.get('accessToken');
-    if (!accessToken) {
-      this.errorMessage.set('Falta el token de acceso en la respuesta de Google');
-      return;
-    }
-
-    this.authService.completeGoogleLogin(accessToken).subscribe({
-      next: () => {
-        let returnUrl: string | null = null;
-        try {
-          returnUrl = sessionStorage.getItem(GOOGLE_RETURN_URL_KEY);
-          sessionStorage.removeItem(GOOGLE_RETURN_URL_KEY);
-        } catch {
-          /* sessionStorage no disponible: cae al destino generico */
-        }
-        if (returnUrl) {
-          this.router.navigateByUrl(returnUrl);
-          return;
-        }
-        this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route));
-      },
-      error: () => this.errorMessage.set('No se pudo completar el inicio de sesion con Google'),
-    });
+    this.page.init();
   }
 }

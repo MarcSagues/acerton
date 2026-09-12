@@ -1,0 +1,155 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-link" (click)="page.goBack()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+      {{ page.step() === 'details' ? 'Ligas' : 'Grupos' }}
+    </button>
+  </div>
+
+  @if (page.step() === 'competitions') {
+    <div class="title-row">
+      <h1>Crear grupo</h1>
+      <p class="lead">Elige al menos una liga para el grupo. Podrás añadir más después, pero no quitar estas.</p>
+    </div>
+    <div class="section">
+      <div class="comp-list">
+        @for (competition of page.catalog(); track competition.id) {
+          <button
+            type="button"
+            role="checkbox"
+            class="checkbox-card"
+            [attr.aria-checked]="page.selectedCompetitionIds().has(competition.id)"
+            [class.checked]="page.selectedCompetitionIds().has(competition.id)"
+            (click)="page.toggleCompetition(competition.id)"
+          >
+            @if (page.trophyId(competition); as trophy) {
+              <piqo-svg [attr.trophy]="trophy" variant="mini" size="22"></piqo-svg>
+            } @else {
+              <piqo-svg icon="trofeo" size="22"></piqo-svg>
+            }
+            <span class="radio-title">{{ competition.name }}</span>
+            <span class="checkbox-box"><piqo-svg icon="check" size="14"></piqo-svg></span>
+          </button>
+        }
+      </div>
+      <button
+        type="button"
+        class="piqo-primary cta"
+        [disabled]="page.selectedCompetitionIds().size === 0"
+        (click)="page.goToDetails()"
+      >
+        Continuar ({{ page.selectedCompetitionIds().size }})
+      </button>
+    </div>
+  } @else {
+    <div class="title-row">
+      <h1>Crear grupo</h1>
+      <p class="lead">Tú decides el nombre y quién entra. El modo de juego no se puede cambiar después.</p>
+    </div>
+
+    <form [formGroup]="page.form" (ngSubmit)="page.createGroup()" class="form">
+      <label class="field">
+        <span class="field-label">Nombre del grupo <span class="required">· obligatorio</span></span>
+        <input class="field-input" formControlName="name" placeholder="El grupo del domingo" />
+        @if (page.form.controls.name.invalid && page.form.controls.name.touched) {
+          <span class="hint error">Escribe un nombre de al menos 3 caracteres.</span>
+        }
+      </label>
+      <label class="field">
+        <span class="field-label">Descripción <span class="required">· opcional</span></span>
+        <input class="field-input" formControlName="description" placeholder="Pique entre amigos de toda la vida" />
+      </label>
+
+      <div class="field">
+        <span class="field-label">Modo de puntuación</span>
+        <div class="radio-group">
+          <button
+            type="button"
+            role="radio"
+            class="radio-card"
+            [attr.aria-checked]="page.form.value.scoringMode === 'ONE_X_TWO'"
+            [class.checked]="page.form.value.scoringMode === 'ONE_X_TWO'"
+            (click)="page.setScoringMode('ONE_X_TWO')"
+          >
+            <piqo-svg icon="marcador" size="22"></piqo-svg>
+            <span class="radio-text">
+              <span class="radio-title">Quiniela 1X2</span>
+              <span class="radio-desc">1 punto por acertar 1X2.</span>
+            </span>
+            <span class="radio-outer"><span class="radio-inner"></span></span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="radio-card"
+            [attr.aria-checked]="page.form.value.scoringMode === 'EXACT_SCORE'"
+            [class.checked]="page.form.value.scoringMode === 'EXACT_SCORE'"
+            (click)="page.setScoringMode('EXACT_SCORE')"
+          >
+            <piqo-svg icon="objetivo" size="22"></piqo-svg>
+            <span class="radio-text">
+              <span class="radio-title">Resultado exacto</span>
+              <span class="radio-desc">5 puntos por marcador exacto, 2 por acertar solo el resultado.</span>
+            </span>
+            <span class="radio-outer"><span class="radio-inner"></span></span>
+          </button>
+        </div>
+        <!-- Enlace "¿Cómo funciona el comodín?" escondido: el comodín está
+             marcado como "Próximamente" en ajustes del grupo y no se
+             menciona en la creación (ver issue de GitHub #22). -->
+        <p class="hint">No podrás cambiar el modo después de crear el grupo.</p>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Privacidad</span>
+        <div class="radio-group">
+          <button
+            type="button"
+            role="radio"
+            class="radio-card"
+            [attr.aria-checked]="!page.form.value.isPublic"
+            [class.checked]="!page.form.value.isPublic"
+            (click)="page.setPrivacy(false)"
+          >
+            <piqo-svg icon="candado" size="22"></piqo-svg>
+            <span class="radio-text">
+              <span class="radio-title">Privado</span>
+              <span class="radio-desc">Solo se puede entrar con el enlace o código de invitación.</span>
+            </span>
+            <span class="radio-outer"><span class="radio-inner"></span></span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="radio-card"
+            [attr.aria-checked]="page.form.value.isPublic"
+            [class.checked]="page.form.value.isPublic"
+            (click)="page.setPrivacy(true)"
+          >
+            <piqo-svg icon="publico" size="22"></piqo-svg>
+            <span class="radio-text">
+              <span class="radio-title">Público</span>
+              <span class="radio-desc">Cualquiera puede verlo y unirse sin invitación.</span>
+            </span>
+            <span class="radio-outer"><span class="radio-inner"></span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="callout warning">
+        <piqo-svg icon="alerta" size="20"></piqo-svg>
+        <span>
+          El modo {{ page.form.value.scoringMode === 'EXACT_SCORE' ? 'resultado exacto' : '1X2' }} queda fijado al
+          crear el grupo. No podrás cambiarlo más adelante.
+        </span>
+      </div>
+
+      @if (page.errorMessage()) {
+        <p class="error">{{ page.errorMessage() }}</p>
+      }
+      <button type="submit" class="piqo-primary cta" [disabled]="page.formLoading()">
+        {{ page.formLoading() ? 'Creando…' : 'Crear grupo con modo ' + (page.form.value.scoringMode === 'EXACT_SCORE' ? 'resultado exacto' : '1X2') }}
+      </button>
+    </form>
+  }
+</div>

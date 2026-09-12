@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicUser } from '../auth/auth.types';
 import { NAME_CHANGE_COOLDOWN_MS, toPublicUser } from '../auth/public-user.util';
+import { AvatarBackground, AvatarMascotId, mascotAssetPath } from './avatar-catalog';
 
 @Injectable()
 export class UsersService {
@@ -43,6 +44,39 @@ export class UsersService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { name: name.trim(), usernameConfirmed: true, nameChangedAt: new Date() },
+    });
+    return toPublicUser(updated);
+  }
+
+  /** Elige un avatar del catalogo de mascota con un color de fondo de la paleta cerrada (ver avatar-catalog.ts). */
+  async updateAvatar(
+    userId: string,
+    mascotId: AvatarMascotId,
+    background: AvatarBackground,
+  ): Promise<PublicUser> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: mascotAssetPath(mascotId), avatarBackground: background },
+    });
+    return toPublicUser(updated);
+  }
+
+  /**
+   * Marca el tutorial como visto (terminado u omitido) por primera vez.
+   * Idempotente: repetirlo no adelanta ni cambia la fecha ya guardada, para
+   * que "repetir el tutorial" desde Perfil no reinicie nada por si solo.
+   */
+  async completeTutorial(userId: string): Promise<PublicUser> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    if (user.tutorialCompletedAt) {
+      return toPublicUser(user);
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { tutorialCompletedAt: new Date() },
     });
     return toPublicUser(updated);
   }

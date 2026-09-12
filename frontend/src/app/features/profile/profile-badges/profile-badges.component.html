@@ -1,0 +1,44 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  <div class="page">
+    <div class="head-row">
+      <button type="button" class="back-btn" (click)="page.goBack()">
+        <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+      </button>
+    </div>
+    <div class="title-row">
+      <h1>Insignias</h1>
+      <p class="lead">Cinco hitos, una familia visual. La regla se lee antes de celebrarse.</p>
+      <p class="count mono">{{ page.earnedCount() }} de {{ page.totalCount() }}</p>
+    </div>
+
+    <div class="badges">
+      @for (item of page.badgeStates(); track item.badge.id) {
+        <div class="badge-card">
+          @if (page.artId(item.badge.code); as artId) {
+            <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="96"></piqo-svg>
+          } @else {
+            <piqo-svg [attr.icon]="item.earned ? 'medalla' : 'candado'" size="32" [class.earned]="item.earned"></piqo-svg>
+          }
+          <div class="meta">
+            <span class="name">{{ item.badge.name }}</span>
+            <span class="desc">{{ item.badge.description }}</span>
+            <span class="chip" [class.earned]="item.earned">{{ item.earned ? 'Conseguida' : 'Pendiente' }}</span>
+            @if (item.progress; as progress) {
+              <div class="progress-row">
+                <div class="progress-track">
+                  <div class="progress-fill" [style.width.%]="(progress.current / progress.target) * 100"></div>
+                </div>
+                <span class="progress-label mono">{{ progress.current }}/{{ progress.target }}</span>
+              </div>
+            }
+            @if (item.percentage != null) {
+              <span class="percentage">La tienen el {{ item.percentage }}% de los jugadores</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

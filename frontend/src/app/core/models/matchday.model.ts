@@ -38,3 +38,12 @@ export interface CurrentMatchdayEntry {
   competition: Competition;
   matchday: Matchday;
 }
+
+export interface MatchdaySummary {
+  id: string;
+  order: number;
+  status: MatchdayStatus;
+  closesAt: string;
+  /** null si el usuario no tiene ningun pronostico en esa jornada (futura, o se unio despues). */
+  points: number | null;
+}

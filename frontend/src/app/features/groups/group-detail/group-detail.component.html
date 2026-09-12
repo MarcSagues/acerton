@@ -1,178 +1,207 @@
-@if (loading()) {
-  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
-  @if (group(); as g) {
+  @if (page.group(); as g) {
     <div class="page">
-      <header class="head">
-        <a routerLink="/groups" class="back">&lt;</a>
-        <div>
-          <div class="title">Ajustes del grupo</div>
-          <div class="sub mono">{{ g.name }} · {{ isAdmin() ? 'eres admin' : 'miembro' }}</div>
-        </div>
-      </header>
-
-      <div class="section">
-        <div class="card">
-          <div class="eyebrow">LINK DE INVITACION</div>
-          <div class="invite-row">
-            <div class="invite-code mono">{{ g.inviteCode }}</div>
-            <button class="copy-btn" [disabled]="justCopiedInviteLink()" (click)="copyInviteLink()">
-              @if (justCopiedInviteLink()) {
-                <mat-icon inline>check</mat-icon> Copiado
-              } @else {
-                <mat-icon inline>content_copy</mat-icon> Copiar link
-              }
-            </button>
-          </div>
-          <div class="invite-url mono">{{ inviteLink() }}</div>
-        </div>
+      <div class="head-row">
+        <a routerLink="/groups" class="back-link">
+          <piqo-svg icon="atras" size="20"></piqo-svg>
+          Grupos
+        </a>
+      </div>
+      <div class="title-row">
+        <h1>Ajustes del grupo</h1>
+        <p class="sub mono">{{ g.name | uppercase }} · {{ g.isPublic ? 'PÚBLICO' : 'PRIVADO' }}</p>
       </div>
 
+      <h2 class="section-title">Invitación</h2>
       <div class="section">
-        <div class="section-head">
-          <span class="eyebrow">COMPETICIONES ACTIVAS</span>
-          <span class="count mono">{{ selectedCompetitionIds().size }} de {{ catalog().length }}</span>
+        <div class="card invite-card">
+          <p class="hint">El código solo se ve dentro del grupo.</p>
+          <div class="invite-row">
+            <span class="invite-code mono">{{ g.inviteCode }}</span>
+            <button type="button" class="copy-btn" [disabled]="page.justCopiedCode()" (click)="page.copyCode()">
+              <piqo-svg [attr.icon]="page.justCopiedCode() ? 'check' : 'copiar'" size="18"></piqo-svg>
+              {{ page.justCopiedCode() ? 'Copiado' : 'Copiar' }}
+            </button>
+          </div>
+          @if (page.justCopiedCode()) {
+            <p class="copied-msg">
+              <piqo-svg icon="check" size="16"></piqo-svg>
+              Código copiado
+            </p>
+          }
         </div>
+        <button type="button" class="link-btn mono" (click)="page.goToInvite()">Compartir enlace de invitación</button>
+      </div>
+
+      <h2 class="section-title">Competiciones</h2>
+      <div class="section">
         <div class="comp-list">
-          @for (competition of catalog(); track competition.id) {
-            <div
-              class="comp-row"
-              [class.active]="selectedCompetitionIds().has(competition.id)"
-              [class.disabled]="!isAdmin() || isLocked(competition.id)"
-              (click)="toggleCompetition(competition.id)"
-            >
-              <span class="comp-abbr mono">{{ competition.name.slice(0, 3).toUpperCase() }}</span>
-              <div class="comp-meta">
-                <div class="comp-name">{{ competition.name }}</div>
-                <div class="comp-code mono">
-                  {{ competition.code }}
-                  @if (isLocked(competition.id)) {
-                    · activada, no se puede quitar
-                  }
-                </div>
-              </div>
-              @if (isLocked(competition.id)) {
-                <mat-icon class="lock-icon" inline>lock</mat-icon>
+          @for (competition of page.catalog(); track competition.id) {
+            <div class="comp-row" [class.disabled]="!page.isAdmin() || page.isLocked(competition.id)">
+              @if (page.trophyId(competition); as trophy) {
+                <piqo-svg [attr.trophy]="trophy" variant="mini" size="24"></piqo-svg>
               } @else {
-                <span class="toggle" [class.on]="selectedCompetitionIds().has(competition.id)">
-                  <span class="knob"></span>
-                </span>
+                <piqo-svg icon="trofeo" size="24"></piqo-svg>
               }
+              <div class="comp-text">
+                <span class="comp-name">{{ competition.name }}</span>
+                @if (page.competitionStatus(competition).tone === 'accent') {
+                  <span class="status-chip accent">{{ page.competitionStatus(competition).label }}</span>
+                }
+              </div>
+              <button
+                type="button"
+                class="toggle"
+                [class.on]="page.isLocked(competition.id) || page.selectedCompetitionIds().has(competition.id)"
+                [class.disabled]="!page.isAdmin() || page.isLocked(competition.id)"
+                [attr.aria-label]="competition.name"
+                (click)="page.toggleCompetition(competition.id)"
+              >
+                <span class="knob"></span>
+              </button>
             </div>
           }
         </div>
       </div>
 
+      <h2 class="section-title">Reglas</h2>
       <div class="section">
-        <div class="section-head">
-          <span class="eyebrow">REGLAS</span>
-        </div>
         <div class="rules">
           <div class="rule-card">
-            <div>
-              <div class="rule-name">Modo de puntuacion</div>
-              <div class="rule-hint mono">Fijo, elegido al crear el grupo</div>
+            <piqo-svg icon="marcador" size="22"></piqo-svg>
+            <div class="rule-text">
+              <p class="rule-name">{{ g.scoringMode === 'EXACT_SCORE' ? 'Modo resultado exacto' : 'Modo 1X2' }}</p>
+              <p class="hint">
+                @if (g.scoringMode === 'EXACT_SCORE') {
+                  5 puntos por marcador exacto, 2 por acertar solo el ganador.
+                } @else {
+                  1 punto por acertar 1X2.
+                }
+                El modo no se modifica después del alta.
+              </p>
             </div>
-            <div class="rule-value mono">{{ g.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</div>
+            <piqo-svg icon="candado" size="18"></piqo-svg>
           </div>
-          @if (g.scoringMode === 'EXACT_SCORE') {
+
+          @if (g.scoringMode === 'ONE_X_TWO') {
             <div class="rule-card">
-              <div>
-                <div class="rule-name">Puntos por marcador exacto</div>
-                <div class="rule-hint mono">Fijo para todo el grupo</div>
+              <piqo-svg icon="comodin" size="22"></piqo-svg>
+              <div class="rule-text">
+                <p class="rule-name">Comodín de remontada <span class="soon-badge">Próximamente</span></p>
+                <p class="hint">Doble oportunidad (1X/X2/12) para quien va por detrás.</p>
               </div>
-              <div class="rule-value mono">5</div>
-            </div>
-            <div class="rule-card">
-              <div>
-                <div class="rule-name">Puntos por acertar solo el ganador</div>
-                <div class="rule-hint mono">Fijo para todo el grupo</div>
-              </div>
-              <div class="rule-value mono">2</div>
-            </div>
-          } @else {
-            <div class="rule-card">
-              <div>
-                <div class="rule-name">Puntos por acierto 1X2</div>
-                <div class="rule-hint mono">Fijo para todo el grupo</div>
-              </div>
-              <div class="rule-value mono">1</div>
-            </div>
-            <div class="rule-card">
-              <div>
-                <div class="rule-name">Comodin de remontada</div>
-                <div class="rule-hint mono">Doble oportunidad (1X/X2/12) para quien va por detras</div>
-              </div>
-              <span
+              <button
+                type="button"
                 class="toggle"
-                [class.on]="selectedComebackEnabled()"
-                [class.disabled]="!isAdmin()"
-                (click)="toggleComebackEnabled()"
+                [class.on]="page.selectedComebackEnabled()"
+                [class.disabled]="!page.isAdmin()"
+                (click)="page.toggleComebackEnabled()"
               >
                 <span class="knob"></span>
-              </span>
+              </button>
             </div>
             <div class="rule-card">
-              <div>
-                <div class="rule-name">Puntos por opcion doble</div>
-                <div class="rule-hint mono">Cada N puntos de diferencia con el lider dan 1 uso mas esa jornada</div>
+              <piqo-svg icon="marcador" size="22"></piqo-svg>
+              <div class="rule-text">
+                <p class="rule-name">Puntos por opción doble <span class="soon-badge">Próximamente</span></p>
+                <p class="hint">Cada N puntos de diferencia con el líder dan 1 uso más esa jornada.</p>
               </div>
-              @if (editingRules()) {
+              @if (page.editingRules()) {
                 <input
                   class="rule-input mono"
                   type="number"
                   min="1"
                   max="50"
-                  [value]="comebackPointsPerBonusInput()"
-                  (input)="comebackPointsPerBonusInput.set(+$any($event.target).value)"
+                  [value]="page.comebackPointsPerBonusInput()"
+                  (input)="page.comebackPointsPerBonusInput.set(+$any($event.target).value)"
                 />
               } @else {
-                <div class="rule-value mono">{{ g.comebackPointsPerBonus }}</div>
+                <span class="rule-value mono">{{ g.comebackPointsPerBonus }}</span>
               }
             </div>
           }
+
           <div class="rule-card">
-            <div>
-              <div class="rule-name">Grupo privado</div>
-              <div class="rule-hint mono">Solo por link de invitacion</div>
+            <piqo-svg icon="candado" size="22"></piqo-svg>
+            <div class="rule-text">
+              <p class="rule-name">Grupo privado</p>
+              <p class="hint">Solo por link de invitación.</p>
             </div>
-            <span
+            <button
+              type="button"
               class="toggle"
-              [class.on]="!selectedIsPublic()"
-              [class.disabled]="!isAdmin()"
-              (click)="togglePrivacy()"
+              [class.on]="!page.selectedIsPublic()"
+              [class.disabled]="!page.isAdmin()"
+              (click)="page.togglePrivacy()"
             >
               <span class="knob"></span>
-            </span>
+            </button>
           </div>
         </div>
-        @if (editingRules()) {
+        @if (page.editingRules()) {
           <div class="rules-actions">
-            <button class="btn ghost" [disabled]="savingRules()" (click)="cancelEditingRules()">Cancelar</button>
+            <button type="button" class="piqo-secondary" [disabled]="page.savingRules()" (click)="page.cancelEditingRules()">
+              Cancelar
+            </button>
           </div>
-        } @else if (isAdmin() && g.scoringMode === 'ONE_X_TWO') {
-          <button class="edit-rules-btn mono" (click)="startEditingRules()">Editar reglas</button>
+        } @else if (page.isAdmin() && g.scoringMode === 'ONE_X_TWO') {
+          <button type="button" class="link-btn mono" (click)="page.startEditingRules()">Editar reglas</button>
         }
       </div>
 
+      <h2 class="section-title">Miembros · {{ page.members().length }}</h2>
       <div class="section">
-        <div class="eyebrow">MIEMBROS · {{ members().length }}</div>
         <div class="members">
-          @for (member of members(); track member.id) {
+          @for (member of page.members(); track member.id) {
             <div class="member-row">
               <span class="avatar">{{ member.user.name.slice(0, 2).toUpperCase() }}</span>
               <span class="member-name">{{ member.user.name }}</span>
-              @if (member.role === 'ADMIN') {
-                <span class="admin-badge">Admin</span>
+              <span class="member-role">{{ page.roleLabel(member) }}</span>
+              @if (page.hasMemberActions(member)) {
+                <button
+                  type="button"
+                  class="member-menu-btn"
+                  aria-label="Acciones del miembro"
+                  [disabled]="page.savingMembership()"
+                  (click)="page.openMemberActions(member)"
+                >
+                  <piqo-svg icon="mas-opciones" size="18"></piqo-svg>
+                </button>
               }
             </div>
           }
         </div>
       </div>
+
+      <div class="section leave-section">
+        <button
+          type="button"
+          class="leave-btn"
+          [disabled]="page.isOwner() || page.savingMembership()"
+          (click)="page.leaveGroupPrompt()"
+        >
+          <piqo-svg icon="salir" size="20"></piqo-svg>
+          Salir del grupo
+        </button>
+        @if (page.isOwner()) {
+          <p class="hint">Transfiere la propiedad o elimina el grupo antes de salir.</p>
+          <button type="button" class="delete-group-btn mono" [disabled]="page.savingMembership()" (click)="page.deleteGroupPrompt()">
+            Eliminar grupo
+          </button>
+        } @else {
+          <p class="hint">Perderás el acceso a la clasificación y a los pronósticos de este grupo.</p>
+        }
+      </div>
     </div>
 
-    <div class="floating-save" [class.visible]="isAdmin() && hasAnyChanges()">
-      <button class="cta" [disabled]="saving()" (click)="saveChanges()">Guardar cambios</button>
-    </div>
+    @if (page.isAdmin() && page.hasAnyChanges()) {
+      <div class="floating-save">
+        <button type="button" class="piqo-primary cta" [disabled]="page.saving()" (click)="page.saveChanges()">
+          Guardar cambios
+        </button>
+      </div>
+    }
   }
 }

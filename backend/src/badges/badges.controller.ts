@@ -11,8 +11,18 @@ export class BadgesController {
     return this.badgesService.findCatalog();
   }
 
+  @Get('stats')
+  getStats() {
+    return this.badgesService.getEarnStats();
+  }
+
   @Get('me')
   getMine(@CurrentUser() user: AuthenticatedUser) {
     return this.badgesService.getForUser(user.id);
+  }
+
+  @Get('me/progress')
+  getMyProgress(@CurrentUser() user: AuthenticatedUser) {
+    return this.badgesService.getProgressForUser(user.id);
   }
 }

@@ -1,0 +1,31 @@
+<div class="sheet-inner">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <h2>Tus grupos</h2>
+    <button type="button" class="close-btn" aria-label="Cerrar" (click)="close()">
+      <piqo-svg icon="cerrar" size="22"></piqo-svg>
+    </button>
+  </div>
+  <div class="sheet-list" role="listbox" aria-label="Elegir grupo">
+    @for (group of activeGroupService.groups(); track group.id) {
+      <button
+        type="button"
+        role="option"
+        class="row"
+        [class.active]="group.id === activeGroupService.activeGroup()?.id"
+        [attr.aria-selected]="group.id === activeGroupService.activeGroup()?.id"
+        (click)="select(group.id)"
+      >
+        <span class="avatar">{{ initials(group.name) }}</span>
+        <span class="meta">
+          <span class="name">{{ group.name }}</span>
+          <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
+        </span>
+        @if (group.id === activeGroupService.activeGroup()?.id) {
+          <piqo-svg icon="check" size="22"></piqo-svg>
+        }
+      </button>
+    }
+  </div>
+  <button type="button" class="all-groups-btn" (click)="goToAllGroups()">Ver todos los grupos</button>
+</div>

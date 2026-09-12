@@ -1,0 +1,43 @@
+.top-bar {
+  padding: 6px 20px 0;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--p4-text);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.icon-btn,
+.avatar-btn {
+  position: relative;
+  width: var(--p4-touch);
+  height: var(--p4-touch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--p4-muted);
+}
+
+.unread-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: var(--p4-error);
+  color: var(--p4-on-accent);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+

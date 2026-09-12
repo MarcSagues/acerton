@@ -1,0 +1,50 @@
+@if (page.loading()) {
+  <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+} @else {
+  <div class="page">
+    <header class="head">
+      <a routerLink="/matchday" class="back">&lt; Jornada</a>
+      <span class="title">Elegir jornada</span>
+      <span class="spacer"></span>
+    </header>
+
+    <div class="content">
+      <div class="comp-name">{{ page.competitionName }}</div>
+
+      @if (page.matchdays().length === 0) {
+        <p class="empty">Todavia no hay jornadas guardadas de esta competicion.</p>
+      } @else {
+        <div class="grid">
+          @for (matchday of page.matchdays(); track matchday.id) {
+            <button
+              type="button"
+              class="cell"
+              [class.played]="page.state(matchday) === 'played'"
+              [class.open]="page.state(matchday) === 'open'"
+              [class.upcoming]="page.state(matchday) === 'upcoming'"
+              [disabled]="page.state(matchday) === 'upcoming'"
+              (click)="page.open(matchday)"
+            >
+              <span class="cell-order mono">{{ matchday.order }}</span>
+              <span class="cell-sub mono">
+                @if (page.state(matchday) === 'played') {
+                  {{ matchday.points! > 0 ? '+' : '' }}{{ matchday.points }}
+                } @else if (page.state(matchday) === 'open') {
+                  abierta
+                } @else {
+                  &mdash;
+                }
+              </span>
+            </button>
+          }
+        </div>
+
+        <div class="legend">
+          <span class="mono"><span class="dot played"></span>Jugada &middot; tus puntos</span>
+          <span class="mono"><span class="dot open"></span>Abierta ahora</span>
+          <span class="mono"><span class="dot upcoming"></span>Proxima</span>
+        </div>
+      }
+    </div>
+  </div>
+}

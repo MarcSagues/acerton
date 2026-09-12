@@ -4,6 +4,101 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-10 — Sprint 5 (fin de temporada) — sustituye la decisión anterior
+
+- **Sustituye la respuesta inicial** ("fecha fija configurable, ej. 1 de
+  julio") dada a la pregunta "¿cómo detectamos que ha terminado la
+  temporada de un grupo?". El usuario la corrigió con la regla real:
+
+  > El final de temporada se tiene que calcular: cada liga termina una
+  > fecha u otra. Si el grupo tiene Champions y Liga, el final de
+  > temporada es el último partido que se juega entre las dos
+  > competiciones; si solo tiene Champions, es la final de Champions. Si
+  > ese partido se aplaza, tiene que poder recalcularse — se puede dar un
+  > preview de cuándo termina, pero no se da por finalizada hasta hacer
+  > el recuento del último partido; si ya no quedan más, se cierra la
+  > temporada.
+
+- **Diseño resultante** (por grupo, no global — cada grupo tiene sus
+  propias competiciones activas y por tanto su propia fecha):
+  - **Preview** (estimación, puede cambiar): para cada competición activa
+    del grupo, se pide al proveedor el calendario completo de la
+    temporada (`/competitions/{id}/matches?season=N`, sin filtrar por
+    jornada — una sola petición, no una por jornada) y se guarda la fecha
+    del partido más tardío conocido (`Competition.seasonEndPreviewAt`,
+    refrescado periódicamente, no en cada petición, para no gastar cupo
+    del plan gratuito). El preview del grupo es el máximo de esa fecha
+    entre sus competiciones activas.
+  - **Cierre real** (definitivo, no se reabre): se comprueba como parte
+    del flujo que ya existe al finalizar una jornada
+    (`MatchdaysService.syncResultsForClosedMatchdays` →
+    `newlyFinished`). Cuando una jornada pasa a `FINISHED`, si su partido
+    es (o iguala) el último conocido para su competición, se vuelve a
+    consultar el calendario completo una vez más (por si se aplazó o
+    añadió algo) antes de dar la competición por terminada. Cuando todas
+    las competiciones activas del grupo están así de terminadas, se cierra
+    la temporada del grupo (`GroupSeason.endedAt`).
+  - Modelo nuevo `GroupSeason` (una fila por grupo y temporada, con
+    `endedAt` null mientras está en curso) en vez de una tabla `Season`
+    global: cada grupo puede tener conjuntos de competiciones distintos y
+    por tanto fechas de cierre distintas. `RankingSnapshot` (y, en
+    incrementos posteriores de este sprint, `Streak`/elegibilidad) se
+    vincula a la temporada abierta del grupo en el momento de guardarse.
+  - Añadir una competición nueva a un grupo sin temporada abierta (la
+    anterior ya cerró) abre una temporada nueva en ese momento.
+
+- **Alcance de este incremento del Sprint 5**: solo la base de temporada
+  (modelo + detección de cierre + preview + `RankingSnapshot` vinculado).
+  Elegibilidad, racha global y estadísticas agregadas quedan para
+  incrementos posteriores del mismo sprint — decisión tomada por tamaño,
+  confirmada con el usuario ("vamos por sprint 5 aunque sea más largo").
+
+## 2026-09-10 — Sprint 4 (tutorial)
+
+- **Sustituye la primera implementación del tutorial** (modal centrado de
+  texto, `TutorialOverlayComponent`) por un recorrido guiado tipo
+  "coach mark": cada paso resalta (spotlight) el elemento real de la
+  interfaz al que se refiere, con una burbuja anclada junto a él, en vez
+  de describirlo en texto suelto dentro de un cuadro genérico. Motivo
+  (feedback explícito del usuario): "el tutorial debe ser dinámico sobre
+  las opciones que hay, no solo texto". El paso que señala el botón
+  "Jornada" avanza al detectar la navegación real a esa pantalla (el
+  usuario pulsa el botón real), no con un botón "Siguiente" propio —
+  sigue sin obligar a enviar ningún pronóstico real, que es lo único que
+  `product-rules.md` prohíbe explícitamente.
+
+## 2026-09-10 — Sprint 3 (roles y membresías)
+
+- **Propietario como campo (`Group.ownerId`), no como rol nuevo.** Entre
+  añadir `OWNER` a `GroupRole` o un campo `ownerId` directo en `Group`, el
+  usuario eligió `ownerId` (opción recomendada): hace trivial "el creador
+  nunca puede ser expulsado ni degradado" (comparar contra `ownerId`) sin
+  tocar el enum de roles ni los sitios que ya distinguen ADMIN/MEMBER. El
+  propietario mantiene además `role=ADMIN` en su `GroupMembership`, para
+  que los chequeos de admin existentes (`assertIsAdmin`) seguían
+  cubriéndolo sin cambios.
+- **Borrado lógico (`Group.deletedAt`), no separar historial a otra
+  tabla.** El usuario eligió borrado lógico (opción recomendada): cambio
+  pequeño y de bajo riesgo, no toca las relaciones `onDelete: Cascade`
+  existentes. Un grupo eliminado desaparece de `mine`/`public`/`findOne`/
+  unirse por invitación, pero la fila y su historial (predicciones,
+  rachas, insignias, clasificaciones) se conservan indefinidamente.
+- **Backfill de `ownerId` para grupos existentes**: el admin más antiguo
+  de cada grupo (`ORDER BY joinedAt ASC` entre sus `GroupMembership` con
+  `role=ADMIN`). Válido porque hoy el único camino para ser ADMIN es
+  haber creado el grupo (`GroupsService.create`) — no existía todavía
+  forma de promover a nadie antes de este sprint. Verificado que las 14
+  filas de `groups` en la base de datos local tenían exactamente un admin
+  cada una antes de aplicar la migración.
+- **Expulsar un admin no es una operación directa**: ni un admin ni el
+  propio propietario pueden expulsar (`kickMember`) a otro admin o al
+  propietario en un solo paso — hay que quitarle antes el rol de admin
+  (`updateMemberRole`, exclusivo del propietario) y expulsarlo después
+  como miembro normal. Motivo: `product-rules.md` da al creador
+  "nombrar/quitar administradores" como potestad explícita, pero no dice
+  en ningún sitio que el creador pueda expulsar directamente a un admin —
+  separar ambos pasos evita inventarse un permiso no pedido.
+
 ## 2026-09-10 — Sprint 2 (corrección de la regla de Seguimiento en GitHub)
 
 - **Sustituye la decisión de Sprint 0/1** sobre cuándo mover un issue a

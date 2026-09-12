@@ -7,10 +7,10 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "app.acerton.quiniela"
+    namespace = "app.piqo.es"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.acerton.quiniela"
+        applicationId "app.piqo.es"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
