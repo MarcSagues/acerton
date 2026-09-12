@@ -91,7 +91,7 @@
               </span>
             </span>
             <span class="col-name">
-              <span class="avatar">{{ page.initials(row.user.name) }}</span>
+              <app-avatar [url]="row.user.avatarUrl" [background]="row.user.avatarBackground" [name]="row.user.name" [size]="28"></app-avatar>
               <span class="name">{{ row.user.name }}</span>
             </span>
             <span class="col-pts mono">{{ row.points }}</span>

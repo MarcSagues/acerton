@@ -168,8 +168,8 @@
               </div>
             } @else {
               <div class="crests-row">
-                <span class="team-name">
-                  {{ match.homeTeam }}
+                <span class="team-block">
+                  <span class="team-name">{{ match.homeTeam }}</span>
                   @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.homeScore }}</span>
                   }
@@ -179,11 +179,11 @@
                 } @else {
                   <span class="vs mono">VS</span>
                 }
-                <span class="team-name">
+                <span class="team-block">
                   @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.awayScore }}</span>
                   }
-                  {{ match.awayTeam }}
+                  <span class="team-name">{{ match.awayTeam }}</span>
                 </span>
               </div>
               @if (!page.isExactScore()) {

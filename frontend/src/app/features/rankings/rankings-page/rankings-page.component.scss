@@ -276,19 +276,6 @@ h1 {
   min-width: 0;
 }
 
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--p4-soft);
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 600 10px/1 var(--p4-font-ui);
-  color: var(--p4-accent);
-}
-
 .name {
   font: 500 13px/1.2 var(--p4-font-ui);
   overflow: hidden;
