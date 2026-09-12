@@ -5,7 +5,7 @@
 }
 
 .head-row {
-  padding: 8px 20px 0;
+  padding: calc(env(safe-area-inset-top) + 8px) 20px 0;
 }
 
 .back-link {
@@ -83,6 +83,15 @@ h1 {
   align-items: center;
   justify-content: center;
   color: transparent;
+
+  /* ".checkbox-card piqo-svg" (arriba) fija en dorado el icono de trofeo
+     de la fila y, al ser un selector sin acotar, tambien alcanzaba a este
+     icono de check haciendolo visible siempre; se le devuelve el color
+     heredado (transparente u on-accent segun .checked mas abajo) con una
+     especificidad mayor para que gane. */
+  piqo-svg {
+    color: inherit;
+  }
 }
 
 .checkbox-card.checked .checkbox-box {
