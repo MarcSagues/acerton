@@ -7,6 +7,7 @@
 }
 
 .page {
+  position: relative;
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -354,7 +355,9 @@
 }
 
 /* Fondo invisible a pantalla completa: un solo toque fuera del tooltip
-   lo cierra, sin necesitar un listener global de click. */
+   lo cierra, sin necesitar un listener global de click. position:fixed
+   aqui si vale (es solo un tapiz para detectar el toque, su posicion
+   exacta no importa). */
 .comparison-tooltip-backdrop {
   position: fixed;
   inset: 0;
@@ -364,14 +367,20 @@
   padding: 0;
 }
 
-/* position:fixed (coordenadas calculadas en el TS a partir del propio
-   avatar pulsado) en vez de absolute dentro de la tabla: la tabla tiene
-   overflow-x:auto/overflow:hidden (esquinas redondeadas + scroll
-   horizontal) y recortaba el nombre cuando el avatar estaba arriba del
-   todo. Fixed lo saca de ese recorte sin importar el scroll ni en que
-   fila este el avatar. */
+/* position:absolute (no fixed) con coordenadas relativas a .page,
+   calculadas en el TS a partir del propio avatar pulsado: la tabla
+   tiene overflow-x:auto/overflow:hidden (esquinas redondeadas + scroll
+   horizontal) y recortaba el nombre. fixed no sirve aqui porque .page
+   ya actua como "containing block" de sus descendientes fixed (la
+   animacion de entrada piqoUp de styles.scss anima su transform, y eso
+   basta para que cualquier position:fixed dentro se posicione relativo
+   a .page en vez de al viewport, aunque el valor final de transform
+   sea "none" — asi que en vez de pelear con eso, position:relative en
+   .page (ver arriba) + absolute aqui, con las mismas coordenadas que
+   ya calculamos, resuelto correctamente en vez de "colandose" al
+   viewport real y saliendo muy descolocado. */
 .comparison-tooltip-floating {
-  position: fixed;
+  position: absolute;
   transform: translate(-50%, calc(-100% - 8px));
   padding: 5px 9px;
   border-radius: 8px;

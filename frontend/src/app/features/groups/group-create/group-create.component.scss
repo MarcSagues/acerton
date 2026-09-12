@@ -62,7 +62,7 @@ h1 {
 
 .radio-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
 }
 
@@ -114,16 +114,26 @@ h1 {
   color: var(--p4-on-accent);
 }
 
+/* Dos cuadrados en fila en vez de dos filas apiladas: el propio fondo +
+   borde de ".checked" ya deja claro cual esta seleccionado (mismo
+   criterio que el grupo activo en Grupos), asi que se quita el radio
+   de punto (.radio-outer/.radio-inner) y la descripcion larga pasa a
+   un hint dinamico debajo de cada pareja (ver .hint en el HTML),
+   porque no cabe legible dentro de un cuadrado. */
 .radio-card {
+  flex: 1;
+  aspect-ratio: 1;
   border-radius: 14px;
   background: var(--p4-surface);
   border: 1px solid transparent;
-  padding: 14px;
+  padding: 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  gap: 8px;
   color: var(--p4-text);
-  text-align: left;
+  text-align: center;
 
   piqo-svg {
     flex: none;
@@ -132,51 +142,12 @@ h1 {
 
   &.checked {
     border-color: var(--p4-accent);
+    background: color-mix(in srgb, var(--p4-accent) 12%, var(--p4-surface));
   }
 }
 
-.radio-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .radio-title {
-  flex: 1;
-  min-width: 0;
-  font: 600 13px/1 var(--p4-font-ui);
-}
-
-.radio-desc {
-  font: 400 11px/15px var(--p4-font-ui);
-  color: var(--p4-muted);
-}
-
-.radio-outer {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid var(--p4-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.radio-card.checked .radio-outer {
-  border-color: var(--p4-accent);
-}
-
-.radio-inner {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.radio-card.checked .radio-inner {
-  background: var(--p4-accent);
+  font: 600 13px/1.2 var(--p4-font-ui);
 }
 
 .form {
