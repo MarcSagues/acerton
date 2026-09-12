@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { CompetitionsService } from '../../../core/services/competitions.service';
 import { Competition } from '../../../core/models/competition.model';
 import { ScoringMode } from '../../../core/models/group.model';
@@ -15,6 +16,7 @@ import { InfoDialogComponent, InfoDialogData } from '../../../shared/info-dialog
 export class GroupCreateFacade {
   private readonly groupsService = inject(GroupsService);
   private readonly activeGroupService = inject(ActiveGroupService);
+  private readonly authService = inject(AuthService);
   private readonly competitionsService = inject(CompetitionsService);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
@@ -110,7 +112,14 @@ export class GroupCreateFacade {
         next: (group) => {
           this.formLoading.set(false);
           this.activeGroupService.setActive(group.id);
-          this.router.navigate(['/groups', group.id, 'settings']);
+          // Primer grupo del usuario (tutorial aun no visto): se aterriza en
+          // Tabla para que el tutorial arranque ahi, como al unirse por
+          // codigo/enlace. Ya onboardeado, va a Ajustes a por el codigo de
+          // invitacion recien creado.
+          const target = this.authService.currentUser()?.tutorialCompleted
+            ? ['/groups', group.id, 'settings']
+            : ['/rankings'];
+          this.router.navigate(target);
         },
         error: (error: HttpErrorResponse) => {
           this.formLoading.set(false);
