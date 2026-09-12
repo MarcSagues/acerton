@@ -78,6 +78,13 @@ h1 {
   align-items: center;
   justify-content: center;
   font: 700 12px/1 var(--p4-font-ui);
+
+  /* Colores invertidos en resultado exacto para distinguirlo de un
+     vistazo del modo 1X2, no solo por el texto de la insignia. */
+  &.exact {
+    background: var(--p4-accent);
+    color: var(--p4-on-accent);
+  }
 }
 
 .meta {
@@ -95,18 +102,29 @@ h1 {
   white-space: nowrap;
 }
 
+/* La racha va en la misma linea que "X miembros" (ver .sub-row), no en
+   una tercera linea propia: si no, el bloque .meta se hacia mas alto
+   solo en las filas con racha, agrandando la tarjeta entera y dejando
+   "Activo"/ajustes descentrados respecto al nombre del grupo. */
+.sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .sub {
+  flex: none;
   font: 400 11px/1 var(--p4-font-ui);
   color: var(--p4-muted);
 }
 
 .streak-chip {
-  margin-top: 2px;
-  align-self: flex-start;
+  flex: none;
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px 3px 6px;
+  padding: 2px 7px 2px 5px;
   border-radius: var(--p4-radius-pill);
   background: var(--p4-soft);
   color: var(--p4-accent);
