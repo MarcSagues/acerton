@@ -96,6 +96,19 @@
   padding-top: env(safe-area-inset-top);
 }
 
+/* Sibling de .body-center (no dentro): al no ser flex:1, ocupa solo su
+   propio alto y .body-center se reparte el resto — el formulario queda
+   centrado en el espacio que sobra por encima en vez de tapado por la
+   mascota, sin necesitar calcular nada a mano. */
+.mascot-wave {
+  align-self: center;
+  flex: none;
+  width: 320px;
+  max-width: 88vw;
+  height: auto;
+  margin-top: 12px;
+}
+
 .back-btn-bottom {
   align-self: center;
   margin-top: 4px;
