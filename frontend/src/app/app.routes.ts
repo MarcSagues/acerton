@@ -39,6 +39,25 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./features/auth/verify-email/verify-email.component').then((m) => m.VerifyEmailComponent),
+  },
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/auth/forgot-password/forgot-password.component').then(
+        (m) => m.ForgotPasswordComponent,
+      ),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/auth/reset-password/reset-password.component').then(
+        (m) => m.ResetPasswordComponent,
+      ),
+  },
+  {
     path: 'groups/join/:inviteCode',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -190,6 +209,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/profile-appearance/profile-appearance.component').then(
             (m) => m.ProfileAppearanceComponent,
+          ),
+      },
+      {
+        path: 'profile/change-password',
+        loadComponent: () =>
+          import('./features/profile/profile-change-password/profile-change-password.component').then(
+            (m) => m.ProfileChangePasswordComponent,
           ),
       },
       {

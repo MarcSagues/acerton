@@ -149,6 +149,17 @@
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
     </div>
+    @if (page.authService.currentUser()?.hasPassword) {
+      <div class="section">
+        <a class="card settings-link" routerLink="/profile/change-password">
+          <div>
+            <p class="card-title">Cambiar contraseña</p>
+            <p class="hint mono">Actualiza la contraseña de tu cuenta</p>
+          </div>
+          <piqo-svg icon="flecha" size="18"></piqo-svg>
+        </a>
+      </div>
+    }
 
     <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">Ver tutorial de nuevo</button>
     <button type="button" class="logout-btn" (click)="page.logout()">Cerrar sesión</button>

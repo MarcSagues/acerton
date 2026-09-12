@@ -12,6 +12,8 @@ type UserForPublic = {
   usernameConfirmed: boolean;
   nameChangedAt: Date | null;
   tutorialCompletedAt: Date | null;
+  emailVerifiedAt: Date | null;
+  passwordHash: string | null;
 };
 
 export function toPublicUser(user: UserForPublic): PublicUser {
@@ -31,5 +33,7 @@ export function toPublicUser(user: UserForPublic): PublicUser {
         ? nameChangeAvailableAt.toISOString()
         : null,
     tutorialCompleted: user.tutorialCompletedAt !== null,
+    emailVerified: user.emailVerifiedAt !== null,
+    hasPassword: user.passwordHash !== null,
   };
 }

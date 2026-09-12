@@ -102,6 +102,13 @@ model User {
   /// reinicia al repetirlo manualmente desde Perfil (ver TutorialService),
   /// solo marca que ya no debe aparecer solo al entrar a un grupo.
   tutorialCompletedAt DateTime?
+  /// Null = no ha confirmado el correo todavia: no puede iniciar sesion
+  /// (ver AuthService.login). Las cuentas de Google se marcan verificadas
+  /// en el momento de crearse (Google ya verifico ese email). Backfill de
+  /// la migracion que anadio esta columna: todas las cuentas ya existentes
+  /// se marcaron verificadas con su propio createdAt, para no dejar a nadie
+  /// fuera retroactivamente.
+  emailVerifiedAt    DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -115,8 +122,34 @@ model User {
   refreshTokens          RefreshToken[]
   notificationTokens     NotificationToken[]
   notificationPreference NotificationPreference?
+  authTokens             AuthToken[]
 
   @@map("users")
+}
+
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+/// Tokens de un solo uso para confirmar email y para restablecer contrasena
+/// (mismo esquema que RefreshToken: solo se guarda el hash, nunca el valor
+/// enviado por correo). `usedAt` evita reutilizar un enlace ya consumido;
+/// `expiresAt` limita su validez (ver MailService para el texto de cada
+/// correo).
+model AuthToken {
+  id        String            @id @default(cuid())
+  userId    String
+  purpose   AuthTokenPurpose
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("auth_tokens")
 }
 
 /// Refresh tokens en tabla propia (en vez de un unico hash en User) para

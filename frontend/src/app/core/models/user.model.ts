@@ -11,4 +11,8 @@ export interface User {
   nameChangeAvailableAt: string | null;
   /** true tras terminar u omitir el tutorial por primera vez (por cuenta, no por dispositivo ni por grupo). */
   tutorialCompleted: boolean;
+  /** false hasta confirmar el email (cuentas de Google nacen ya verificadas). */
+  emailVerified: boolean;
+  /** false en cuentas solo-Google: no tienen contrasena que cambiar. */
+  hasPassword: boolean;
 }

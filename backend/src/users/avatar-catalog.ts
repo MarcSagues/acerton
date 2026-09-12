@@ -96,12 +96,12 @@ export function mascotIdFromAssetPath(avatarUrl: string | null): AvatarMascotId 
 
 /**
  * Asignacion automatica al registrarse (product-rules.md "Perfil y
- * avatares"), sin paso obligatorio para el usuario. Solo entre las
- * mascotas por defecto: una cuenta recien creada no ha ganado ningun
- * trofeo todavia, asi que nunca le toca en suerte una mascota de trofeo.
+ * avatares"), sin paso obligatorio para el usuario: siempre la misma
+ * mascota y color de marca (pose neutra "reposo" + champan, el color de
+ * marca de Piqo) en vez de una eleccion al azar, para que toda cuenta
+ * nueva arranque con la misma identidad visual "de fabrica" hasta que el
+ * usuario elija la suya en Perfil.
  */
-export function randomCatalogAvatar(): { mascotId: AvatarMascotId; background: AvatarBackground } {
-  const mascotId = DEFAULT_MASCOT_IDS[Math.floor(Math.random() * DEFAULT_MASCOT_IDS.length)];
-  const background = AVATAR_BACKGROUNDS[Math.floor(Math.random() * AVATAR_BACKGROUNDS.length)];
-  return { mascotId, background };
+export function defaultCatalogAvatar(): { mascotId: AvatarMascotId; background: AvatarBackground } {
+  return { mascotId: 'reposo', background: '#d2be94' };
 }
