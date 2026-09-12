@@ -31,17 +31,15 @@
               </span>
               <span class="meta">
                 <span class="name">{{ group.name }}</span>
-                <span class="sub-row">
-                  <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
-                  @if (page.streakFor(group.id); as streak) {
-                    <span class="streak-chip"><piqo-svg icon="racha" size="14"></piqo-svg>{{ streak }}</span>
-                  }
-                </span>
+                <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
               </span>
               @if (group.id === page.activeGroupId()) {
                 <span class="active-chip"><piqo-svg icon="check" size="18"></piqo-svg>Activo</span>
               }
             </button>
+            @if (page.streakFor(group.id); as streak) {
+              <span class="streak-chip"><piqo-svg icon="racha" size="14"></piqo-svg>{{ streak }}</span>
+            }
             <button type="button" class="settings-btn" aria-label="Ajustes del grupo" (click)="page.goToSettings(group.id)">
               <piqo-svg icon="ajustes" size="22"></piqo-svg>
             </button>

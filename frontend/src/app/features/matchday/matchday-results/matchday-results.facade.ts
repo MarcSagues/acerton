@@ -43,6 +43,8 @@ export class MatchdayResultsFacade {
   readonly matchday = signal<Matchday | null>(null);
   readonly activeCompetitions = signal<Competition[]>([]);
   readonly predictions = signal<Prediction[]>([]);
+  /** Solo las que de verdad se completaron: en resultado exacto, un guardado automatico a medias (un marcador escrito, el otro nunca) deja una fila real en la base de datos sin ser una participacion real — no debe aparecer en el desglose. */
+  readonly visiblePredictions = computed(() => this.predictions().filter((p) => this.pickLabel(p) !== '?'));
   /** Todas las predicciones del grupo para esta jornada (sin filtrar por usuario), para la comparativa de todos. */
   readonly allPredictions = signal<Prediction[]>([]);
   readonly targetUserName = signal<string | null>(null);
@@ -256,18 +258,20 @@ export class MatchdayResultsFacade {
     return match?.result ? this.choiceLabel(match.result) : '?';
   }
 
-  /** userId cuya insignia de la comparativa esta mostrando el nombre (mantener pulsado). */
-  readonly comparisonTooltipUserId = signal<string | null>(null);
-  private comparisonTooltipTimer?: ReturnType<typeof setTimeout>;
+/** Nombre del jugador de la comparativa mostrado al pulsar su avatar — posicion en coordenadas de viewport (position:fixed) para no depender de que ningun contenedor con scroll/overflow lo recorte. */
+  readonly comparisonTooltip = signal<{ userId: string; name: string; top: number; left: number } | null>(null);
 
-  startComparisonTooltip(userId: string): void {
-    clearTimeout(this.comparisonTooltipTimer);
-    this.comparisonTooltipTimer = setTimeout(() => this.comparisonTooltipUserId.set(userId), 400);
+  toggleComparisonTooltip(userId: string, name: string, target: HTMLElement): void {
+    if (this.comparisonTooltip()?.userId === userId) {
+      this.comparisonTooltip.set(null);
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+    this.comparisonTooltip.set({ userId, name, top: rect.top, left: rect.left + rect.width / 2 });
   }
 
-  endComparisonTooltip(): void {
-    clearTimeout(this.comparisonTooltipTimer);
-    this.comparisonTooltipUserId.set(null);
+  closeComparisonTooltip(): void {
+    this.comparisonTooltip.set(null);
   }
 
   artId(code: string): string | null {
