@@ -144,9 +144,13 @@ export function predictionSummary(
   selections: ReadonlyMap<string, PredictionSelection>,
   exactScore: boolean,
 ): string {
-  const lines = entry.matchday.matches.map(
-    (match) => `${match.homeTeam} - ${match.awayTeam}: ${predictionLabel(selections.get(match.id), exactScore) ?? 'sin pronostico'}`,
-  );
+  // Solo los partidos con pronostico enviado: el resumen ya se puede ver y
+  // copiar sin haber completado toda la jornada, asi que no tiene sentido
+  // listar aqui los que todavia no se han rellenado.
+  const lines = entry.matchday.matches
+    .map((match) => ({ match, label: predictionLabel(selections.get(match.id), exactScore) }))
+    .filter((row): row is { match: (typeof entry.matchday.matches)[number]; label: string } => row.label != null)
+    .map((row) => `${row.match.homeTeam} - ${row.match.awayTeam}: ${row.label}`);
   return [
     `Piqo · ${entry.competition.name} · Jornada ${entry.matchday.order}`,
     '',
