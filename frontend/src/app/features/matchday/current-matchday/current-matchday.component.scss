@@ -312,7 +312,11 @@ h1 {
   overflow: hidden;
   border-radius: var(--p4-radius-md);
   border: 1px solid var(--p4-border);
-  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  /* Mismo fondo difuminado que el selector de grupo de la cabecera
+     (.switcher en group-switcher.component.scss), en vez del degradado
+     opaco de antes. */
+  background: linear-gradient(140deg, var(--p4-glass), transparent 70%), var(--p4-surface);
+  backdrop-filter: blur(14px);
   padding: 16px 14px 14px;
 
   /* Sin pronostico: sin linea. Con pronostico enviado: acento (pendiente
@@ -406,9 +410,14 @@ h1 {
   flex: 1;
   min-width: 0;
   display: flex;
-  /* center, no baseline: si el nombre pasa a dos lineas, el resultado
-     queda centrado en medio de las dos en vez de pegado a la primera. */
-  align-items: center;
+  /* baseline, no center: con center el resultado (fuente mas grande,
+     Manrope) quedaba con su propio margen inferior de fuente mas grande
+     que el del nombre (Inter), asi que aunque las dos cajas quedaran
+     centradas por igual, el numero se veia varios pixeles mas arriba
+     que el nombre cuando este ocupaba una sola linea — con baseline
+     comparten la misma linea base de verdad, igual que ya pasa en la
+     vista de filas (el resultado va dentro del propio texto). */
+  align-items: baseline;
   gap: 5px;
 
   /* El resultado (.team-score) debe quedar siempre pegado al VS/widget

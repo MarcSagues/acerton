@@ -13,26 +13,10 @@
   justify-content: center;
 }
 
-/* Pantalla de marca: siempre oscura, en los dos temas — independiente
-   de los --p4-* de :root, que siguen el tema real del usuario. Se
-   redefinen aqui mismo al valor fijo del tema oscuro (calcado de
-   piqo4-oscuro en styles.scss) para que el resto de esta hoja, y
-   cualquier componente compartido dentro (como app-avatar), use
-   var(--p4-*) normal en vez de repetir cada color a mano — y salga
-   bien sin importar el tema real elegido por el usuario. */
 .page {
   flex: 1;
   min-height: 0;
   min-width: 0;
-  --p4-bg: #0c0f11;
-  --p4-surface: #151a1d;
-  --p4-surface-2: #1b2125;
-  --p4-text: #f1f0ea;
-  --p4-muted: #9aa0a3;
-  --p4-accent: #d2be94;
-  --p4-on-accent: #121619;
-  --p4-border: rgba(241, 240, 234, 0.1);
-  --p4-soft: #373126;
   background: var(--p4-bg);
   color: var(--p4-text);
 }
