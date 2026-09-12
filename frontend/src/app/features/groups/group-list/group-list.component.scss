@@ -77,7 +77,6 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 700 12px/1 var(--p4-font-ui);
 
   /* Colores invertidos en resultado exacto para distinguirlo de un
      vistazo del modo 1X2, no solo por el texto de la insignia. */
@@ -126,8 +125,11 @@ h1 {
   gap: 4px;
   padding: 2px 7px 2px 5px;
   border-radius: var(--p4-radius-pill);
-  background: var(--p4-soft);
-  color: var(--p4-accent);
+  /* Rojo (no el acento neutro): el icono de racha ahora es un fuego
+     relleno, y en rojo se lee de un vistazo como "en llamas" en vez de
+     confundirse con el resto de chips de la app. */
+  background: color-mix(in srgb, var(--p4-error) 14%, transparent);
+  color: var(--p4-error);
   font: 600 10px/1 var(--p4-font-ui);
 }
 

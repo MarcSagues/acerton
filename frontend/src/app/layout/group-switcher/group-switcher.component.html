@@ -1,6 +1,8 @@
 @if (page.activeGroup(); as g) {
   <button type="button" class="switcher" (click)="open()">
-    <span class="avatar" [class.exact]="g.scoringMode === 'EXACT_SCORE'">{{ page.scoringModeBadge(g.scoringMode) }}</span>
+    <span class="avatar" [class.exact]="g.scoringMode === 'EXACT_SCORE'">
+      <piqo-svg [attr.icon]="page.scoringModeIcon(g.scoringMode)" size="18"></piqo-svg>
+    </span>
     <span class="meta">
       <span class="name">{{ g.name }}</span>
       <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'público' : 'privado' }}</span>

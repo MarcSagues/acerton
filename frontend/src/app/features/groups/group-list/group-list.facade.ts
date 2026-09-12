@@ -4,7 +4,7 @@ import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { ScoringMode } from '../../../core/models/group.model';
-import { scoringModeBadgeLabel } from '../../../shared/utils/scoring-mode-badge';
+import { scoringModeIcon as scoringModeIconOf } from '../../../shared/utils/scoring-mode-badge';
 
 @Injectable()
 export class GroupListFacade {
@@ -52,8 +52,8 @@ export class GroupListFacade {
     this.router.navigate(['/groups/public']);
   }
 
-  scoringModeBadge(mode: ScoringMode): string {
-    return scoringModeBadgeLabel(mode);
+  scoringModeIcon(mode: ScoringMode): string {
+    return scoringModeIconOf(mode);
   }
 
   goToGroup(groupId: string): void {

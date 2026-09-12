@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ActiveGroupService } from '../../core/services/active-group.service';
 import { ScoringMode } from '../../core/models/group.model';
-import { scoringModeBadgeLabel } from '../../shared/utils/scoring-mode-badge';
+import { scoringModeIcon as scoringModeIconOf } from '../../shared/utils/scoring-mode-badge';
 
 @Injectable()
 export class GroupSwitcherFacade {
@@ -9,7 +9,7 @@ export class GroupSwitcherFacade {
 
   readonly activeGroup = this.activeGroupService.activeGroup;
 
-  scoringModeBadge(mode: ScoringMode): string {
-    return scoringModeBadgeLabel(mode);
+  scoringModeIcon(mode: ScoringMode): string {
+    return scoringModeIconOf(mode);
   }
 }
