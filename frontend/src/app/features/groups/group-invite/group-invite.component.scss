@@ -3,6 +3,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .loading {
@@ -16,6 +17,7 @@
 .page {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   background: #121619;
   color: #f1f0ea;
 }

@@ -68,6 +68,7 @@ app-top-bar,
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 
   &.no-bottom-nav {
