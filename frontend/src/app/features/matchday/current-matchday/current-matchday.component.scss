@@ -161,8 +161,16 @@ h1 {
   align-items: center;
   gap: 4px;
   font: 700 12px/1 var(--p4-font-ui);
-  color: var(--p4-success);
+  /* Sigue el mismo tono que el fondo de .hero-card: acento mientras falta
+     algo por enviar (jornada "abierta"), verde solo cuando ya esta
+     completa — antes era siempre verde, y desentonaba con el fondo
+     ambar de la tarjeta mientras aun quedaban partidos por pronosticar. */
+  color: var(--p4-accent);
   white-space: nowrap;
+}
+
+.hero-card.complete .ciclo-summary-cta {
+  color: var(--p4-success);
 }
 
 .hero-card {

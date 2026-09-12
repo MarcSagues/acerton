@@ -383,8 +383,11 @@
   transform: translate(-50%, calc(-100% - 8px));
   padding: 5px 9px;
   border-radius: 8px;
-  background: var(--p4-text);
-  color: var(--p4-bg);
+  /* Fijo siempre oscuro (no var(--p4-text)/var(--p4-bg), que invertian
+     y en tema oscuro salia una burbuja blanca) para que se lea igual
+     de bien en los dos temas, como cualquier tooltip nativo. */
+  background: #121619;
+  color: #f1f0ea;
   font: 600 11px/1 var(--p4-font-ui);
   white-space: nowrap;
   z-index: 4;

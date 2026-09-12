@@ -35,7 +35,7 @@
           <p class="members-title">Ya dentro · {{ page.members().length }}</p>
           <div class="members-row">
             @for (member of page.members(); track member.id) {
-              <span class="member-avatar">{{ page.initials(member.user.name) }}</span>
+              <app-avatar [url]="member.user.avatarUrl" [background]="member.user.avatarBackground" [name]="member.user.name" [size]="38"></app-avatar>
             }
           </div>
         </div>

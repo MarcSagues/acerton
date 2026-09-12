@@ -30,5 +30,5 @@ export interface GroupMember {
   groupId: string;
   role: GroupRole;
   joinedAt: string;
-  user: { id: string; name: string; avatarUrl: string | null };
+  user: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null };
 }

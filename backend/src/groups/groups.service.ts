@@ -288,7 +288,7 @@ export class GroupsService {
   listMembers(groupId: string) {
     return this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
       orderBy: { joinedAt: 'asc' },
     });
   }
