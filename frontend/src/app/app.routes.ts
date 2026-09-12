@@ -126,8 +126,11 @@ export const routes: Routes = [
           ),
       },
       {
+        // Sin hasGroupGuard a proposito: es la pantalla a la que el propio
+        // guard redirige cuando ya no quedan grupos (ver hasGroupGuard) y
+        // sabe mostrar su propio estado vacio con crear/unirse — ponerle el
+        // guard aqui crearia un bucle de redireccion sobre si misma.
         path: 'groups',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/groups/group-list/group-list.component').then(
             (m) => m.GroupListComponent,

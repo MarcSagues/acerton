@@ -3,21 +3,31 @@ import { CanActivateFn, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { GroupsService } from '../services/groups.service';
 import { ActiveGroupService } from '../services/active-group.service';
+import { AuthService } from '../services/auth.service';
 
 /**
- * Sin ningun grupo no hay nada que hacer en la app (jornada, tabla y perfil
- * dependen de tener al menos uno) — se manda a /welcome a crear o unirse a
- * uno antes de dejar pasar al shell con la barra de navegacion.
+ * Sin ningun grupo, jornada/tabla/perfil no funcionan (dependen de tener uno
+ * activo). Distingue dos casos:
+ * - Nunca ha estado en ningun grupo (no ha pasado el tutorial ni una vez):
+ *   se manda a /welcome, fuera del shell y sin barra de navegacion, porque
+ *   nada mas en la app tiene sentido todavia.
+ * - Ya estuvo en algun grupo y se ha salido de todos: se le deja dentro del
+ *   shell (barra de navegacion intacta) en /groups, que ya sabe mostrar el
+ *   estado vacio con crear/unirse — no tiene sentido volver a tratarlo como
+ *   si nunca hubiera usado la app.
  */
 export const hasGroupGuard: CanActivateFn = () => {
   const groupsService = inject(GroupsService);
   const activeGroupService = inject(ActiveGroupService);
+  const authService = inject(AuthService);
   const router = inject(Router);
 
   return groupsService.loadMyGroups().pipe(
     map((groups) => {
       activeGroupService.setGroups(groups);
-      return groups.length > 0 ? true : router.createUrlTree(['/welcome']);
+      if (groups.length > 0) return true;
+      const alreadyOnboarded = authService.currentUser()?.tutorialCompleted ?? false;
+      return router.createUrlTree([alreadyOnboarded ? '/groups' : '/welcome']);
     }),
   );
 };
