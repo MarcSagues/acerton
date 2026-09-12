@@ -18,6 +18,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- App Links: abre la app directamente al pulsar un enlace de
+                 acerton.app/dev.acerton.app (confirmacion de correo,
+                 recuperacion de contrasena, invitacion a grupo) en vez de
+                 mostrarlo en el navegador. Requiere assetlinks.json servido
+                 en /.well-known de ambos dominios (ver frontend/public). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="acerton.app" />
+                <data android:scheme="https" android:host="dev.acerton.app" />
+            </intent-filter>
         </activity>
 
         <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="@string/admob_app_id" />
