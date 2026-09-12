@@ -1,4 +1,4 @@
-package app.acerton.quiniela;
+package app.piqo.es;
 
 import com.getcapacitor.BridgeActivity;
 

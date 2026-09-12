@@ -9,7 +9,7 @@ const CONFIG_VALUES: Record<string, unknown> = {
   'jwt.refreshExpiresIn': '30d',
   'google.clientId': 'client-id',
   'google.nativeClientId': undefined,
-  corsOrigin: 'https://acerton.app',
+  corsOrigin: 'https://app.piqo.es',
 };
 
 function buildDeps(prismaOverrides: Record<string, unknown> = {}) {

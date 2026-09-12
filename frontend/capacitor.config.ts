@@ -5,14 +5,14 @@ const config: CapacitorConfig = {
   appName: 'Piqo',
   webDir: 'dist/frontend/browser',
   // El refresh token se guarda en una cookie SameSite=Lax (ver
-  // auth.controller.ts) que solo viaja porque acerton.app y api.acerton.app
-  // son el mismo sitio registrable. Sin esto el WebView serviria la app
-  // desde https://localhost, un origen distinto para el que esa cookie
-  // nunca se enviaria — se le dice a Capacitor que sirva los assets locales
-  // "como si" fueran acerton.app para que el navegador los trate igual que
-  // en la web real.
+  // auth.controller.ts) que solo viaja porque app.piqo.es y api.piqo.es
+  // son el mismo sitio registrable (piqo.es). Sin esto el WebView serviria
+  // la app desde https://localhost, un origen distinto para el que esa
+  // cookie nunca se enviaria — se le dice a Capacitor que sirva los assets
+  // locales "como si" fueran app.piqo.es para que el navegador los trate
+  // igual que en la web real.
   server: {
-    hostname: 'acerton.app',
+    hostname: 'app.piqo.es',
     androidScheme: 'https',
     iosScheme: 'https',
   },
