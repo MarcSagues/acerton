@@ -362,10 +362,12 @@ h1 {
 
 .team-home,
 .team-away {
-  font: 600 13px/1 var(--p4-font-ui);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 600 13px/1.3 var(--p4-font-ui);
+  /* Nunca recortar el nombre con puntos suspensivos: si no cabe en una
+     linea, sigue en la siguiente. Cortarlo con ellipsis podia esconder
+     el resultado final (.team-score va justo detras, dentro del mismo
+     span) cuando el nombre era largo. */
+  overflow-wrap: break-word;
 }
 
 .team-score {
@@ -392,10 +394,10 @@ h1 {
   flex: 1;
   min-width: 0;
   text-align: center;
-  font: 600 12px/1 var(--p4-font-ui);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: 600 12px/1.3 var(--p4-font-ui);
+  /* Igual que .team-home/.team-away: nunca recortar con ellipsis, mejor
+     pasar a una segunda linea que esconder el resultado final. */
+  overflow-wrap: break-word;
 }
 
 .vs {
@@ -677,26 +679,26 @@ h1 {
   }
 }
 
-/* En la vista visual (.inline, sin fila de equipos aparte) el input es mas
-   pequeno para dejar sitio al resultado real junto al nombre del equipo
-   (ver .team-score) sin quedar apretado — en filas hay sitio de sobra y
-   encogerlo ahi se ve fuera de lugar comparado con el resto de la fila.
-   Mismo tamano tanto editable como en revision (partido bloqueado/
-   terminado): antes solo se encogia en revision, asi que el input
-   cambiaba de tamano segun el estado del partido dentro de la misma
-   vista. */
+/* En la vista visual (.inline, sin fila de equipos aparte) el input ya no
+   se encoge respecto a la vista de filas: seguia recortando el numero
+   introducido en iPhone real incluso tras un primer ajuste. Con los
+   nombres de equipo ahora pudiendo pasar a una segunda linea (ver
+   .team-name) ya no hace falta ahorrar ese espacio.  Mismo tamano tanto
+   editable como en revision (partido bloqueado/terminado): antes solo se
+   encogia en revision, asi que el input cambiaba de tamano segun el
+   estado del partido dentro de la misma vista. */
 .score-widget.inline {
   .exact-score-box {
     padding: 3px 6px;
     gap: 3px;
   }
   .score-input {
-    width: 20px;
-    height: 25px;
-    font-size: 15px;
+    width: 24px;
+    height: 29px;
+    font-size: 16px;
   }
   .score-sep {
-    font-size: 15px;
+    font-size: 16px;
   }
 }
 
