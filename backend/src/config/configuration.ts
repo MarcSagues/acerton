@@ -86,6 +86,6 @@ export default (): AppConfig => ({
     // Sin configurar en local: MailService deja el correo en el log en vez
     // de enviarlo de verdad (ver MailService.send).
     resendApiKey: process.env.RESEND_API_KEY ?? '',
-    from: process.env.MAIL_FROM ?? 'Piqo <no-reply@piqo.es>',
+    from: process.env.MAIL_FROM ?? 'Piqo <support@piqo.es>',
   },
 });
