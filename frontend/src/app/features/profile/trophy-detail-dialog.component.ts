@@ -26,7 +26,6 @@ export interface TrophyDetailData {
     <div class="trophy-dialog">
       <img
         class="trophy-media"
-        [class.earned]="data.count > 0"
         [src]="'assets/avatars/mascot/animated/cups/trophy-' + data.id + '-cup-animated.gif'"
         [alt]="data.name"
       />
@@ -66,13 +65,8 @@ export interface TrophyDetailData {
         height: 140px;
         object-fit: contain;
         margin-bottom: 4px;
-        /* Sin conseguir: en gris apagado, igual que el resto de la
-           vitrina, hasta que si haya un modelo de datos real detras. */
-        filter: grayscale(1) opacity(0.45);
-
-        &.earned {
-          filter: none;
-        }
+        /* A color siempre aqui: el bloqueo en gris apagado es solo el
+           preview de la vitrina (ver profile-page), antes de pulsar. */
       }
       .name {
         margin: 0;
