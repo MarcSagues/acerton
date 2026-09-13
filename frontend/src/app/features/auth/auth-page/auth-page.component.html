@@ -57,8 +57,13 @@
               autocomplete="new-password"
               placeholder="Mínimo 8 caracteres"
             />
-            <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
-              {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
+            <button
+              type="button"
+              class="password-toggle"
+              [attr.aria-label]="page.passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              (click)="page.togglePasswordVisibility()"
+            >
+              <piqo-svg [attr.icon]="page.passwordVisible() ? 'ojo-cerrado' : 'ojo'" size="18"></piqo-svg>
             </button>
           </div>
         </label>
@@ -104,8 +109,13 @@
               formControlName="password"
               autocomplete="current-password"
             />
-            <button type="button" class="ghost-link" (click)="page.togglePasswordVisibility()">
-              {{ page.passwordVisible() ? 'ocultar' : 'ver' }}
+            <button
+              type="button"
+              class="password-toggle"
+              [attr.aria-label]="page.passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              (click)="page.togglePasswordVisibility()"
+            >
+              <piqo-svg [attr.icon]="page.passwordVisible() ? 'ojo-cerrado' : 'ojo'" size="18"></piqo-svg>
             </button>
           </div>
           <button type="button" class="ghost-link forgot-link" (click)="page.goToForgotPassword()">
