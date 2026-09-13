@@ -40,17 +40,17 @@ const BADGES: Array<{ code: string; name: string; description: string }> = [
   {
     code: 'FIRST_MATCHDAY_PLAYED',
     name: 'Primeros pasos',
-    description: 'Enviaste tu primera prediccion en este grupo.',
+    description: 'Enviaste tu primera prediccion.',
   },
   {
     code: 'STREAK_5',
     name: 'Racha de 5',
-    description: 'Participaste 5 jornadas seguidas en este grupo.',
+    description: 'Participaste 5 jornadas seguidas.',
   },
   {
     code: 'STREAK_10',
     name: 'Racha de 10',
-    description: 'Participaste 10 jornadas seguidas en este grupo.',
+    description: 'Participaste 10 jornadas seguidas.',
   },
   {
     code: 'HOT_STREAK_5',
