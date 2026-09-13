@@ -20,6 +20,11 @@
           <p class="hint mono">Este navegador no las soporta.</p>
         } @else if (!page.pushNotifications.configured) {
           <p class="hint mono">No configuradas en este entorno.</p>
+        } @else if (page.pushNotifications.error(); as pushError) {
+          <!-- El permiso del sistema puede estar concedido y aun asi fallar
+               el paso siguiente (token o registro en el backend) — sin este
+               aviso, esa pantalla decia "Activadas" igualmente. -->
+          <p class="hint mono error">{{ pushError }}</p>
         } @else if (page.pushNotifications.permission() === 'granted') {
           <p class="hint mono">Activadas en este dispositivo.</p>
         } @else if (page.pushNotifications.permission() === 'denied') {
@@ -31,9 +36,9 @@
           Esto es un permiso del dispositivo, distinto de las preferencias de abajo: aunque lo actives aquí,
           solo recibirás los avisos que tengas encendidos más abajo.
         </p>
-        @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'granted' && page.pushNotifications.permission() !== 'denied') {
+        @if (page.pushNotifications.supported && page.pushNotifications.configured && (page.pushNotifications.error() || (page.pushNotifications.permission() !== 'granted' && page.pushNotifications.permission() !== 'denied'))) {
           <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.pushNotifications.enable()">
-            {{ page.pushNotifications.loading() ? 'Activando…' : 'Activar' }}
+            {{ page.pushNotifications.loading() ? 'Activando…' : (page.pushNotifications.error() ? 'Reintentar' : 'Activar') }}
           </button>
         }
       </div>

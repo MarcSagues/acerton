@@ -54,6 +54,14 @@ export class PushNotificationsService {
   readonly permission = signal<NotificationPermission>(this.readPermission());
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
+  /**
+   * Distinto de `permission`: el permiso del sistema puede concederse y aun
+   * asi fallar el paso siguiente (token nunca llega, o el POST al backend
+   * falla) sin que quede ningun rastro visible — de ahi que "Activadas en
+   * este dispositivo" antes se mostrara aunque no hubiera token real
+   * guardado. Solo se pone a true tras confirmar el registro en el backend.
+   */
+  readonly registered = signal(false);
 
   private readPermission(): NotificationPermission {
     if (this.isNative) return 'default'; // se resuelve al llamar a enable(); no hay forma de consultarlo sin pedirlo
@@ -72,6 +80,7 @@ export class PushNotificationsService {
 
     this.loading.set(true);
     this.error.set(null);
+    this.registered.set(false);
 
     try {
       return this.isNative ? await this.enableNative() : await this.enableWeb();
@@ -99,9 +108,20 @@ export class PushNotificationsService {
 
     return new Promise<boolean>((resolve) => {
       const registerToken = (token: string) => {
-        this.profileService
-          .registerNotificationToken(token)
-          .subscribe({ next: () => resolve(true), error: () => resolve(false) });
+        this.profileService.registerNotificationToken(token).subscribe({
+          next: () => {
+            this.registered.set(true);
+            resolve(true);
+          },
+          error: (httpError) => {
+            // Sin esto, un token obtenido bien pero rechazado por el
+            // backend (401, 500, red) quedaba tan silencioso como el resto:
+            // permission ya estaba en 'granted' y nada avisaba del fallo.
+            console.error('[PushNotifications] registerNotificationToken failed', httpError);
+            this.error.set('Se obtuvo el token pero no se pudo guardar en el servidor.');
+            resolve(false);
+          },
+        });
       };
 
       if (Capacitor.getPlatform() === 'ios') {
@@ -162,6 +182,7 @@ export class PushNotificationsService {
     }
 
     await firstValueFrom(this.profileService.registerNotificationToken(token));
+    this.registered.set(true);
 
     onMessage(messaging, (payload) => {
       const title = payload.notification?.title ?? 'Piqo';
