@@ -157,6 +157,22 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'groups/:groupId/members/:userId/stats',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/profile-stats/profile-stats.component').then(
+            (m) => m.ProfileStatsComponent,
+          ),
+      },
+      {
+        path: 'groups/:groupId/members/:userId/history',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/profile-history/profile-history.component').then(
+            (m) => m.ProfileHistoryComponent,
+          ),
+      },
+      {
         path: 'groups/:groupId/invite',
         canActivate: [hasGroupGuard],
         loadComponent: () =>
@@ -250,6 +266,22 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/profile/profile-badges/profile-badges.component').then(
             (m) => m.ProfileBadgesComponent,
+          ),
+      },
+      {
+        path: 'profile/stats',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/profile-stats/profile-stats.component').then(
+            (m) => m.ProfileStatsComponent,
+          ),
+      },
+      {
+        path: 'profile/history',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/profile-history/profile-history.component').then(
+            (m) => m.ProfileHistoryComponent,
           ),
       },
       {

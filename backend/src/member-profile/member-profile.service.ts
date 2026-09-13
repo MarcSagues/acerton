@@ -1,8 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-/** Cuantas jornadas recientes se devuelven en el detalle de un miembro. */
-const RECENT_MATCHDAYS_LIMIT = 5;
+/**
+ * Cuantas jornadas recientes se devuelven en el detalle de un miembro:
+ * suficiente para la vista "Histórico" dedicada sin paginar todavia (ver
+ * docs/quiniela/profile-reorganization-plan.md P2/P3 para paginacion real).
+ */
+const RECENT_MATCHDAYS_LIMIT = 20;
 
 @Injectable()
 export class MemberProfileService {
@@ -18,7 +22,10 @@ export class MemberProfileService {
   async getMemberProfile(groupId: string, userId: string) {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
-      include: { user: { select: { id: true, name: true } } },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } },
+        group: { select: { id: true, name: true, scoringMode: true, ownerId: true } },
+      },
     });
     if (!membership) {
       throw new NotFoundException('Ese usuario no es miembro de este grupo');
@@ -37,7 +44,7 @@ export class MemberProfileService {
       }),
       this.prisma.rankingSnapshot.findMany({
         where: { groupId, userId, period: 'WEEKLY' },
-        include: { matchday: { select: { order: true, closesAt: true } } },
+        include: { matchday: { select: { order: true, closesAt: true, status: true, competition: { select: { name: true } } } } },
         orderBy: { matchday: { closesAt: 'desc' } },
         take: RECENT_MATCHDAYS_LIMIT,
       }),
@@ -50,13 +57,23 @@ export class MemberProfileService {
     return {
       userId: membership.userId,
       name: membership.user.name,
+      avatarUrl: membership.user.avatarUrl,
+      avatarBackground: membership.user.avatarBackground,
       role: membership.role,
       joinedAt: membership.joinedAt,
+      isOwner: membership.group.ownerId === membership.userId,
+      group: {
+        id: membership.group.id,
+        name: membership.group.name,
+        scoringMode: membership.group.scoringMode,
+      },
       streak: {
         currentStreak: streak?.currentStreak ?? 0,
         longestStreak: streak?.longestStreak ?? 0,
       },
       hitRate,
+      /** Predicciones puntuadas (denominador de hitRate), no jornadas: varios partidos por jornada cuentan por separado. */
+      scoredPredictionsCount: totalScored,
       badges: badges.map((ub) => ({
         id: ub.id,
         earnedAt: ub.earnedAt,
@@ -65,8 +82,11 @@ export class MemberProfileService {
       recentMatchdays: snapshots.map((s) => ({
         matchdayId: s.matchdayId,
         order: s.matchday.order,
+        closesAt: s.matchday.closesAt,
         points: s.points,
         position: s.position,
+        competitionName: s.matchday.competition.name,
+        status: s.matchday.status,
       })),
     };
   }

@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -21,6 +22,7 @@ import { badgeArtId } from '../../../shared/utils/badge-art';
 export class MatchdayResultsFacade {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly predictionsService = inject(PredictionsService);
   private readonly rankingsService = inject(RankingsService);
@@ -35,6 +37,16 @@ export class MatchdayResultsFacade {
   readonly routeUserId = this.route.snapshot.paramMap.get('userId');
   private readonly currentUserId = this.authService.currentUser()?.id ?? null;
   readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
+  /**
+   * Al llegar desde el perfil de otro miembro (member-detail), el grupo que
+   * hay que consultar es el de esa pantalla, no necesariamente el grupo
+   * activo del selector — si difieren, usar el activo mostraria las
+   * predicciones/clasificacion del grupo equivocado.
+   */
+  private readonly explicitGroupId = this.route.snapshot.queryParamMap.get('groupId');
+  groupId(): string | null {
+    return this.explicitGroupId ?? this.activeGroupService.activeId();
+  }
 
   readonly loading = signal(true);
   readonly navigating = signal(false);
@@ -48,6 +60,10 @@ export class MatchdayResultsFacade {
   /** Todas las predicciones del grupo para esta jornada (sin filtrar por usuario), para la comparativa de todos. */
   readonly allPredictions = signal<Prediction[]>([]);
   readonly targetUserName = signal<string | null>(null);
+  readonly targetUserAvatarUrl = signal<string | null>(null);
+  readonly targetUserAvatarBackground = signal<string | null>(null);
+  /** Nombre del grupo, para el rotulo "Histórico en {grupo}" al ver el resultado de otro miembro. */
+  readonly groupName = signal<string | null>(null);
   readonly position = signal<{ pos: number; total: number } | null>(null);
   readonly currentStreak = signal(0);
   readonly newBadges = signal<UserBadge[]>([]);
@@ -92,20 +108,21 @@ export class MatchdayResultsFacade {
     const matchdayId = this.route.snapshot.paramMap.get('matchdayId')!;
     this.loadMatchday(matchdayId);
 
-    const groupId = this.activeGroupService.activeId();
+    const groupId = this.groupId();
     if (groupId) {
       this.groupsService.getById(groupId).subscribe((group) => {
         this.activeCompetitions.set(
           (group.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competition),
         );
         this.scoringMode.set(group.scoringMode);
+        this.groupName.set(group.name);
       });
     }
   }
 
   /** Cambia de competicion sin salir de la pantalla: va a la jornada cerrada mas reciente de esa liga para el mismo jugador. */
   switchCompetition(competitionId: string): void {
-    const groupId = this.activeGroupService.activeId();
+    const groupId = this.groupId();
     const current = this.matchday();
     if (!groupId || !current || competitionId === current.competitionId || this.switchingCompetition()) return;
 
@@ -127,6 +144,11 @@ export class MatchdayResultsFacade {
         this.toast.show('No se pudo cargar la competición');
       },
     });
+  }
+
+  /** Al ver las quinielas de otro miembro no hay flechas de jornada anterior/siguiente (no tiene sentido cambiar de jornada aquí): solo un boton de volver a la pantalla real de la que se vino (Clasificación, Histórico...), igual que el resto de "Volver" de la app. */
+  goBack(): void {
+    this.location.back();
   }
 
   navigatePrevious(): void {
@@ -173,12 +195,12 @@ export class MatchdayResultsFacade {
     const path = this.viewingSelf
       ? ['/matchday', matchdayId, 'results']
       : ['/matchday', matchdayId, 'results', this.routeUserId!];
-    this.router.navigate(path, { replaceUrl: true });
+    this.router.navigate(path, { replaceUrl: true, queryParamsHandling: 'preserve' });
   }
 
   private loadMatchday(matchdayId: string): void {
     this.loading.set(true);
-    const groupId = this.activeGroupService.activeId();
+    const groupId = this.groupId();
     if (!groupId) {
       this.loading.set(false);
       return;
@@ -206,6 +228,8 @@ export class MatchdayResultsFacade {
         const targetPredictions = predictions.filter((p) => p.userId === targetUserId);
         this.predictions.set(targetPredictions);
         this.targetUserName.set(targetPredictions[0]?.user?.name ?? null);
+        this.targetUserAvatarUrl.set(targetPredictions[0]?.user?.avatarUrl ?? null);
+        this.targetUserAvatarBackground.set(targetPredictions[0]?.user?.avatarBackground ?? null);
 
         const targetRow = ranking.find((r) => r.userId === targetUserId);
         this.position.set(targetRow ? { pos: targetRow.position, total: ranking.length } : null);
