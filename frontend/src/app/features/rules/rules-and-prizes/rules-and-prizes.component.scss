@@ -309,11 +309,31 @@
   }
 
   span {
+    flex: 1;
     font: 400 11px/1.5 var(--p4-font-ui);
   }
 
   piqo-svg {
     flex: none;
+  }
+}
+
+.callout-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: -2px -4px -2px 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--p4-info);
+  opacity: 0.7;
+
+  &:active {
+    opacity: 1;
   }
 }
 

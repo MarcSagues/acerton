@@ -113,11 +113,11 @@ export class RankingsPageFacade {
     if (groupId) this.fetchRanking(groupId);
   }
 
-  /** "+2"/"-1"/"=" para el indicador de posicion ganada/perdida respecto a la jornada anterior. */
-  deltaLabel(delta: number): string {
+  /** "+2"/"-1" para el indicador de posicion ganada/perdida respecto a la jornada anterior; null si no ha cambiado (no se muestra nada). */
+  deltaLabel(delta: number): string | null {
     if (delta > 0) return `+${delta}`;
     if (delta < 0) return `${delta}`;
-    return '=';
+    return null;
   }
 
   /**
@@ -140,7 +140,7 @@ export class RankingsPageFacade {
       next: (matchday) => {
         this.resolvingUserId.set(null);
         if (!matchday) {
-          this.toast.show('Todavia no hay jornadas cerradas para ver quinielas');
+          this.toast.show('Todavía no hay jornadas cerradas para ver quinielas');
           return;
         }
         const path =

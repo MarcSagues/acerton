@@ -19,7 +19,10 @@ export interface BadgeDetailData {
   template: `
     <div class="badge-dialog">
       @if (data.artId) {
-        <piqo-svg [attr.badge]="data.artId" [attr.state]="data.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="96"></piqo-svg>
+        <span class="art-wrap">
+          <img class="art-animated" [src]="'/piqo/insignias/animadas/' + data.artId + '.webp'" [alt]="data.name" />
+          <img class="art-static" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
+        </span>
       } @else {
         <piqo-svg icon="medalla" size="64" [class.earned]="data.earned"></piqo-svg>
       }
@@ -54,6 +57,34 @@ export interface BadgeDetailData {
 
         &.earned {
           color: var(--p4-accent);
+        }
+      }
+      .art-wrap {
+        display: block;
+        margin-bottom: 4px;
+        /* A color y animada siempre aqui, este consiga o no la insignia:
+           el bloqueo en gris apagado es solo el preview de antes de
+           pulsar (ver profile-page/profile-badges), igual que ya pasa
+           con los trofeos de la Vitrina. */
+      }
+      .art-animated,
+      .art-static {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+      }
+      /* Por defecto se ve la version animada; solo la estatica (misma
+         ilustracion, sin movimiento) si el usuario prefiere menos
+         animaciones en el sistema. */
+      .art-wrap .art-static {
+        display: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .art-wrap .art-animated {
+          display: none;
+        }
+        .art-wrap .art-static {
+          display: block;
         }
       }
       .name {

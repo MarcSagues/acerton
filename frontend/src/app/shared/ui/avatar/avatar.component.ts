@@ -39,8 +39,14 @@ import { initials } from '../../utils/initials';
         justify-content: center;
         overflow: hidden;
       }
+      /* cover, no contain: la mayoria de mascotas son un cuadrado exacto
+         (512x512) y da igual, pero alguna (p.ej. tumbado-balon.png, mas
+         ancha que alta) con contain dejaba ver el fondo por arriba/abajo
+         del circulo en vez de llenarlo del todo — con cover el marco
+         circular queda siempre completo, recortando el sobrante en vez
+         de dejar hueco. */
       img {
-        object-fit: contain;
+        object-fit: cover;
       }
       .initials {
         color: var(--p4-accent);

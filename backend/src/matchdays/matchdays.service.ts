@@ -38,7 +38,7 @@ export class MatchdaysService {
   async syncCurrentRound(competitionId: string): Promise<Matchday | null> {
     const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
     if (!competition) {
-      throw new NotFoundException('Competicion no encontrada');
+      throw new NotFoundException('Competición no encontrada');
     }
 
     const activeMatchday = await this.prisma.matchday.findFirst({
@@ -119,7 +119,7 @@ export class MatchdaysService {
   private async syncSpecificRound(competitionId: string, roundNumber: number) {
     const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
     if (!competition) {
-      throw new NotFoundException('Competicion no encontrada');
+      throw new NotFoundException('Competición no encontrada');
     }
 
     const fixtures = await this.footballProvider.getFixturesForRound(

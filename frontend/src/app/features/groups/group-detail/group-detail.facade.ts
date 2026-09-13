@@ -195,13 +195,13 @@ export class GroupDetailFacade {
   private saveCompetitions(alsoSaveRules: boolean): void {
     const competitionIds = [...this.selectedCompetitionIds()];
     if (competitionIds.length === 0) {
-      this.toast.show('Selecciona al menos una competicion');
+      this.toast.show('Selecciona al menos una competición');
       return;
     }
 
     this.confirm({
       title: 'Activar competiciones',
-      message: `Vas a activar ${this.newlySelectedCount()} competicion(es) nueva(s). Una vez activada una liga no se podra desactivar despues, solo anadir mas. ¿Confirmas?`,
+      message: `Vas a activar ${this.newlySelectedCount()} competición(es) nueva(s). Una vez activada una liga no se podrá desactivar después, solo añadir más. ¿Confirmas?`,
       confirmLabel: 'Activar',
     }).subscribe((confirmed) => {
       if (!confirmed) {
@@ -278,12 +278,9 @@ export class GroupDetailFacade {
     });
   }
 
-  /** Comodin y privacidad: solo cambian el valor pendiente, se guardan con "Guardar cambios". */
+  /** El comodin de remontada esta marcado como "Proximamente" (issue #22): el toggle se ve desactivado y no se puede activar todavia, para nadie. */
   toggleComebackEnabled(): void {
-    if (!this.isAdmin()) {
-      return;
-    }
-    this.selectedComebackEnabled.update((value) => !value);
+    return;
   }
 
   togglePrivacy(): void {
@@ -369,7 +366,7 @@ export class GroupDetailFacade {
     if (this.savingMembership()) return;
     this.confirm({
       title: 'Expulsar del grupo',
-      message: `¿Seguro que quieres expulsar a ${member.user.name} de este grupo? Sus pronosticos y puntos ya conseguidos se conservan.`,
+      message: `¿Seguro que quieres expulsar a ${member.user.name} de este grupo? Sus pronósticos y puntos ya conseguidos se conservan.`,
       confirmLabel: 'Expulsar',
     }).subscribe((confirmed) => {
       if (!confirmed) return;
@@ -391,7 +388,7 @@ export class GroupDetailFacade {
     if (this.savingMembership()) return;
     this.confirm({
       title: 'Transferir propiedad',
-      message: `¿Transferir la propiedad del grupo a ${member.user.name}? Pasaras a ser administrador y ya no podras nombrar o quitar administradores, transferir la propiedad ni eliminar el grupo.`,
+      message: `¿Transferir la propiedad del grupo a ${member.user.name}? Pasarás a ser administrador y ya no podrás nombrar o quitar administradores, transferir la propiedad ni eliminar el grupo.`,
       confirmLabel: 'Transferir',
     }).subscribe((confirmed) => {
       if (!confirmed) return;
@@ -421,7 +418,7 @@ export class GroupDetailFacade {
     }
     this.confirm({
       title: 'Salir del grupo',
-      message: '¿Seguro que quieres salir de este grupo? Podras volver a entrar con el link de invitacion.',
+      message: '¿Seguro que quieres salir de este grupo? Podrás volver a entrar con el link de invitación.',
       confirmLabel: 'Salir',
     }).subscribe((confirmed) => {
       if (!confirmed) return;
@@ -441,7 +438,7 @@ export class GroupDetailFacade {
     this.confirm({
       title: 'Eliminar grupo',
       message:
-        'El grupo desaparecera de todos los listados y nadie podra seguir jugando en el. El historial y los trofeos ya conseguidos se conservan. Esta accion no se puede deshacer desde la app.',
+        'El grupo desaparecerá de todos los listados y nadie podrá seguir jugando en él. El historial y los trofeos ya conseguidos se conservan. Esta acción no se puede deshacer desde la app.',
       confirmLabel: 'Eliminar',
     }).subscribe((confirmed) => {
       if (!confirmed) return;

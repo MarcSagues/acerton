@@ -115,7 +115,7 @@ export class WildcardsService {
   ): Promise<void> {
     const status = await this.getComebackStatus(userId, groupId, matchdayId, matchId, client);
     if (!status.enabled) {
-      throw new ForbiddenException('El comodin de remontada esta desactivado en este grupo');
+      throw new ForbiddenException('El comodín de remontada está desactivado en este grupo');
     }
     if (status.remaining <= 0) {
       throw new ForbiddenException(

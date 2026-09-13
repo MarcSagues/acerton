@@ -198,6 +198,19 @@
   flex: none;
 }
 
+.password-toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--p4-muted);
+}
+
 .forgot-link {
   align-self: flex-end;
   margin-top: 8px;

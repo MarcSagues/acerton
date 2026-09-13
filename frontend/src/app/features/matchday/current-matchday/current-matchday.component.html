@@ -7,8 +7,8 @@
     </div>
     <app-empty-state
       icon="jornada"
-      title="Todavia no hay jornada sincronizada"
-      text="Las competiciones de este grupo todavia no tienen una jornada sincronizada. Vuelve mas tarde."
+      title="Todavía no hay jornada sincronizada"
+      text="Las competiciones de este grupo todavía no tienen una jornada sincronizada. Vuelve más tarde."
     ></app-empty-state>
   </div>
 } @else if (page.submissionConfirmed()) {
@@ -18,9 +18,9 @@
       <div class="sent-check" aria-hidden="true"><piqo-svg icon="check" size="28"></piqo-svg></div>
       <p class="sent-eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</p>
       <h1>Enviado</h1>
-      <p class="sent-lead">Tus pronosticos estan guardados. Puedes volver a cambiarlos hasta que empiece cada partido.</p>
+      <p class="sent-lead">Tus pronósticos están guardados. Puedes volver a cambiarlos hasta que empiece cada partido.</p>
 
-      <section class="sent-summary" aria-label="Resumen de pronosticos">
+      <section class="sent-summary" aria-label="Resumen de pronósticos">
         @for (match of entry.matchday.matches; track match.id) {
           @if (page.pickLabel(match.id); as pick) {
             <div class="sent-match">
@@ -126,11 +126,9 @@
         <div class="aviso" [class.warning]="aviso.tone === 'warning'" [class.error]="aviso.tone === 'error'" [class.info]="aviso.tone === 'info'">
           <piqo-svg [attr.icon]="aviso.tone === 'error' ? 'sin-conexion' : aviso.tone === 'warning' ? 'alerta' : 'reloj'" size="20"></piqo-svg>
           <span>{{ aviso.text }}</span>
-          @if (aviso.tone === 'info') {
-            <button type="button" class="aviso-close" aria-label="Cerrar aviso" (click)="page.dismissAutoSaveNotice()">
-              <piqo-svg icon="cerrar" size="16"></piqo-svg>
-            </button>
-          }
+          <button type="button" class="aviso-close" aria-label="Cerrar aviso" (click)="page.dismissAviso(entry, aviso.tone)">
+            <piqo-svg icon="cerrar" size="16"></piqo-svg>
+          </button>
         </div>
       }
 
@@ -173,7 +171,7 @@
                 <span>{{ page.matchLockedLabel(match) }}</span>
               } @else if (!page.pickingAllowed()) {
                 <piqo-svg icon="reloj" size="16"></piqo-svg>
-                <span>Aun no</span>
+                <span>Aún no</span>
               } @else if (page.stateFor(match.id).error) {
                 <piqo-svg icon="sin-conexion" size="16" class="miss"></piqo-svg>
                 <span class="miss">No se ha guardado</span>

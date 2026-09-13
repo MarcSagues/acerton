@@ -40,7 +40,7 @@ export class ForgotPasswordFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la solicitud. Intentalo de nuevo.');
+        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la solicitud. Inténtalo de nuevo.');
       },
     });
   }

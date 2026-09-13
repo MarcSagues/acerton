@@ -246,18 +246,21 @@ h1 {
 
 .col-pos {
   width: 42px;
+  position: relative;
   display: flex;
-  align-items: baseline;
-  gap: 3px;
+  align-items: center;
   font: 600 13px/1 var(--p4-font-ui);
   color: var(--p4-muted);
 }
 
 /* El movimiento respecto a la jornada anterior ya no es una columna
-   propia: va pegado al puesto, como un numero mas pequeño al lado, en
-   vez de ocupar su propio hueco en la fila. */
+   propia: va pegado al puesto, como una pequeña insignia bajo el
+   principio del numero, en vez de ocupar su propio hueco en la fila. */
 .pos-delta {
-  font: 600 10px/1 var(--p4-font-ui);
+  position: absolute;
+  left: 13px;
+  bottom: -3px;
+  font: 700 8px/1 var(--p4-font-ui);
   color: var(--p4-muted);
 
   &.up {

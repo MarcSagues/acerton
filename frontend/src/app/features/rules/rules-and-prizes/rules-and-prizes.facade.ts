@@ -1,10 +1,12 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { scoringModeLabel, scoringRules } from '../domain/scoring-rules';
 
 @Injectable()
 export class RulesAndPrizesFacade {
   private readonly activeGroupService = inject(ActiveGroupService);
+
+  readonly prizeCalloutDismissed = signal(false);
 
   readonly group = this.activeGroupService.activeGroup;
   readonly modeLabel = computed(() => {

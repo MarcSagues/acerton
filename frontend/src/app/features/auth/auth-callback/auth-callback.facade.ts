@@ -35,7 +35,7 @@ export class AuthCallbackFacade {
         }
         this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route));
       },
-      error: () => this.errorMessage.set('No se pudo completar el inicio de sesion con Google'),
+      error: () => this.errorMessage.set('No se pudo completar el inicio de sesión con Google'),
     });
   }
 }

@@ -66,9 +66,24 @@
 .meta-row {
   margin-top: 10px;
   display: flex;
+  align-items: center;
   gap: 14px;
   font: 400 12px/1 var(--p4-font-ui);
   color: var(--p4-muted);
+}
+
+.member-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 2px 7px;
+  border-radius: var(--p4-radius-pill);
+  background: var(--p4-warning-bg);
+  color: var(--p4-warning);
+
+  piqo-svg {
+    flex: none;
+  }
 }
 
 .section {

@@ -20,7 +20,10 @@
     }
 
     <div class="meta-row">
-      <span>{{ group.memberCount }} {{ group.memberCount === 1 ? 'miembro' : 'miembros' }}</span>
+      <span class="member-count">
+        {{ group.memberCount }}
+        <piqo-svg icon="grupos" size="13"></piqo-svg>
+      </span>
       <span>Creado el {{ group.createdAt | date: 'd MMM y' }}</span>
     </div>
 

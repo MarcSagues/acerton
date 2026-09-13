@@ -41,7 +41,18 @@ h1 {
   position: relative;
   z-index: 0;
   flex: none;
+  /* Sin esto, <a> (display:block) mide 64x70 en vez de 64x64: el hueco de
+     interlineado del texto (line-height heredado) se suma por debajo del
+     <app-avatar> (inline-flex) aunque no haya texto real dentro. Con el
+     anillo de abajo puesto por inset en base a este alto, un contenedor
+     mas alto que ancho lo convertia en un ovalo en vez de un circulo. */
+  line-height: 0;
 
+  /* Sin animar: al girar sin parar, el degradado (con tonos bien distintos
+     segun el angulo) mostraba en cualquier instante un lado mas oscuro que
+     el otro, y eso se leia como si la propia foto estuviera descuadrada en
+     vez de ser el anillo decorativo. Fijo se ve igual de dorado, sin esa
+     falsa sensacion de asimetria. */
   &::before {
     content: '';
     position: absolute;
@@ -49,7 +60,6 @@ h1 {
     z-index: -1;
     border-radius: 50%;
     background: conic-gradient(from 0deg, #f3e6c6, #8a6e42, #d2be94, #6e5730, #f3e6c6);
-    animation: piqoSpin 12s linear infinite;
   }
 }
 
@@ -160,8 +170,20 @@ h2 {
   align-items: center;
   justify-content: center;
 
+  /* Mismo tratamiento que .trophy-btn: siempre el arte "conseguida" (a
+     color), solo en gris mientras no se tenga — asi las dos vitrinas se
+     ven identicas en vez de depender cada una de su propio "estado" de
+     arte, que no eran exactamente el mismo tono. */
+  piqo-svg {
+    filter: grayscale(1);
+  }
+
   &.earned {
     border-color: var(--p4-accent);
+
+    piqo-svg {
+      filter: none;
+    }
   }
 }
 
@@ -183,12 +205,14 @@ h2 {
   align-items: center;
   justify-content: center;
 
-  /* Con solo cambiar --accent no siempre se nota a simple vista que falta
-     por conseguir: en blanco y negro + atenuado se ve inequivocamente
-     "bloqueado" frente al color pleno de las conseguidas. */
+  /* Mismo mecanismo que .badge-preview: el arte a color de siempre, solo
+     con un filtro de gris encima mientras no se tenga — antes esto se
+     recoloreaba a --p4-disabled antes de pasar a gris, un tono distinto
+     al gris que sale de las insignias (parten de colores distintos, asi
+     que el resultado final tampoco coincidia). Partiendo del mismo color
+     (--p4-accent) el gris final es identico en las dos vitrinas. */
   piqo-svg {
-    --accent: var(--p4-disabled);
-    filter: grayscale(0.7) opacity(0.55);
+    filter: grayscale(1);
   }
 
   &.earned {
@@ -196,7 +220,6 @@ h2 {
     background: linear-gradient(165deg, var(--p4-soft), var(--p4-surface));
 
     piqo-svg {
-      --accent: var(--p4-accent);
       filter: none;
     }
   }

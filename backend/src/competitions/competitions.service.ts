@@ -13,7 +13,7 @@ export class CompetitionsService {
   async findById(id: string): Promise<Competition> {
     const competition = await this.prisma.competition.findUnique({ where: { id } });
     if (!competition) {
-      throw new NotFoundException('Competicion no encontrada');
+      throw new NotFoundException('Competición no encontrada');
     }
     return competition;
   }

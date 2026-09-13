@@ -85,6 +85,21 @@ piqo-svg {
   }
 }
 
+.badge-art {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+
+  /* Insignia todavia no conseguida: en gris y algo transparente, para que
+     se distinga de las conseguidas sin necesitar un icono de candado
+     encima (esta vista ya lo dice con la etiqueta "Pendiente"). */
+  &.locked {
+    filter: grayscale(1);
+    opacity: 0.45;
+  }
+}
+
 .meta {
   flex: 1;
   min-width: 0;

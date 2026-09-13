@@ -17,7 +17,12 @@
       @for (item of page.badgeStates(); track item.badge.id) {
         <div class="badge-card">
           @if (page.artId(item.badge.code); as artId) {
-            <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="96"></piqo-svg>
+            <img
+              class="badge-art"
+              [class.locked]="!item.earned"
+              [src]="'/piqo/insignias/3d/' + artId + '.png'"
+              [alt]="item.badge.name"
+            />
           } @else {
             <piqo-svg [attr.icon]="item.earned ? 'medalla' : 'candado'" size="32" [class.earned]="item.earned"></piqo-svg>
           }

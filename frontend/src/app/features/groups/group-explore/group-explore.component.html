@@ -56,7 +56,7 @@
       @if (page.filters().q) {
         <span class="chip">
           "{{ page.filters().q }}"
-          <button type="button" (click)="page.removeFilter('q')" aria-label="Quitar filtro de busqueda">
+          <button type="button" (click)="page.removeFilter('q')" aria-label="Quitar filtro de búsqueda">
             <piqo-svg icon="cerrar" size="10"></piqo-svg>
           </button>
         </span>
@@ -116,7 +116,10 @@
               <p class="description">{{ group.description }}</p>
             }
             <div class="meta-row">
-              <span>{{ group.memberCount }} {{ group.memberCount === 1 ? 'miembro' : 'miembros' }}</span>
+              <span class="member-count">
+                {{ group.memberCount }}
+                <piqo-svg icon="grupos" size="13"></piqo-svg>
+              </span>
               @if (group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled) {
                 <span class="comeback-chip">
                   <piqo-svg icon="comodin" size="13"></piqo-svg>

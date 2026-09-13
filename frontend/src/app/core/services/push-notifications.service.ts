@@ -43,7 +43,7 @@ export class PushNotificationsService {
       return false;
     }
     if (!this.configured) {
-      this.error.set('Las notificaciones push no estan configuradas en este entorno.');
+      this.error.set('Las notificaciones push no están configuradas en este entorno.');
       return false;
     }
 
@@ -64,7 +64,7 @@ export class PushNotificationsService {
     const permStatus = await PushNotifications.requestPermissions();
     if (permStatus.receive !== 'granted') {
       this.permission.set('denied');
-      this.error.set('Has bloqueado los permisos de notificacion.');
+      this.error.set('Has bloqueado los permisos de notificación.');
       return false;
     }
     this.permission.set('granted');
@@ -94,7 +94,7 @@ export class PushNotificationsService {
     const permission = await Notification.requestPermission();
     this.permission.set(permission);
     if (permission !== 'granted') {
-      this.error.set('Has bloqueado los permisos de notificacion.');
+      this.error.set('Has bloqueado los permisos de notificación.');
       return false;
     }
 
