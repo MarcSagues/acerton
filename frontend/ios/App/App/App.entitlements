@@ -7,5 +7,7 @@
 		<string>applinks:app.piqo.es</string>
 		<string>applinks:app-dev.piqo.es</string>
 	</array>
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

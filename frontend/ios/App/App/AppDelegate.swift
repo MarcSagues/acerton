@@ -1,13 +1,16 @@
 import UIKit
 import Capacitor
+import FirebaseCore
+import FirebaseMessaging
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
 
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        FirebaseApp.configure()
+        Messaging.messaging().delegate = self
         return true
     }
 
@@ -40,5 +43,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                                           sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
         return config
+    }
+
+    // MARK: - Push notifications
+    //
+    // @capacitor/push-notifications no registra estos callbacks por si solo:
+    // depende de que el AppDelegate de la app se los reenvie via NotificationCenter.
+    // Sin esto, ni 'registration' ni 'registrationError' llegaban nunca al JS
+    // (PushNotificationsService.enableNative() se quedaba colgado para siempre).
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+        // Firebase necesita el token de APNs para poder emitir un token de FCM
+        // valido (didReceiveRegistrationToken, abajo). Sin esta linea, Messaging
+        // se queda sin saber a que dispositivo/entorno APNs asociar el token.
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
+    // MARK: - MessagingDelegate
+
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        // Este es el token que hay que mandar al backend (el mismo que usan
+        // web y Android via firebase-admin/sendEachForMulticast) — NO el token
+        // crudo de APNs que emite @capacitor/push-notifications en 'registration'.
+        FcmTokenPlugin.handleTokenRefresh(fcmToken)
     }
 }

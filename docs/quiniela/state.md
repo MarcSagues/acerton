@@ -52,6 +52,20 @@ partido individual terminado con puntos, agrupar el mismo partido jugado
 en varios grupos en un solo aviso, aviso de temporada/trofeos (bloqueado
 por Sprints 5-6), y la comprobación de regularidad del hosting.
 
+**Bug 2026-09-13 (push nunca llegaba en iPhone)**: diagnosticado y
+corregido en código (`App.entitlements`, `AppDelegate.swift`,
+`FcmTokenPlugin.swift` nuevo, `push-notifications.service.ts`) — ver
+`decisions.md` para el detalle técnico completo. Además, ya hecho desde
+el navegador (con el usuario): app iOS registrada en Firebase
+(`acerton-39f07`, bundle id `app.piqo.es`) con su
+`GoogleService-Info.plist` ya copiado al repo, y clave de autenticación
+APNs creada en Apple Developer y subida a Firebase Cloud Messaging
+(desarrollo y producción). **Sin compilar ni probar en dispositivo real**
+(sin Mac/Xcode en esta sesión) — quedan pasos obligatorios solo realizables
+desde Xcode (capacidad Push Notifications, añadir el SDK de Firebase y el
+`GoogleService-Info.plist` al proyecto) antes de que esto funcione de
+verdad — ver `backlog.md` para el checklist exacto.
+
 **Sprint 7 — Perfil y avatares**: **en curso**, primer incremento de
 avatares (catálogo de mascota + color, asignación automática al
 registrarse) completo en la rama `feature/sprint-7-avatares` (creada a

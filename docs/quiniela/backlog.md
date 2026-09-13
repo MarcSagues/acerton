@@ -103,6 +103,59 @@ hacer desde esta sesión en cuanto el usuario confirme que se ejecute.
   no relacionado con el trabajo de esta sesión, pero conviene revisarlo
   antes de que un patrón similar ocurra en producción con datos reales.
 
+## Push en iPhone (app nativa) — pasos manuales pendientes (ver `decisions.md` 2026-09-13)
+
+Código ya cambiado (`App.entitlements`, `AppDelegate.swift`,
+`FcmTokenPlugin.swift` nuevo, `push-notifications.service.ts`), pero **no
+compilado ni probado** — sin Mac/Xcode en esta sesión.
+
+Hecho ya (2026-09-13, vía navegador con el usuario viendo/interviniendo en
+los pasos que requerían su cuenta):
+
+- App iOS registrada en Firebase (proyecto `acerton-39f07`, bundle id
+  `app.piqo.es`, alias "Piqo iOS"), `GoogleService-Info.plist` descargado
+  y copiado a `frontend/ios/App/App/GoogleService-Info.plist` (todavía
+  **no añadido al target del proyecto Xcode** — falta hacerlo desde
+  Xcode, ver más abajo).
+- Clave de autenticación APNs creada en Apple Developer (Keys → "Piqo APNs
+  Key", Key ID `MD98CT3X9Z`, Team ID `L8A488AW3G`, entorno "Sandbox &
+  Production", Team Scoped) y subida a Firebase Console → Cloud Messaging
+  → Piqo iOS, en las dos filas (desarrollo y producción). El archivo
+  `.p8` descargado se queda solo en el Downloads del usuario — **no se ha
+  commiteado al repo** (a diferencia de `GoogleService-Info.plist`, esta
+  clave privada no debe ir a git; si se pierde, hay que revocarla y crear
+  una nueva en Apple Developer, ya que solo se puede descargar una vez).
+
+Sigue pendiente, todo dentro de Xcode (no se puede hacer sin Mac):
+
+1. Target `App` → Signing & Capabilities → añadir capacidad "Push
+   Notifications" (`+ Capability`). Con firma automática, esto además
+   habilita el servicio en el App ID `app.piqo.es` de Apple Developer.
+2. Añadir Firebase iOS SDK como dependencia de paquete Swift **del
+   proyecto Xcode `App.xcodeproj`** (proyecto, no target → pestaña
+   "Package Dependencies" → `+` → `https://github.com/firebase/firebase-ios-sdk`
+   → productos `FirebaseCore` y `FirebaseMessaging`, target `App`). No
+   vale editar a mano `CapApp-SPM/Package.swift` — ese paquete es otro
+   target y además Capacitor lo regenera con `npx cap sync ios`.
+3. Añadir el `GoogleService-Info.plist` ya presente en
+   `frontend/ios/App/App/` al proyecto Xcode (arrastrar o "Add Files to
+   App…", "Copy items if needed" desmarcado ya que el archivo ya está en
+   su sitio, target `App` marcado).
+4. Compilar, probar en dispositivo físico real (push no funciona en
+   simulador) desde Ajustes → Activar notificaciones → botón "Probar
+   notificaciones", y confirmar que el signal `error` de
+   `PushNotificationsService` no muestra nada y que `notification_tokens`
+   recibe una fila nueva.
+5. Repetir el archivado/build de release antes de subir a TestFlight — el
+   `aps-environment` del build de distribución debe quedar en
+   `production` (Xcode lo hace automático con firma automática y el
+   provisioning profile correcto; comprobar que no se quede en
+   `development` en el IPA final). Como la clave APNs ya cubre "Sandbox &
+   Production", no hace falta tocar nada en Firebase para esto.
+
+Hasta que se complete esto, el issue de Sprint 9 (#14) sigue sin la
+verificación en iOS que exige "Reglas generales" de la skill.
+
 ## Ampliaciones futuras (no forman parte del roadmap actual)
 
 - Hook de recordatorio (`Stop` u otro) para sugerir `/quiniela cerrar` al

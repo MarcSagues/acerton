@@ -28,6 +28,59 @@ implementar la suscripción (StoreKit/Play Billing directos vs. un
 intermediario tipo RevenueCat) ni modelo `User.isPremium` en el backend —
 ver primera fila de la tabla del sprint en `roadmap.md`.
 
+## 2026-09-13 — Bug: push nunca llegaba en iPhone (app nativa)
+
+El usuario reportó que las notificaciones push no llegaban en iPhone ni
+siquiera usando el botón "Probar notificaciones" (Sprint 9, incremento 1).
+Diagnóstico: tres fallos independientes en `frontend/ios/App`, cualquiera
+ya bastaba para romper el pipeline entero:
+
+1. Faltaba la entitlement `aps-environment` en `App.entitlements` — nunca
+   se había activado la capacidad "Push Notifications" en Xcode/App ID.
+2. `AppDelegate.swift` no reenviaba `didRegisterForRemoteNotifications*`
+   al `NotificationCenter` que espera `@capacitor/push-notifications` — sin
+   esto, ni `registration` ni `registrationError` llegaban nunca al JS
+   (`enableNative()` se quedaba colgado para siempre, de ahí que "ni
+   forzándolo con un botón" funcionara).
+3. En iOS, `@capacitor/push-notifications` solo da el token crudo de APNs,
+   no uno de FCM — y el backend envía todo vía
+   `firebase-admin`/`sendEachForMulticast`, que exige un token de FCM.
+
+Decisión (elegida por el usuario entre dos opciones): **integrar
+FirebaseMessaging nativo en iOS** para traducir APNs→FCM, en vez de montar
+una segunda vía de envío directo por APNs en el backend. Motivo: mantiene
+un único pipeline de envío (el mismo `sendEachForMulticast` que ya sirve
+web y Android), sin lógica adicional en el backend para distinguir tipos
+de token.
+
+Implementado: entitlement añadida, `AppDelegate.swift` reenvía el
+registro APNs y configura Firebase, plugin nativo propio
+`FcmTokenPlugin.swift` que expone el token de FCM a JS,
+`PushNotificationsService.enableNative()` actualizado para usarlo en iOS
+(Android no cambia — ahí `@capacitor/push-notifications` ya da un token de
+FCM válido directamente). **Sin verificar en dispositivo real ni
+compilado**: no hay Mac/Xcode disponible en esta sesión. Quedan pasos
+manuales obligatorios antes de que esto pueda funcionar — ver
+`backlog.md`.
+
+## 2026-09-13 — Sprint 12 (Compartir resultados)
+
+El usuario pidió compartir en Twitter/X con imagen adjunta y que "Copiar
+resumen" copie una imagen en vez de texto. Decisión: **no integrar
+directamente con la API de X/Twitter** para publicar el tweet — requeriría
+OAuth propio (app registrada en su plataforma de desarrolladores) y acceso
+de pago a su API de publicación, un coste desproporcionado frente al
+beneficio de esta función. En su lugar, usar el share nativo del sistema
+(`@capacitor/share` + `@capacitor/filesystem`, ninguno instalado hoy) con
+una imagen adjunta: el propio selector de apps del sistema operativo deja
+elegir X, WhatsApp, Mensajes, etc. — cubre el caso de uso real sin tocar
+ninguna API externa de pago.
+
+La imagen se genera dibujando a Canvas (Canvas API nativo) en vez de con
+una librería de captura de DOM tipo html2canvas, por fiabilidad (esas
+librerías dan problemas con fuentes/gradientes/sombras reales del diseño
+de Piqo).
+
 ## 2026-09-10 — Sprint 5 (fin de temporada) — sustituye la decisión anterior
 
 - **Sustituye la respuesta inicial** ("fecha fija configurable, ej. 1 de

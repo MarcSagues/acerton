@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Dialog } from '@capacitor/dialog';
 import { environment } from '../../../environments/environment';
@@ -14,6 +14,20 @@ export interface TestBroadcastResult {
   successCount: number;
   failureCount: number;
 }
+
+interface FcmTokenPluginInterface {
+  getToken(): Promise<{ token: string }>;
+}
+
+/**
+ * Plugin nativo propio (frontend/ios/App/App/FcmTokenPlugin.swift), sin
+ * equivalente en Android: @capacitor/push-notifications ya da un token de
+ * FCM valido ahi (Android usa FCM nativamente), pero en iOS solo da el
+ * token crudo de APNs, que firebase-admin/sendEachForMulticast no acepta.
+ * Este plugin expone el token que FirebaseMessaging traduce a partir del de
+ * APNs (ver AppDelegate.swift).
+ */
+const FcmTokenPlugin = registerPlugin<FcmTokenPluginInterface>('FcmTokenPlugin');
 
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
@@ -84,11 +98,26 @@ export class PushNotificationsService {
     this.permission.set('granted');
 
     return new Promise<boolean>((resolve) => {
-      PushNotifications.addListener('registration', (token) => {
+      const registerToken = (token: string) => {
         this.profileService
-          .registerNotificationToken(token.value)
+          .registerNotificationToken(token)
           .subscribe({ next: () => resolve(true), error: () => resolve(false) });
-      });
+      };
+
+      if (Capacitor.getPlatform() === 'ios') {
+        // En iOS, @capacitor/push-notifications solo entrega el token crudo
+        // de APNs (ver comentario junto a FcmTokenPlugin más arriba); el
+        // token de FCM que el backend necesita sale de ahí en su lugar.
+        FcmTokenPlugin.getToken().then(
+          (result) => registerToken(result.token),
+          () => {
+            this.error.set('No se pudo obtener el token de notificaciones.');
+            resolve(false);
+          },
+        );
+      } else {
+        PushNotifications.addListener('registration', (token) => registerToken(token.value));
+      }
       PushNotifications.addListener('registrationError', () => {
         this.error.set('No se pudo obtener el token de notificaciones.');
         resolve(false);
