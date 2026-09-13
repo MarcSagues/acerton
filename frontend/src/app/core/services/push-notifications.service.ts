@@ -4,7 +4,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { Dialog } from '@capacitor/dialog';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from './profile.service';
 
@@ -181,13 +180,11 @@ export class PushNotificationsService {
         this.error.set(`No se pudo registrar en APNs: ${err?.error ?? JSON.stringify(err)}`);
         resolve(false);
       });
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        const title = notification.title ?? 'Piqo';
-        const body = notification.body ?? '';
-        // Alerta nativa centrada en vez del banner del sistema (desactivado
-        // en capacitor.config.ts) para que no compita con el nuestro.
-        void Dialog.alert({ title, message: body });
-      });
+      // Sin listener de 'pushNotificationReceived' con alerta propia: con
+      // 'banner'/'list' en capacitor.config.ts, el sistema ya muestra su
+      // banner deslizante normal (a peticion expresa del usuario, que no
+      // queria la alerta centrada) — añadir aquí una alerta propia
+      // duplicaría el aviso.
       PushNotifications.register();
     });
   }

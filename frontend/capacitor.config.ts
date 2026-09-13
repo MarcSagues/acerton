@@ -17,11 +17,13 @@ const config: CapacitorConfig = {
     iosScheme: 'https',
   },
   plugins: {
-    // Sin 'banner'/'list': el banner deslizante del sistema queda
-    // desactivado en primer plano, y en su lugar mostramos una alerta
-    // nativa centrada (ver PushNotificationsService) para no duplicar UI.
+    // Con 'banner'/'list' el sistema muestra su banner deslizante normal
+    // (como cualquier otra app, WhatsApp incluido) tambien con la app en
+    // primer plano — a peticion expresa del usuario, que no queria la
+    // alerta centrada de antes (ver PushNotificationsService, que ya no
+    // la muestra para no duplicar el aviso).
     PushNotifications: {
-      presentationOptions: ['badge', 'sound'],
+      presentationOptions: ['badge', 'sound', 'banner', 'list'],
     },
     // Por defecto (resize: 'native') iOS encoge el WKWebView entero al
     // abrir el teclado, lo que arrastra hacia arriba cualquier elemento
