@@ -143,7 +143,7 @@ export class NotificationsService implements OnModuleInit {
 
     await this.sendToUsers(recipientIds, {
       title: 'Cierra la jornada',
-      body: `${matchdayName} cierra en ${urgencyLabel} y todavia no has completado tu quiniela.`,
+      body: `${matchdayName} cierra en ${urgencyLabel} y todavía no has completado tu quiniela.`,
       data: { type: 'MATCHDAY_CLOSING_SOON', groupId, matchdayId },
     });
   }
@@ -207,7 +207,7 @@ export class NotificationsService implements OnModuleInit {
         .filter(([userId]) => recipients.has(userId))
         .map(async ([userId, points]) => {
           const position = await this.getPositionForUser(groupId, userId);
-          const positionText = position != null ? ` Vas ${position}º en la clasificacion.` : '';
+          const positionText = position != null ? ` Vas ${position}º en la clasificación.` : '';
           await this.sendToUser(userId, {
             title: `${matchdayName} terminada`,
             body: `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`,

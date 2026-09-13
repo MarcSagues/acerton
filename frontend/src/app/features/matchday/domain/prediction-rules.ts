@@ -156,6 +156,6 @@ export function predictionSummary(
     '',
     ...lines,
     '',
-    'Pronosticos enviados',
+    'Pronósticos enviados',
   ].join('\n');
 }

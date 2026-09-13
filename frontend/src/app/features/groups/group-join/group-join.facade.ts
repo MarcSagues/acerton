@@ -18,7 +18,7 @@ export class GroupJoinFacade {
   init(): void {
     const inviteCode = this.route.snapshot.paramMap.get('inviteCode');
     if (!inviteCode) {
-      this.errorMessage.set('Link de invitacion invalido');
+      this.errorMessage.set('Link de invitación inválido');
       return;
     }
 
@@ -33,7 +33,7 @@ export class GroupJoinFacade {
         this.router.navigate(target);
       },
       error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la invitacion');
+        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la invitación');
       },
     });
   }

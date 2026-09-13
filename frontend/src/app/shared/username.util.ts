@@ -24,10 +24,10 @@ export function usernameValidator(): ValidatorFn {
 export function usernameHint(errors: ValidationErrors | null): string | null {
   if (!errors) return null;
   if (errors['required']) return 'Escribe un nombre de usuario';
-  if (errors['usernameTooShort']) return 'Minimo 2 caracteres';
-  if (errors['usernameTooLong']) return 'Maximo 24 caracteres';
+  if (errors['usernameTooShort']) return 'Mínimo 2 caracteres';
+  if (errors['usernameTooLong']) return 'Máximo 24 caracteres';
   if (errors['usernameEdgeSpaces']) return 'No empieces ni termines con espacios';
   if (errors['usernameDoubleSpace']) return 'Sin espacios dobles seguidos';
-  if (errors['usernameInvalidChars']) return 'Usa solo letras, numeros, espacios, guiones y apostrofes';
+  if (errors['usernameInvalidChars']) return 'Usa solo letras, números, espacios, guiones y apostrofes';
   return null;
 }

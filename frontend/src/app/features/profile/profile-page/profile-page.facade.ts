@@ -141,9 +141,9 @@ export class ProfilePageFacade {
   logout(): void {
     const dialogRef = this.dialog.open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, {
       data: {
-        title: 'Cerrar sesion',
-        message: 'Vas a cerrar sesion en este dispositivo. ¿Confirmas?',
-        confirmLabel: 'Cerrar sesion',
+        title: 'Cerrar sesión',
+        message: 'Vas a cerrar sesión en este dispositivo. ¿Confirmas?',
+        confirmLabel: 'Cerrar sesión',
       },
     });
 

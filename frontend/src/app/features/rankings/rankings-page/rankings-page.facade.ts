@@ -140,7 +140,7 @@ export class RankingsPageFacade {
       next: (matchday) => {
         this.resolvingUserId.set(null);
         if (!matchday) {
-          this.toast.show('Todavia no hay jornadas cerradas para ver quinielas');
+          this.toast.show('Todavía no hay jornadas cerradas para ver quinielas');
           return;
         }
         const path =

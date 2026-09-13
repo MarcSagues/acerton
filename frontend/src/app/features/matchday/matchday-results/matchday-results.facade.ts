@@ -114,7 +114,7 @@ export class MatchdayResultsFacade {
       next: (matchday) => {
         this.switchingCompetition.set(false);
         if (!matchday) {
-          this.toast.show('Todavia no hay jornadas cerradas para esa competicion');
+          this.toast.show('Todavía no hay jornadas cerradas para esa competición');
           return;
         }
         this.noNextAvailable.set(false);
@@ -124,7 +124,7 @@ export class MatchdayResultsFacade {
       },
       error: () => {
         this.switchingCompetition.set(false);
-        this.toast.show('No se pudo cargar la competicion');
+        this.toast.show('No se pudo cargar la competición');
       },
     });
   }
@@ -152,7 +152,7 @@ export class MatchdayResultsFacade {
             this.noPreviousAvailable.set(true);
           }
           this.toast.show(
-            direction === 'previous' ? 'No hay jornada anterior cerrada' : 'La siguiente jornada todavia no ha cerrado',
+            direction === 'previous' ? 'No hay jornada anterior cerrada' : 'La siguiente jornada todavía no ha cerrado',
           );
           return;
         }

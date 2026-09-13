@@ -31,17 +31,17 @@ export class PredictionsService {
       throw new NotFoundException('Partido no encontrado');
     }
     if (!isMatchPredictable(match, new Date())) {
-      throw new ForbiddenException('Este partido ya ha empezado, no se admiten mas predicciones');
+      throw new ForbiddenException('Este partido ya ha empezado, no se admiten más predicciones');
     }
     if (!(await this.matchdaysService.canAcceptPredictions(match.matchdayId))) {
       throw new ForbiddenException(
-        'Todavia no se puede predecir esta jornada, espera a que sea la jornada actual',
+        'Todavía no se puede predecir esta jornada, espera a que sea la jornada actual',
       );
     }
 
     if (scoringMode === 'EXACT_SCORE') {
       if (dto.choice || dto.doubleChanceOption) {
-        throw new BadRequestException('Este grupo juega en modo resultado exacto, no admite pronostico 1X2');
+        throw new BadRequestException('Este grupo juega en modo resultado exacto, no admite pronóstico 1X2');
       }
       if (dto.predictedHomeScore === undefined || dto.predictedAwayScore === undefined) {
         throw new BadRequestException('Falta el resultado exacto (goles local y visitante)');
@@ -70,7 +70,7 @@ export class PredictionsService {
 
     const isDoubleChance = !!dto.doubleChanceOption;
     if (!isDoubleChance && !dto.choice) {
-      throw new BadRequestException('Falta el pronostico 1X2');
+      throw new BadRequestException('Falta el pronóstico 1X2');
     }
 
     if (isDoubleChance) {
