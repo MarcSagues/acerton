@@ -150,6 +150,13 @@ h1 {
   font: 600 13px/1.2 var(--p4-font-ui);
 }
 
+.checkbox-card .radio-title {
+  /* Empuja el checkbox al borde derecho de la tarjeta: icono+titulo
+     quedan agrupados a la izquierda y el checkbox solo a la derecha,
+     en vez de pegado justo detras del titulo. */
+  flex: 1;
+}
+
 .form {
   padding: 22px 20px 0;
   display: flex;

@@ -6,7 +6,6 @@ import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
-import { MatchdayViewService } from '../../../core/services/matchday-view.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
@@ -60,10 +59,6 @@ export class CurrentMatchdayFacade {
   private readonly wildcardsService = inject(WildcardsService);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly matchdayViewService = inject(MatchdayViewService);
-
-  /** Filas/Visual: "visual" es el valor inicial, se recuerda en el dispositivo por separado del tema (HANDOFF §6). */
-  readonly view = this.matchdayViewService.view;
 
   readonly loading = signal(true);
   readonly entries = signal<CurrentMatchdayEntry[]>([]);
@@ -172,10 +167,6 @@ export class CurrentMatchdayFacade {
     const entry = this.activeEntry();
     if (!entry || entry.matchday.matches.length === 0) return '0%';
     return `${Math.round((this.doneCount() / entry.matchday.matches.length) * 100)}%`;
-  }
-
-  setView(view: 'filas' | 'visual'): void {
-    this.matchdayViewService.setView(view);
   }
 
   /** Texto de cabecera segun el ciclo de 4 estados de la jornada (HANDOFF §9). */

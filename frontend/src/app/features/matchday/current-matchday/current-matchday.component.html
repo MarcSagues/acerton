@@ -92,15 +92,6 @@
         </div>
       }
 
-      <div class="view-row">
-        <app-segmented-control
-          [options]="viewOptions"
-          [value]="page.view()"
-          ariaLabel="Vista de jornada"
-          (valueChange)="page.setView($event)"
-        ></app-segmented-control>
-      </div>
-
       <div class="hero-card" [class.complete]="page.allPredicted(entry)">
         <div class="hero-glow"></div>
         @if (page.anyPredicted(entry)) {
@@ -143,58 +134,32 @@
         </div>
       }
 
-      <div class="match-list" [class.visual]="page.view() === 'visual'">
+      <div class="match-list">
         @for (match of entry.matchday.matches; track match.id; let first = $first) {
           <div
             class="match-card"
-            [class.visual]="page.view() === 'visual'"
             [attr.data-tone]="page.matchAccentTone(match)"
             [attr.data-tutorial]="first ? 'first-match' : null"
           >
             <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
 
-            @if (page.view() === 'filas') {
-              <div class="teams-row">
-                <div class="teams">
-                  <span class="team-home">
-                    {{ match.homeTeam }}
-                    @if (match.status === 'FINISHED') {
-                      <span class="team-score mono">{{ match.homeScore }}</span>
-                    }
-                  </span>
-                  <span class="team-away">
-                    {{ match.awayTeam }}
-                    @if (match.status === 'FINISHED') {
-                      <span class="team-score mono">{{ match.awayScore }}</span>
-                    }
-                  </span>
-                </div>
-                <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: false }"></ng-container>
-              </div>
-            } @else {
-              <div class="crests-row">
-                <span class="team-block">
-                  <span class="team-name">{{ match.homeTeam }}</span>
+            <div class="teams-row">
+              <div class="teams">
+                <span class="team-home">
+                  {{ match.homeTeam }}
                   @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.homeScore }}</span>
                   }
                 </span>
-                @if (page.isExactScore()) {
-                  <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: false, crests: true }"></ng-container>
-                } @else {
-                  <span class="vs mono">VS</span>
-                }
-                <span class="team-block">
+                <span class="team-away">
+                  {{ match.awayTeam }}
                   @if (match.status === 'FINISHED') {
                     <span class="team-score mono">{{ match.awayScore }}</span>
                   }
-                  <span class="team-name">{{ match.awayTeam }}</span>
                 </span>
               </div>
-              @if (!page.isExactScore()) {
-                <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match, wide: true }"></ng-container>
-              }
-            }
+              <ng-container [ngTemplateOutlet]="choices" [ngTemplateOutletContext]="{ match: match }"></ng-container>
+            </div>
 
             <div class="status-row">
               @if (match.status === 'FINISHED' && page.matchAccentTone(match) === 'none') {
@@ -227,18 +192,16 @@
         }
       </div>
 
-      <ng-template #choices let-match="match" let-wide="wide" let-crests="crests">
+      <ng-template #choices let-match="match">
         @let locked = page.isMatchLocked(match) || !page.pickingAllowed();
         @if (page.isExactScore()) {
           @if (locked) {
-            <div class="score-widget review" [class.standalone]="wide" [class.inline]="crests">
-              @if (!crests) {
-                <div class="score-labels">
-                  <span class="score-label mono">L</span>
-                  <span class="score-sep-spacer mono">-</span>
-                  <span class="score-label mono">V</span>
-                </div>
-              }
+            <div class="score-widget review">
+              <div class="score-labels">
+                <span class="score-label mono">L</span>
+                <span class="score-sep-spacer mono">-</span>
+                <span class="score-label mono">V</span>
+              </div>
               <div class="exact-score-box" [attr.data-tone]="page.matchAccentTone(match)">
                 <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedHomeScore" />
                 <span class="score-sep mono">-</span>
@@ -246,14 +209,12 @@
               </div>
             </div>
           } @else {
-            <div class="score-widget" [class.standalone]="wide" [class.inline]="crests">
-              @if (!crests) {
-                <div class="score-labels">
-                  <span class="score-label mono">L</span>
-                  <span class="score-sep-spacer mono">-</span>
-                  <span class="score-label mono">V</span>
-                </div>
-              }
+            <div class="score-widget">
+              <div class="score-labels">
+                <span class="score-label mono">L</span>
+                <span class="score-sep-spacer mono">-</span>
+                <span class="score-label mono">V</span>
+              </div>
               <div
                 class="exact-score-box"
                 [class.saving]="page.stateFor(match.id).saving"
@@ -283,10 +244,8 @@
               </div>
             </div>
           }
-        } @else if (crests) {
-          <span class="vs mono">VS</span>
         } @else if (match.status === 'FINISHED') {
-          <div class="options" [class.wide]="wide" [class.disabled]="page.matchAccentTone(match) === 'none'" role="group" aria-label="Resultado del partido">
+          <div class="options" [class.disabled]="page.matchAccentTone(match) === 'none'" role="group" aria-label="Resultado del partido">
             @for (opt of oneXTwoOptions; track opt.v) {
               <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
             }
@@ -303,7 +262,7 @@
                  prediccion ya tenia un doubleChanceOption guardado de antes,
                  se sigue mostrando abajo tal cual, solo que ya no se puede
                  activar uno nuevo desde aqui. -->
-            <div class="options" [class.wide]="wide" role="group" [attr.aria-label]="'Pronostico ' + match.homeTeam + ' contra ' + match.awayTeam">
+            <div class="options" role="group" [attr.aria-label]="'Pronostico ' + match.homeTeam + ' contra ' + match.awayTeam">
               @if (page.stateFor(match.id).doubleChanceOption) {
                 @for (opt of [{ v: 'HOME_OR_DRAW', l: '1X' }, { v: 'DRAW_OR_AWAY', l: 'X2' }, { v: 'HOME_OR_AWAY', l: '12' }]; track opt.v) {
                   <button
