@@ -160,8 +160,20 @@ h2 {
   align-items: center;
   justify-content: center;
 
+  /* Mismo tratamiento que .trophy-btn: siempre el arte "conseguida" (a
+     color), solo en gris mientras no se tenga — asi las dos vitrinas se
+     ven identicas en vez de depender cada una de su propio "estado" de
+     arte, que no eran exactamente el mismo tono. */
+  piqo-svg {
+    filter: grayscale(1);
+  }
+
   &.earned {
     border-color: var(--p4-accent);
+
+    piqo-svg {
+      filter: none;
+    }
   }
 }
 
@@ -183,12 +195,13 @@ h2 {
   align-items: center;
   justify-content: center;
 
-  /* Mismo tratamiento "pendiente" que las insignias: solo en gris, sin
-     bajar la opacidad — con opacity() de por medio se veia demasiado
-     desvaido, como si no se pudiera pulsar en vez de solo "sin conseguir
-     todavia". */
+  /* Mismo mecanismo que .badge-preview: el arte a color de siempre, solo
+     con un filtro de gris encima mientras no se tenga — antes esto se
+     recoloreaba a --p4-disabled antes de pasar a gris, un tono distinto
+     al gris que sale de las insignias (parten de colores distintos, asi
+     que el resultado final tampoco coincidia). Partiendo del mismo color
+     (--p4-accent) el gris final es identico en las dos vitrinas. */
   piqo-svg {
-    --accent: var(--p4-disabled);
     filter: grayscale(1);
   }
 
@@ -197,7 +210,6 @@ h2 {
     background: linear-gradient(165deg, var(--p4-soft), var(--p4-surface));
 
     piqo-svg {
-      --accent: var(--p4-accent);
       filter: none;
     }
   }
