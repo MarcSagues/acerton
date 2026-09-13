@@ -49,36 +49,6 @@
   white-space: nowrap;
 }
 
-.sub {
-  font: 400 11px/1 var(--p4-font-ui);
-  color: var(--p4-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-
-  piqo-svg {
-    flex: none;
-  }
-}
-
-.sub-dot {
-  flex: none;
-}
-
-.member-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 5px 1px 6px;
-  border-radius: var(--p4-radius-pill);
-  background: var(--p4-warning-bg);
-  color: var(--p4-warning);
-
-  piqo-svg {
-    flex: none;
-  }
-}
-
 /* Solo la flecha (hijo directo de .switcher) — el icono del avatar de
    modo esta anidado dentro de .avatar y debe heredar SU color (blanco
    en el fondo invertido de resultado exacto), no el "muted" fijo de
