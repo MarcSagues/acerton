@@ -42,6 +42,11 @@ h1 {
   z-index: 0;
   flex: none;
 
+  /* Sin animar: al girar sin parar, el degradado (con tonos bien distintos
+     segun el angulo) mostraba en cualquier instante un lado mas oscuro que
+     el otro, y eso se leia como si la propia foto estuviera descuadrada en
+     vez de ser el anillo decorativo. Fijo se ve igual de dorado, sin esa
+     falsa sensacion de asimetria. */
   &::before {
     content: '';
     position: absolute;
@@ -49,7 +54,6 @@ h1 {
     z-index: -1;
     border-radius: 50%;
     background: conic-gradient(from 0deg, #f3e6c6, #8a6e42, #d2be94, #6e5730, #f3e6c6);
-    animation: piqoSpin 12s linear infinite;
   }
 }
 
