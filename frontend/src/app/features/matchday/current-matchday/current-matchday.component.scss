@@ -641,7 +641,9 @@ h1 {
 }
 
 .score-input {
-  width: 24px;
+  /* Suficiente para 2 digitos (ej. "12") sin que se corten — antes con
+     24px un marcador de dos cifras quedaba recortado por los lados. */
+  width: 34px;
   height: 29px;
   border: none;
   background: none;
