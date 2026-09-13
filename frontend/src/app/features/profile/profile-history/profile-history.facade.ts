@@ -1,10 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MemberProfileService } from '../../../core/services/member-profile.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { MemberProfile } from '../../../core/models/member-profile.model';
 import { MatchdayStatus } from '../../../core/models/matchday.model';
+import { goBackOrFallback } from '../../../shared/utils/back-navigation';
 
 const STATUS_LABEL: Record<MatchdayStatus, string> = {
   SCHEDULED: 'Programada',
@@ -23,6 +25,7 @@ const STATUS_LABEL: Record<MatchdayStatus, string> = {
 export class ProfileHistoryFacade {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly memberProfileService = inject(MemberProfileService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly authService = inject(AuthService);
@@ -35,7 +38,10 @@ export class ProfileHistoryFacade {
   readonly userId = this.routeUserId ?? this.currentUserId;
   readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
 
-  readonly backTarget = this.viewingSelf ? ['/profile'] : ['/groups', this.routeGroupId!, 'members', this.routeUserId!];
+  /** Solo si se entra por un enlace directo, sin historial dentro de la app que recorrer (ver goBackOrFallback). */
+  private readonly fallbackTarget = this.viewingSelf
+    ? ['/profile']
+    : ['/groups', this.routeGroupId!, 'members', this.routeUserId!];
 
   readonly loading = signal(true);
   readonly error = signal(false);
@@ -69,7 +75,7 @@ export class ProfileHistoryFacade {
   }
 
   goBack(): void {
-    this.router.navigate(this.backTarget);
+    goBackOrFallback(this.location, this.router, this.fallbackTarget);
   }
 
   openMatchday(matchdayId: string): void {

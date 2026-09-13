@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { MemberProfileService } from '../../../core/services/member-profile.service';
@@ -7,6 +8,7 @@ import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { MemberProfile } from '../../../core/models/member-profile.model';
+import { goBackOrFallback } from '../../../shared/utils/back-navigation';
 
 /**
  * Vista "Estadísticas", compartida entre el perfil propio (`/profile/stats`,
@@ -19,6 +21,7 @@ import { MemberProfile } from '../../../core/models/member-profile.model';
 export class ProfileStatsFacade {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly memberProfileService = inject(MemberProfileService);
   private readonly rankingsService = inject(RankingsService);
   private readonly groupsService = inject(GroupsService);
@@ -33,7 +36,10 @@ export class ProfileStatsFacade {
   readonly userId = this.routeUserId ?? this.currentUserId;
   readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
 
-  readonly backTarget = this.viewingSelf ? ['/profile'] : ['/groups', this.routeGroupId!, 'members', this.routeUserId!];
+  /** Solo si se entra por un enlace directo, sin historial dentro de la app que recorrer (ver goBackOrFallback). */
+  private readonly fallbackTarget = this.viewingSelf
+    ? ['/profile']
+    : ['/groups', this.routeGroupId!, 'members', this.routeUserId!];
 
   readonly loading = signal(true);
   readonly error = signal(false);
@@ -93,6 +99,6 @@ export class ProfileStatsFacade {
   }
 
   goBack(): void {
-    this.router.navigate(this.backTarget);
+    goBackOrFallback(this.location, this.router, this.fallbackTarget);
   }
 }
