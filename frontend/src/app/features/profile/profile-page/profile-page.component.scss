@@ -183,12 +183,13 @@ h2 {
   align-items: center;
   justify-content: center;
 
-  /* Con solo cambiar --accent no siempre se nota a simple vista que falta
-     por conseguir: en blanco y negro + atenuado se ve inequivocamente
-     "bloqueado" frente al color pleno de las conseguidas. */
+  /* Mismo tratamiento "pendiente" que las insignias: solo en gris, sin
+     bajar la opacidad — con opacity() de por medio se veia demasiado
+     desvaido, como si no se pudiera pulsar en vez de solo "sin conseguir
+     todavia". */
   piqo-svg {
     --accent: var(--p4-disabled);
-    filter: grayscale(0.7) opacity(0.55);
+    filter: grayscale(1);
   }
 
   &.earned {
