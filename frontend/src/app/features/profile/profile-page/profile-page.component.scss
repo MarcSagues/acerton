@@ -41,6 +41,12 @@ h1 {
   position: relative;
   z-index: 0;
   flex: none;
+  /* Sin esto, <a> (display:block) mide 64x70 en vez de 64x64: el hueco de
+     interlineado del texto (line-height heredado) se suma por debajo del
+     <app-avatar> (inline-flex) aunque no haya texto real dentro. Con el
+     anillo de abajo puesto por inset en base a este alto, un contenedor
+     mas alto que ancho lo convertia en un ovalo en vez de un circulo. */
+  line-height: 0;
 
   /* Sin animar: al girar sin parar, el degradado (con tonos bien distintos
      segun el angulo) mostraba en cualquier instante un lado mas oscuro que
