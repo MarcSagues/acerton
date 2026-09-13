@@ -20,12 +20,17 @@
           <p class="hint mono">Este navegador no las soporta.</p>
         } @else if (!page.pushNotifications.configured) {
           <p class="hint mono">No configuradas en este entorno.</p>
+        } @else if (page.pushNotifications.loading()) {
+          <!-- Conceder el permiso del sistema es instantaneo, pero obtener
+               el token y guardarlo en el backend es async y puede tardar
+               varios segundos (o fallar despues) — sin este estado
+               intermedio, "Activadas" aparecia en cuanto se concedia el
+               permiso, antes de que el registro real hubiera terminado
+               siquiera. -->
+          <p class="hint mono">Comprobando…</p>
         } @else if (page.pushNotifications.error()) {
-          <!-- El permiso del sistema puede estar concedido y aun asi fallar
-               el paso siguiente (token o registro en el backend) — sin este
-               aviso, esa pantalla decia "Activadas" igualmente. -->
           <p class="hint mono error">{{ page.pushNotifications.error() }}</p>
-        } @else if (page.pushNotifications.permission() === 'granted') {
+        } @else if (page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered()) {
           <p class="hint mono">Activadas en este dispositivo.</p>
         } @else if (page.pushNotifications.permission() === 'denied') {
           <p class="hint mono">Bloqueadas en los permisos del navegador.</p>
@@ -36,7 +41,7 @@
           Esto es un permiso del dispositivo, distinto de las preferencias de abajo: aunque lo actives aquí,
           solo recibirás los avisos que tengas encendidos más abajo.
         </p>
-        @if (page.pushNotifications.supported && page.pushNotifications.configured && (page.pushNotifications.error() || (page.pushNotifications.permission() !== 'granted' && page.pushNotifications.permission() !== 'denied'))) {
+        @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'denied' && !(page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered())) {
           <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.pushNotifications.enable()">
             {{ page.pushNotifications.loading() ? 'Activando…' : (page.pushNotifications.error() ? 'Reintentar' : 'Activar') }}
           </button>
