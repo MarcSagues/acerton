@@ -42,7 +42,7 @@ export class MatchdayResultsFacade {
    * predicciones/clasificacion del grupo equivocado.
    */
   private readonly explicitGroupId = this.route.snapshot.queryParamMap.get('groupId');
-  private groupId(): string | null {
+  groupId(): string | null {
     return this.explicitGroupId ?? this.activeGroupService.activeId();
   }
 
@@ -58,6 +58,10 @@ export class MatchdayResultsFacade {
   /** Todas las predicciones del grupo para esta jornada (sin filtrar por usuario), para la comparativa de todos. */
   readonly allPredictions = signal<Prediction[]>([]);
   readonly targetUserName = signal<string | null>(null);
+  readonly targetUserAvatarUrl = signal<string | null>(null);
+  readonly targetUserAvatarBackground = signal<string | null>(null);
+  /** Nombre del grupo, para el rotulo "Histórico en {grupo}" al ver el resultado de otro miembro. */
+  readonly groupName = signal<string | null>(null);
   readonly position = signal<{ pos: number; total: number } | null>(null);
   readonly currentStreak = signal(0);
   readonly newBadges = signal<UserBadge[]>([]);
@@ -109,6 +113,7 @@ export class MatchdayResultsFacade {
           (group.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competition),
         );
         this.scoringMode.set(group.scoringMode);
+        this.groupName.set(group.name);
       });
     }
   }
@@ -216,6 +221,8 @@ export class MatchdayResultsFacade {
         const targetPredictions = predictions.filter((p) => p.userId === targetUserId);
         this.predictions.set(targetPredictions);
         this.targetUserName.set(targetPredictions[0]?.user?.name ?? null);
+        this.targetUserAvatarUrl.set(targetPredictions[0]?.user?.avatarUrl ?? null);
+        this.targetUserAvatarBackground.set(targetPredictions[0]?.user?.avatarBackground ?? null);
 
         const targetRow = ranking.find((r) => r.userId === targetUserId);
         this.position.set(targetRow ? { pos: targetRow.position, total: ranking.length } : null);

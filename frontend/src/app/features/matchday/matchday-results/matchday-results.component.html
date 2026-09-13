@@ -18,13 +18,23 @@
           <piqo-svg icon="atras" size="16"></piqo-svg>
         </button>
         <div class="title-block">
-          <p class="title">{{ page.viewingSelf ? 'Tus quinielas' : (page.targetUserName() ?? 'Quinielas') }}</p>
+          @if (page.viewingSelf) {
+            <p class="title">Tus quinielas</p>
+          } @else {
+            <a class="member-header" [routerLink]="['/groups', page.groupId(), 'members', page.routeUserId]">
+              <app-avatar
+                [url]="page.targetUserAvatarUrl()"
+                [background]="page.targetUserAvatarBackground()"
+                [name]="page.targetUserName() ?? ''"
+                [size]="28"
+              ></app-avatar>
+              <span class="title">{{ page.targetUserName() ?? 'Quinielas' }}</span>
+              <piqo-svg icon="flecha" size="14"></piqo-svg>
+            </a>
+          }
           <p class="sub mono">
             {{ md.competition?.name }} · J{{ md.order }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}
           </p>
-          @if (!page.viewingSelf && page.activeGroupService.activeId(); as groupId) {
-            <a class="member-link mono" [routerLink]="['/groups', groupId, 'members', page.routeUserId]">Ver perfil</a>
-          }
         </div>
         <button
           type="button"
@@ -37,16 +47,28 @@
         </button>
       </header>
 
-      <div class="head-links">
-        <a class="rankings-link" routerLink="/rankings">Tabla</a>
-        <a
-          class="rankings-link"
-          [routerLink]="['/matchday/history']"
-          [queryParams]="{ competitionId: md.competitionId, competitionName: md.competition?.name }"
-        >
-          Histórico
-        </a>
-      </div>
+      @if (page.viewingSelf) {
+        <div class="head-links">
+          <a class="rankings-link" routerLink="/rankings">Tabla</a>
+          <a
+            class="rankings-link"
+            [routerLink]="['/matchday/history']"
+            [queryParams]="{ competitionId: md.competitionId, competitionName: md.competition?.name }"
+          >
+            Histórico
+          </a>
+        </div>
+      } @else {
+        <div class="section">
+          <a class="card settings-link" [routerLink]="['/groups', page.groupId(), 'members', page.routeUserId, 'history']">
+            <div>
+              <p class="card-title">Histórico</p>
+              <p class="hint mono">{{ page.groupName() ? 'En ' + page.groupName() : 'Sus últimas jornadas jugadas' }}</p>
+            </div>
+            <piqo-svg icon="flecha" size="18"></piqo-svg>
+          </a>
+        </div>
+      }
 
       @if (page.hasMultipleCompetitions()) {
         <div class="comp-switcher">
