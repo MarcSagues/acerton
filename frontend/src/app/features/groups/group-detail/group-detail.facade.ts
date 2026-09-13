@@ -278,12 +278,9 @@ export class GroupDetailFacade {
     });
   }
 
-  /** Comodin y privacidad: solo cambian el valor pendiente, se guardan con "Guardar cambios". */
+  /** El comodin de remontada esta marcado como "Proximamente" (issue #22): el toggle se ve desactivado y no se puede activar todavia, para nadie. */
   toggleComebackEnabled(): void {
-    if (!this.isAdmin()) {
-      return;
-    }
-    this.selectedComebackEnabled.update((value) => !value);
+    return;
   }
 
   togglePrivacy(): void {

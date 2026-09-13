@@ -48,6 +48,13 @@
   font-size: 11px;
   color: var(--p4-muted);
   letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  piqo-svg {
+    flex: none;
+  }
 }
 
 .section-title {
@@ -179,6 +186,10 @@
   > piqo-svg {
     flex: none;
     color: var(--p4-muted);
+  }
+
+  &.disabled {
+    opacity: 0.6;
   }
 }
 

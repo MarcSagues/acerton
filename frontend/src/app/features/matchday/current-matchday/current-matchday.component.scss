@@ -281,11 +281,12 @@ h1 {
   width: 20px;
   height: 20px;
   margin: -2px -4px -2px 0;
+  border-radius: 50%;
   border: none;
-  background: none;
+  background: var(--p4-warning-bg);
+  color: var(--p4-warning);
   padding: 0;
-  color: inherit;
-  opacity: 0.7;
+  opacity: 0.9;
 
   &:active {
     opacity: 1;

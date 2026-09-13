@@ -34,6 +34,7 @@ export class TrophySeasonFacade {
 
   private readonly trophyId = signal('');
   readonly year = signal(0);
+  readonly demoCalloutDismissed = signal(false);
 
   readonly trophyName = computed(() => trophyById(this.trophyId())?.name ?? 'Trofeo');
 

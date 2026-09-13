@@ -21,7 +21,14 @@
         </span>
         <span class="meta">
           <span class="name">{{ group.name }}</span>
-          <span class="sub">{{ group._count?.memberships ?? 0 }} miembros · {{ group.isPublic ? 'público' : 'privado' }}</span>
+          <span class="sub">
+            <span class="member-count">
+              {{ group._count?.memberships ?? 0 }}
+              <piqo-svg icon="grupos" size="11"></piqo-svg>
+            </span>
+            <span class="sub-dot">·</span>
+            <piqo-svg [attr.icon]="group.isPublic ? 'publico' : 'candado'" size="12"></piqo-svg>
+          </span>
         </span>
         @if (group.id === activeGroupService.activeGroup()?.id) {
           <piqo-svg icon="check" size="22"></piqo-svg>

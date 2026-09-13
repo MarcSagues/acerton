@@ -41,7 +41,11 @@
         <span class="my-meta">
           <span class="my-name">Tú · {{ mine.user.name }}</span>
           <span class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
-            {{ page.deltaLabel(mine.positionDelta) }} esta semana
+            @if (page.deltaLabel(mine.positionDelta); as delta) {
+              {{ delta }} esta semana
+            } @else {
+              Esta semana
+            }
           </span>
         </span>
         <span class="my-pts">
@@ -86,9 +90,11 @@
           <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
             <span class="col-pos mono">
               {{ row.position }}
-              <span class="pos-delta" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
-                {{ page.deltaLabel(row.positionDelta) }}
-              </span>
+              @if (page.deltaLabel(row.positionDelta); as delta) {
+                <span class="pos-delta" [class.up]="row.positionDelta > 0" [class.down]="row.positionDelta < 0">
+                  {{ delta }}
+                </span>
+              }
             </span>
             <span class="col-name">
               <app-avatar [url]="row.user.avatarUrl" [background]="row.user.avatarBackground" [name]="row.user.name" [size]="28"></app-avatar>
