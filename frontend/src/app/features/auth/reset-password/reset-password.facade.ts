@@ -15,7 +15,8 @@ export class ResetPasswordFacade {
   readonly loading = signal(false);
   readonly success = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly passwordVisible = signal(false);
+  /** Cada campo de contraseña se muestra/oculta por separado: pulsar el ojo de uno no debe afectar al otro. */
+  private readonly visibleFields = signal<ReadonlySet<string>>(new Set());
 
   readonly form = this.fb.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(8)]],
@@ -29,8 +30,20 @@ export class ResetPasswordFacade {
     }
   }
 
-  togglePasswordVisibility(): void {
-    this.passwordVisible.update((v) => !v);
+  isPasswordVisible(field: string): boolean {
+    return this.visibleFields().has(field);
+  }
+
+  togglePasswordVisibility(field: string): void {
+    this.visibleFields.update((current) => {
+      const next = new Set(current);
+      if (next.has(field)) {
+        next.delete(field);
+      } else {
+        next.add(field);
+      }
+      return next;
+    });
   }
 
   submit(): void {
