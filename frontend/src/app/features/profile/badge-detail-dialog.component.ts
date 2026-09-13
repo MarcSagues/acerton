@@ -18,8 +18,13 @@ export interface BadgeDetailData {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="badge-dialog">
-      @if (data.artId) {
-        <piqo-svg [attr.badge]="data.artId" [attr.state]="data.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="96"></piqo-svg>
+      @if (data.artId && data.earned) {
+        <span class="art-wrap">
+          <img class="art-animated" [src]="'/piqo/insignias/animadas/' + data.artId + '.webp'" [alt]="data.name" />
+          <img class="art-static" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
+        </span>
+      } @else if (data.artId) {
+        <img class="art-static locked" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
       } @else {
         <piqo-svg icon="medalla" size="64" [class.earned]="data.earned"></piqo-svg>
       }
@@ -55,6 +60,35 @@ export interface BadgeDetailData {
         &.earned {
           color: var(--p4-accent);
         }
+      }
+      .art-wrap {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .art-animated,
+      .art-static {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+      }
+      /* Por defecto se ve la version animada; solo la estatica (misma
+         ilustracion, sin movimiento) si el usuario prefiere menos
+         animaciones en el sistema. */
+      .art-wrap .art-static {
+        display: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .art-wrap .art-animated {
+          display: none;
+        }
+        .art-wrap .art-static {
+          display: block;
+        }
+      }
+      .art-static.locked {
+        margin-bottom: 4px;
+        filter: grayscale(1);
+        opacity: 0.45;
       }
       .name {
         margin: 0;
