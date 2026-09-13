@@ -283,20 +283,6 @@ body {
   }
 }
 
-/* Un panel inferior o dialogo (bottom-sheet, confirm-dialog) bloquea el
-   scroll de fondo poniendo <html> en position:fixed con un top negativo
-   (compensa el scroll ya hecho, ver .cdk-global-scrollblock en
-   @angular/cdk/overlay-prebuilt.css). Con position:fixed, nuestro
-   height:100% de arriba deja de significar "como minimo toda la pagina"
-   y pasa a significar "exactamente lo que ocupa la ventana", recortando
-   todo el contenido real que quede por debajo de esa altura mientras el
-   panel esta abierto (se ve la pagina "vacia" bajo el fondo oscurecido).
-   Sin altura fija, <html> vuelve a ocupar todo su contenido real aunque
-   este desplazado hacia arriba. */
-html.cdk-global-scrollblock {
-  height: auto;
-}
-
 body {
   margin: 0;
   background: var(--p4-bg);
