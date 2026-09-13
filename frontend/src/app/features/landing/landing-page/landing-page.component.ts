@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LandingPageFacade } from './landing-page.facade';
 
@@ -11,10 +11,6 @@ import { LandingPageFacade } from './landing-page.facade';
   templateUrl: './landing-page.component.html',
   styleUrl: './landing-page.component.scss',
 })
-export class LandingPageComponent implements OnInit {
+export class LandingPageComponent {
   readonly page = inject(LandingPageFacade);
-
-  ngOnInit(): void {
-    this.page.init();
-  }
 }
