@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
 import { hasGroupGuard } from './core/guards/has-group.guard';
 import { usernameGuard } from './core/guards/username-guard';
 
@@ -85,10 +86,13 @@ export const routes: Routes = [
   },
   {
     // Home publica: si ya has iniciado sesion te manda dentro de la app
-    // (ver LandingPageComponent), si no, es lo que ve cualquiera (incluidos
-    // rastreadores como el de Google) sin necesidad de acceder.
+    // (guestGuard, antes de montar nada — sin el, se veia un instante la
+    // landing antes de que LandingPageFacade.init() detectara la sesion y
+    // redirigiera). Si no, es lo que ve cualquiera (incluidos rastreadores
+    // como el de Google) sin necesidad de acceder.
     path: '',
     pathMatch: 'full',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/landing/landing-page/landing-page.component').then(
         (m) => m.LandingPageComponent,
