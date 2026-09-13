@@ -8,7 +8,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     eyebrow: 'Tu liga, vuestra historia',
     title: 'Pronostica.\nPica. Repite.',
-    body: 'Crea un grupo con tus amigos, juega cada jornada y deja que la tabla decida quien manda.',
+    body: 'Crea un grupo con tus amigos, juega cada jornada y deja que la tabla decida quién manda.',
   },
   {
     eyebrow: 'Dos formas de jugar',

@@ -15,7 +15,7 @@ export class VerifyEmailFacade {
   init(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
     if (!token) {
-      this.errorMessage.set('Falta el token de confirmacion en el enlace.');
+      this.errorMessage.set('Falta el token de confirmación en el enlace.');
       return;
     }
 
@@ -23,7 +23,7 @@ export class VerifyEmailFacade {
       next: () => this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route)),
       error: (error) =>
         this.errorMessage.set(
-          error.error?.message ?? 'El enlace de confirmacion no es valido o ha caducado.',
+          error.error?.message ?? 'El enlace de confirmación no es válido o ha caducado.',
         ),
     });
   }

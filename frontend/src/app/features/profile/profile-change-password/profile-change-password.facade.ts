@@ -51,7 +51,7 @@ export class ProfileChangePasswordFacade {
 
     const { currentPassword, newPassword, confirmPassword } = this.form.getRawValue();
     if (newPassword !== confirmPassword) {
-      this.errorMessage.set('Las contrasenas nuevas no coinciden');
+      this.errorMessage.set('Las contraseñas nuevas no coinciden');
       return;
     }
 
@@ -65,7 +65,7 @@ export class ProfileChangePasswordFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo cambiar la contrasena');
+        this.errorMessage.set(error.error?.message ?? 'No se pudo cambiar la contraseña');
       },
     });
   }

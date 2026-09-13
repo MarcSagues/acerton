@@ -191,11 +191,11 @@ export class CurrentMatchdayFacade {
     if (this.isLocked(entry) || !this.pickingAllowed()) return null;
     const anyError = entry.matchday.matches.some((m) => this.stateFor(m.id).error);
     if (anyError) {
-      return { text: 'No se ha guardado algun pronostico. Revisa tu conexion y reintenta.', tone: 'error' };
+      return { text: 'No se ha guardado algún pronóstico. Revisa tu conexión y reintenta.', tone: 'error' };
     }
     if (this.doneCount() < entry.matchday.matches.length) {
       if (this.autoSaveNoticeDismissed()) return null;
-      return { text: 'Se guarda automaticamente al elegir. Puedes editarlo hasta el cierre.', tone: 'info' };
+      return { text: 'Se guarda automáticamente al elegir. Puedes editarlo hasta el cierre.', tone: 'info' };
     }
     return { text: `Cierra en ${this.countdownLabel()}. Puedes editar tus elecciones hasta entonces.`, tone: 'warning' };
   }
@@ -324,7 +324,7 @@ export class CurrentMatchdayFacade {
           if (direction === 'next') {
             this.noNextAvailable.set(true);
           }
-          this.toast.show(direction === 'previous' ? 'No hay jornada anterior' : 'Todavia no hay jornada siguiente');
+          this.toast.show(direction === 'previous' ? 'No hay jornada anterior' : 'Todavía no hay jornada siguiente');
           return;
         }
         this.noNextAvailable.set(false);
@@ -540,7 +540,7 @@ export class CurrentMatchdayFacade {
     }
 
     if (!comeback?.enabled) {
-      this.toast.show('El comodin de remontada esta desactivado en este grupo');
+      this.toast.show('El comodín de remontada está desactivado en este grupo');
       return;
     }
     if (comeback.remaining <= 0) {
@@ -599,7 +599,7 @@ export class CurrentMatchdayFacade {
           this.finishDrawProgress(state, seq, () => {
             state.saving = false;
             state.error = true;
-            this.toast.show(error.error?.message ?? 'No se pudo guardar el pronostico');
+            this.toast.show(error.error?.message ?? 'No se pudo guardar el pronóstico');
           });
         },
       });

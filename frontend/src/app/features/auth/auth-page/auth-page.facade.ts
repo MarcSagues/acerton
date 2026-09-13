@@ -115,11 +115,11 @@ export class AuthPageFacade implements OnDestroy {
     this.authService.resendVerification(email).subscribe({
       next: () => {
         this.resendingVerification.set(false);
-        this.resendMessage.set('Te hemos enviado el correo de confirmacion de nuevo.');
+        this.resendMessage.set('Te hemos enviado el correo de confirmación de nuevo.');
       },
       error: () => {
         this.resendingVerification.set(false);
-        this.resendMessage.set('No se ha podido reenviar. Intentalo de nuevo en unos minutos.');
+        this.resendMessage.set('No se ha podido reenviar. Inténtalo de nuevo en unos minutos.');
       },
     });
   }
@@ -166,11 +166,11 @@ export class AuthPageFacade implements OnDestroy {
         // Temporal: mostrar el detalle real del fallo para poder diagnosticarlo en TestFlight.
         if (error instanceof HttpErrorResponse) {
           this.errorMessage.set(
-            `No se pudo iniciar sesion con Google (backend ${error.status}): ${JSON.stringify(error.error)}`,
+            `No se pudo iniciar sesión con Google (backend ${error.status}): ${JSON.stringify(error.error)}`,
           );
         } else {
           this.errorMessage.set(
-            `No se pudo iniciar sesion con Google (${error?.code ?? 'sin codigo'}): ${error?.message ?? JSON.stringify(error)}`,
+            `No se pudo iniciar sesión con Google (${error?.code ?? 'sin código'}): ${error?.message ?? JSON.stringify(error)}`,
           );
         }
       },
@@ -213,10 +213,10 @@ export class AuthPageFacade implements OnDestroy {
         this.loading.set(false);
         if (error.status === 403) {
           this.unverifiedEmailError.set(true);
-          this.errorMessage.set(error.error?.message ?? 'Confirma tu correo antes de iniciar sesion.');
+          this.errorMessage.set(error.error?.message ?? 'Confirma tu correo antes de iniciar sesión.');
           return;
         }
-        this.errorMessage.set(error.error?.message ?? 'No se pudo iniciar sesion');
+        this.errorMessage.set(error.error?.message ?? 'No se pudo iniciar sesión');
       },
     });
   }

@@ -132,7 +132,7 @@ export class GroupsService {
     // El comodin de remontada no existe en modo resultado exacto: se ignora
     // cualquier intento de reactivarlo aunque se llame al endpoint directamente.
     if (group.scoringMode === 'EXACT_SCORE' && dto.comebackEnabled === true) {
-      throw new BadRequestException('El comodin de remontada no esta disponible en grupos de resultado exacto');
+      throw new BadRequestException('El comodín de remontada no está disponible en grupos de resultado exacto');
     }
     return this.prisma.group.update({
       where: { id: groupId },
@@ -267,7 +267,7 @@ export class GroupsService {
   async joinByInviteCode(inviteCode: string, userId: string): Promise<Group> {
     const group = await this.prisma.group.findFirst({ where: { inviteCode, ...NOT_DELETED } });
     if (!group) {
-      throw new NotFoundException('Codigo de invitacion invalido');
+      throw new NotFoundException('Código de invitación inválido');
     }
     await this.addMember(group.id, userId);
     return group;
@@ -279,7 +279,7 @@ export class GroupsService {
       throw new NotFoundException('Grupo no encontrado');
     }
     if (!group.isPublic) {
-      throw new ForbiddenException('El grupo es privado, necesitas un link de invitacion');
+      throw new ForbiddenException('El grupo es privado, necesitas un link de invitación');
     }
     await this.addMember(groupId, userId);
     return group;
@@ -449,7 +449,7 @@ export class GroupsService {
    */
   async setCompetitions(groupId: string, competitionIds: string[]): Promise<void> {
     if (competitionIds.length === 0) {
-      throw new BadRequestException('Selecciona al menos una competicion');
+      throw new BadRequestException('Selecciona al menos una competición');
     }
 
     const currentlyActive = await this.competitionsService.findActiveByGroup(groupId);
@@ -493,6 +493,6 @@ export class GroupsService {
         return code;
       }
     }
-    throw new Error('No se pudo generar un codigo de invitacion unico');
+    throw new Error('No se pudo generar un código de invitación único');
   }
 }

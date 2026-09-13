@@ -12,7 +12,7 @@
       <div class="comp-name">{{ page.competitionName }}</div>
 
       @if (page.matchdays().length === 0) {
-        <p class="empty">Todavia no hay jornadas guardadas de esta competicion.</p>
+        <p class="empty">Todavía no hay jornadas guardadas de esta competición.</p>
       } @else {
         <div class="grid">
           @for (matchday of page.matchdays(); track matchday.id) {
@@ -42,7 +42,7 @@
         <div class="legend">
           <span class="mono"><span class="dot played"></span>Jugada &middot; tus puntos</span>
           <span class="mono"><span class="dot open"></span>Abierta ahora</span>
-          <span class="mono"><span class="dot upcoming"></span>Proxima</span>
+          <span class="mono"><span class="dot upcoming"></span>Próxima</span>
         </div>
       }
     </div>

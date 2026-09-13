@@ -54,7 +54,7 @@ export class ResetPasswordFacade {
 
     const { password, confirm } = this.form.getRawValue();
     if (password !== confirm) {
-      this.errorMessage.set('Las contrasenas no coinciden');
+      this.errorMessage.set('Las contraseñas no coinciden');
       return;
     }
     if (!this.token) {
@@ -71,7 +71,7 @@ export class ResetPasswordFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo restablecer la contrasena');
+        this.errorMessage.set(error.error?.message ?? 'No se pudo restablecer la contraseña');
       },
     });
   }

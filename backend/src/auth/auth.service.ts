@@ -76,16 +76,16 @@ export class AuthService {
   async login(dto: LoginDto): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user?.passwordHash) {
-      throw new UnauthorizedException('Credenciales invalidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) {
-      throw new UnauthorizedException('Credenciales invalidas');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     if (!user.emailVerifiedAt) {
-      throw new ForbiddenException('Confirma tu correo antes de iniciar sesion. Revisa tu bandeja de entrada.');
+      throw new ForbiddenException('Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
@@ -99,7 +99,7 @@ export class AuthService {
       where: { tokenHash, purpose: 'EMAIL_VERIFICATION', usedAt: null, expiresAt: { gt: new Date() } },
     });
     if (!record) {
-      throw new BadRequestException('El enlace de confirmacion no es valido o ha caducado');
+      throw new BadRequestException('El enlace de confirmación no es válido o ha caducado');
     }
 
     const [user] = await this.prisma.$transaction([
@@ -152,7 +152,7 @@ export class AuthService {
       where: { tokenHash, purpose: 'PASSWORD_RESET', usedAt: null, expiresAt: { gt: new Date() } },
     });
     if (!record) {
-      throw new BadRequestException('El enlace para restablecer la contrasena no es valido o ha caducado');
+      throw new BadRequestException('El enlace para restablecer la contraseña no es válido o ha caducado');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -173,12 +173,12 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado');
     }
     if (!user.passwordHash) {
-      throw new BadRequestException('Esta cuenta usa Google para iniciar sesion y no tiene contrasena que cambiar');
+      throw new BadRequestException('Esta cuenta usa Google para iniciar sesión y no tiene contraseña que cambiar');
     }
 
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!matches) {
-      throw new UnauthorizedException('La contrasena actual no es correcta');
+      throw new UnauthorizedException('La contraseña actual no es correcta');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -267,7 +267,7 @@ export class AuthService {
       const ticket = await this.googleOAuthClient.verifyIdToken({ idToken, audience });
       payload = ticket.getPayload();
     } catch {
-      throw new UnauthorizedException('Token de Google invalido');
+      throw new UnauthorizedException('Token de Google inválido');
     }
 
     if (!payload?.email || !payload.sub) {
@@ -289,7 +289,7 @@ export class AuthService {
         secret: this.configService.get('jwt.refreshSecret', { infer: true }),
       });
     } catch {
-      throw new UnauthorizedException('Refresh token invalido');
+      throw new UnauthorizedException('Refresh token inválido');
     }
 
     const stored = await this.prisma.refreshToken.findUnique({ where: { id: payload.tokenId } });
@@ -301,7 +301,7 @@ export class AuthService {
       stored.tokenHash !== tokenHash ||
       stored.expiresAt < new Date()
     ) {
-      throw new UnauthorizedException('Refresh token invalido o expirado');
+      throw new UnauthorizedException('Refresh token inválido o expirado');
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
@@ -365,7 +365,7 @@ export class AuthService {
 function addDuration(base: Date, duration: string): Date {
   const match = /^(\d+)(ms|s|m|h|d|w|y)$/.exec(duration.trim());
   if (!match) {
-    throw new Error(`Formato de duracion invalido: ${duration}`);
+    throw new Error(`Formato de duración inválido: ${duration}`);
   }
   const value = parseInt(match[1], 10);
   const unitMs: Record<string, number> = {

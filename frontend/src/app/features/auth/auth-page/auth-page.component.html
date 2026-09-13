@@ -5,8 +5,8 @@
         <div class="title-row">
           <h1>Revisa tu correo</h1>
           <p class="lead">
-            Te hemos enviado un enlace de confirmacion a <strong>{{ registeredEmail }}</strong>. Confirma tu cuenta
-            desde ahi para poder entrar.
+            Te hemos enviado un enlace de confirmación a <strong>{{ registeredEmail }}</strong>. Confirma tu cuenta
+            desde ahí para poder entrar.
           </p>
         </div>
         <div class="form">
@@ -132,7 +132,7 @@
               [disabled]="page.resendingVerification()"
               (click)="page.resendVerification(page.form.controls.email.value)"
             >
-              {{ page.resendingVerification() ? 'Reenviando…' : 'Reenviar correo de confirmacion' }}
+              {{ page.resendingVerification() ? 'Reenviando…' : 'Reenviar correo de confirmación' }}
             </button>
           }
         }
