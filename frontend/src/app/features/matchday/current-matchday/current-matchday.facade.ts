@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angul
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { BottomNavService } from '../../../core/services/bottom-nav.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
@@ -58,6 +59,7 @@ export class CurrentMatchdayFacade {
   private readonly predictionsService = inject(PredictionsService);
   private readonly wildcardsService = inject(WildcardsService);
   private readonly toast = inject(ToastService);
+  private readonly bottomNav = inject(BottomNavService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly loading = signal(true);
@@ -237,8 +239,15 @@ export class CurrentMatchdayFacade {
       { allowSignalWrites: true },
     );
 
+    // La pantalla "Enviado" (Ver resumen) es un estado dentro de esta misma
+    // ruta (no una navegacion), asi que ROUTES_WITHOUT_BOTTOM_NAV no la
+    // detecta — se pide ocultar la barra a mano via BottomNavService,
+    // mismo mecanismo que usan las rutas sin barra (ver ShellFacade).
+    effect(() => this.bottomNav.setForceHidden(this.submissionConfirmed()), { allowSignalWrites: true });
+
     const interval = setInterval(() => this.now.set(new Date()), 1000);
     this.destroyRef.onDestroy(() => {
+      this.bottomNav.setForceHidden(false);
       clearInterval(interval);
       // Sin esto, el requestAnimationFrame de un guardado todavia en curso al
       // salir de la pantalla seguiria llamandose a si mismo indefinidamente

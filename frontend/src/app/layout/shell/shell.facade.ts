@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { AdsService } from '../../core/services/ads.service';
+import { BottomNavService } from '../../core/services/bottom-nav.service';
 
 /**
  * Pantallas de conseguir el primer grupo (ver hasGroupGuard/app.routes): son
@@ -16,10 +17,16 @@ const ROUTES_WITHOUT_BOTTOM_NAV = ['/groups/create', '/groups/join-code', '/grou
 export class ShellFacade {
   private readonly ads = inject(AdsService);
   private readonly router = inject(Router);
+  private readonly bottomNav = inject(BottomNavService);
 
   private readonly currentPath = signal(this.router.url.split('?')[0]);
 
-  readonly hideBottomNav = computed(() => ROUTES_WITHOUT_BOTTOM_NAV.some((path) => this.currentPath().startsWith(path)));
+  /** Por ruta (rutas del primer grupo, ver ROUTES_WITHOUT_BOTTOM_NAV) o porque
+      la propia pantalla lo pide (ver BottomNavService — p.ej. "Ver resumen" en
+      Jornada, un estado dentro de la misma ruta, no una navegacion). */
+  readonly hideBottomNav = computed(
+    () => ROUTES_WITHOUT_BOTTOM_NAV.some((path) => this.currentPath().startsWith(path)) || this.bottomNav.forceHidden(),
+  );
 
   init(): void {
     this.ads.showBanner();
