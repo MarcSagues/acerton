@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		1BAECC6A238D6025CA32770A /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B87F7DB59F2DAD0DA566637E /* GoogleService-Info.plist */; };
-		DD720772AB32374F5A2DE33F /* FcmTokenPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08BEA243C25A8A1B4F481AC /* FcmTokenPlugin.swift */; };
-		B11CD52D4DAE0EAAF26ADAB6 /* FcmTokenPlugin.m in Sources */ = {isa = PBXBuildFile; fileRef = 51EDC46457839B3056F84AC3 /* FcmTokenPlugin.m */; };
 		1A48B7370CAD9B851EEEE43F /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9AE72B02575DEC2389FA3D9C /* FirebaseCore */; };
 		27B71AB50407FA5F74723915 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 79C9EEFD58B7B38D32271324 /* FirebaseMessaging */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
@@ -25,8 +23,6 @@
 
 /* Begin PBXFileReference section */
 		B87F7DB59F2DAD0DA566637E /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		E08BEA243C25A8A1B4F481AC /* FcmTokenPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FcmTokenPlugin.swift; sourceTree = "<group>"; };
-		51EDC46457839B3056F84AC3 /* FcmTokenPlugin.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FcmTokenPlugin.m; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,8 +74,6 @@
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
-				E08BEA243C25A8A1B4F481AC /* FcmTokenPlugin.swift */,
-				51EDC46457839B3056F84AC3 /* FcmTokenPlugin.m */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -179,8 +173,6 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
-				DD720772AB32374F5A2DE33F /* FcmTokenPlugin.swift in Sources */,
-				B11CD52D4DAE0EAAF26ADAB6 /* FcmTokenPlugin.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

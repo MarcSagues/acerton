@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Dialog } from '@capacitor/dialog';
 import { environment } from '../../../environments/environment';
@@ -15,19 +15,23 @@ export interface TestBroadcastResult {
   failureCount: number;
 }
 
-interface FcmTokenPluginInterface {
-  getToken(): Promise<{ token: string }>;
-}
-
 /**
- * Plugin nativo propio (frontend/ios/App/App/FcmTokenPlugin.swift), sin
- * equivalente en Android: @capacitor/push-notifications ya da un token de
- * FCM valido ahi (Android usa FCM nativamente), pero en iOS solo da el
- * token crudo de APNs, que firebase-admin/sendEachForMulticast no acepta.
- * Este plugin expone el token que FirebaseMessaging traduce a partir del de
- * APNs (ver AppDelegate.swift).
+ * Nombre del evento DOM que AppDelegate.swift dispara sobre `window` con
+ * `evaluateJavaScript` en cuanto FirebaseMessaging entrega un token de FCM
+ * (ver AppDelegate.messaging(_:didReceiveRegistrationToken:)).
+ *
+ * En iOS, @capacitor/push-notifications solo da el token crudo de APNs, que
+ * firebase-admin/sendEachForMulticast (el backend) no acepta — hace falta el
+ * de FCM que FirebaseMessaging traduce a partir de ese. Se probó primero con
+ * un plugin nativo propio de Capacitor (CAPPlugin/CAPBridgedPlugin), pero un
+ * plugin Swift-only "local" (sin paquete/target separado) puede quedar
+ * fuera del binario final en un build de Release/App Store si nada lo
+ * referencia de forma estática — confirmado en dispositivo real:
+ * "FcmTokenPlugin is not implemented on ios" pese a compilar bien. Inyectar
+ * el token en el WebView con evaluateJavaScript no depende de ningún
+ * mecanismo de descubrimiento de plugins, así que es más robusto.
  */
-const FcmTokenPlugin = registerPlugin<FcmTokenPluginInterface>('FcmTokenPlugin');
+const FCM_TOKEN_EVENT = 'piqoFcmToken';
 
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
@@ -126,39 +130,31 @@ export class PushNotificationsService {
 
       if (Capacitor.getPlatform() === 'ios') {
         // En iOS, @capacitor/push-notifications solo entrega el token crudo
-        // de APNs (ver comentario junto a FcmTokenPlugin más arriba); el
-        // token de FCM que el backend necesita sale de ahí en su lugar.
+        // de APNs (ver comentario junto a FCM_TOKEN_EVENT más arriba); el
+        // token de FCM que el backend necesita llega por un CustomEvent en
+        // `window` que dispara AppDelegate.swift con evaluateJavaScript.
         //
-        // Timeout explicito: si FirebaseMessaging nunca llega a resolver un
+        // Timeout explicito: si FirebaseMessaging nunca llega a entregar un
         // token (red, GoogleService-Info.plist mal emparejado con la Auth
-        // Key de APNs subida a Firebase...), FcmTokenPlugin.getToken() se
-        // queda colgado para siempre sin este límite — ni resuelve ni
-        // rechaza, así que sin timeout no habría ni token ni error, solo el
-        // botón encallado en "Activando…".
+        // Key de APNs subida a Firebase...), ese evento nunca llega — sin
+        // este límite no habría ni token ni error, solo el botón encallado
+        // en "Activando…" para siempre.
         let settled = false;
-        const timeoutId = setTimeout(() => {
+        let timeoutId: ReturnType<typeof setTimeout>;
+        const onFcmToken = (event: Event) => {
           if (settled) return;
           settled = true;
+          clearTimeout(timeoutId);
+          registerToken((event as CustomEvent<string>).detail);
+        };
+        timeoutId = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          window.removeEventListener(FCM_TOKEN_EVENT, onFcmToken);
           this.error.set('El token de FCM no llegó a tiempo (Firebase). Puede ser un problema de red o de configuración de Firebase, no de permisos.');
           resolve(false);
         }, 15000);
-
-        FcmTokenPlugin.getToken().then(
-          (result) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timeoutId);
-            registerToken(result.token);
-          },
-          (err) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timeoutId);
-            console.error('[PushNotifications] FcmTokenPlugin.getToken failed', err);
-            this.error.set(`No se pudo obtener el token de FCM (plugin nativo): ${err?.message ?? JSON.stringify(err)}`);
-            resolve(false);
-          },
-        );
+        window.addEventListener(FCM_TOKEN_EVENT, onFcmToken, { once: true });
       } else {
         PushNotifications.addListener('registration', (token) => registerToken(token.value));
       }

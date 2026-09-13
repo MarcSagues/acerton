@@ -70,6 +70,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
         // Este es el token que hay que mandar al backend (el mismo que usan
         // web y Android via firebase-admin/sendEachForMulticast) — NO el token
         // crudo de APNs que emite @capacitor/push-notifications en 'registration'.
-        FcmTokenPlugin.handleTokenRefresh(fcmToken)
+        //
+        // Se entrega al JS inyectandolo directamente en el WebView en vez de
+        // via un plugin nativo propio de Capacitor: un plugin Swift-only
+        // "local" (sin paquete/target separado) puede quedar fuera del
+        // binario final en un build de Release/App Store si nada lo
+        // referencia de forma estatica (el linker lo trata como codigo
+        // muerto, ya que solo el escaneo en tiempo de ejecucion de Capacitor
+        // lo usaba) — confirmado en dispositivo real: "FcmTokenPlugin is not
+        // implemented on ios" pese a compilar. evaluateJavaScript no depende
+        // de ningun mecanismo de descubrimiento de plugins.
+        guard let fcmToken = fcmToken else { return }
+        deliverFcmTokenToWebView(fcmToken)
+    }
+
+    private func currentBridgeViewController() -> CAPBridgeViewController? {
+        for scene in UIApplication.shared.connectedScenes {
+            guard let windowScene = scene as? UIWindowScene else { continue }
+            for window in windowScene.windows {
+                if let bridgeVC = window.rootViewController as? CAPBridgeViewController {
+                    return bridgeVC
+                }
+            }
+        }
+        return nil
+    }
+
+    private func deliverFcmTokenToWebView(_ token: String) {
+        // Escapado minimo para el literal de string en JS: barra invertida
+        // primero (si no, escaparia las comillas que se anaden despues).
+        let escaped = token
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+        let js = "window.__piqoFcmToken = '\(escaped)';" +
+            "window.dispatchEvent(new CustomEvent('piqoFcmToken', { detail: '\(escaped)' }));"
+        DispatchQueue.main.async { [weak self] in
+            self?.currentBridgeViewController()?.bridge?.webView?.evaluateJavaScript(js, completionHandler: nil)
+        }
     }
 }
