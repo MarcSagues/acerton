@@ -6,7 +6,6 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
 import { AuthService } from '../../../core/services/auth.service';
 import { MemberProfile } from '../../../core/models/member-profile.model';
 import { MatchdayStatus } from '../../../core/models/matchday.model';
-import { goBackOrFallback } from '../../../shared/utils/back-navigation';
 
 const STATUS_LABEL: Record<MatchdayStatus, string> = {
   SCHEDULED: 'Programada',
@@ -37,11 +36,6 @@ export class ProfileHistoryFacade {
   readonly groupId = this.routeGroupId ?? this.activeGroupService.activeId();
   readonly userId = this.routeUserId ?? this.currentUserId;
   readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
-
-  /** Solo si se entra por un enlace directo, sin historial dentro de la app que recorrer (ver goBackOrFallback). */
-  private readonly fallbackTarget = this.viewingSelf
-    ? ['/profile']
-    : ['/groups', this.routeGroupId!, 'members', this.routeUserId!];
 
   readonly loading = signal(true);
   readonly error = signal(false);
@@ -74,8 +68,9 @@ export class ProfileHistoryFacade {
     return STATUS_LABEL[status];
   }
 
+  /** Vuelve a la pantalla real de la que se vino, igual que el gesto de deslizar (EdgeSwipeBackService). */
   goBack(): void {
-    goBackOrFallback(this.location, this.router, this.fallbackTarget);
+    this.location.back();
   }
 
   openMatchday(matchdayId: string): void {

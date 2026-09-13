@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { MemberProfileService } from '../../../core/services/member-profile.service';
 import { RankingsService } from '../../../core/services/rankings.service';
@@ -8,7 +8,6 @@ import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { MemberProfile } from '../../../core/models/member-profile.model';
-import { goBackOrFallback } from '../../../shared/utils/back-navigation';
 
 /**
  * Vista "Estadísticas", compartida entre el perfil propio (`/profile/stats`,
@@ -20,7 +19,6 @@ import { goBackOrFallback } from '../../../shared/utils/back-navigation';
 @Injectable()
 export class ProfileStatsFacade {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly memberProfileService = inject(MemberProfileService);
   private readonly rankingsService = inject(RankingsService);
@@ -35,11 +33,6 @@ export class ProfileStatsFacade {
   readonly groupId = this.routeGroupId ?? this.activeGroupService.activeId();
   readonly userId = this.routeUserId ?? this.currentUserId;
   readonly viewingSelf = !this.routeUserId || this.routeUserId === this.currentUserId;
-
-  /** Solo si se entra por un enlace directo, sin historial dentro de la app que recorrer (ver goBackOrFallback). */
-  private readonly fallbackTarget = this.viewingSelf
-    ? ['/profile']
-    : ['/groups', this.routeGroupId!, 'members', this.routeUserId!];
 
   readonly loading = signal(true);
   readonly error = signal(false);
@@ -98,7 +91,8 @@ export class ProfileStatsFacade {
     });
   }
 
+  /** Vuelve a la pantalla real de la que se vino, igual que el gesto de deslizar (EdgeSwipeBackService). */
   goBack(): void {
-    goBackOrFallback(this.location, this.router, this.fallbackTarget);
+    this.location.back();
   }
 }

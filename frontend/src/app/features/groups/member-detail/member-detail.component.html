@@ -9,9 +9,9 @@
   @if (page.profile(); as p) {
     <div class="page">
       <div class="head-row">
-        <a [routerLink]="['/rankings']" class="back">
-          <piqo-svg icon="atras" size="18"></piqo-svg>Clasificación
-        </a>
+        <button type="button" class="back" (click)="page.goBack()">
+          <piqo-svg icon="atras" size="18"></piqo-svg>Atrás
+        </button>
       </div>
 
       <div class="identity">

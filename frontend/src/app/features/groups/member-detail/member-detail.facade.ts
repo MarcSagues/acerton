@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { MemberProfileService } from '../../../core/services/member-profile.service';
 import { MemberProfile, MemberBadge } from '../../../core/models/member-profile.model';
@@ -11,6 +12,7 @@ import { TROPHIES } from '../../profile/domain/trophies';
 @Injectable()
 export class MemberDetailFacade {
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
   private readonly memberProfileService = inject(MemberProfileService);
   private readonly dialog = inject(PiqoDialogService);
 
@@ -48,6 +50,11 @@ export class MemberDetailFacade {
         this.loading.set(false);
       },
     });
+  }
+
+  /** Vuelve a la pantalla real de la que se vino (Tabla, resultado de una jornada, etc.), igual que el gesto de deslizar (EdgeSwipeBackService). */
+  goBack(): void {
+    this.location.back();
   }
 
   artId(code: string): string | null {
