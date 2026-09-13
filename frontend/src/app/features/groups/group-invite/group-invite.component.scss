@@ -13,13 +13,11 @@
   justify-content: center;
 }
 
-/* Pantalla de marca: siempre oscura, en los dos temas. */
 .page {
   flex: 1;
   min-height: 0;
   min-width: 0;
-  background: #121619;
-  color: #f1f0ea;
+  color: var(--p4-text);
 }
 
 .head-row {
@@ -34,7 +32,7 @@
   align-items: center;
   gap: 8px;
   font: 600 15px/1 var(--p4-font-ui);
-  color: #d2be94;
+  color: var(--p4-accent);
 }
 
 .content {
@@ -52,13 +50,19 @@ h1 {
 
 .tagline {
   font: 400 15px/1.5 var(--p4-font-ui);
-  color: rgba(241, 240, 234, 0.65);
+  color: color-mix(in srgb, var(--p4-text) 65%, transparent);
   margin: -12px 0 0;
 }
 
 .code-card {
   width: 100%;
-  background: #1d2426;
+  /* Mismos valores que --p4-surface/--p4-surface-2/--p4-border en el
+     tema oscuro (esta pantalla es siempre oscura, no puede usar los
+     tokens directamente porque no cambian con :root[data-theme] aqui),
+     con el mismo gradiente + borde que ya usa cualquier tarjeta del
+     resto de la app en vez del fondo plano de antes. */
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   border-radius: 22px;
   padding: 22px;
   display: flex;
@@ -71,7 +75,7 @@ h1 {
   margin: 0;
   font: 600 12px/1 var(--p4-font-ui);
   letter-spacing: 0.08em;
-  color: rgba(241, 240, 234, 0.55);
+  color: color-mix(in srgb, var(--p4-text) 55%, transparent);
 }
 
 .code {
@@ -98,14 +102,14 @@ h1 {
   gap: 6px;
 
   &.primary {
-    background: #d2be94;
-    color: #121619;
+    background: var(--p4-accent);
+    color: var(--p4-on-accent);
   }
 
   &.ghost {
     background: transparent;
-    border: 1px solid rgba(241, 240, 234, 0.16);
-    color: #f1f0ea;
+    border: 1px solid color-mix(in srgb, var(--p4-text) 16%, transparent);
+    color: var(--p4-text);
   }
 
   &:disabled {
@@ -115,11 +119,11 @@ h1 {
 
 .link-row {
   width: 100%;
-  background: rgba(241, 240, 234, 0.07);
+  background: color-mix(in srgb, var(--p4-text) 7%, transparent);
   border-radius: 16px;
   padding: 12px 14px;
   font-size: 12px;
-  color: rgba(241, 240, 234, 0.65);
+  color: color-mix(in srgb, var(--p4-text) 65%, transparent);
   word-break: break-all;
   margin: -6px 0 0;
 }
@@ -140,15 +144,4 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.member-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: rgba(241, 240, 234, 0.09);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 13px/1 var(--p4-font-ui);
 }

@@ -7,6 +7,7 @@
 }
 
 .page {
+  position: relative;
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -129,7 +130,8 @@
 .stat-card {
   flex: 1;
   border-radius: var(--p4-radius-md);
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 14px;
 }
 
@@ -148,7 +150,8 @@
   margin: 12px 20px 0;
   padding: 12px 16px;
   border-radius: var(--p4-radius-md);
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -169,10 +172,9 @@
 }
 
 .section-title {
-  padding: 20px 20px 8px;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  color: var(--p4-muted);
+  padding: 20px 20px 4px;
+  font: 700 15px/1.2 var(--p4-font-ui);
+  color: var(--p4-text);
 }
 
 .predictions {
@@ -184,7 +186,8 @@
 
 .pred-card {
   border-radius: var(--p4-radius-md);
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 14px;
 }
 
@@ -263,6 +266,7 @@
     background: var(--p4-success-bg);
     color: var(--p4-success);
   }
+
   &.miss {
     background: var(--p4-error-bg);
     color: var(--p4-error);
@@ -281,7 +285,8 @@
 
 .badge-card {
   border-radius: var(--p4-radius-lg);
-  background: var(--p4-surface);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
   padding: 13px;
   display: flex;
   align-items: center;
@@ -340,25 +345,53 @@
 }
 
 .comparison-avatar-wrap {
-  position: relative;
   display: inline-flex;
-  /* El toque no debe hacer scroll de la pagina mientras se mantiene
-     pulsado para ver el nombre. */
-  touch-action: none;
+  /* Sin esto, un avatar con foto real (que trae un <img> dentro) quedaba
+     unos pixeles mas arriba que uno con solo iniciales en la misma fila
+     de cabecera — el calculo de linea base que usa la tabla para centrar
+     el contenido de cada <th> no da el mismo resultado con o sin <img>
+     de por medio. Fijar vertical-align aqui deja de depender de eso. */
+  vertical-align: middle;
 }
 
-.comparison-tooltip {
+/* Fondo invisible a pantalla completa: un solo toque fuera del tooltip
+   lo cierra, sin necesitar un listener global de click. position:fixed
+   aqui si vale (es solo un tapiz para detectar el toque, su posicion
+   exacta no importa). */
+.comparison-tooltip-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+/* position:absolute (no fixed) con coordenadas relativas a .page,
+   calculadas en el TS a partir del propio avatar pulsado: la tabla
+   tiene overflow-x:auto/overflow:hidden (esquinas redondeadas + scroll
+   horizontal) y recortaba el nombre. fixed no sirve aqui porque .page
+   ya actua como "containing block" de sus descendientes fixed (la
+   animacion de entrada piqoUp de styles.scss anima su transform, y eso
+   basta para que cualquier position:fixed dentro se posicione relativo
+   a .page en vez de al viewport, aunque el valor final de transform
+   sea "none" — asi que en vez de pelear con eso, position:relative en
+   .page (ver arriba) + absolute aqui, con las mismas coordenadas que
+   ya calculamos, resuelto correctamente en vez de "colandose" al
+   viewport real y saliendo muy descolocado. */
+.comparison-tooltip-floating {
   position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, calc(-100% - 8px));
   padding: 5px 9px;
   border-radius: 8px;
-  background: var(--p4-text);
-  color: var(--p4-bg);
+  /* Fijo siempre oscuro (no var(--p4-text)/var(--p4-bg), que invertian
+     y en tema oscuro salia una burbuja blanca) para que se lea igual
+     de bien en los dos temas, como cualquier tooltip nativo. */
+  background: #121619;
+  color: #f1f0ea;
   font: 600 11px/1 var(--p4-font-ui);
   white-space: nowrap;
-  z-index: 2;
+  z-index: 4;
   pointer-events: none;
 }
 

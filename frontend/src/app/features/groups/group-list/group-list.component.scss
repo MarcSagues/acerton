@@ -46,12 +46,20 @@ h1 {
 .group-row {
   display: flex;
   align-items: center;
+  gap: 6px;
   border-radius: 16px;
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-border);
   padding-right: 8px;
 
+  /* Mismo tono dorado/amarillo semi-transparente que ya se usa para "tu
+     fila" en la Tabla (.row.me): el fondo, no solo el borde, marca cual
+     es el grupo activo — "Activo" sigue ahi igual, esto es un refuerzo
+     visual, no un sustituto. */
   &.active {
+    background:
+      linear-gradient(135deg, rgba(210, 190, 148, 0.22), transparent 72%),
+      linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
     border-color: var(--p4-accent);
   }
 }
@@ -101,23 +109,15 @@ h1 {
   white-space: nowrap;
 }
 
-/* La racha va en la misma linea que "X miembros" (ver .sub-row), no en
-   una tercera linea propia: si no, el bloque .meta se hacia mas alto
-   solo en las filas con racha, agrandando la tarjeta entera y dejando
-   "Activo"/ajustes descentrados respecto al nombre del grupo. */
-.sub-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
 .sub {
-  flex: none;
   font: 400 11px/1 var(--p4-font-ui);
   color: var(--p4-muted);
 }
 
+/* Hermano de .group-main y .settings-btn (no dentro de .meta): alineado
+   con el boton de ajustes, centrado verticalmente en toda la altura de
+   la tarjeta (herencia de align-items:center de .group-row) en vez de
+   pegado a la linea de "X miembros". */
 .streak-chip {
   flex: none;
   display: flex;
@@ -131,15 +131,6 @@ h1 {
   background: color-mix(in srgb, var(--p4-error) 14%, transparent);
   color: var(--p4-error);
   font: 600 10px/1 var(--p4-font-ui);
-}
-
-.active-chip {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--p4-accent);
-  font: 600 11px/1 var(--p4-font-ui);
 }
 
 .settings-btn {

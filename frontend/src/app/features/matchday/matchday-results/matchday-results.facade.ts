@@ -43,6 +43,8 @@ export class MatchdayResultsFacade {
   readonly matchday = signal<Matchday | null>(null);
   readonly activeCompetitions = signal<Competition[]>([]);
   readonly predictions = signal<Prediction[]>([]);
+  /** Solo las que de verdad se completaron: en resultado exacto, un guardado automatico a medias (un marcador escrito, el otro nunca) deja una fila real en la base de datos sin ser una participacion real — no debe aparecer en el desglose. */
+  readonly visiblePredictions = computed(() => this.predictions().filter((p) => this.pickLabel(p) !== '?'));
   /** Todas las predicciones del grupo para esta jornada (sin filtrar por usuario), para la comparativa de todos. */
   readonly allPredictions = signal<Prediction[]>([]);
   readonly targetUserName = signal<string | null>(null);
@@ -248,7 +250,9 @@ export class MatchdayResultsFacade {
 
   scoreLabel(prediction: Prediction, matchday: Matchday): string {
     const match = matchday.matches.find((m) => m.id === prediction.matchId);
-    return match ? `${match.homeScore} - ${match.awayScore}` : '';
+    if (!match) return '';
+    if (match.homeScore == null || match.awayScore == null) return 'No participado';
+    return `${match.homeScore} - ${match.awayScore}`;
   }
 
   realLabel(prediction: Prediction, matchday: Matchday): string {
@@ -256,18 +260,33 @@ export class MatchdayResultsFacade {
     return match?.result ? this.choiceLabel(match.result) : '?';
   }
 
-  /** userId cuya insignia de la comparativa esta mostrando el nombre (mantener pulsado). */
-  readonly comparisonTooltipUserId = signal<string | null>(null);
-  private comparisonTooltipTimer?: ReturnType<typeof setTimeout>;
+  /**
+   * Nombre del jugador de la comparativa mostrado al pulsar su avatar.
+   * Coordenadas relativas a .page (no al viewport): .page ya actua como
+   * "containing block" de cualquier descendiente position:fixed, porque
+   * la animacion de entrada (.page{animation:piqoUp...}, en
+   * styles.scss) anima su transform — eso basta para que fixed deje de
+   * posicionarse contra el viewport real aunque el valor final de
+   * transform sea "none". Con absolute + coordenadas relativas a .page
+   * en vez de pelear contra eso, sale bien colocado.
+   */
+  readonly comparisonTooltip = signal<{ userId: string; name: string; top: number; left: number } | null>(null);
 
-  startComparisonTooltip(userId: string): void {
-    clearTimeout(this.comparisonTooltipTimer);
-    this.comparisonTooltipTimer = setTimeout(() => this.comparisonTooltipUserId.set(userId), 400);
+  toggleComparisonTooltip(userId: string, name: string, target: HTMLElement): void {
+    if (this.comparisonTooltip()?.userId === userId) {
+      this.comparisonTooltip.set(null);
+      return;
+    }
+    const page = target.closest('.page') as HTMLElement | null;
+    const pageRect = page?.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    const top = rect.top - (pageRect?.top ?? 0);
+    const left = rect.left + rect.width / 2 - (pageRect?.left ?? 0);
+    this.comparisonTooltip.set({ userId, name, top, left });
   }
 
-  endComparisonTooltip(): void {
-    clearTimeout(this.comparisonTooltipTimer);
-    this.comparisonTooltipUserId.set(null);
+  closeComparisonTooltip(): void {
+    this.comparisonTooltip.set(null);
   }
 
   artId(code: string): string | null {

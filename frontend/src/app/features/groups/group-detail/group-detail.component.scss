@@ -264,15 +264,20 @@
   }
 }
 
-.link-btn {
-  display: block;
-  text-align: left;
+.share-link-btn {
+  width: 100%;
+  min-height: var(--p4-touch);
   margin-top: 10px;
-  background: none;
-  border: 0;
-  padding: 0;
+  border-radius: 12px;
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   color: var(--p4-accent);
-  font: 600 12px/1 var(--p4-font-ui);
+  font: 600 13px/1 var(--p4-font-ui);
 }
 
 .members {

@@ -105,7 +105,13 @@
   color: var(--p4-accent);
 }
 
-.row piqo-svg {
+/* Solo el check de "seleccionado" (hijo directo de .row) — el icono del
+   avatar de modo (marcador/objetivo) esta anidado dentro de .avatar y
+   debe heredar SU color (blanco en el fondo invertido de resultado
+   exacto), no el acento fijo de aqui. Antes, al no distinguir "hijo
+   directo" de "cualquier descendiente", el icono del avatar en
+   resultado exacto salia invisible (acento sobre fondo acento). */
+.row > piqo-svg {
   flex: none;
   color: var(--p4-accent);
 }

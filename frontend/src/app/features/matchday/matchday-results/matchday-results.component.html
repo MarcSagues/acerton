@@ -99,13 +99,13 @@
       }
 
       <h2 class="section-title">Desglose por partido</h2>
-      @if (page.predictions().length === 0) {
+      @if (page.visiblePredictions().length === 0) {
         <p class="empty">
           {{ page.viewingSelf ? 'No enviaste pronósticos en esta jornada.' : 'No envió pronósticos en esta jornada.' }}
         </p>
       } @else {
         <div class="predictions">
-          @for (prediction of page.predictions(); track prediction.id) {
+          @for (prediction of page.visiblePredictions(); track prediction.id) {
             <div class="pred-card">
               <div class="pred-top">
                 <span class="pred-match">{{ page.matchLabel(prediction, md) }}</span>
@@ -148,17 +148,8 @@
                 <th class="comparison-match-head">Partido</th>
                 @for (member of page.comparisonMembers(); track member.userId) {
                   <th class="comparison-member-head">
-                    <span
-                      class="comparison-avatar-wrap"
-                      (pointerdown)="page.startComparisonTooltip(member.userId)"
-                      (pointerup)="page.endComparisonTooltip()"
-                      (pointerleave)="page.endComparisonTooltip()"
-                      (pointercancel)="page.endComparisonTooltip()"
-                    >
+                    <span class="comparison-avatar-wrap" #avatarWrap (click)="page.toggleComparisonTooltip(member.userId, member.name, avatarWrap)">
                       <app-avatar [url]="member.avatarUrl" [background]="member.avatarBackground" [name]="member.name" [size]="28"></app-avatar>
-                      @if (page.comparisonTooltipUserId() === member.userId) {
-                        <span class="comparison-tooltip">{{ member.name }}</span>
-                      }
                     </span>
                   </th>
                 }
@@ -184,6 +175,17 @@
           <span class="mono"><span class="dot hit"></span>Acierto</span>
           <span class="mono"><span class="dot miss"></span>Fallo</span>
         </div>
+      }
+
+      @if (page.comparisonTooltip(); as tip) {
+        <!-- position:fixed en vez de absolute dentro de la tabla: la tabla
+             tiene overflow-x:auto/overflow:hidden por las esquinas
+             redondeadas y el scroll horizontal, y recortaba el nombre
+             cuando el avatar estaba en la primera fila. Fixed lo saca de
+             ese recorte sin importar el scroll. Fondo invisible detras
+             para poder cerrarlo tocando fuera. -->
+        <button type="button" class="comparison-tooltip-backdrop" aria-label="Cerrar" (click)="page.closeComparisonTooltip()"></button>
+        <span class="comparison-tooltip-floating" [style.top.px]="tip.top" [style.left.px]="tip.left">{{ tip.name }}</span>
       }
 
       @if (page.viewingSelf && page.newBadges().length > 0) {

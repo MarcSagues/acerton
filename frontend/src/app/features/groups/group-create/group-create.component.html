@@ -71,12 +71,8 @@
             [class.checked]="page.form.value.scoringMode === 'ONE_X_TWO'"
             (click)="page.setScoringMode('ONE_X_TWO')"
           >
-            <piqo-svg icon="marcador" size="22"></piqo-svg>
-            <span class="radio-text">
-              <span class="radio-title">Quiniela 1X2</span>
-              <span class="radio-desc">1 punto por acertar 1X2.</span>
-            </span>
-            <span class="radio-outer"><span class="radio-inner"></span></span>
+            <piqo-svg icon="marcador" size="26"></piqo-svg>
+            <span class="radio-title">Quiniela 1X2</span>
           </button>
           <button
             type="button"
@@ -86,18 +82,17 @@
             [class.checked]="page.form.value.scoringMode === 'EXACT_SCORE'"
             (click)="page.setScoringMode('EXACT_SCORE')"
           >
-            <piqo-svg icon="objetivo" size="22"></piqo-svg>
-            <span class="radio-text">
-              <span class="radio-title">Resultado exacto</span>
-              <span class="radio-desc">5 puntos por marcador exacto, 2 por acertar solo el resultado.</span>
-            </span>
-            <span class="radio-outer"><span class="radio-inner"></span></span>
+            <piqo-svg icon="objetivo" size="26"></piqo-svg>
+            <span class="radio-title">Resultado exacto</span>
           </button>
         </div>
         <!-- Enlace "¿Cómo funciona el comodín?" escondido: el comodín está
              marcado como "Próximamente" en ajustes del grupo y no se
              menciona en la creación (ver issue de GitHub #22). -->
-        <p class="hint">No podrás cambiar el modo después de crear el grupo.</p>
+        <p class="hint">
+          {{ page.form.value.scoringMode === 'EXACT_SCORE' ? '5 puntos por marcador exacto, 2 por acertar solo el resultado.' : '1 punto por acertar 1X2.' }}
+          No podrás cambiar el modo después de crear el grupo.
+        </p>
       </div>
 
       <div class="field">
@@ -111,12 +106,8 @@
             [class.checked]="!page.form.value.isPublic"
             (click)="page.setPrivacy(false)"
           >
-            <piqo-svg icon="candado" size="22"></piqo-svg>
-            <span class="radio-text">
-              <span class="radio-title">Privado</span>
-              <span class="radio-desc">Solo se puede entrar con el enlace o código de invitación.</span>
-            </span>
-            <span class="radio-outer"><span class="radio-inner"></span></span>
+            <piqo-svg icon="candado" size="26"></piqo-svg>
+            <span class="radio-title">Privado</span>
           </button>
           <button
             type="button"
@@ -126,14 +117,13 @@
             [class.checked]="page.form.value.isPublic"
             (click)="page.setPrivacy(true)"
           >
-            <piqo-svg icon="publico" size="22"></piqo-svg>
-            <span class="radio-text">
-              <span class="radio-title">Público</span>
-              <span class="radio-desc">Cualquiera puede verlo y unirse sin invitación.</span>
-            </span>
-            <span class="radio-outer"><span class="radio-inner"></span></span>
+            <piqo-svg icon="publico" size="26"></piqo-svg>
+            <span class="radio-title">Público</span>
           </button>
         </div>
+        <p class="hint">
+          {{ page.form.value.isPublic ? 'Cualquiera puede verlo y unirse sin invitación.' : 'Solo se puede entrar con el enlace o código de invitación.' }}
+        </p>
       </div>
 
       <div class="callout warning">

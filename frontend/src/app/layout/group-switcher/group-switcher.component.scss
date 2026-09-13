@@ -54,7 +54,12 @@
   color: var(--p4-muted);
 }
 
-piqo-svg {
+/* Solo la flecha (hijo directo de .switcher) — el icono del avatar de
+   modo esta anidado dentro de .avatar y debe heredar SU color (blanco
+   en el fondo invertido de resultado exacto), no el "muted" fijo de
+   aqui. Sin distinguir "hijo directo", el icono del avatar en
+   resultado exacto salia invisible (acento sobre fondo acento). */
+.switcher > piqo-svg {
   flex: none;
   color: var(--p4-muted);
 }
