@@ -1,0 +1,44 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else if (page.error()) {
+  <div class="error-state">
+    <p class="error-msg">No se pudo cargar el histórico.</p>
+    <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">Reintentar</button>
+  </div>
+} @else {
+  @if (page.profile(); as p) {
+    <div class="page">
+      <div class="head-row">
+        <button type="button" class="back" (click)="page.goBack()">
+          <piqo-svg icon="atras" size="18"></piqo-svg>Volver al perfil
+        </button>
+      </div>
+
+      <div class="title-row">
+        <h1>Histórico</h1>
+        <p class="sub">{{ p.name }} · en {{ p.group.name }}</p>
+      </div>
+
+      <div class="section">
+        @if (p.recentMatchdays.length === 0) {
+          <p class="empty">Todavía no hay ninguna jornada jugada en este grupo.</p>
+        } @else {
+          <div class="matchday-rows">
+            @for (md of p.recentMatchdays; track md.matchdayId) {
+              <button type="button" class="matchday-row" (click)="page.openMatchday(md.matchdayId)">
+                <div class="md-main">
+                  <p class="md-title">{{ md.competitionName }} · J{{ md.order }}</p>
+                  <p class="md-date mono">{{ md.closesAt | date: 'dd/MM/yyyy' }} · {{ page.statusLabel(md.status) }}</p>
+                </div>
+                <div class="md-side">
+                  <p class="md-points mono">{{ md.points }} pts</p>
+                  <p class="md-position mono">{{ md.position }}.º</p>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+}

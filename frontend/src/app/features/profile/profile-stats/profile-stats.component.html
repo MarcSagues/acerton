@@ -1,0 +1,57 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else if (page.error()) {
+  <div class="error-state">
+    <p class="error-msg">No se pudieron cargar las estadísticas.</p>
+    <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">Reintentar</button>
+  </div>
+} @else {
+  @if (page.profile(); as p) {
+    <div class="page">
+      <div class="head-row">
+        <button type="button" class="back" (click)="page.goBack()">
+          <piqo-svg icon="atras" size="18"></piqo-svg>Volver al perfil
+        </button>
+      </div>
+
+      <div class="title-row">
+        <h1>Estadísticas</h1>
+        <p class="sub">{{ p.name }} · en {{ p.group.name }}</p>
+      </div>
+
+      <div class="headline-grid">
+        <div class="tile">
+          <p class="tile-label mono">POSICIÓN</p>
+          <p class="tile-value mono">{{ page.rankingRow() ? page.rankingRow()!.position + '.º' : 'Sin datos' }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-label mono">PUNTOS</p>
+          <p class="tile-value mono">{{ page.rankingRow() ? page.rankingRow()!.points : 'Sin datos' }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-label mono">CON PUNTOS</p>
+          <p class="tile-value mono">{{ page.hitRatePercent() !== null ? page.hitRatePercent() + '%' : 'Sin datos' }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-label mono">RACHA ACTUAL</p>
+          <p class="tile-value mono">{{ p.streak.currentStreak }}</p>
+        </div>
+      </div>
+
+      <p class="hint-block">
+        «Con puntos» cuenta cualquier predicción que sumó algo (incluidos comodín y aciertos parciales), sobre
+        {{ p.scoredPredictionsCount }} predicciones puntuadas. Todavía no distingue acierto exacto de acierto con
+        comodín.
+      </p>
+
+      <div class="section">
+        <div class="card">
+          <div class="card-row">
+            <p class="card-label">Mejor racha</p>
+            <p class="card-value mono">{{ p.streak.longestStreak }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+}
