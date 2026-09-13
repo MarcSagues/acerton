@@ -57,9 +57,12 @@ export class NotificationsService implements OnModuleInit {
     );
   }
 
-  private async sendToTokens(tokens: string[], notification: PushNotification): Promise<void> {
+  private async sendToTokens(
+    tokens: string[],
+    notification: PushNotification,
+  ): Promise<{ successCount: number; failureCount: number }> {
     if (!this.messaging || tokens.length === 0) {
-      return;
+      return { successCount: 0, failureCount: 0 };
     }
 
     const response = await this.messaging.sendEachForMulticast({
@@ -75,6 +78,38 @@ export class NotificationsService implements OnModuleInit {
     if (invalidTokens.length > 0) {
       await this.prisma.notificationToken.deleteMany({ where: { token: { in: invalidTokens } } });
     }
+
+    return { successCount: response.successCount, failureCount: response.failureCount };
+  }
+
+  /**
+   * Boton de prueba en Ajustes (ver ProfilePageFacade.sendTestBroadcast): un
+   * envio de verdad a todos los tokens registrados, para comprobar el
+   * pipeline completo de un vistazo. Devuelve conteos (no solo si fue bien)
+   * porque el fallo mas probable ahora mismo no es un error, es que
+   * userCount/tokenCount no coincidan — es decir, la mayoria de cuentas
+   * nunca han activado las notificaciones (ver "Preferencias de avisos").
+   */
+  async sendTestBroadcast(): Promise<{ userCount: number; tokenCount: number; successCount: number; failureCount: number }> {
+    if (!this.messaging) {
+      this.logger.warn('sendTestBroadcast: Firebase no esta configurado, no se envia nada');
+    }
+
+    const [userCount, tokens] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.notificationToken.findMany({ select: { token: true } }),
+    ]);
+
+    const { successCount, failureCount } = await this.sendToTokens(
+      tokens.map((t) => t.token),
+      {
+        title: 'Notificación de prueba',
+        body: 'Si ves esto, las notificaciones push funcionan.',
+        data: { type: 'TEST_BROADCAST' },
+      },
+    );
+
+    return { userCount, tokenCount: tokens.length, successCount, failureCount };
   }
 
   /**

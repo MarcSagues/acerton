@@ -340,6 +340,13 @@ h2 {
   font: 600 14px/1 var(--p4-font-ui);
 }
 
+.test-broadcast-hint {
+  width: calc(100% - 40px);
+  max-width: 350px;
+  margin: 8px auto 0;
+  text-align: center;
+}
+
 .logout-btn {
   margin-top: 12px;
   background: var(--p4-error-bg);
