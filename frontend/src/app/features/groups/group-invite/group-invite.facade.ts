@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { GroupsService } from '../../../core/services/groups.service';
 import { Group, GroupMember } from '../../../core/models/group.model';
+import { environment } from '../../../../environments/environment';
 
 @Injectable()
 export class GroupInviteFacade {
@@ -17,9 +18,12 @@ export class GroupInviteFacade {
   readonly justCopiedCode = signal(false);
   readonly justCopiedLink = signal(false);
 
+  /** Siempre environment.appUrl, nunca window.location.origin: en la app
+      nativa (Capacitor) el origin real es "capacitor://localhost", un
+      enlace inservible en cuanto se comparte fuera de la app. */
   readonly inviteLink = computed(() => {
     const group = this.group();
-    return group ? `${window.location.origin}/groups/join/${group.inviteCode}` : '';
+    return group ? `${environment.appUrl}/groups/join/${group.inviteCode}` : '';
   });
 
   init(): void {

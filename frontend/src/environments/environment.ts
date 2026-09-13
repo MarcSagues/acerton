@@ -1,6 +1,11 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:3000/api',
+  // URL publica de la propia app (no la API): en un WebView nativo
+  // (Capacitor) window.location.origin es "capacitor://localhost", que no
+  // sirve de nada si se comparte fuera de la app (p.ej. el enlace de
+  // invitacion a un grupo) — hay que usar siempre esta URL real en su lugar.
+  appUrl: 'http://localhost:4200',
   // Mismo client id "web" que el backend (GOOGLE_CLIENT_ID en .env) — el
   // plugin nativo de Google Sign-In lo exige en todas las plataformas para
   // que el idToken resultante se pueda verificar en un backend compartido.
