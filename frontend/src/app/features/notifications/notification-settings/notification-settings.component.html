@@ -20,11 +20,11 @@
           <p class="hint mono">Este navegador no las soporta.</p>
         } @else if (!page.pushNotifications.configured) {
           <p class="hint mono">No configuradas en este entorno.</p>
-        } @else if (page.pushNotifications.error(); as pushError) {
+        } @else if (page.pushNotifications.error()) {
           <!-- El permiso del sistema puede estar concedido y aun asi fallar
                el paso siguiente (token o registro en el backend) — sin este
                aviso, esa pantalla decia "Activadas" igualmente. -->
-          <p class="hint mono error">{{ pushError }}</p>
+          <p class="hint mono error">{{ page.pushNotifications.error() }}</p>
         } @else if (page.pushNotifications.permission() === 'granted') {
           <p class="hint mono">Activadas en este dispositivo.</p>
         } @else if (page.pushNotifications.permission() === 'denied') {
