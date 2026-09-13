@@ -4,7 +4,7 @@ export const environment = {
   // Mismo client id "web" que el backend (GOOGLE_CLIENT_ID en .env) — el
   // plugin nativo de Google Sign-In lo exige en todas las plataformas para
   // que el idToken resultante se pueda verificar en un backend compartido.
-  googleWebClientId: '533114077011-hgob253v538oejkoq6p99mepu1vlp9i0.apps.googleusercontent.com',
+  googleWebClientId: '274153738044-0lnso05j0rpi3pvegl20r5rh8obias9n.apps.googleusercontent.com',
   // AdMob (apps nativas; la web sigue usando AdSense). En desarrollo se usan
   // los ad unit ids de prueba oficiales de Google en vez de los reales, para
   // no generar impresiones/clics automatizados contra la cuenta real durante

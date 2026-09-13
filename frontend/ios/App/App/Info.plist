@@ -84,13 +84,13 @@
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Usamos este identificador para mostrarte anuncios mas relevantes.</string>
 	<key>GIDClientID</key>
-	<string>533114077011-igbkfle67d0rerdhnmhjf4bm3psgee0f.apps.googleusercontent.com</string>
+	<string>274153738044-18m9pa78n13efqi292dra31coa9a7lrb.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.533114077011-igbkfle67d0rerdhnmhjf4bm3psgee0f</string>
+				<string>com.googleusercontent.apps.274153738044-18m9pa78n13efqi292dra31coa9a7lrb</string>
 			</array>
 		</dict>
 	</array>
