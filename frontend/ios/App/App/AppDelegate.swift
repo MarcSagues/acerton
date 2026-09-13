@@ -58,6 +58,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
         // valido (didReceiveRegistrationToken, abajo). Sin esta linea, Messaging
         // se queda sin saber a que dispositivo/entorno APNs asociar el token.
         Messaging.messaging().apnsToken = deviceToken
+
+        // Pedimos el token de FCM de forma activa, con manejo de error
+        // explicito, en vez de esperar solo a didReceiveRegistrationToken:
+        // ese metodo de delegado no tiene ninguna variante de fallo, asi
+        // que si Firebase nunca resuelve un token (proyecto mal
+        // configurado, red...) antes esto no daba ninguna pista - el JS
+        // solo veia pasar el timeout sin saber por que.
+        Messaging.messaging().token { [weak self] token, error in
+            if let error = error {
+                self?.deliverFcmTokenErrorToWebView(error)
+            } else if let token = token {
+                self?.deliverFcmTokenToWebView(token)
+            }
+        }
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -97,15 +111,32 @@ class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
     }
 
     private func deliverFcmTokenToWebView(_ token: String) {
-        // Escapado minimo para el literal de string en JS: barra invertida
-        // primero (si no, escaparia las comillas que se anaden despues).
-        let escaped = token
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
+        let escaped = Self.escapeForJsStringLiteral(token)
         let js = "window.__piqoFcmToken = '\(escaped)';" +
             "window.dispatchEvent(new CustomEvent('piqoFcmToken', { detail: '\(escaped)' }));"
+        runInWebView(js)
+    }
+
+    private func deliverFcmTokenErrorToWebView(_ error: Error) {
+        let escaped = Self.escapeForJsStringLiteral(error.localizedDescription)
+        let js = "window.dispatchEvent(new CustomEvent('piqoFcmTokenError', { detail: '\(escaped)' }));"
+        runInWebView(js)
+    }
+
+    private func runInWebView(_ js: String) {
         DispatchQueue.main.async { [weak self] in
             self?.currentBridgeViewController()?.bridge?.webView?.evaluateJavaScript(js, completionHandler: nil)
         }
+    }
+
+    // Escapado minimo para un literal de string en JS de una sola linea:
+    // barra invertida primero (si no, escaparia de mas las comillas/saltos
+    // de linea que se anaden despues), luego comillas simples y saltos de
+    // linea (el mensaje de un NSError puede traer varias lineas).
+    private static func escapeForJsStringLiteral(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
     }
 }

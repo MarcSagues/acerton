@@ -32,6 +32,8 @@ export interface TestBroadcastResult {
  * mecanismo de descubrimiento de plugins, así que es más robusto.
  */
 const FCM_TOKEN_EVENT = 'piqoFcmToken';
+/** Disparado en lugar del anterior cuando Messaging.messaging().token(completion:) devuelve un error explícito en vez de nunca resolver nada. */
+const FCM_TOKEN_ERROR_EVENT = 'piqoFcmTokenError';
 
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
@@ -141,20 +143,35 @@ export class PushNotificationsService {
         // en "Activando…" para siempre.
         let settled = false;
         let timeoutId: ReturnType<typeof setTimeout>;
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          window.removeEventListener(FCM_TOKEN_EVENT, onFcmToken);
+          window.removeEventListener(FCM_TOKEN_ERROR_EVENT, onFcmTokenError);
+        };
         const onFcmToken = (event: Event) => {
           if (settled) return;
           settled = true;
-          clearTimeout(timeoutId);
+          cleanup();
           registerToken((event as CustomEvent<string>).detail);
+        };
+        const onFcmTokenError = (event: Event) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          const detail = (event as CustomEvent<string>).detail;
+          console.error('[PushNotifications] Messaging.token error nativo', detail);
+          this.error.set(`No se pudo obtener el token de FCM (Firebase): ${detail}`);
+          resolve(false);
         };
         timeoutId = setTimeout(() => {
           if (settled) return;
           settled = true;
-          window.removeEventListener(FCM_TOKEN_EVENT, onFcmToken);
+          cleanup();
           this.error.set('El token de FCM no llegó a tiempo (Firebase). Puede ser un problema de red o de configuración de Firebase, no de permisos.');
           resolve(false);
         }, 15000);
         window.addEventListener(FCM_TOKEN_EVENT, onFcmToken, { once: true });
+        window.addEventListener(FCM_TOKEN_ERROR_EVENT, onFcmTokenError, { once: true });
       } else {
         PushNotifications.addListener('registration', (token) => registerToken(token.value));
       }
