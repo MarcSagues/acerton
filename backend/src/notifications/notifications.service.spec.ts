@@ -100,7 +100,7 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
 
     expect(sendSpy).toHaveBeenCalledWith(
       'u1',
-      expect.objectContaining({ body: expect.stringContaining('Vas 2º en la clasificacion') }),
+      expect.objectContaining({ body: expect.stringContaining('Vas 2º en la clasificación') }),
     );
   });
 });

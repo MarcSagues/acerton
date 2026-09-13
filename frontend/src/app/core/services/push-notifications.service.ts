@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
@@ -6,6 +7,13 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Dialog } from '@capacitor/dialog';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from './profile.service';
+
+export interface TestBroadcastResult {
+  userCount: number;
+  tokenCount: number;
+  successCount: number;
+  failureCount: number;
+}
 
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
@@ -22,6 +30,7 @@ const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 @Injectable({ providedIn: 'root' })
 export class PushNotificationsService {
   private readonly profileService = inject(ProfileService);
+  private readonly http = inject(HttpClient);
   private readonly snackBar = inject(MatSnackBar);
   private readonly isNative = Capacitor.isNativePlatform();
 
@@ -52,7 +61,12 @@ export class PushNotificationsService {
 
     try {
       return this.isNative ? await this.enableNative() : await this.enableWeb();
-    } catch {
+    } catch (error) {
+      // Sin este log, un fallo real (VAPID invalido, service worker que no
+      // registra, getToken() rechazado) quedaba indistinguible de "el
+      // usuario nunca lo activo" — el unico sintoma visible era "no me
+      // llegan notificaciones", sin ninguna pista de por que.
+      console.error('[PushNotifications] enable() failed', error);
       this.error.set('No se pudieron activar las notificaciones.');
       return false;
     } finally {
@@ -127,5 +141,10 @@ export class PushNotificationsService {
     });
 
     return true;
+  }
+
+  /** Boton "Probar notificaciones" en Ajustes: manda un push real a todos los tokens registrados. */
+  sendTestBroadcast() {
+    return this.http.post<TestBroadcastResult>(`${environment.apiUrl}/notifications/test-broadcast`, {});
   }
 }
