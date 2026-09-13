@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -21,6 +22,7 @@ import { badgeArtId } from '../../../shared/utils/badge-art';
 export class MatchdayResultsFacade {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly predictionsService = inject(PredictionsService);
   private readonly rankingsService = inject(RankingsService);
@@ -142,6 +144,11 @@ export class MatchdayResultsFacade {
         this.toast.show('No se pudo cargar la competición');
       },
     });
+  }
+
+  /** Al ver las quinielas de otro miembro no hay flechas de jornada anterior/siguiente (no tiene sentido cambiar de jornada aquí): solo un boton de volver a la pantalla real de la que se vino (Clasificación, Histórico...), igual que el resto de "Volver" de la app. */
+  goBack(): void {
+    this.location.back();
   }
 
   navigatePrevious(): void {

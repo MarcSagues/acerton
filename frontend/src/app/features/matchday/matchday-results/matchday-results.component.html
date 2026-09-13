@@ -8,15 +8,22 @@
   @if (page.matchday(); as md) {
     <div class="page">
       <header class="head-row">
-        <button
-          type="button"
-          class="nav-btn"
-          [disabled]="page.navigating() || page.noPreviousAvailable() || md.order <= 1"
-          (click)="page.navigatePrevious()"
-          aria-label="Jornada anterior"
-        >
-          <piqo-svg icon="atras" size="16"></piqo-svg>
-        </button>
+        @if (page.viewingSelf) {
+          <button
+            type="button"
+            class="nav-btn"
+            [disabled]="page.navigating() || page.noPreviousAvailable() || md.order <= 1"
+            (click)="page.navigatePrevious()"
+            aria-label="Jornada anterior"
+          >
+            <piqo-svg icon="atras" size="16"></piqo-svg>
+          </button>
+        } @else {
+          <button type="button" class="nav-btn" (click)="page.goBack()" aria-label="Volver">
+            <piqo-svg icon="atras" size="16"></piqo-svg>
+          </button>
+
+        }
         <div class="title-block">
           @if (page.viewingSelf) {
             <p class="title">Tus quinielas</p>
@@ -36,15 +43,17 @@
             {{ md.competition?.name }} · J{{ md.order }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}
           </p>
         </div>
-        <button
-          type="button"
-          class="nav-btn"
-          [disabled]="page.navigating() || page.noNextAvailable()"
-          (click)="page.navigateNext()"
-          aria-label="Jornada siguiente"
-        >
-          <piqo-svg icon="arriba" size="16" style="transform: rotate(90deg)"></piqo-svg>
-        </button>
+        @if (page.viewingSelf) {
+          <button
+            type="button"
+            class="nav-btn"
+            [disabled]="page.navigating() || page.noNextAvailable()"
+            (click)="page.navigateNext()"
+            aria-label="Jornada siguiente"
+          >
+            <piqo-svg icon="arriba" size="16" style="transform: rotate(90deg)"></piqo-svg>
+          </button>
+        }
       </header>
 
       @if (page.viewingSelf) {
