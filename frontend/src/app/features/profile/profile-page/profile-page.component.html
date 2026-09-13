@@ -39,6 +39,29 @@
     </div>
 
     <div class="section-head">
+      <h2>Vitrina</h2>
+    </div>
+    <p class="section-hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
+    <div class="trophies-row">
+      @for (trophy of page.trophies; track trophy.id) {
+        <button
+          type="button"
+          class="trophy-btn"
+          [class.earned]="trophy.count > 0"
+          [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
+          (click)="page.openTrophy(trophy)"
+        >
+          <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
+          @if (trophy.count > 1) {
+            <span class="trophy-count mono">{{ trophy.count }}</span>
+          } @else if (trophy.count === 0) {
+            <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
+          }
+        </button>
+      }
+    </div>
+
+    <div class="section-head">
       <h2>Insignias</h2>
       <a routerLink="/profile/badges" class="link">Ver colección</a>
     </div>
@@ -64,27 +87,23 @@
       }
     </div>
 
-    <div class="section-head">
-      <h2>Vitrina</h2>
+    <div class="section">
+      <a class="card settings-link" routerLink="/profile/stats">
+        <div>
+          <p class="card-title">Estadísticas</p>
+          <p class="hint mono">Posición, puntos y racha en tu grupo activo</p>
+        </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
     </div>
-    <p class="section-hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
-    <div class="trophies-row">
-      @for (trophy of page.trophies; track trophy.id) {
-        <button
-          type="button"
-          class="trophy-btn"
-          [class.earned]="trophy.count > 0"
-          [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
-          (click)="page.openTrophy(trophy)"
-        >
-          <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
-          @if (trophy.count > 1) {
-            <span class="trophy-count mono">{{ trophy.count }}</span>
-          } @else if (trophy.count === 0) {
-            <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
-          }
-        </button>
-      }
+    <div class="section">
+      <a class="card settings-link" routerLink="/profile/history">
+        <div>
+          <p class="card-title">Histórico</p>
+          <p class="hint mono">Tus últimas jornadas jugadas</p>
+        </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
     </div>
 
     <div class="section-head">

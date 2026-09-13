@@ -37,7 +37,8 @@ describe('MemberProfileService.getMemberProfile', () => {
       userId: 'u1',
       role: 'MEMBER',
       joinedAt: new Date('2026-01-01'),
-      user: { id: 'u1', name: 'Marta' },
+      user: { id: 'u1', name: 'Marta', avatarUrl: null, avatarBackground: '#FFAA00' },
+      group: { id: 'g1', name: 'Los cracks', scoringMode: 'ONE_X_TWO', ownerId: 'u9' },
     });
     prisma.streak.findUnique.mockResolvedValue({ currentStreak: 4, longestStreak: 7 });
     prisma.prediction.findMany.mockResolvedValue([
@@ -53,8 +54,18 @@ describe('MemberProfileService.getMemberProfile', () => {
       },
     ]);
     prisma.rankingSnapshot.findMany.mockResolvedValue([
-      { matchdayId: 'md-2', points: 6, position: 1, matchday: { order: 2, closesAt: new Date('2026-01-08') } },
-      { matchdayId: 'md-1', points: 3, position: 2, matchday: { order: 1, closesAt: new Date('2026-01-01') } },
+      {
+        matchdayId: 'md-2',
+        points: 6,
+        position: 1,
+        matchday: { order: 2, closesAt: new Date('2026-01-08'), status: 'FINISHED', competition: { name: 'LaLiga' } },
+      },
+      {
+        matchdayId: 'md-1',
+        points: 3,
+        position: 2,
+        matchday: { order: 1, closesAt: new Date('2026-01-01'), status: 'FINISHED', competition: { name: 'LaLiga' } },
+      },
     ]);
 
     const service = new MemberProfileService(prisma as never);
@@ -63,10 +74,15 @@ describe('MemberProfileService.getMemberProfile', () => {
     expect(result).toEqual({
       userId: 'u1',
       name: 'Marta',
+      avatarUrl: null,
+      avatarBackground: '#FFAA00',
       role: 'MEMBER',
       joinedAt: new Date('2026-01-01'),
+      isOwner: false,
+      group: { id: 'g1', name: 'Los cracks', scoringMode: 'ONE_X_TWO' },
       streak: { currentStreak: 4, longestStreak: 7 },
       hitRate: 2 / 3,
+      scoredPredictionsCount: 3,
       badges: [
         {
           id: 'ub1',
@@ -75,8 +91,24 @@ describe('MemberProfileService.getMemberProfile', () => {
         },
       ],
       recentMatchdays: [
-        { matchdayId: 'md-2', order: 2, points: 6, position: 1 },
-        { matchdayId: 'md-1', order: 1, points: 3, position: 2 },
+        {
+          matchdayId: 'md-2',
+          order: 2,
+          closesAt: new Date('2026-01-08'),
+          points: 6,
+          position: 1,
+          competitionName: 'LaLiga',
+          status: 'FINISHED',
+        },
+        {
+          matchdayId: 'md-1',
+          order: 1,
+          closesAt: new Date('2026-01-01'),
+          points: 3,
+          position: 2,
+          competitionName: 'LaLiga',
+          status: 'FINISHED',
+        },
       ],
     });
   });
@@ -87,7 +119,8 @@ describe('MemberProfileService.getMemberProfile', () => {
       userId: 'u2',
       role: 'MEMBER',
       joinedAt: new Date('2026-03-01'),
-      user: { id: 'u2', name: 'Nuevo' },
+      user: { id: 'u2', name: 'Nuevo', avatarUrl: null, avatarBackground: null },
+      group: { id: 'g1', name: 'Los cracks', scoringMode: 'ONE_X_TWO', ownerId: 'u2' },
     });
     prisma.streak.findUnique.mockResolvedValue(null);
     prisma.prediction.findMany.mockResolvedValue([]);
