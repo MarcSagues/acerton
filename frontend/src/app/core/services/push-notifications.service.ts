@@ -13,6 +13,7 @@ export interface TestBroadcastResult {
   tokenCount: number;
   successCount: number;
   failureCount: number;
+  errors: string[];
 }
 
 /**

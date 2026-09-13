@@ -151,9 +151,12 @@ export class ProfilePageFacade {
     this.pushNotificationsService.sendTestBroadcast().subscribe({
       next: (result) => {
         this.testBroadcastSending.set(false);
-        this.testBroadcastResult.set(
-          `Enviado a ${result.successCount} de ${result.tokenCount} dispositivos (${result.userCount} usuarios en total).`,
-        );
+        const base = `Enviado a ${result.successCount} de ${result.tokenCount} dispositivos (${result.userCount} usuarios en total).`;
+        // El motivo real de FCM (p.ej. "messaging/registration-token-not-registered")
+        // es la unica forma de distinguir un token caducado de un proyecto de
+        // Firebase mal configurado — antes solo se veian los conteos.
+        const detail = result.errors.length > 0 ? ` Errores: ${result.errors.join(', ')}` : '';
+        this.testBroadcastResult.set(base + detail);
       },
       error: (error: HttpErrorResponse) => {
         this.testBroadcastSending.set(false);

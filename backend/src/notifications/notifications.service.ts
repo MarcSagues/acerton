@@ -60,9 +60,9 @@ export class NotificationsService implements OnModuleInit {
   private async sendToTokens(
     tokens: string[],
     notification: PushNotification,
-  ): Promise<{ successCount: number; failureCount: number }> {
+  ): Promise<{ successCount: number; failureCount: number; errors: string[] }> {
     if (!this.messaging || tokens.length === 0) {
-      return { successCount: 0, failureCount: 0 };
+      return { successCount: 0, failureCount: 0, errors: [] };
     }
 
     const response = await this.messaging.sendEachForMulticast({
@@ -70,6 +70,18 @@ export class NotificationsService implements OnModuleInit {
       notification: { title: notification.title, body: notification.body },
       data: notification.data,
     });
+
+    // El codigo/mensaje real de FCM (p.ej. "messaging/registration-token-not-registered"
+    // vs "messaging/mismatched-credential" vs "messaging/invalid-argument") es la unica
+    // forma de distinguir "token realmente invalido" de "proyecto de Firebase mal
+    // configurado" — sin esto, un fallo de configuracion se veia identico a un token
+    // caducado (mismo successCount/failureCount, cero pistas).
+    const errors = response.responses
+      .filter((res) => !res.success)
+      .map((res) => res.error?.code ?? res.error?.message ?? 'error desconocido');
+    if (errors.length > 0) {
+      this.logger.warn(`sendToTokens: ${errors.length} envios fallidos: ${errors.join(', ')}`);
+    }
 
     const invalidTokens = response.responses
       .map((res, index) => (res.success ? null : tokens[index]))
@@ -79,7 +91,7 @@ export class NotificationsService implements OnModuleInit {
       await this.prisma.notificationToken.deleteMany({ where: { token: { in: invalidTokens } } });
     }
 
-    return { successCount: response.successCount, failureCount: response.failureCount };
+    return { successCount: response.successCount, failureCount: response.failureCount, errors };
   }
 
   /**
@@ -90,7 +102,13 @@ export class NotificationsService implements OnModuleInit {
    * userCount/tokenCount no coincidan — es decir, la mayoria de cuentas
    * nunca han activado las notificaciones (ver "Preferencias de avisos").
    */
-  async sendTestBroadcast(): Promise<{ userCount: number; tokenCount: number; successCount: number; failureCount: number }> {
+  async sendTestBroadcast(): Promise<{
+    userCount: number;
+    tokenCount: number;
+    successCount: number;
+    failureCount: number;
+    errors: string[];
+  }> {
     if (!this.messaging) {
       this.logger.warn('sendTestBroadcast: Firebase no esta configurado, no se envia nada');
     }
@@ -100,7 +118,7 @@ export class NotificationsService implements OnModuleInit {
       this.prisma.notificationToken.findMany({ select: { token: true } }),
     ]);
 
-    const { successCount, failureCount } = await this.sendToTokens(
+    const { successCount, failureCount, errors } = await this.sendToTokens(
       tokens.map((t) => t.token),
       {
         title: 'Notificación de prueba',
@@ -109,7 +127,7 @@ export class NotificationsService implements OnModuleInit {
       },
     );
 
-    return { userCount, tokenCount: tokens.length, successCount, failureCount };
+    return { userCount, tokenCount: tokens.length, successCount, failureCount, errors };
   }
 
   /**
