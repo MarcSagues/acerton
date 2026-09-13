@@ -18,13 +18,11 @@ export interface BadgeDetailData {
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="badge-dialog">
-      @if (data.artId && data.earned) {
+      @if (data.artId) {
         <span class="art-wrap">
           <img class="art-animated" [src]="'/piqo/insignias/animadas/' + data.artId + '.webp'" [alt]="data.name" />
           <img class="art-static" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
         </span>
-      } @else if (data.artId) {
-        <img class="art-static locked" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
       } @else {
         <piqo-svg icon="medalla" size="64" [class.earned]="data.earned"></piqo-svg>
       }
@@ -64,6 +62,10 @@ export interface BadgeDetailData {
       .art-wrap {
         display: block;
         margin-bottom: 4px;
+        /* A color y animada siempre aqui, este consiga o no la insignia:
+           el bloqueo en gris apagado es solo el preview de antes de
+           pulsar (ver profile-page/profile-badges), igual que ya pasa
+           con los trofeos de la Vitrina. */
       }
       .art-animated,
       .art-static {
@@ -84,11 +86,6 @@ export interface BadgeDetailData {
         .art-wrap .art-static {
           display: block;
         }
-      }
-      .art-static.locked {
-        margin-bottom: 4px;
-        filter: grayscale(1);
-        opacity: 0.45;
       }
       .name {
         margin: 0;
