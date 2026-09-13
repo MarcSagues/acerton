@@ -53,7 +53,7 @@
           (click)="page.openBadge(item)"
         >
           @if (page.artId(item.badge.code); as artId) {
-            <piqo-svg [attr.badge]="artId" [attr.state]="item.earned ? 'conseguida' : 'pendiente'" variant="detalle" size="48"></piqo-svg>
+            <piqo-svg [attr.badge]="artId" state="conseguida" variant="detalle" size="48"></piqo-svg>
           } @else {
             <piqo-svg icon="medalla" size="26"></piqo-svg>
           }
