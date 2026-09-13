@@ -71,7 +71,7 @@
             [class.checked]="page.form.value.scoringMode === 'ONE_X_TWO'"
             (click)="page.setScoringMode('ONE_X_TWO')"
           >
-            <piqo-svg icon="marcador" size="22"></piqo-svg>
+            <piqo-svg icon="marcador" size="18"></piqo-svg>
             <span class="radio-title">Quiniela 1X2</span>
           </button>
           <button
@@ -82,7 +82,7 @@
             [class.checked]="page.form.value.scoringMode === 'EXACT_SCORE'"
             (click)="page.setScoringMode('EXACT_SCORE')"
           >
-            <piqo-svg icon="objetivo" size="22"></piqo-svg>
+            <piqo-svg icon="objetivo" size="18"></piqo-svg>
             <span class="radio-title">Resultado exacto</span>
           </button>
         </div>
@@ -106,7 +106,7 @@
             [class.checked]="!page.form.value.isPublic"
             (click)="page.setPrivacy(false)"
           >
-            <piqo-svg icon="candado" size="22"></piqo-svg>
+            <piqo-svg icon="candado" size="18"></piqo-svg>
             <span class="radio-title">Privado</span>
           </button>
           <button
@@ -117,7 +117,7 @@
             [class.checked]="page.form.value.isPublic"
             (click)="page.setPrivacy(true)"
           >
-            <piqo-svg icon="publico" size="22"></piqo-svg>
+            <piqo-svg icon="publico" size="18"></piqo-svg>
             <span class="radio-title">Público</span>
           </button>
         </div>

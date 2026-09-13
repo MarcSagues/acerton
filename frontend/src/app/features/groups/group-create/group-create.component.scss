@@ -63,8 +63,7 @@ h1 {
 .radio-group {
   display: flex;
   flex-direction: row;
-  justify-content: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .checkbox-card {
@@ -115,25 +114,25 @@ h1 {
   color: var(--p4-on-accent);
 }
 
-/* Dos cuadrados en fila en vez de dos filas apiladas: el propio fondo +
-   borde de ".checked" ya deja claro cual esta seleccionado (mismo
-   criterio que el grupo activo en Grupos), asi que se quita el radio
-   de punto (.radio-outer/.radio-inner) y la descripcion larga pasa a
-   un hint dinamico debajo de cada pareja (ver .hint en el HTML),
-   porque no cabe legible dentro de un cuadrado. */
+/* Rectangulos anchos y bajos en vez de cuadrados: el propio fondo + borde
+   de ".checked" ya deja claro cual esta seleccionado (mismo criterio que
+   el grupo activo en Grupos), asi que se quita el radio de punto
+   (.radio-outer/.radio-inner) y la descripcion larga pasa a un hint
+   dinamico debajo de cada pareja (ver .hint en el HTML). Los cuadrados
+   grandes de antes obligaban a hacer scroll en moviles pequeños; esta
+   fila apenas ocupa mas alto que un boton normal. */
 .radio-card {
-  flex: 0 1 128px;
-  max-width: 128px;
-  aspect-ratio: 1;
-  border-radius: 14px;
+  flex: 1;
+  min-height: var(--p4-touch);
+  border-radius: 12px;
   background: var(--p4-surface);
   border: 1px solid transparent;
-  padding: 10px;
+  padding: 10px 8px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--p4-text);
   text-align: center;
 
