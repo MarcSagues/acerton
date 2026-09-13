@@ -5,7 +5,14 @@
     </span>
     <span class="meta">
       <span class="name">{{ g.name }}</span>
-      <span class="sub">{{ g._count?.memberships ?? 0 }} miembros · {{ g.isPublic ? 'público' : 'privado' }}</span>
+      <span class="sub">
+        <span class="member-count">
+          {{ g._count?.memberships ?? 0 }}
+          <piqo-svg icon="grupos" size="11"></piqo-svg>
+        </span>
+        <span class="sub-dot">·</span>
+        <piqo-svg [attr.icon]="g.isPublic ? 'publico' : 'candado'" size="12"></piqo-svg>
+      </span>
     </span>
     <piqo-svg icon="abajo" size="20"></piqo-svg>
   </button>

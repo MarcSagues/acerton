@@ -10,10 +10,15 @@
   </div>
 
   <div class="section">
-    <div class="callout info">
-      <piqo-svg icon="info" size="20"></piqo-svg>
-      <span><strong>Vista de demostración.</strong> Esta clasificación y este historial son datos de ejemplo: Piqo todavía no guarda un histórico real de temporadas ganadas.</span>
-    </div>
+    @if (!page.demoCalloutDismissed()) {
+      <div class="callout info">
+        <piqo-svg icon="info" size="20"></piqo-svg>
+        <span><strong>Vista de demostración.</strong> Esta clasificación y este historial son datos de ejemplo: Piqo todavía no guarda un histórico real de temporadas ganadas.</span>
+        <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.demoCalloutDismissed.set(true)">
+          <piqo-svg icon="cerrar" size="14"></piqo-svg>
+        </button>
+      </div>
+    }
   </div>
 
   <div class="section-head">

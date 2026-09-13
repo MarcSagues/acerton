@@ -251,6 +251,20 @@
   color: var(--p4-muted);
 }
 
+.member-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px 2px 7px;
+  border-radius: var(--p4-radius-pill);
+  background: var(--p4-warning-bg);
+  color: var(--p4-warning);
+
+  piqo-svg {
+    flex: none;
+  }
+}
+
 .comeback-chip {
   display: flex;
   align-items: center;

@@ -88,13 +88,18 @@
         <div class="podium" aria-hidden="true"><span>2</span><span>1</span><span>3</span></div>
         <h3>Vosotros ponéis el premio</h3>
         <p>Una cena, una copa o simplemente poder presumir: cada grupo acuerda sus premios fuera de Piqo.</p>
-        <div class="callout info">
-          <piqo-svg icon="info" size="20"></piqo-svg>
-          <span>
-            Piqo no registra ni gestiona premios pactados, dinero ni pagos. La clasificación y los trofeos de la
-            app sirven para reconocer el resultado.
-          </span>
-        </div>
+        @if (!page.prizeCalloutDismissed()) {
+          <div class="callout info">
+            <piqo-svg icon="info" size="20"></piqo-svg>
+            <span>
+              Piqo no registra ni gestiona premios pactados, dinero ni pagos. La clasificación y los trofeos de la
+              app sirven para reconocer el resultado.
+            </span>
+            <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.prizeCalloutDismissed.set(true)">
+              <piqo-svg icon="cerrar" size="14"></piqo-svg>
+            </button>
+          </div>
+        }
       </div>
     </div>
   }

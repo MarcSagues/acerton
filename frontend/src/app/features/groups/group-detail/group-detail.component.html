@@ -11,7 +11,10 @@
       </div>
       <div class="title-row">
         <h1>Ajustes del grupo</h1>
-        <p class="sub mono">{{ g.name | uppercase }} · {{ g.isPublic ? 'PÚBLICO' : 'PRIVADO' }}</p>
+        <p class="sub mono">
+          {{ g.name | uppercase }} ·
+          <piqo-svg [attr.icon]="g.isPublic ? 'publico' : 'candado'" size="13"></piqo-svg>
+        </p>
       </div>
 
       <h2 class="section-title">Invitación</h2>
@@ -89,23 +92,17 @@
           </div>
 
           @if (g.scoringMode === 'ONE_X_TWO') {
-            <div class="rule-card">
+            <div class="rule-card disabled">
               <piqo-svg icon="comodin" size="22"></piqo-svg>
               <div class="rule-text">
                 <p class="rule-name">Comodín de remontada <span class="soon-badge">Próximamente</span></p>
                 <p class="hint">Doble oportunidad (1X/X2/12) para quien va por detrás.</p>
               </div>
-              <button
-                type="button"
-                class="toggle"
-                [class.on]="page.selectedComebackEnabled()"
-                [class.disabled]="!page.isAdmin()"
-                (click)="page.toggleComebackEnabled()"
-              >
+              <button type="button" class="toggle disabled" disabled>
                 <span class="knob"></span>
               </button>
             </div>
-            <div class="rule-card">
+            <div class="rule-card disabled">
               <piqo-svg icon="marcador" size="22"></piqo-svg>
               <div class="rule-text">
                 <p class="rule-name">Puntos por opción doble <span class="soon-badge">Próximamente</span></p>
@@ -119,6 +116,7 @@
                   max="50"
                   [value]="page.comebackPointsPerBonusInput()"
                   (input)="page.comebackPointsPerBonusInput.set(+$any($event.target).value)"
+                  disabled
                 />
               } @else {
                 <span class="rule-value mono">{{ g.comebackPointsPerBonus }}</span>

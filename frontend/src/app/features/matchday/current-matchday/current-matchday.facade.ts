@@ -75,6 +75,8 @@ export class CurrentMatchdayFacade {
   private readonly liveMatchdayIds = signal<Record<number, string>>({});
   /** Aviso "se guarda automaticamente": una vez cerrado, no se vuelve a mostrar en este dispositivo (HANDOFF no lo exige recurrente). */
   private readonly autoSaveNoticeDismissed = signal(this.wasAutoSaveNoticeDismissed());
+  /** Aviso de warning/error cerrado para esta jornada en esta sesion: clave `${matchdayId}:${tone}`, se olvida al recargar o si cambia el motivo (p.ej. deja de haber error). */
+  private readonly dismissedLiveAviso = signal<string | null>(null);
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -191,22 +193,29 @@ export class CurrentMatchdayFacade {
     if (this.isLocked(entry) || !this.pickingAllowed()) return null;
     const anyError = entry.matchday.matches.some((m) => this.stateFor(m.id).error);
     if (anyError) {
+      if (this.dismissedLiveAviso() === `${entry.matchday.id}:error`) return null;
       return { text: 'No se ha guardado algún pronóstico. Revisa tu conexión y reintenta.', tone: 'error' };
     }
     if (this.doneCount() < entry.matchday.matches.length) {
       if (this.autoSaveNoticeDismissed()) return null;
       return { text: 'Se guarda automáticamente al elegir. Puedes editarlo hasta el cierre.', tone: 'info' };
     }
+    if (this.dismissedLiveAviso() === `${entry.matchday.id}:warning`) return null;
     return { text: `Cierra en ${this.countdownLabel()}. Puedes editar tus elecciones hasta entonces.`, tone: 'warning' };
   }
 
-  dismissAutoSaveNotice(): void {
-    try {
-      localStorage.setItem(AUTO_SAVE_NOTICE_DISMISSED_KEY, '1');
-    } catch {
-      /* localStorage no disponible: el aviso volvera a salir la proxima vez */
+  /** Cierra el aviso mostrado bajo la cabecera, cualquiera que sea su tono. */
+  dismissAviso(entry: CurrentMatchdayEntry, tone: 'warning' | 'error' | 'info'): void {
+    if (tone === 'info') {
+      try {
+        localStorage.setItem(AUTO_SAVE_NOTICE_DISMISSED_KEY, '1');
+      } catch {
+        /* localStorage no disponible: el aviso volvera a salir la proxima vez */
+      }
+      this.autoSaveNoticeDismissed.set(true);
+      return;
     }
-    this.autoSaveNoticeDismissed.set(true);
+    this.dismissedLiveAviso.set(`${entry.matchday.id}:${tone}`);
   }
 
   private wasAutoSaveNoticeDismissed(): boolean {

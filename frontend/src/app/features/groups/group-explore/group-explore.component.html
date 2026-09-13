@@ -116,7 +116,10 @@
               <p class="description">{{ group.description }}</p>
             }
             <div class="meta-row">
-              <span>{{ group.memberCount }} {{ group.memberCount === 1 ? 'miembro' : 'miembros' }}</span>
+              <span class="member-count">
+                {{ group.memberCount }}
+                <piqo-svg icon="grupos" size="13"></piqo-svg>
+              </span>
               @if (group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled) {
                 <span class="comeback-chip">
                   <piqo-svg icon="comodin" size="13"></piqo-svg>

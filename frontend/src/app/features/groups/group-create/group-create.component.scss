@@ -63,7 +63,8 @@ h1 {
 .radio-group {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
 }
 
 .checkbox-card {
@@ -121,17 +122,18 @@ h1 {
    un hint dinamico debajo de cada pareja (ver .hint en el HTML),
    porque no cabe legible dentro de un cuadrado. */
 .radio-card {
-  flex: 1;
+  flex: 0 1 128px;
+  max-width: 128px;
   aspect-ratio: 1;
   border-radius: 14px;
   background: var(--p4-surface);
   border: 1px solid transparent;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--p4-text);
   text-align: center;
 

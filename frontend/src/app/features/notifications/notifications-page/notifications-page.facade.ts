@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { NOTICE_PERIODS } from '../domain/demo-notice';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 
@@ -8,6 +8,7 @@ export class NotificationsPageFacade {
 
   readonly notices = this.feed.notices;
   readonly periods = NOTICE_PERIODS;
+  readonly demoCalloutDismissed = signal(false);
 
   markAllRead(): void {
     this.feed.markAllRead();
