@@ -128,18 +128,43 @@ export class PushNotificationsService {
         // En iOS, @capacitor/push-notifications solo entrega el token crudo
         // de APNs (ver comentario junto a FcmTokenPlugin más arriba); el
         // token de FCM que el backend necesita sale de ahí en su lugar.
+        //
+        // Timeout explicito: si FirebaseMessaging nunca llega a resolver un
+        // token (red, GoogleService-Info.plist mal emparejado con la Auth
+        // Key de APNs subida a Firebase...), FcmTokenPlugin.getToken() se
+        // queda colgado para siempre sin este límite — ni resuelve ni
+        // rechaza, así que sin timeout no habría ni token ni error, solo el
+        // botón encallado en "Activando…".
+        let settled = false;
+        const timeoutId = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          this.error.set('El token de FCM no llegó a tiempo (Firebase). Puede ser un problema de red o de configuración de Firebase, no de permisos.');
+          resolve(false);
+        }, 15000);
+
         FcmTokenPlugin.getToken().then(
-          (result) => registerToken(result.token),
-          () => {
-            this.error.set('No se pudo obtener el token de notificaciones.');
+          (result) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            registerToken(result.token);
+          },
+          (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            console.error('[PushNotifications] FcmTokenPlugin.getToken failed', err);
+            this.error.set(`No se pudo obtener el token de FCM (plugin nativo): ${err?.message ?? JSON.stringify(err)}`);
             resolve(false);
           },
         );
       } else {
         PushNotifications.addListener('registration', (token) => registerToken(token.value));
       }
-      PushNotifications.addListener('registrationError', () => {
-        this.error.set('No se pudo obtener el token de notificaciones.');
+      PushNotifications.addListener('registrationError', (err) => {
+        console.error('[PushNotifications] registrationError', err);
+        this.error.set(`No se pudo registrar en APNs: ${err?.error ?? JSON.stringify(err)}`);
         resolve(false);
       });
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
