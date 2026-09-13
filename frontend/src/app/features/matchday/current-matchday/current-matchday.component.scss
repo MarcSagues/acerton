@@ -49,9 +49,9 @@ h1 {
   display: flex;
   align-items: center;
   gap: 4px;
-  font: 600 11px/1 var(--p4-font-ui);
+  font: 700 14px/1 var(--p4-font-ui);
   color: var(--p4-muted);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .nav-btn {
@@ -283,8 +283,11 @@ h1 {
   margin: -2px -4px -2px 0;
   border-radius: 50%;
   border: none;
-  background: var(--p4-warning-bg);
-  color: var(--p4-warning);
+  /* currentColor: hereda el color del propio .aviso (info/warning/error),
+     para que la cruz siempre vaya a juego con el tono del aviso que cierra
+     en vez de ir siempre en amarillo. */
+  background: color-mix(in srgb, currentColor 20%, transparent);
+  color: inherit;
   padding: 0;
   opacity: 0.9;
 
