@@ -315,6 +315,36 @@ html {
   user-select: none;
 }
 
+/* Refuerzo para lo que crea @angular/cdk/overlay (dialogos, paneles
+   inferiores) — reportado en iOS: al abrir el panel de opciones de un
+   miembro, salia el resaltado de seleccion azul alrededor del panel.
+   user-select:none en html ya deberia heredarse aqui (son descendientes
+   normales del DOM), se repite de forma explicita por si acaso; pero el
+   causante mas probable es otro: PiqoDialogService/BottomSheetService usan
+   scrollStrategy.noop() (ver esos archivos — el bloqueo de scroll por
+   defecto de CDK desplazaba el fondo fuera de la vista en iOS/WKWebView).
+   Sin bloqueo de scroll, el fondo bajo el backdrop sigue siendo
+   "arrastrable": un toque con el mas minimo movimiento sobre el backdrop
+   (nada que scrollear ahi) puede interpretarse como un gesto de seleccion
+   de texto en vez de un simple toque. touch-action:none en el backdrop le
+   dice al sistema que no interprete gestos de scroll/seleccion ahi, solo
+   toques — no afecta al panel en si, que sigue scrolleando con normalidad
+   si su contenido no cabe. */
+.cdk-overlay-container,
+.cdk-overlay-pane,
+.cdk-global-overlay-wrapper {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cdk-overlay-backdrop {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
 input,
 textarea {
   -webkit-user-select: text;
