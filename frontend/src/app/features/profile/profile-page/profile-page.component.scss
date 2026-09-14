@@ -187,6 +187,15 @@ h2 {
   }
 }
 
+/* Insignia conseguida: el arte 3D real (mismo que en el diálogo de detalle
+   y en la animación al conseguirla), no el icono SVG plano en gris/color
+   que se usa mientras sigue bloqueada. */
+.badge-art {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .trophies-row {
   padding: 14px 20px 0;
   display: flex;
