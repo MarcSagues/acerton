@@ -1,5 +1,29 @@
 # Estado actual
 
+## 2026-09-14 — Comodín de remontada: nuevo gesto en Jornada (issue #22)
+
+Rama `feature/comodin-remontada-longpress` (a partir de `main`, sin mergear
+todavía — a partir de ahora las builds van contra `dev`, ver más abajo).
+Retomado el issue #22 solo en la parte de interacción: el botón cuadrado
+que iba pegado a las opciones 1/X/2 (escondido desde `4b71858`, ver
+Reconciliación 2026-09-12 más abajo) no vuelve tal cual — a petición
+explícita del usuario ("no me gusta el diseño... sale un botón más"), ahora
+mantener pulsada la fila de un partido abre un panel inferior
+(`ComebackSheetComponent`) con las tres combinaciones (1X/X2/12), el nº de
+comodines restantes y, si el partido ya tenía uno activo, un botón "Quitar
+comodín". La fila de 1/X/2 queda visualmente intacta, sin ningún botón
+extra. Añadido también un aviso de una línea bajo la cabecera ("Tienes N
+comodines de remontada esta jornada. Mantén pulsado un partido para
+usarlo.") solo cuando quedan usos disponibles, a modo de indicador de
+cuántos quedan y pista de cómo activarlo.
+
+Sin verificar en dispositivo real todavía (pendiente de build de `dev` +
+TestFlight). Sigue sin tocarse el resto del issue #22: activar/ajustar en
+`group-create`, Ajustes del grupo, "Normas y premios", y si la lógica de
+recálculo de usos por diferencia de puntos con el líder se comporta como
+se espera con datos reales — nada de eso se ha revisado en este
+incremento, así que el issue no se cierra todavía.
+
 _Última actualización: 2026-09-12. Sprint 3 y Sprint 4 completos en `dev`,
 Sprint 5 con sus tres primeros incrementos (base de temporadas,
 elegibilidad, racha global) en `dev` — **todavía pendiente de que el
