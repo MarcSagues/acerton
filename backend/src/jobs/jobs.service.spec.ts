@@ -199,4 +199,44 @@ describe('JobsService.sendClosingReminders', () => {
 
     jest.useRealTimers();
   });
+
+  it('un partido que cumple varias franjas a la vez (p.ej. justo tras desplegar, con las 4 marcas a null) solo recibe la mas urgente', async () => {
+    const { service, prisma, notificationsService } = buildDeps();
+    const now = new Date('2026-01-01T00:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+
+    // A 20 minutos del kickoff: cae dentro de las 4 ventanas (24h/5h/1h/30m) a la vez.
+    const match = {
+      id: 'match-1',
+      matchdayId: 'md-1',
+      status: 'SCHEDULED',
+      kickoff: new Date(now.getTime() + 20 * 60 * 1000),
+      reminder24hSentAt: null,
+      reminder5hSentAt: null,
+      reminder1hSentAt: null,
+      reminder30mSentAt: null,
+      matchday: { id: 'md-1', name: 'Jornada 1', status: 'OPEN', competitionId: 'comp-1' },
+    };
+    prisma.match.findMany.mockResolvedValue([match]);
+    prisma.groupCompetition.findMany.mockResolvedValue([{ groupId: 'group-1' }]);
+
+    await service.sendClosingReminders();
+
+    expect(notificationsService.notifyMatchesClosingSoon).toHaveBeenCalledTimes(1);
+    expect(notificationsService.notifyMatchesClosingSoon).toHaveBeenCalledWith(
+      'group-1',
+      'md-1',
+      'Jornada 1',
+      ['match-1'],
+      '30 minutos',
+      'reminder30m',
+    );
+    expect(prisma.match.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.match.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['match-1'] } },
+      data: { reminder30mSentAt: now },
+    });
+
+    jest.useRealTimers();
+  });
 });
