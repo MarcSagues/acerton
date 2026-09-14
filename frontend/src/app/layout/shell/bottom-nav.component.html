@@ -9,7 +9,12 @@
     <span class="label">Jornada</span>
   </a>
   <a routerLink="/groups" routerLinkActive="active" class="item" data-tutorial="nav-grupos">
-    <span class="pill"><piqo-svg icon="grupos" size="22"></piqo-svg></span>
+    <span class="pill">
+      <piqo-svg icon="grupos" size="22"></piqo-svg>
+      @if (activeGroupService.hasOtherGroupsPending()) {
+        <span class="pending-dot" aria-hidden="true"></span>
+      }
+    </span>
     <span class="label">Grupos</span>
   </a>
   <a routerLink="/rankings" routerLinkActive="active" class="item" data-tutorial="nav-tabla">
