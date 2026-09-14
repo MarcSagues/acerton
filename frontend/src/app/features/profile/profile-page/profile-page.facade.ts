@@ -7,7 +7,6 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
 import { BadgesService } from '../../../core/services/badges.service';
-import { PushNotificationsService } from '../../../core/services/push-notifications.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { BadgeProgress } from '../../../core/models/badge-progress.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
@@ -31,7 +30,6 @@ export class ProfilePageFacade {
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly tutorialService = inject(TutorialService);
   private readonly badgesService = inject(BadgesService);
-  private readonly pushNotificationsService = inject(PushNotificationsService);
 
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);
@@ -136,31 +134,6 @@ export class ProfilePageFacade {
       error: (error: HttpErrorResponse) => {
         this.nameSaving.set(false);
         this.nameError.set(error.error?.message ?? 'No se pudo cambiar el nombre');
-      },
-    });
-  }
-
-  readonly testBroadcastSending = signal(false);
-  readonly testBroadcastResult = signal<string | null>(null);
-
-  /** Boton "Probar notificaciones": manda un push real a todos los tokens registrados, para comprobar el pipeline entero de un vistazo. */
-  sendTestBroadcast(): void {
-    if (this.testBroadcastSending()) return;
-    this.testBroadcastSending.set(true);
-    this.testBroadcastResult.set(null);
-    this.pushNotificationsService.sendTestBroadcast().subscribe({
-      next: (result) => {
-        this.testBroadcastSending.set(false);
-        const base = `Enviado a ${result.successCount} de ${result.tokenCount} dispositivos (${result.userCount} usuarios en total).`;
-        // El motivo real de FCM (p.ej. "messaging/registration-token-not-registered")
-        // es la unica forma de distinguir un token caducado de un proyecto de
-        // Firebase mal configurado — antes solo se veian los conteos.
-        const detail = result.errors.length > 0 ? ` Errores: ${result.errors.join(', ')}` : '';
-        this.testBroadcastResult.set(base + detail);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.testBroadcastSending.set(false);
-        this.testBroadcastResult.set(error.error?.message ?? 'No se pudo enviar la notificación de prueba.');
       },
     });
   }

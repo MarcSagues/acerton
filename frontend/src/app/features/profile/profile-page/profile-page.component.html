@@ -159,12 +159,6 @@
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
     </div>
-    <button type="button" class="piqo-secondary replay-btn" [disabled]="page.testBroadcastSending()" (click)="page.sendTestBroadcast()">
-      {{ page.testBroadcastSending() ? 'Enviando…' : 'Probar notificaciones' }}
-    </button>
-    @if (page.testBroadcastResult(); as result) {
-      <p class="hint mono test-broadcast-hint">{{ result }}</p>
-    }
     <div class="section">
       <a class="card settings-link" routerLink="/rules">
         <div>

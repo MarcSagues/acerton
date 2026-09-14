@@ -37,18 +37,19 @@
         } @else {
           <p class="hint mono">Hace falta darles permiso en este dispositivo.</p>
         }
-        <p class="device-note">
-          Esto es un permiso del dispositivo, distinto de las preferencias de abajo: aunque lo actives aquí,
-          solo recibirás los avisos que tengas encendidos más abajo.
-        </p>
-        @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'denied' && !(page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered())) {
-          <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.pushNotifications.enable()">
-            {{ page.pushNotifications.loading() ? 'Activando…' : (page.pushNotifications.error() ? 'Reintentar' : 'Activar') }}
-          </button>
+        @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'denied') {
+          @if (page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered()) {
+            <button type="button" class="piqo-secondary activate-btn" disabled>Activado</button>
+          } @else {
+            <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.pushNotifications.enable()">
+              {{ page.pushNotifications.loading() ? 'Activando…' : (page.pushNotifications.error() ? 'Reintentar' : 'Activar') }}
+            </button>
+          }
         }
       </div>
     </div>
 
+    @if (page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered()) {
     <details class="group" open>
       <summary>Jornadas</summary>
       <div class="rows">
@@ -156,6 +157,7 @@
         <p class="hint group-hint">Silenciar un grupo apaga todos sus avisos, aunque los tengas activados arriba.</p>
       </div>
     </details>
+    }
   </div>
   }
 }

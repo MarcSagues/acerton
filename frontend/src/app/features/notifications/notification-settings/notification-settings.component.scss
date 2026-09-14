@@ -78,12 +78,6 @@
   }
 }
 
-.device-note {
-  margin: 10px 0 0;
-  font: 400 11px/16px var(--p4-font-ui);
-  color: var(--p4-muted);
-}
-
 .activate-btn {
   margin-top: 12px;
   display: flex;
@@ -93,6 +87,12 @@
   min-height: 40px;
   border-radius: var(--p4-radius-sm);
   font: 600 13px/1 var(--p4-font-ui);
+
+  &:disabled {
+    background: var(--p4-disabled-bg);
+    color: var(--p4-disabled);
+    cursor: default;
+  }
 }
 
 .group {

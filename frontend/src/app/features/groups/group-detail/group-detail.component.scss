@@ -224,17 +224,6 @@
   color: var(--p4-muted);
 }
 
-.rule-input {
-  width: 60px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid var(--p4-border);
-  background: var(--p4-bg);
-  color: var(--p4-text);
-  text-align: center;
-  font: 600 13px/1 var(--p4-font-ui);
-}
-
 .toggle {
   flex: none;
   width: 40px;
@@ -260,19 +249,6 @@
   height: 18px;
   border-radius: 50%;
   background: var(--p4-surface);
-}
-
-.rules-actions {
-  margin-top: 10px;
-  display: flex;
-  justify-content: flex-end;
-
-  button {
-    min-height: 40px;
-    padding: 0 16px;
-    border-radius: 10px;
-    font: 600 12px/1 var(--p4-font-ui);
-  }
 }
 
 .share-link-btn {

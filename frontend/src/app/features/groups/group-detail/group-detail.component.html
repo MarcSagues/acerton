@@ -108,19 +108,7 @@
                 <p class="rule-name">Puntos por opción doble <span class="soon-badge">Próximamente</span></p>
                 <p class="hint">Cada N puntos de diferencia con el líder dan 1 uso más esa jornada.</p>
               </div>
-              @if (page.editingRules()) {
-                <input
-                  class="rule-input mono"
-                  type="number"
-                  min="1"
-                  max="50"
-                  [value]="page.comebackPointsPerBonusInput()"
-                  (input)="page.comebackPointsPerBonusInput.set(+$any($event.target).value)"
-                  disabled
-                />
-              } @else {
-                <span class="rule-value mono">{{ g.comebackPointsPerBonus }}</span>
-              }
+              <span class="rule-value mono">{{ g.comebackPointsPerBonus }}</span>
             </div>
           }
 
@@ -141,15 +129,6 @@
             </button>
           </div>
         </div>
-        @if (page.editingRules()) {
-          <div class="rules-actions">
-            <button type="button" class="piqo-secondary" [disabled]="page.savingRules()" (click)="page.cancelEditingRules()">
-              Cancelar
-            </button>
-          </div>
-        } @else if (page.isAdmin() && g.scoringMode === 'ONE_X_TWO') {
-          <button type="button" class="link-btn mono" (click)="page.startEditingRules()">Editar reglas</button>
-        }
       </div>
 
       <h2 class="section-title">Miembros · {{ page.members().length }}</h2>
