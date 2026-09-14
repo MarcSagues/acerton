@@ -41,7 +41,9 @@ export class GroupDetailFacade {
   readonly selectedCompetitionIds = signal<Set<string>>(new Set());
   readonly savingCompetitions = signal(false);
 
+  readonly editingRules = signal(false);
   readonly savingRules = signal(false);
+  readonly comebackPointsPerBonusInput = signal(10);
   /** Comodin y privacidad: el toque solo cambia el valor pendiente, se guardan con "Guardar cambios". */
   readonly selectedComebackEnabled = signal(false);
   readonly selectedIsPublic = signal(false);
@@ -75,6 +77,12 @@ export class GroupDetailFacade {
     return [...this.selectedCompetitionIds()].filter((id) => !active.has(id)).length;
   });
 
+  readonly hasRuleChanges = computed(() => {
+    const value = this.comebackPointsPerBonusInput();
+    const current = this.group()?.comebackPointsPerBonus;
+    return value >= 1 && value <= 50 && value !== current;
+  });
+
   readonly hasToggleChanges = computed(() => {
     const group = this.group();
     if (!group) {
@@ -84,7 +92,9 @@ export class GroupDetailFacade {
   });
 
   /** Un unico botón "Guardar cambios" cubre competiciones, reglas y los toggles: no hay un botón por sección. */
-  readonly hasAnyChanges = computed(() => this.hasCompetitionChanges() || this.hasToggleChanges());
+  readonly hasAnyChanges = computed(
+    () => this.hasCompetitionChanges() || (this.editingRules() && this.hasRuleChanges()) || this.hasToggleChanges(),
+  );
 
   readonly saving = computed(() => this.savingCompetitions() || this.savingRules());
 
@@ -98,6 +108,7 @@ export class GroupDetailFacade {
         this.group.set(group);
         this.members.set(members);
         this.catalog.set(this.competitionsService.catalog());
+        this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
         this.selectedComebackEnabled.set(group.comebackEnabled);
         this.selectedIsPublic.set(group.isPublic);
         const active = new Set(
@@ -169,7 +180,7 @@ export class GroupDetailFacade {
   /** Un unico punto de guardado para todo lo editable en esta pantalla (competiciones + reglas + toggles). */
   saveChanges(): void {
     const competitionsChanged = this.hasCompetitionChanges();
-    const rulesChanged = this.hasToggleChanges();
+    const rulesChanged = (this.editingRules() && this.hasRuleChanges()) || this.hasToggleChanges();
     if (!competitionsChanged && !rulesChanged) {
       return;
     }
@@ -220,7 +231,10 @@ export class GroupDetailFacade {
     if (!group) {
       return;
     }
-    const payload: { comebackEnabled?: boolean; isPublic?: boolean } = {};
+    const payload: { comebackPointsPerBonus?: number; comebackEnabled?: boolean; isPublic?: boolean } = {};
+    if (this.editingRules() && this.hasRuleChanges()) {
+      payload.comebackPointsPerBonus = this.comebackPointsPerBonusInput();
+    }
     if (this.selectedComebackEnabled() !== group.comebackEnabled) {
       payload.comebackEnabled = this.selectedComebackEnabled();
     }
@@ -235,9 +249,11 @@ export class GroupDetailFacade {
     this.groupsService.updateRules(this.groupId, payload).subscribe({
       next: (updated) => {
         this.group.set(updated);
+        this.comebackPointsPerBonusInput.set(updated.comebackPointsPerBonus);
         this.selectedComebackEnabled.set(updated.comebackEnabled);
         this.selectedIsPublic.set(updated.isPublic);
         this.savingRules.set(false);
+        this.editingRules.set(false);
         this.toast.show('Cambios guardados');
       },
       error: (error: HttpErrorResponse) => {
@@ -247,9 +263,31 @@ export class GroupDetailFacade {
     });
   }
 
-  /** El comodin de remontada esta marcado como "Proximamente" (issue #22): el toggle se ve desactivado y no se puede activar todavia, para nadie. */
+  startEditingRules(): void {
+    if (!this.isAdmin()) {
+      return;
+    }
+    this.editingRules.set(true);
+  }
+
+  cancelEditingRules(): void {
+    const group = this.group();
+    if (group) {
+      this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
+    }
+    this.editingRules.set(false);
+  }
+
+  updateComebackPointsPerBonusInput(value: string): void {
+    const parsed = Number(value);
+    this.comebackPointsPerBonusInput.set(Number.isFinite(parsed) ? parsed : 0);
+  }
+
   toggleComebackEnabled(): void {
-    return;
+    if (!this.isAdmin()) {
+      return;
+    }
+    this.selectedComebackEnabled.update((value) => !value);
   }
 
   togglePrivacy(): void {

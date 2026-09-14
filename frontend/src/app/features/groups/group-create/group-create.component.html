@@ -86,11 +86,11 @@
             <span class="radio-title">Resultado exacto</span>
           </button>
         </div>
-        <!-- Enlace "¿Cómo funciona el comodín?" escondido: el comodín está
-             marcado como "Próximamente" en ajustes del grupo y no se
-             menciona en la creación (ver issue de GitHub #22). -->
+        @if (page.form.value.scoringMode === 'ONE_X_TWO') {
+          <button type="button" class="link-btn" (click)="page.showComebackDetail()">¿Cómo funciona el comodín?</button>
+        }
         <p class="hint">
-          {{ page.form.value.scoringMode === 'EXACT_SCORE' ? '5 puntos por marcador exacto, 2 por acertar solo el resultado.' : '1 punto por acertar 1X2.' }}
+          {{ page.form.value.scoringMode === 'EXACT_SCORE' ? '5 puntos por marcador exacto, 2 por acertar solo el resultado. Sin comodín.' : '1 punto por acertar 1X2. Incluye comodín de remontada.' }}
           No podrás cambiar el modo después de crear el grupo.
         </p>
       </div>

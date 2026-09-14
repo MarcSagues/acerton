@@ -8,6 +8,36 @@ aparte, posterior y también explícito. Al fijar esta regla, `dev` llevaba
 puso `dev` al día (fast-forward a `main`) antes de mergear encima el
 primer incremento bajo la regla nueva._
 
+## 2026-09-14 — Reactivar el comodín de remontada (issue #22 casi completo)
+
+Rama `feature/comeback-unhide` (a partir de `feature/group-invite-preview`,
+sin mergear ninguna de las dos a `dev` todavía). A petición explícita del
+usuario ("añade todo lo que escondimos de remontada"), deshecho todo lo
+marcado "Próximamente"/escondido desde `4b71858` y `569d655`:
+
+- `group-detail` (Ajustes del grupo): el toggle "Comodín de remontada"
+  vuelve a ser real (`toggleComebackEnabled` dejó de ser un no-op) y
+  "Puntos por opción doble" ahora tiene un botón de editar (icono lápiz)
+  que revela un input numérico — se guarda junto con el resto de cambios
+  pendientes en el único botón "Guardar cambios" ya existente (se
+  reintrodujo `editingRules`/`comebackPointsPerBonusInput`/
+  `hasRuleChanges`, integrados en `hasAnyChanges`, tal como estaban antes
+  de quitarse en `43e985c` — la diferencia esta vez es que el toggle y el
+  guardado son reales, no un input permanentemente disabled).
+- `group-create`: vuelve el enlace "¿Cómo funciona el comodín?" y la
+  mención al comodín en la descripción del modo 1X2.
+- `group-explore` (listado y vista previa de grupos públicos): vuelve el
+  chip "Remontada activa" y la línea de reglas con
+  `comebackPointsPerBonus`.
+
+Backend: sin cambios — `UpdateGroupRulesDto`/`GroupsService.updateRules`
+ya soportaban `comebackPointsPerBonus` de antes, solo estaba sin
+conectar en la UI.
+
+Sin verificar todavía en dispositivo real — solo en local
+(`ng serve`+`nest start:dev` contra Postgres de Docker). Pendiente:
+decidir si esto se mergea a `dev` y se lanza build.
+
 ## 2026-09-14 — Vista previa al unirse por link o código (sin issue de GitHub)
 
 Rama `feature/group-invite-preview` (a partir de `dev`). A petición

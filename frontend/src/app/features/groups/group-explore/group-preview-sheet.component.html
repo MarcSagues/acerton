@@ -36,6 +36,11 @@
           1 punto por acertar 1X2.
         }
       </p>
+      @if (group.comebackPointsPerBonus !== null) {
+        <p class="rule-text">
+          Comodín de remontada activo: doble oportunidad cada {{ group.comebackPointsPerBonus }} puntos de diferencia con el líder.
+        </p>
+      }
     </div>
 
     <div class="section">

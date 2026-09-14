@@ -187,10 +187,6 @@
     flex: none;
     color: var(--p4-muted);
   }
-
-  &.disabled {
-    opacity: 0.6;
-  }
 }
 
 .rule-text {
@@ -206,22 +202,36 @@
   font: 600 13px/1.2 var(--p4-font-ui);
 }
 
-.soon-badge {
-  margin-left: 6px;
-  padding: 2px 7px;
-  border-radius: var(--p4-radius-pill);
-  background: var(--p4-soft);
-  color: var(--p4-accent);
-  font: 700 9px/1.4 var(--p4-font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-
 .rule-value {
   flex: none;
   font: 600 13px/1 var(--p4-font-ui);
   color: var(--p4-muted);
+}
+
+.edit-btn,
+.cancel-edit-btn {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--p4-border);
+  background: var(--p4-surface);
+  color: var(--p4-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rule-input {
+  flex: none;
+  width: 56px;
+  min-height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--p4-border);
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  text-align: center;
+  font: 600 13px/1 var(--p4-font-ui);
 }
 
 .toggle {
