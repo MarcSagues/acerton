@@ -19,7 +19,11 @@ function buildGroup(overrides: Record<string, unknown> = {}) {
 }
 
 function buildDeps() {
-  const groupsService = { findPublicGroupById: jest.fn(), isGroupMember: jest.fn().mockResolvedValue(false) };
+  const groupsService = {
+    findPublicGroupById: jest.fn(),
+    findGroupByInviteCode: jest.fn(),
+    isGroupMember: jest.fn().mockResolvedValue(false),
+  };
   const rankingsService = { hasRanking: jest.fn(), getLatestRanking: jest.fn() };
   const service = new PublicGroupPreviewService(groupsService as never, rankingsService as never);
   return { service, groupsService, rankingsService };
@@ -115,5 +119,37 @@ describe('PublicGroupPreviewService.getPreview', () => {
     const preview = await service.getPreview('g1', 'user1');
 
     expect(preview.comebackPointsPerBonus).toBe(8);
+  });
+});
+
+describe('PublicGroupPreviewService.getPreviewByInviteCode', () => {
+  it('rechaza un codigo de invitacion que no existe', async () => {
+    const { service, groupsService } = buildDeps();
+    groupsService.findGroupByInviteCode.mockResolvedValue(null);
+
+    await expect(service.getPreviewByInviteCode('BADCODE', 'user1')).rejects.toThrow(NotFoundException);
+  });
+
+  it('devuelve la vista previa de un grupo privado por codigo, sin exigir que sea publico', async () => {
+    const { service, groupsService, rankingsService } = buildDeps();
+    groupsService.findGroupByInviteCode.mockResolvedValue(buildGroup());
+    rankingsService.hasRanking.mockResolvedValue(false);
+
+    const preview = await service.getPreviewByInviteCode('SECRETO', 'user1');
+
+    expect(groupsService.findGroupByInviteCode).toHaveBeenCalledWith('SECRETO');
+    expect(preview.name).toBe('Grupo test');
+    expect(preview.topRanking).toEqual([]);
+  });
+
+  it('marca isMember si quien pide la vista previa ya pertenece al grupo', async () => {
+    const { service, groupsService, rankingsService } = buildDeps();
+    groupsService.findGroupByInviteCode.mockResolvedValue(buildGroup());
+    groupsService.isGroupMember.mockResolvedValue(true);
+    rankingsService.hasRanking.mockResolvedValue(false);
+
+    const preview = await service.getPreviewByInviteCode('SECRETO', 'user1');
+
+    expect(preview.isMember).toBe(true);
   });
 });

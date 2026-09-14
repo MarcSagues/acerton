@@ -1,0 +1,100 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-link" (click)="page.goToGroups()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+      Grupos
+    </button>
+  </div>
+
+  @if (page.loading()) {
+    <div class="state"><app-spinner [size]="32"></app-spinner></div>
+  } @else if (page.preview(); as group) {
+    <div class="body">
+      <div class="head">
+        <h1>{{ group.name }}</h1>
+        <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</span>
+      </div>
+
+      @if (group.description) {
+        <p class="description">{{ group.description }}</p>
+      }
+
+      <div class="meta-row">
+        <span class="member-count">
+          {{ group.memberCount }}
+          <piqo-svg icon="grupos" size="13"></piqo-svg>
+        </span>
+        <span>Creado el {{ group.createdAt | date: 'd MMM y' }}</span>
+      </div>
+
+      <div class="section">
+        <p class="section-title">Reglas</p>
+        <p class="rule-text">
+          @if (group.scoringMode === 'EXACT_SCORE') {
+            5 puntos por marcador exacto, 2 por acertar solo el ganador.
+          } @else {
+            1 punto por acertar 1X2.
+          }
+        </p>
+        @if (group.comebackPointsPerBonus) {
+          <p class="rule-text muted">
+            Comodín de remontada activo: 1 uso cada {{ group.comebackPointsPerBonus }} puntos de diferencia con el
+            líder.
+          </p>
+        }
+      </div>
+
+      @if (group.competitions.length > 0) {
+        <div class="section">
+          <p class="section-title">Ligas</p>
+          <div class="leagues">
+            @for (comp of group.competitions; track comp.id) {
+              <span class="league-chip">{{ comp.name }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="section">
+        <p class="section-title">Clasificación general</p>
+        @if (group.topRanking.length === 0) {
+          <p class="rule-text muted">Todavía no hay clasificación en este grupo.</p>
+        } @else {
+          <div class="ranking-list">
+            @for (row of group.topRanking; track row.userId) {
+              <div class="ranking-row">
+                <span class="pos mono">{{ row.position }}</span>
+                <span class="avatar">{{ initials(row.name) }}</span>
+                <span class="name">{{ row.name }}</span>
+                <span class="pts mono">{{ row.points }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      @if (page.errorMessage()) {
+        <p class="join-error">
+          <piqo-svg icon="error" size="16"></piqo-svg>
+          {{ page.errorMessage() }}
+        </p>
+      }
+
+      @if (group.isMember) {
+        <button type="button" class="piqo-primary join-btn" (click)="page.goToGroup()">Ir al grupo</button>
+      } @else {
+        <div class="actions">
+          <button type="button" class="piqo-secondary cancel-btn" (click)="page.goToGroups()">Cancelar</button>
+          <button type="button" class="piqo-primary join-btn" [disabled]="page.joining()" (click)="page.confirmJoin()">
+            {{ page.joining() ? 'Uniendo…' : 'Unirme' }}
+          </button>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="state error">
+      <p>{{ page.errorMessage() }}</p>
+      <button type="button" class="piqo-secondary" (click)="page.goToGroups()">Ir a mis grupos</button>
+    </div>
+  }
+</div>

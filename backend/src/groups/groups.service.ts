@@ -266,6 +266,20 @@ export class GroupsService {
   }
 
   /**
+   * Mismo tipo de resultado que findPublicGroupById, pero por codigo de
+   * invitacion y sin filtrar por isPublic: tener el codigo (privado o
+   * publico) es la propia autorizacion para ver la vista previa. Usado por
+   * PublicGroupPreviewService para la pantalla de "unirse por link/codigo"
+   * (ver PublicGroupPreviewService.getPreviewByInviteCode).
+   */
+  findGroupByInviteCode(inviteCode: string): Promise<PublicGroupRecord | null> {
+    return this.prisma.group.findFirst({
+      where: { inviteCode, ...NOT_DELETED },
+      include: PUBLIC_GROUP_INCLUDE,
+    });
+  }
+
+  /**
    * Un grupo eliminado (borrado logico) se trata como inexistente para
    * cualquier acceso normal — su historial sigue en base de datos para
    * temporadas/trofeos, pero deja de resolverse por esta via.

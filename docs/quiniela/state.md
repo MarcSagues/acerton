@@ -1,10 +1,46 @@
 # Estado actual
 
+_A partir de ahora (2026-09-14, instrucción explícita del usuario): todas
+las builds se lanzan contra `dev`, nunca `main`. `dev` no se mergea a
+`main` sin confirmación explícita, y la build de `main` es un paso
+aparte, posterior y también explícito. Al fijar esta regla, `dev` llevaba
+53 commits de retraso respecto a `main` — con autorización del usuario se
+puso `dev` al día (fast-forward a `main`) antes de mergear encima el
+primer incremento bajo la regla nueva._
+
+## 2026-09-14 — Vista previa al unirse por link o código (sin issue de GitHub)
+
+Rama `feature/group-invite-preview` (a partir de `dev`). A petición
+explícita del usuario ("cuando te unes a un grupo mediante link o codigo
+de invitacion deberia darte un preview del grupo y tu decides si te unes
+o cancelas"): antes, tanto abrir un link de invitación
+(`/groups/join/:inviteCode`, `GroupJoinComponent`) como introducir un
+código a mano (`/groups/join-code`) unían al usuario al instante, sin
+ninguna confirmación. Ahora ambos caminos llevan a la misma pantalla de
+vista previa (mismo componente, ya no une automáticamente al entrar): el
+código de código manual ahora navega a `/groups/join/:inviteCode` en vez
+de llamar a unirse directamente.
+
+Backend nuevo: `GroupsService.findGroupByInviteCode` (igual que
+`findPublicGroupById` pero por código y sin exigir `isPublic`, porque
+tener el código ya autoriza a verlo) y
+`PublicGroupPreviewService.getPreviewByInviteCode`, que comparte con
+`getPreview` toda la lógica de construir la vista previa (reglas reales,
+ligas, top 5 de clasificación) via un `buildPreview` privado extraído.
+Endpoint nuevo `GET /groups/join/:inviteCode/preview`
+(`GroupInvitePreviewController`, mismo módulo hoja que
+`PublicGroupPreviewController` para no crear el ciclo de módulos ya
+documentado en ese servicio). Tests unitarios nuevos para el caso de
+código inválido, grupo privado por código, y `isMember` ya perteneciendo.
+
+Si el usuario ya es miembro (reabre un link viejo), la pantalla muestra
+"Ir al grupo" en vez de "Unirme"/"Cancelar". Sin verificar todavía en
+dispositivo real — pendiente de build de `dev`.
+
 ## 2026-09-14 — Comodín de remontada: nuevo gesto en Jornada (issue #22)
 
-Rama `feature/comodin-remontada-longpress` (a partir de `main`, sin mergear
-todavía — a partir de ahora las builds van contra `dev`, ver más abajo).
-Retomado el issue #22 solo en la parte de interacción: el botón cuadrado
+Rama `feature/comodin-remontada-longpress` (a partir de `main`, ya
+mergeada a `dev`). Retomado el issue #22 solo en la parte de interacción: el botón cuadrado
 que iba pegado a las opciones 1/X/2 (escondido desde `4b71858`, ver
 Reconciliación 2026-09-12 más abajo) no vuelve tal cual — a petición
 explícita del usuario ("no me gusta el diseño... sale un botón más"), ahora

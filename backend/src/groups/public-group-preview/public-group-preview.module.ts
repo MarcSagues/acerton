@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { GroupsModule } from '../groups.module';
 import { RankingsModule } from '../../rankings/rankings.module';
 import { PublicGroupPreviewController } from './public-group-preview.controller';
+import { GroupInvitePreviewController } from './group-invite-preview.controller';
 import { PublicGroupPreviewService } from './public-group-preview.service';
 
 /**
@@ -11,7 +12,7 @@ import { PublicGroupPreviewService } from './public-group-preview.service';
  */
 @Module({
   imports: [GroupsModule, RankingsModule],
-  controllers: [PublicGroupPreviewController],
+  controllers: [PublicGroupPreviewController, GroupInvitePreviewController],
   providers: [PublicGroupPreviewService],
 })
 export class PublicGroupPreviewModule {}

@@ -22,17 +22,9 @@
     <label class="field">
       <span class="field-label">Código de invitación <span class="required">· obligatorio</span></span>
       <input class="field-input mono" formControlName="inviteCode" placeholder="PIQO-0000" maxlength="12" />
-      @if (page.errorMessage()) {
-        <span class="error">
-          <piqo-svg icon="error" size="16"></piqo-svg>
-          {{ page.errorMessage() }}
-        </span>
-      }
     </label>
 
-    <button type="submit" class="piqo-primary cta" [disabled]="page.formLoading()">
-      {{ page.formLoading() ? 'Uniendo…' : 'Unirme al grupo' }}
-    </button>
+    <button type="submit" class="piqo-primary cta">Ver grupo</button>
 
   </form>
 </div>
