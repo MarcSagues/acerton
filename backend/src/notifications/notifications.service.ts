@@ -170,33 +170,51 @@ export class NotificationsService implements OnModuleInit {
    * independiente, y `urgencyLabel` sube de tono el mensaje segun se acerca
    * el cierre.
    */
-  async notifyMatchdayClosingSoon(
+  /**
+   * Aviso de que uno o varios partidos concretos (no toda la jornada: ver
+   * JobsService.sendClosingReminders, que agrupa por jornada+franja los
+   * partidos que entran a la vez en esa ventana) estan a punto de empezar
+   * y el destinatario todavia no los ha pronosticado. Solo llega a quien
+   * de verdad le falta alguno de esos partidos en concreto — alguien que ya
+   * completo esos partidos pero le falta otro mas tarde en la misma jornada
+   * no recibe este aviso (ya le llegara el suyo propio cuando le toque).
+   */
+  async notifyMatchesClosingSoon(
     groupId: string,
     matchdayId: string,
     matchdayName: string,
+    matchIds: string[],
     urgencyLabel: string,
     preferenceField: keyof NotificationPreferenceFields,
   ): Promise<void> {
-    const [members, totalMatches, predictionCounts] = await Promise.all([
+    const [members, predictions] = await Promise.all([
       this.prisma.groupMembership.findMany({ where: { groupId }, select: { userId: true } }),
-      this.prisma.match.count({ where: { matchdayId } }),
-      this.prisma.prediction.groupBy({
-        by: ['userId'],
-        where: { groupId, match: { matchdayId } },
-        _count: { _all: true },
+      this.prisma.prediction.findMany({
+        where: { groupId, matchId: { in: matchIds } },
+        select: { userId: true, matchId: true },
       }),
     ]);
 
-    const submittedCountByUser = new Map(predictionCounts.map((p) => [p.userId, p._count._all]));
+    const predictedMatchIdsByUser = new Map<string, Set<string>>();
+    for (const prediction of predictions) {
+      const set = predictedMatchIdsByUser.get(prediction.userId) ?? new Set<string>();
+      set.add(prediction.matchId);
+      predictedMatchIdsByUser.set(prediction.userId, set);
+    }
+
     const pendingUserIds = members
       .map((m) => m.userId)
-      .filter((userId) => (submittedCountByUser.get(userId) ?? 0) < totalMatches);
+      .filter((userId) => (predictedMatchIdsByUser.get(userId)?.size ?? 0) < matchIds.length);
 
     const recipientIds = await this.filterByPreference(groupId, pendingUserIds, preferenceField);
 
+    const body = matchIds.length === 1
+      ? `Un partido de ${matchdayName} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
+      : `${matchIds.length} partidos de ${matchdayName} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
+
     await this.sendToUsers(recipientIds, {
-      title: 'Cierra la jornada',
-      body: `${matchdayName} cierra en ${urgencyLabel} y todavía no has completado tu quiniela.`,
+      title: 'Partidos por pronosticar',
+      body,
       data: { type: 'MATCHDAY_CLOSING_SOON', groupId, matchdayId },
     });
   }

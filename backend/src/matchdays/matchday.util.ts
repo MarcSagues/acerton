@@ -57,6 +57,28 @@ export function isMatchPredictable(match: MatchPredictabilityCheck, now: Date): 
   return match.kickoff.getTime() > now.getTime();
 }
 
+export interface MatchReminderCheck {
+  status: MatchStatus;
+  kickoff: Date;
+  /** Marca de ese aviso concreto (24h/5h/1h/30min) para ESTE partido; null = todavia no enviado. */
+  reminderSentAt: Date | null;
+}
+
+/**
+ * Igual que shouldSendReminder pero anclado al kickoff de un partido
+ * concreto en vez del cierre global de la jornada (Matchday.closesAt, que
+ * solo refleja el primer partido) — asi una jornada repartida en varios
+ * dias avisa de cada partido segun cuando empieza de verdad el, no solo el
+ * primero de todos.
+ */
+export function shouldSendMatchReminder(match: MatchReminderCheck, windowMs: number, now: Date): boolean {
+  if (match.status !== 'SCHEDULED' || match.reminderSentAt !== null) {
+    return false;
+  }
+  const msUntilKickoff = match.kickoff.getTime() - now.getTime();
+  return msUntilKickoff >= 0 && msUntilKickoff <= windowMs;
+}
+
 export interface CurrentMatchdayEntrySortKey {
   matchday: { status: MatchdayStatus; closesAt: Date };
 }
