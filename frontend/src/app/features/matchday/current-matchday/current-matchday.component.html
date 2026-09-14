@@ -185,8 +185,7 @@
                   {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
                 </span>
               } @else if (page.isMatchLocked(match)) {
-                <piqo-svg icon="candado" size="16"></piqo-svg>
-                <span>{{ page.matchLockedLabel(match) }}</span>
+                <span class="points-badge mono" data-tone="none">{{ page.matchLockedLabel(match) }}</span>
               } @else if (!page.pickingAllowed()) {
                 <piqo-svg icon="reloj" size="16"></piqo-svg>
                 <span>Aún no</span>
