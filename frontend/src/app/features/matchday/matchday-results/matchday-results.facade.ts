@@ -163,6 +163,15 @@ export class MatchdayResultsFacade {
     this.navigate('next');
   }
 
+  /** Volver al selector de jornadas de esta competicion, igual que el boton equivalente en Jornada. */
+  goToCalendar(): void {
+    const md = this.matchday();
+    if (!md) return;
+    this.router.navigate(['/matchday/calendar'], {
+      queryParams: { competitionId: md.competitionId, competitionName: md.competition?.name },
+    });
+  }
+
   private navigate(direction: 'previous' | 'next'): void {
     const current = this.matchday();
     if (!current || this.navigating()) return;
