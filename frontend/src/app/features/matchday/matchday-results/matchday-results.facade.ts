@@ -163,12 +163,19 @@ export class MatchdayResultsFacade {
     this.navigate('next');
   }
 
-  /** Volver al selector de jornadas de esta competicion, igual que el boton equivalente en Jornada. */
+  /**
+   * Volver al selector de jornadas de esta competicion, igual que el boton
+   * equivalente en Jornada, pero marcando `from=results`: si desde ahi se
+   * elige la jornada actualmente abierta, hay que volver aqui mismo (a su
+   * resumen/resultados), no al formulario de pronosticos — esta pantalla es
+   * de consulta, no de edicion, y saltar a rellenar pronosticos a media
+   * navegacion por el calendario rompe ese flujo de "solo estoy mirando".
+   */
   goToCalendar(): void {
     const md = this.matchday();
     if (!md) return;
     this.router.navigate(['/matchday/calendar'], {
-      queryParams: { competitionId: md.competitionId, competitionName: md.competition?.name },
+      queryParams: { competitionId: md.competitionId, competitionName: md.competition?.name, from: 'results' },
     });
   }
 
