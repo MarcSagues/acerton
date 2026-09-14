@@ -120,12 +120,6 @@
                 {{ group.memberCount }}
                 <piqo-svg icon="grupos" size="13"></piqo-svg>
               </span>
-              @if (group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled) {
-                <span class="comeback-chip">
-                  <piqo-svg icon="comodin" size="13"></piqo-svg>
-                  Remontada activa
-                </span>
-              }
             </div>
             <div class="leagues-row">
               @for (comp of group.competitions.slice(0, 3); track comp.id) {
