@@ -114,31 +114,15 @@
                 <p class="rule-name">Puntos por opción doble</p>
                 <p class="hint">Cada N puntos de diferencia con el líder dan 1 uso más esa jornada.</p>
               </div>
-              @if (page.editingRules()) {
-                <input
-                  class="rule-input mono"
-                  type="number"
-                  min="1"
-                  max="50"
-                  [value]="page.comebackPointsPerBonusInput()"
-                  (input)="page.updateComebackPointsPerBonusInput($any($event.target).value)"
-                />
-                <button type="button" class="cancel-edit-btn" aria-label="Cancelar edición" (click)="page.cancelEditingRules()">
-                  <piqo-svg icon="cerrar" size="14"></piqo-svg>
-                </button>
-              } @else {
-                <span class="rule-value mono">{{ g.comebackPointsPerBonus }}</span>
-                @if (page.isAdmin()) {
-                  <button
-                    type="button"
-                    class="edit-btn"
-                    aria-label="Editar puntos por opción doble"
-                    (click)="page.startEditingRules()"
-                  >
-                    <piqo-svg icon="editar" size="16"></piqo-svg>
-                  </button>
-                }
-              }
+              <input
+                class="rule-input mono"
+                type="number"
+                min="1"
+                max="50"
+                [value]="page.comebackPointsPerBonusInput()"
+                [disabled]="!page.isAdmin()"
+                (input)="page.updateComebackPointsPerBonusInput($any($event.target).value)"
+              />
             </div>
           }
 

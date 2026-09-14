@@ -41,7 +41,6 @@ export class GroupDetailFacade {
   readonly selectedCompetitionIds = signal<Set<string>>(new Set());
   readonly savingCompetitions = signal(false);
 
-  readonly editingRules = signal(false);
   readonly savingRules = signal(false);
   readonly comebackPointsPerBonusInput = signal(10);
   /** Comodin y privacidad: el toque solo cambia el valor pendiente, se guardan con "Guardar cambios". */
@@ -93,7 +92,7 @@ export class GroupDetailFacade {
 
   /** Un unico botón "Guardar cambios" cubre competiciones, reglas y los toggles: no hay un botón por sección. */
   readonly hasAnyChanges = computed(
-    () => this.hasCompetitionChanges() || (this.editingRules() && this.hasRuleChanges()) || this.hasToggleChanges(),
+    () => this.hasCompetitionChanges() || this.hasRuleChanges() || this.hasToggleChanges(),
   );
 
   readonly saving = computed(() => this.savingCompetitions() || this.savingRules());
@@ -180,7 +179,7 @@ export class GroupDetailFacade {
   /** Un unico punto de guardado para todo lo editable en esta pantalla (competiciones + reglas + toggles). */
   saveChanges(): void {
     const competitionsChanged = this.hasCompetitionChanges();
-    const rulesChanged = (this.editingRules() && this.hasRuleChanges()) || this.hasToggleChanges();
+    const rulesChanged = this.hasRuleChanges() || this.hasToggleChanges();
     if (!competitionsChanged && !rulesChanged) {
       return;
     }
@@ -232,7 +231,7 @@ export class GroupDetailFacade {
       return;
     }
     const payload: { comebackPointsPerBonus?: number; comebackEnabled?: boolean; isPublic?: boolean } = {};
-    if (this.editingRules() && this.hasRuleChanges()) {
+    if (this.hasRuleChanges()) {
       payload.comebackPointsPerBonus = this.comebackPointsPerBonusInput();
     }
     if (this.selectedComebackEnabled() !== group.comebackEnabled) {
@@ -253,7 +252,6 @@ export class GroupDetailFacade {
         this.selectedComebackEnabled.set(updated.comebackEnabled);
         this.selectedIsPublic.set(updated.isPublic);
         this.savingRules.set(false);
-        this.editingRules.set(false);
         this.toast.show('Cambios guardados');
       },
       error: (error: HttpErrorResponse) => {
@@ -263,22 +261,10 @@ export class GroupDetailFacade {
     });
   }
 
-  startEditingRules(): void {
+  updateComebackPointsPerBonusInput(value: string): void {
     if (!this.isAdmin()) {
       return;
     }
-    this.editingRules.set(true);
-  }
-
-  cancelEditingRules(): void {
-    const group = this.group();
-    if (group) {
-      this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
-    }
-    this.editingRules.set(false);
-  }
-
-  updateComebackPointsPerBonusInput(value: string): void {
     const parsed = Number(value);
     this.comebackPointsPerBonusInput.set(Number.isFinite(parsed) ? parsed : 0);
   }
