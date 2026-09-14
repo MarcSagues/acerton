@@ -330,12 +330,13 @@ h1 {
 }
 
 .comeback-banner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   max-width: 350px;
-  padding: 12px 14px;
+  padding: 16px 14px 12px;
   border-radius: 14px;
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-accent);
@@ -353,7 +354,9 @@ h1 {
 }
 
 .comeback-banner-close {
-  flex: none;
+  position: absolute;
+  top: -8px;
+  right: -8px;
   display: flex;
   align-items: center;
   justify-content: center;

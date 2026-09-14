@@ -265,20 +265,28 @@ export class CurrentMatchdayFacade {
   }
 
   /**
+   * true si queda algun partido abierto donde el comodin de remontada
+   * todavia se pueda aplicar. No es lo mismo que hasPendingPicks: el comodin
+   * se puede poner tambien sobre un partido que ya tiene 1X2 normal elegido
+   * (openComebackSheet lo sustituye), asi que el unico requisito real es que
+   * el partido no este bloqueado y que no tenga ya un comodin puesto.
+   */
+  private hasComebackSlot(entry: CurrentMatchdayEntry): boolean {
+    return entry.matchday.matches.some((m) => !this.isMatchLocked(m) && !this.stateFor(m.id).doubleChanceOption);
+  }
+
+  /**
    * Texto del aviso flotante del comodin de remontada, o null si no aplica:
    * jornada cerrada o todavia no abierta, comodin desactivado o sin usos
    * (incluido ir primero, que hace remaining=0), ya cerrado a mano para esta
-   * jornada, o ya no queda ningun partido sin pronostico donde usarlo (el
-   * comodin tecnicamente podria seguir aplicandose sobre un partido ya
-   * elegido con 1X2 normal, pero una vez esta todo relleno el aviso deja de
-   * tener sentido como recordatorio de "esto te falta"). Vuelve a aparecer
-   * al recargar o cambiar de jornada — solo se calla mientras de verdad haya
-   * algo pendiente y comodines para ello.
+   * jornada, o ya no queda ningun partido sin comodin donde ponerlo (ver
+   * hasComebackSlot). Vuelve a aparecer al recargar o cambiar de jornada —
+   * solo se calla mientras de verdad haya hueco y comodines para ello.
    */
   comebackBanner(entry: CurrentMatchdayEntry | null): string | null {
     if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return null;
     if (this.dismissedComebackBanner() === entry.matchday.id) return null;
-    if (!this.hasPendingPicks(entry)) return null;
+    if (!this.hasComebackSlot(entry)) return null;
     const comeback = this.comeback();
     if (!comeback?.enabled || comeback.remaining <= 0) return null;
     const count = comeback.remaining === 1 ? '1 comodín' : `${comeback.remaining} comodines`;
@@ -292,16 +300,22 @@ export class CurrentMatchdayFacade {
   /**
    * Aviso flotante de "consigue 1 comodín extra viendo un vídeo": mismas
    * condiciones de partida que comebackBanner (jornada abierta y admitiendo
-   * pronosticos), mas que el grupo tenga el comodin activado y todavia no
-   * se haya reclamado el extra de esta jornada concreta (ComebackStatus.
-   * adBonusAvailable, ver WildcardsService en el backend). Tiene prioridad
-   * sobre comebackBanner en la plantilla: una vez reclamado, adBonusAvailable
-   * pasa a false y el hueco lo ocupa el aviso normal de comodines restantes.
+   * pronosticos, y que quede hueco para un comodin — ver hasComebackSlot),
+   * mas que el grupo tenga el comodin activado y todavia no se haya
+   * reclamado el extra de esta jornada concreta (ComebackStatus.
+   * adBonusAvailable, ver WildcardsService en el backend). El aviso normal
+   * de comebackBanner tiene SIEMPRE prioridad sobre este: no tiene sentido
+   * ofrecer ganar un comodin extra viendo publicidad si todavia te quedan
+   * comodines ya disponibles sin usar (remaining > 0) — este solo aparece
+   * una vez agotados esos.
    */
   showAdRewardBanner(entry: CurrentMatchdayEntry | null): boolean {
     if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return false;
     if (this.dismissedAdRewardBanner() === entry.matchday.id) return false;
-    return this.comeback()?.adBonusAvailable ?? false;
+    if (!this.hasComebackSlot(entry)) return false;
+    const comeback = this.comeback();
+    if (!comeback?.adBonusAvailable) return false;
+    return comeback.remaining <= 0;
   }
 
   dismissAdRewardBanner(entry: CurrentMatchdayEntry): void {
