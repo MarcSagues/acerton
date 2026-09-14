@@ -187,6 +187,24 @@ h2 {
   }
 }
 
+/* Insignia conseguida: el arte 3D real (mismo que en el diálogo de detalle
+   y en la animación al conseguirla), no el icono SVG plano en gris/color
+   que se usa mientras sigue bloqueada. */
+.badge-art {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+/* Mismo tratamiento para un trofeo conseguido: la copa a color real (misma
+   ilustración que el gif del diálogo de detalle, aquí en estático), no el
+   icono SVG plano. */
+.trophy-art {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .trophies-row {
   padding: 14px 20px 0;
   display: flex;
