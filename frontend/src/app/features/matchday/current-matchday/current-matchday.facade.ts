@@ -82,6 +82,8 @@ export class CurrentMatchdayFacade {
   private readonly autoSaveNoticeDismissed = signal(this.wasAutoSaveNoticeDismissed());
   /** Aviso de warning/error cerrado para esta jornada en esta sesion: clave `${matchdayId}:${tone}`, se olvida al recargar o si cambia el motivo (p.ej. deja de haber error). */
   private readonly dismissedLiveAviso = signal<string | null>(null);
+  /** Aviso del comodin de remontada cerrado para esta jornada en esta sesion (id de jornada) — igual que dismissedLiveAviso, se olvida al recargar o cambiar de jornada. */
+  private readonly dismissedComebackBanner = signal<string | null>(null);
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -126,10 +128,19 @@ export class CurrentMatchdayFacade {
   readonly isMatchdayOpenByTime = computed(() => {
     const entry = this.activeEntry();
     if (!entry) return true;
-    return new Date(entry.matchday.opensAt).getTime() <= this.now().getTime();
+    return this.isMatchdayOpenByTimeFor(entry);
   });
   /** Se puede predecir solo cuando le toca por orden Y ya se ha abierto la ventana de 4 dias. */
   readonly pickingAllowed = computed(() => this.canPredictActiveMatchday() && this.isMatchdayOpenByTime());
+
+  private isMatchdayOpenByTimeFor(entry: CurrentMatchdayEntry): boolean {
+    return new Date(entry.matchday.opensAt).getTime() <= this.now().getTime();
+  }
+
+  /** Version de pickingAllowed para una pestana cualquiera, no solo la activa — la usan los puntos rojos pendientes (ver hasPendingPicks). */
+  private pickingAllowedFor(entry: CurrentMatchdayEntry): boolean {
+    return entry.matchday.canPredict && this.isMatchdayOpenByTimeFor(entry);
+  }
   readonly opensInLabel = computed(() => {
     const entry = this.activeEntry();
     return entry ? formatCountdown(new Date(entry.matchday.opensAt), this.now()) : '';
@@ -163,6 +174,37 @@ export class CurrentMatchdayFacade {
   /** Basta con un pronostico enviado para poder ver el resumen — no hace falta completar toda la jornada. */
   anyPredicted(entry: CurrentMatchdayEntry): boolean {
     return entry.matchday.status !== 'FINISHED' && this.doneCount() > 0;
+  }
+
+  private isMatchPendingIn(match: Match, pickingAllowedForEntry: boolean): boolean {
+    if (!pickingAllowedForEntry || this.isMatchLocked(match)) return false;
+    const state = this.predictionState.get(match.id);
+    if (this.isExactScore()) {
+      return state?.predictedHomeScore == null || state?.predictedAwayScore == null;
+    }
+    return !state?.choice && !state?.doubleChanceOption;
+  }
+
+  /** Punto rojo del propio partido: abierto (se puede pulsar) y todavia sin pronostico. */
+  isMatchPending(match: Match): boolean {
+    return this.isMatchPendingIn(match, this.pickingAllowed());
+  }
+
+  /** Punto rojo del selector de pestanas: a esta competicion le queda algun partido abierto sin pronostico. */
+  hasPendingPicks(entry: CurrentMatchdayEntry): boolean {
+    if (entry.matchday.status === 'FINISHED') return false;
+    const pickingAllowedForEntry = this.pickingAllowedFor(entry);
+    return entry.matchday.matches.some((m) => this.isMatchPendingIn(m, pickingAllowedForEntry));
+  }
+
+  /** Punto rojo de "Jornada" en la barra inferior: alguna pestana (competicion) tiene algo pendiente. */
+  private hasAnyPendingPicks(): boolean {
+    return this.entries().some((e) => this.hasPendingPicks(e));
+  }
+
+  /** Se llama tras cualquier cambio que pueda alterar lo pendiente (cargar, guardar, quitar comodin, cambiar de jornada): el punto de "Jornada" en la barra inferior vive en un servicio global porque esa barra no es hija de este componente. */
+  private updatePendingBadge(): void {
+    this.bottomNav.setHasPendingJornadaPicks(this.hasAnyPendingPicks());
   }
 
   /** Se abre solo si el usuario pulsa "Ver resumen" — antes se abria solo tras cada guardado, lo que lo hacia reaparecer cada vez que se editaba un pronostico ya completo. */
@@ -209,13 +251,24 @@ export class CurrentMatchdayFacade {
     return { text: `Cierra en ${this.countdownLabel()}. Puedes editar tus elecciones hasta entonces.`, tone: 'warning' };
   }
 
-  /** Texto informativo sobre el comodin de remontada bajo la cabecera, o null si no aplica (desactivado, sin usos, jornada cerrada). */
-  comebackHint(entry: CurrentMatchdayEntry): string | null {
-    if (this.isLocked(entry) || !this.pickingAllowed()) return null;
+  /**
+   * Texto del aviso flotante del comodin de remontada, o null si no aplica:
+   * jornada cerrada o todavia no abierta, comodin desactivado o sin usos
+   * (incluido ir primero, que hace remaining=0), o ya cerrado a mano para
+   * esta jornada. Vuelve a aparecer al recargar o cambiar de jornada — solo
+   * se calla mientras de verdad queden comodines por usar.
+   */
+  comebackBanner(entry: CurrentMatchdayEntry | null): string | null {
+    if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return null;
+    if (this.dismissedComebackBanner() === entry.matchday.id) return null;
     const comeback = this.comeback();
     if (!comeback?.enabled || comeback.remaining <= 0) return null;
     const count = comeback.remaining === 1 ? '1 comodín' : `${comeback.remaining} comodines`;
     return `Tienes ${count} de remontada esta jornada. Mantén pulsado un partido para usarlo.`;
+  }
+
+  dismissComebackBanner(entry: CurrentMatchdayEntry): void {
+    this.dismissedComebackBanner.set(entry.matchday.id);
   }
 
   /** Cierra el aviso mostrado bajo la cabecera, cualquiera que sea su tono. */
@@ -289,6 +342,7 @@ export class CurrentMatchdayFacade {
         this.activeTabIndex.set(0);
         this.loadExistingPredictions(groupId, entries);
         this.refreshComeback(groupId);
+        this.updatePendingBadge();
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -403,6 +457,7 @@ export class CurrentMatchdayFacade {
             pointsEarned: prediction.pointsEarned,
           });
         }
+        this.updatePendingBadge();
       });
     }
   }
@@ -542,12 +597,14 @@ export class CurrentMatchdayFacade {
     } else {
       state.predictedAwayScore = value;
     }
+    this.updatePendingBadge();
   }
 
   selectChoice(match: Match, choice: PredictionChoice): void {
     if (this.consumeLongPress() || this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     state.choice = choice;
+    this.updatePendingBadge();
     this.save(match.id, state);
   }
 
@@ -555,6 +612,7 @@ export class CurrentMatchdayFacade {
     if (this.consumeLongPress() || this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     state.doubleChanceOption = option;
+    this.updatePendingBadge();
     this.save(match.id, state);
   }
 
@@ -618,10 +676,12 @@ export class CurrentMatchdayFacade {
       if ('remove' in result) {
         state.doubleChanceOption = null;
         state.saved = false;
+        this.updatePendingBadge();
         return;
       }
       state.choice = null;
       state.doubleChanceOption = result.option;
+      this.updatePendingBadge();
       this.save(match.id, state);
     });
   }
