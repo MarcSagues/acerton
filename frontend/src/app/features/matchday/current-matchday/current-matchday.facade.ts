@@ -5,11 +5,12 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { BottomNavService } from '../../../core/services/bottom-nav.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
-import { DoubleChanceOption } from '../../../core/models/prediction.model';
+import { DoubleChanceOption, Prediction } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { ComebackSheetComponent, ComebackSheetData, ComebackSheetResult } from './comeback-sheet.component';
 import { formatCountdown } from '../../../shared/countdown.util';
@@ -59,6 +60,7 @@ export class CurrentMatchdayFacade {
   private readonly router = inject(Router);
   private readonly matchdaysService = inject(MatchdaysService);
   private readonly predictionsService = inject(PredictionsService);
+  private readonly authService = inject(AuthService);
   private readonly wildcardsService = inject(WildcardsService);
   private readonly sheet = inject(BottomSheetService);
   private readonly toast = inject(ToastService);
@@ -89,6 +91,9 @@ export class CurrentMatchdayFacade {
 
   readonly activeEntry = computed(() => this.entries()[this.activeTabIndex()] ?? null);
   readonly isExactScore = computed(() => this.activeGroupService.activeGroup()?.scoringMode === 'EXACT_SCORE');
+  readonly sharePlayerName = computed(() => this.authService.currentUser()?.name ?? 'Jugador');
+  readonly shareGroupName = computed(() => this.activeGroupService.activeGroup()?.name ?? 'Mi grupo');
+  readonly shareScoringMode = computed(() => this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO');
   /**
    * Proximo partido todavia predecible de la jornada activa (el mas cercano
    * de los que no han empezado). No usamos matchday.closesAt para esto: ese
@@ -751,6 +756,36 @@ export class CurrentMatchdayFacade {
     const entry = this.activeEntry();
     if (!entry) return '';
     return predictionSummary(entry, this.predictionState, this.isExactScore());
+  }
+
+  /** Adapta el estado optimista de la jornada al modelo que consume el canvas compartible. */
+  sharePredictions(): Prediction[] {
+    const entry = this.activeEntry();
+    const groupId = this.activeGroupService.activeId();
+    const userId = this.authService.currentUser()?.id;
+    if (!entry || !groupId || !userId) return [];
+
+    return entry.matchday.matches.flatMap((match) => {
+      const state = this.predictionState.get(match.id);
+      if (!state) return [];
+      const completed = this.isExactScore()
+        ? state.predictedHomeScore != null && state.predictedAwayScore != null
+        : !!(state.choice || state.doubleChanceOption);
+      if (!completed) return [];
+
+      return [{
+        id: `share-${match.id}`,
+        userId,
+        groupId,
+        matchId: match.id,
+        choice: state.choice ?? null,
+        doubleChanceOption: state.doubleChanceOption ?? null,
+        predictedHomeScore: state.predictedHomeScore ?? null,
+        predictedAwayScore: state.predictedAwayScore ?? null,
+        pointsEarned: null,
+        submittedAt: new Date().toISOString(),
+      } satisfies Prediction];
+    });
   }
 
   copySummary(): void {

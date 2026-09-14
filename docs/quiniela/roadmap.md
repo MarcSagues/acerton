@@ -314,6 +314,29 @@ grupo por encima del límite gratuito), y si alguna ventaja necesita
 aplicarse también en Android/iOS nativo o solo en la valoración del
 backend.
 
+## Sprint 12 — Compartir resultados ✅ (añadido 2026-09-13, a petición del usuario)
+
+Hoy "Copiar resumen" (pantalla "Enviado" de Jornada) copia solo texto
+plano de los pronósticos (`predictionSummary`/`summaryText`). Se pide
+generar una imagen visual de esos resultados y poder compartirla, además
+de que "Copiar resumen" copie esa imagen en vez de texto. **Descartado
+explícitamente**: integración directa con la API de X/Twitter (publicar
+el tweet desde la app) — requeriría OAuth propio y acceso de pago a su
+API, coste desproporcionado frente al share nativo del sistema, que ya
+deja elegir X (o cualquier otra app) desde el propio selector del
+dispositivo.
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| Diseñar tarjeta visual de resultados/pronósticos | ✅ | Dibujada a Canvas (Canvas API nativo), no una librería de captura de DOM tipo html2canvas (da problemas con fuentes/gradientes/sombras) — reutilizando la paleta/tipografía ya establecida de Piqo. Variante `picks` (Jornada → Enviado) y variante `results` (matchday-results). |
+| Generar la imagen a partir de los datos reales de la jornada | ✅ | A partir de las predicciones reales de `current-matchday.facade.ts` / `matchday-results.facade.ts` (puntos, aciertos, puesto, racha), no un dato de muestra. |
+| Botón "Compartir imagen" con el share nativo del sistema | ✅ | Usa la Web Share API (`navigator.share`/`canShare`) directamente, sin `@capacitor/share` ni `@capacitor/filesystem` — no hizo falta instalarlos porque WKWebView en iOS soporta Web Share API de forma nativa. Si el navegador no la soporta, descarga el PNG como fallback. |
+| Botón "Copiar" para pegar la imagen directo en otra app/chat | ✅ | Vía Clipboard API (`navigator.clipboard.write` + `ClipboardItem` con `image/png`), con un timeout de 4s (`Promise.race`) porque en algún entorno la promesa no resuelve ni rechaza nunca. Sustituye al "Descargar PNG" inicial: descargar ya es posible desde "Compartir imagen". No se tocó el botón "Copiar resumen" existente (sigue copiando texto). |
+
+Pendiente de validar en dispositivo real (iOS) tras la build: el
+comportamiento de Web Share y Clipboard dentro de WKWebView puede diferir
+del navegador de escritorio usado para la verificación en `ng serve`.
+
 ---
 
 ## Infraestructura — entorno dev/pre (fuera de la numeración de sprints)
