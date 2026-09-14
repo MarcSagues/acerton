@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GroupsService, PublicGroupSummary, toPublicGroupSummary } from '../groups.service';
+import { GroupsService, PublicGroupRecord, PublicGroupSummary, toPublicGroupSummary } from '../groups.service';
 import { RankingsService } from '../../rankings/rankings.service';
 
 export interface PublicGroupPreview extends PublicGroupSummary {
@@ -34,7 +34,26 @@ export class PublicGroupPreviewService {
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
     }
-    const isMember = await this.groupsService.isGroupMember(groupId, userId);
+    return this.buildPreview(group, userId);
+  }
+
+  /**
+   * Misma vista previa que getPreview, pero para la pantalla de "unirse por
+   * link/codigo": se busca por codigo de invitacion en vez de id, y no se
+   * exige que el grupo sea publico (tener el codigo ya autoriza a verlo).
+   * El propio codigo invalido o de un grupo eliminado se trata como 404,
+   * igual que un id de grupo publico que no existe.
+   */
+  async getPreviewByInviteCode(inviteCode: string, userId: string): Promise<PublicGroupPreview> {
+    const group = await this.groupsService.findGroupByInviteCode(inviteCode);
+    if (!group) {
+      throw new NotFoundException('Código de invitación inválido');
+    }
+    return this.buildPreview(group, userId);
+  }
+
+  private async buildPreview(group: PublicGroupRecord, userId: string): Promise<PublicGroupPreview> {
+    const isMember = await this.groupsService.isGroupMember(group.id, userId);
 
     const activeCompetitionIds = group.groupCompetitions.map((gc) => gc.competitionId);
     const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;

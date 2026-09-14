@@ -12,6 +12,20 @@
   min-width: 0;
   color: var(--p4-text);
   padding-bottom: 28px;
+
+  /* El aviso flotante del comodin (.comeback-banner-wrap) vive por encima de
+     la barra de navegacion inferior: sin este hueco extra tapaba el ultimo
+     partido de la lista mientras el aviso esta visible. */
+  &.has-comeback-banner {
+    padding-bottom: 100px;
+  }
+}
+
+.pending-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--p4-error);
 }
 
 .loading {
@@ -96,6 +110,7 @@ h1 {
 }
 
 .comp-chip {
+  position: relative;
   padding: 7px 12px;
   border-radius: var(--p4-radius-pill);
   border: 1px solid var(--p4-border);
@@ -109,6 +124,13 @@ h1 {
     color: var(--p4-accent);
     border-color: transparent;
     font-weight: 600;
+  }
+
+  .pending-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    border: 2px solid var(--p4-bg);
   }
 }
 
@@ -296,6 +318,53 @@ h1 {
   }
 }
 
+.comeback-banner-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(96px + env(safe-area-inset-bottom) + 12px);
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.comeback-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 350px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-accent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+
+  > piqo-svg {
+    flex: none;
+    color: var(--p4-accent);
+  }
+
+  span {
+    flex: 1;
+    font: 500 12px/1.4 var(--p4-font-ui);
+  }
+}
+
+.comeback-banner-close {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--p4-soft);
+  color: var(--p4-muted);
+}
+
 .match-list {
   padding: 19px 20px 0;
   display: flex;
@@ -344,6 +413,12 @@ h1 {
   }
 }
 
+.match-pending-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
 .kickoff {
   margin: 0;
   font-size: 11px;
@@ -386,29 +461,12 @@ h1 {
   align-items: center;
   gap: 6px;
   flex: none;
-}
-
-.wc-btn {
-  width: var(--p4-touch);
-  height: var(--p4-touch);
-  border-radius: 10px;
-  border: 1px solid var(--p4-border);
-  background: var(--p4-surface);
-  color: var(--p4-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-
-  &.active {
-    background: var(--p4-soft);
-    color: var(--p4-accent);
-    border-color: var(--p4-accent);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-  }
+  /* Mantener pulsado abre el panel del comodin de remontada (ver
+     openComebackSheet): sin esto iOS muestra su propio menu de
+     seleccion/copiar por encima del panel al superar el umbral de pulsacion larga. */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .options {
@@ -852,4 +910,9 @@ h1 {
   .progress-fill {
     transition: none;
   }
+}
+
+.sent-share-btn {
+  border-color: var(--p4-accent);
+  color: var(--p4-accent);
 }

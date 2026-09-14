@@ -1,5 +1,128 @@
 # Estado actual
 
+## 2026-09-14 — Canvas compartible de resultados de jornada
+
+Añadido debajo de **Copiar resumen** en la pantalla `Enviado` de Jornada
+un botón **Compartir imagen**; la vista cerrada `matchday-results` también
+tiene su propia entrada **Compartir**. Abre una vista previa de marca en
+formato cuadrado 1080×1080 con jugador, grupo, competición, puntos,
+aciertos, puesto, racha y hasta diez partidos del desglose. El PNG usa
+siempre la paleta oscura/champán de Piqo 4.1 para que no dependa del tema
+del dispositivo. Desde la vista previa, **Compartir imagen** abre el panel
+nativo/Web Share cuando admite archivos (con descarga directa del PNG como
+fallback si el navegador no soporta Web Share); **Copiar** copia la imagen
+al portapapeles (Clipboard API) para pegarla directo en otra app o chat —
+se sustituyó el botón inicial de "Descargar PNG" por este, ya que
+descargar la imagen ya es posible desde "Compartir imagen". Sin cambios de
+backend.
+
+Se corrigió además un bug de imagen en negro: `CanvasRenderingContext2D.
+roundRect` no existe en WebKit anterior a iOS 16.4, y el mínimo soportado
+por la app es iOS 15 (`IPHONEOS_DEPLOYMENT_TARGET`) — la llamada lanzaba
+una excepción a mitad del dibujado y dejaba solo el `fillRect` de fondo
+pintado. Se reemplazó por un trazado manual del contorno con `arcTo`,
+compatible con todas las versiones de WebKit soportadas, y se envolvió
+`open()` en try/catch/finally para que un fallo de dibujado muestre un
+toast en vez de dejar el diálogo colgado en "generando" para siempre.
+
+Verificado en navegador (`ng serve`) con sesión real: la variante `picks`
+(Jornada → Enviado → Compartir imagen) se probó de extremo a extremo y
+genera el canvas correctamente. La variante `results` (matchday-results →
+Compartir) se verificó por revisión de código — comparte exactamente las
+mismas rutinas de dibujo ya probadas (`roundRect`, `text`, `predictionRow`)
+sin APIs adicionales — porque los datos locales de seed no incluyen
+ninguna jornada finalizada con puntos reales para abrir esa pantalla.
+
+_A partir de ahora (2026-09-14, instrucción explícita del usuario): todas
+las builds se lanzan contra `dev`, nunca `main`. `dev` no se mergea a
+`main` sin confirmación explícita, y la build de `main` es un paso
+aparte, posterior y también explícito. Al fijar esta regla, `dev` llevaba
+53 commits de retraso respecto a `main` — con autorización del usuario se
+puso `dev` al día (fast-forward a `main`) antes de mergear encima el
+primer incremento bajo la regla nueva._
+
+## 2026-09-14 — Reactivar el comodín de remontada (issue #22 casi completo)
+
+Rama `feature/comeback-unhide` (a partir de `feature/group-invite-preview`,
+sin mergear ninguna de las dos a `dev` todavía). A petición explícita del
+usuario ("añade todo lo que escondimos de remontada"), deshecho todo lo
+marcado "Próximamente"/escondido desde `4b71858` y `569d655`:
+
+- `group-detail` (Ajustes del grupo): el toggle "Comodín de remontada"
+  vuelve a ser real (`toggleComebackEnabled` dejó de ser un no-op) y
+  "Puntos por opción doble" ahora tiene un botón de editar (icono lápiz)
+  que revela un input numérico — se guarda junto con el resto de cambios
+  pendientes en el único botón "Guardar cambios" ya existente (se
+  reintrodujo `editingRules`/`comebackPointsPerBonusInput`/
+  `hasRuleChanges`, integrados en `hasAnyChanges`, tal como estaban antes
+  de quitarse en `43e985c` — la diferencia esta vez es que el toggle y el
+  guardado son reales, no un input permanentemente disabled).
+- `group-create`: vuelve el enlace "¿Cómo funciona el comodín?" y la
+  mención al comodín en la descripción del modo 1X2.
+- `group-explore` (listado y vista previa de grupos públicos): vuelve el
+  chip "Remontada activa" y la línea de reglas con
+  `comebackPointsPerBonus`.
+
+Backend: sin cambios — `UpdateGroupRulesDto`/`GroupsService.updateRules`
+ya soportaban `comebackPointsPerBonus` de antes, solo estaba sin
+conectar en la UI.
+
+Sin verificar todavía en dispositivo real — solo en local
+(`ng serve`+`nest start:dev` contra Postgres de Docker). Pendiente:
+decidir si esto se mergea a `dev` y se lanza build.
+
+## 2026-09-14 — Vista previa al unirse por link o código (sin issue de GitHub)
+
+Rama `feature/group-invite-preview` (a partir de `dev`). A petición
+explícita del usuario ("cuando te unes a un grupo mediante link o codigo
+de invitacion deberia darte un preview del grupo y tu decides si te unes
+o cancelas"): antes, tanto abrir un link de invitación
+(`/groups/join/:inviteCode`, `GroupJoinComponent`) como introducir un
+código a mano (`/groups/join-code`) unían al usuario al instante, sin
+ninguna confirmación. Ahora ambos caminos llevan a la misma pantalla de
+vista previa (mismo componente, ya no une automáticamente al entrar): el
+código de código manual ahora navega a `/groups/join/:inviteCode` en vez
+de llamar a unirse directamente.
+
+Backend nuevo: `GroupsService.findGroupByInviteCode` (igual que
+`findPublicGroupById` pero por código y sin exigir `isPublic`, porque
+tener el código ya autoriza a verlo) y
+`PublicGroupPreviewService.getPreviewByInviteCode`, que comparte con
+`getPreview` toda la lógica de construir la vista previa (reglas reales,
+ligas, top 5 de clasificación) via un `buildPreview` privado extraído.
+Endpoint nuevo `GET /groups/join/:inviteCode/preview`
+(`GroupInvitePreviewController`, mismo módulo hoja que
+`PublicGroupPreviewController` para no crear el ciclo de módulos ya
+documentado en ese servicio). Tests unitarios nuevos para el caso de
+código inválido, grupo privado por código, y `isMember` ya perteneciendo.
+
+Si el usuario ya es miembro (reabre un link viejo), la pantalla muestra
+"Ir al grupo" en vez de "Unirme"/"Cancelar". Sin verificar todavía en
+dispositivo real — pendiente de build de `dev`.
+
+## 2026-09-14 — Comodín de remontada: nuevo gesto en Jornada (issue #22)
+
+Rama `feature/comodin-remontada-longpress` (a partir de `main`, ya
+mergeada a `dev`). Retomado el issue #22 solo en la parte de interacción: el botón cuadrado
+que iba pegado a las opciones 1/X/2 (escondido desde `4b71858`, ver
+Reconciliación 2026-09-12 más abajo) no vuelve tal cual — a petición
+explícita del usuario ("no me gusta el diseño... sale un botón más"), ahora
+mantener pulsada la fila de un partido abre un panel inferior
+(`ComebackSheetComponent`) con las tres combinaciones (1X/X2/12), el nº de
+comodines restantes y, si el partido ya tenía uno activo, un botón "Quitar
+comodín". La fila de 1/X/2 queda visualmente intacta, sin ningún botón
+extra. Añadido también un aviso de una línea bajo la cabecera ("Tienes N
+comodines de remontada esta jornada. Mantén pulsado un partido para
+usarlo.") solo cuando quedan usos disponibles, a modo de indicador de
+cuántos quedan y pista de cómo activarlo.
+
+Sin verificar en dispositivo real todavía (pendiente de build de `dev` +
+TestFlight). Sigue sin tocarse el resto del issue #22: activar/ajustar en
+`group-create`, Ajustes del grupo, "Normas y premios", y si la lógica de
+recálculo de usos por diferencia de puntos con el líder se comporta como
+se espera con datos reales — nada de eso se ha revisado en este
+incremento, así que el issue no se cierra todavía.
+
 _Última actualización: 2026-09-12. Sprint 3 y Sprint 4 completos en `dev`,
 Sprint 5 con sus tres primeros incrementos (base de temporadas,
 elegibilidad, racha global) en `dev` — **todavía pendiente de que el

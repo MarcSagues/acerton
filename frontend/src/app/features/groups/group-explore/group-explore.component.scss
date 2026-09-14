@@ -265,6 +265,13 @@
   }
 }
 
+.comeback-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--p4-accent);
+}
+
 .leagues-row {
   margin-top: 10px;
   display: flex;

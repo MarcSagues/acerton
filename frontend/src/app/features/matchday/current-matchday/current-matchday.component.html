@@ -38,14 +38,31 @@
         <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
         {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
       </button>
+      <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="openShareCard()">
+        <piqo-svg icon="compartir" size="18"></piqo-svg>
+        Compartir imagen
+      </button>
       <button type="button" class="piqo-secondary sent-btn" (click)="page.editPredictions()">
         <piqo-svg icon="atras" size="18"></piqo-svg>
         Volver
       </button>
+
+      <app-matchday-share-card
+        variant="picks"
+        [matchday]="entry.matchday"
+        [competitionName]="entry.competition.name"
+        [predictions]="page.sharePredictions()"
+        [scoringMode]="page.shareScoringMode()"
+        [playerName]="page.sharePlayerName()"
+        [groupName]="page.shareGroupName()"
+        [totalPoints]="0"
+        [hits]="0"
+      ></app-matchday-share-card>
     </main>
   }
 } @else {
-  <div class="page">
+  @let comebackBannerText = page.comebackBanner(page.activeEntry());
+  <div class="page" [class.has-comeback-banner]="!!comebackBannerText">
     <div class="head-row">
       <app-group-switcher></app-group-switcher>
     </div>
@@ -87,6 +104,9 @@
           @for (e of page.entries(); track e.competition.id; let i = $index) {
             <button type="button" class="comp-chip" [class.active]="i === page.activeTabIndex()" (click)="page.selectTab(i)">
               {{ e.competition.name }} · {{ e.matchday.matches.length }}
+              @if (page.hasPendingPicks(e)) {
+                <span class="pending-dot" aria-hidden="true"></span>
+              }
             </button>
           }
         </div>
@@ -139,6 +159,9 @@
             [attr.data-tone]="page.matchAccentTone(match)"
             [attr.data-tutorial]="first ? 'first-match' : null"
           >
+            @if (page.isMatchPending(match)) {
+              <span class="pending-dot match-pending-dot" aria-hidden="true"></span>
+            }
             <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
 
             <div class="teams-row">
@@ -254,12 +277,16 @@
                solo que sin poder interactuar — antes esta rama no pintaba
                nada y el pronostico enviado desaparecia de la vista hasta
                que el partido acababa. -->
-          <div class="wc-row">
-            <!-- Boton de activar el comodin escondido (ver issue de GitHub
-                 para acabar de implementarlo y volver a mostrarlo): si una
-                 prediccion ya tenia un doubleChanceOption guardado de antes,
-                 se sigue mostrando abajo tal cual, solo que ya no se puede
-                 activar uno nuevo desde aqui. -->
+          <div
+            class="wc-row"
+            (pointerdown)="page.startLongPress(match, locked)"
+            (pointerup)="page.cancelLongPress()"
+            (pointerleave)="page.cancelLongPress()"
+            (pointercancel)="page.cancelLongPress()"
+          >
+            <!-- Mantener pulsada esta fila abre el panel del comodin de
+                 remontada (ComebackSheetComponent), en vez de un boton fijo
+                 aparte junto a las opciones — ver openComebackSheet(). -->
             <div class="options" role="group" [attr.aria-label]="'Pronostico ' + match.homeTeam + ' contra ' + match.awayTeam">
               @if (page.stateFor(match.id).doubleChanceOption) {
                 @for (opt of [{ v: 'HOME_OR_DRAW', l: '1X' }, { v: 'DRAW_OR_AWAY', l: 'X2' }, { v: 'HOME_OR_AWAY', l: '12' }]; track opt.v) {
@@ -309,4 +336,21 @@
       }
     }
   </div>
+
+  @if (comebackBannerText) {
+    <div class="comeback-banner-wrap">
+      <div class="comeback-banner">
+        <piqo-svg icon="comodin" size="18"></piqo-svg>
+        <span>{{ comebackBannerText }}</span>
+        <button
+          type="button"
+          class="comeback-banner-close"
+          aria-label="Cerrar aviso del comodín"
+          (click)="page.dismissComebackBanner(page.activeEntry()!)"
+        >
+          <piqo-svg icon="cerrar" size="14"></piqo-svg>
+        </button>
+      </div>
+    </div>
+  }
 }

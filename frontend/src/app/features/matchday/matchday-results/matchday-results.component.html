@@ -58,6 +58,10 @@
 
       @if (page.viewingSelf) {
         <div class="head-links">
+          <button type="button" class="share-card-link" (click)="openShareCard()">
+            <piqo-svg icon="compartir" size="14"></piqo-svg>
+            Compartir
+          </button>
           <a class="rankings-link" routerLink="/rankings">Tabla</a>
           <a
             class="rankings-link"
@@ -236,6 +240,19 @@
           }
         </div>
       }
+
+      <app-matchday-share-card
+        [matchday]="md"
+        [predictions]="page.predictions()"
+        [scoringMode]="page.scoringMode()"
+        [playerName]="page.resultOwnerName()"
+        [avatarBackground]="page.targetUserAvatarBackground()"
+        [groupName]="page.groupName()"
+        [totalPoints]="page.totalPoints()"
+        [hits]="page.hits()"
+        [position]="page.position()"
+        [streak]="page.currentStreak()"
+      ></app-matchday-share-card>
     </div>
   }
 }

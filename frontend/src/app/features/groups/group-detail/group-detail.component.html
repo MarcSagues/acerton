@@ -2,7 +2,7 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
   @if (page.group(); as g) {
-    <div class="page">
+    <div class="page" [class.has-floating-save]="page.isAdmin() && page.hasAnyChanges()">
       <div class="head-row">
         <a routerLink="/groups" class="back-link">
           <piqo-svg icon="atras" size="20"></piqo-svg>
@@ -37,7 +37,7 @@
         </div>
         <button type="button" class="share-link-btn" (click)="page.goToInvite()">
           <piqo-svg icon="compartir" size="18"></piqo-svg>
-          Compartir enlace de invitación
+          Compartir
         </button>
       </div>
 
@@ -92,23 +92,37 @@
           </div>
 
           @if (g.scoringMode === 'ONE_X_TWO') {
-            <div class="rule-card disabled">
+            <div class="rule-card">
               <piqo-svg icon="comodin" size="22"></piqo-svg>
               <div class="rule-text">
-                <p class="rule-name">Comodín de remontada <span class="soon-badge">Próximamente</span></p>
+                <p class="rule-name">Comodín de remontada</p>
                 <p class="hint">Doble oportunidad (1X/X2/12) para quien va por detrás.</p>
               </div>
-              <button type="button" class="toggle disabled" disabled>
+              <button
+                type="button"
+                class="toggle"
+                [class.on]="page.selectedComebackEnabled()"
+                [class.disabled]="!page.isAdmin()"
+                (click)="page.toggleComebackEnabled()"
+              >
                 <span class="knob"></span>
               </button>
             </div>
-            <div class="rule-card disabled">
+            <div class="rule-card">
               <piqo-svg icon="marcador" size="22"></piqo-svg>
               <div class="rule-text">
-                <p class="rule-name">Puntos por opción doble <span class="soon-badge">Próximamente</span></p>
+                <p class="rule-name">Puntos por opción doble</p>
                 <p class="hint">Cada N puntos de diferencia con el líder dan 1 uso más esa jornada.</p>
               </div>
-              <span class="rule-value mono">{{ g.comebackPointsPerBonus }}</span>
+              <input
+                class="rule-input mono"
+                type="number"
+                min="1"
+                max="50"
+                [value]="page.comebackPointsPerBonusInput()"
+                [disabled]="!page.isAdmin()"
+                (input)="page.updateComebackPointsPerBonusInput($any($event.target).value)"
+              />
             </div>
           }
 
