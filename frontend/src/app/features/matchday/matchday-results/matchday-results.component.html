@@ -9,6 +9,9 @@
     <div class="page">
       <header class="head-row">
         @if (page.viewingSelf) {
+          <button type="button" class="nav-btn" (click)="page.goToCalendar()" aria-label="Elegir jornada">
+            <piqo-svg icon="jornada" size="16"></piqo-svg>
+          </button>
           <button
             type="button"
             class="nav-btn"
