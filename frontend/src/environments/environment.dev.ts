@@ -9,14 +9,14 @@ export const environment = {
   googleWebClientId: '274153738044-0lnso05j0rpi3pvegl20r5rh8obias9n.apps.googleusercontent.com',
   admob: {
     android: {
-      appId: 'ca-app-pub-1185144357301303~6197649742',
-      bannerAdUnitId: 'ca-app-pub-1185144357301303/4884568079',
-      rewardedAdUnitId: 'ca-app-pub-1185144357301303/1194596895',
+      appId: 'ca-app-pub-6403313027738561~6956033343',
+      bannerAdUnitId: 'ca-app-pub-6403313027738561/9390624995',
+      rewardedAdUnitId: 'ca-app-pub-6403313027738561/2423918080',
     },
     ios: {
-      appId: 'ca-app-pub-1185144357301303~8853049890',
-      bannerAdUnitId: 'ca-app-pub-1185144357301303/1167694667',
-      rewardedAdUnitId: 'ca-app-pub-1185144357301303/1470316108',
+      appId: 'ca-app-pub-6403313027738561~1184831918',
+      bannerAdUnitId: 'ca-app-pub-6403313027738561/1242698356',
+      rewardedAdUnitId: 'ca-app-pub-6403313027738561/1954988105',
     },
   },
   firebase: {
