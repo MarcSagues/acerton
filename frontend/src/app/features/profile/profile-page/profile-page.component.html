@@ -51,7 +51,15 @@
           [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
           (click)="page.openTrophy(trophy)"
         >
-          <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
+          @if (trophy.count > 0) {
+            <img
+              class="trophy-art"
+              [src]="'assets/avatars/mascot/animated/cups-source/trophy-' + trophy.id + '-cup.png'"
+              [alt]="trophy.name"
+            />
+          } @else {
+            <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
+          }
           @if (trophy.count > 1) {
             <span class="trophy-count mono">{{ trophy.count }}</span>
           } @else if (trophy.count === 0) {
