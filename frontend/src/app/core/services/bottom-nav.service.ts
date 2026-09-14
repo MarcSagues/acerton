@@ -16,18 +16,4 @@ export class BottomNavService {
   setForceHidden(hidden: boolean): void {
     this.forceHiddenSignal.set(hidden);
   }
-
-  /**
-   * Punto rojo sobre "Jornada": queda algun partido abierto sin pronostico,
-   * en cualquiera de las competiciones del grupo activo. Vive aqui (no en
-   * CurrentMatchdayFacade) porque la barra inferior no es hija de esa
-   * pantalla — sigue mostrando el ultimo valor conocido aunque se navegue
-   * fuera de Jornada, que es justo el punto de un recordatorio persistente.
-   */
-  private readonly hasPendingJornadaPicksSignal = signal(false);
-  readonly hasPendingJornadaPicks = this.hasPendingJornadaPicksSignal.asReadonly();
-
-  setHasPendingJornadaPicks(pending: boolean): void {
-    this.hasPendingJornadaPicksSignal.set(pending);
-  }
 }

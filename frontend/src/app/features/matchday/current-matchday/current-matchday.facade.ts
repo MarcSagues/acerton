@@ -202,16 +202,6 @@ export class CurrentMatchdayFacade {
     return entry.matchday.matches.some((m) => this.isMatchPendingIn(m, pickingAllowedForEntry));
   }
 
-  /** Punto rojo de "Jornada" en la barra inferior: alguna pestana (competicion) tiene algo pendiente. */
-  private hasAnyPendingPicks(): boolean {
-    return this.entries().some((e) => this.hasPendingPicks(e));
-  }
-
-  /** Se llama tras cualquier cambio que pueda alterar lo pendiente (cargar, guardar, quitar comodin, cambiar de jornada): el punto de "Jornada" en la barra inferior vive en un servicio global porque esa barra no es hija de este componente. */
-  private updatePendingBadge(): void {
-    this.bottomNav.setHasPendingJornadaPicks(this.hasAnyPendingPicks());
-  }
-
   /** Se abre solo si el usuario pulsa "Ver resumen" — antes se abria solo tras cada guardado, lo que lo hacia reaparecer cada vez que se editaba un pronostico ya completo. */
   openSummary(): void {
     this.submissionConfirmed.set(true);
@@ -352,7 +342,6 @@ export class CurrentMatchdayFacade {
         this.activeTabIndex.set(0);
         this.loadExistingPredictions(groupId, entries);
         this.refreshComeback(groupId);
-        this.updatePendingBadge();
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -467,7 +456,6 @@ export class CurrentMatchdayFacade {
             pointsEarned: prediction.pointsEarned,
           });
         }
-        this.updatePendingBadge();
       });
     }
   }
@@ -607,14 +595,12 @@ export class CurrentMatchdayFacade {
     } else {
       state.predictedAwayScore = value;
     }
-    this.updatePendingBadge();
   }
 
   selectChoice(match: Match, choice: PredictionChoice): void {
     if (this.consumeLongPress() || this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     state.choice = choice;
-    this.updatePendingBadge();
     this.save(match.id, state);
   }
 
@@ -622,7 +608,6 @@ export class CurrentMatchdayFacade {
     if (this.consumeLongPress() || this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     state.doubleChanceOption = option;
-    this.updatePendingBadge();
     this.save(match.id, state);
   }
 
@@ -686,12 +671,10 @@ export class CurrentMatchdayFacade {
       if ('remove' in result) {
         state.doubleChanceOption = null;
         state.saved = false;
-        this.updatePendingBadge();
         return;
       }
       state.choice = null;
       state.doubleChanceOption = result.option;
-      this.updatePendingBadge();
       this.save(match.id, state);
     });
   }
