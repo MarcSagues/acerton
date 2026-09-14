@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { Share } from '@capacitor/share';
 import { GroupsService } from '../../../core/services/groups.service';
 import { Group, GroupMember } from '../../../core/models/group.model';
 import { environment } from '../../../../environments/environment';
@@ -62,5 +63,30 @@ export class GroupInviteFacade {
         setTimeout(() => this.justCopiedLink.set(false), 2000);
       })
       .catch(() => undefined);
+  }
+
+  /** Boton "Compartir enlace": abre el panel nativo de compartir (iOS/Android) o el del navegador si lo soporta, en vez de solo copiar al portapapeles como antes. */
+  async shareLink(): Promise<void> {
+    const group = this.group();
+    if (!group) return;
+
+    const { value: canShare } = await Share.canShare();
+    if (!canShare) {
+      // Sin soporte (navegador de escritorio sin Web Share API, por
+      // ejemplo): el copiado al portapapeles sigue siendo la alternativa.
+      this.copyLink();
+      return;
+    }
+    try {
+      await Share.share({
+        title: 'Únete a mi grupo en Piqo',
+        text: `Únete a ${group.name} en Piqo`,
+        url: this.inviteLink(),
+        dialogTitle: 'Compartir enlace de invitación',
+      });
+    } catch {
+      // El usuario cierra el panel de compartir sin elegir nada: no es un
+      // fallo real, no hace falta avisar de nada.
+    }
   }
 }

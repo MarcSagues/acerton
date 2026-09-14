@@ -119,13 +119,38 @@ h1 {
 
 .link-row {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: color-mix(in srgb, var(--p4-text) 7%, transparent);
   border-radius: 16px;
-  padding: 12px 14px;
+  padding: 10px 10px 10px 14px;
+  margin: -6px 0 0;
+}
+
+.link-text {
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
   color: color-mix(in srgb, var(--p4-text) 65%, transparent);
   word-break: break-all;
-  margin: -6px 0 0;
+}
+
+.link-copy-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 0;
+  background: color-mix(in srgb, var(--p4-text) 9%, transparent);
+  color: var(--p4-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:disabled {
+    opacity: 0.75;
+  }
 }
 
 .members-block {

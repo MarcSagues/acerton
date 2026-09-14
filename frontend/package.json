@@ -31,6 +31,7 @@
     "@capacitor/ios": "8.5.1",
     "@capacitor/keyboard": "^8.0.5",
     "@capacitor/push-notifications": "8.1.2",
+    "@capacitor/share": "^8.0.1",
     "@capawesome/capacitor-google-sign-in": "0.1.4",
     "firebase": "^10.14.1",
     "rxjs": "~7.8.0",

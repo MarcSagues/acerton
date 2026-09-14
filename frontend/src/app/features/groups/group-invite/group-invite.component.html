@@ -22,14 +22,25 @@
               <piqo-svg [attr.icon]="page.justCopiedCode() ? 'check' : 'copiar'" size="18"></piqo-svg>
               {{ page.justCopiedCode() ? 'Copiado' : 'Copiar código' }}
             </button>
-            <button type="button" class="code-btn ghost" [disabled]="page.justCopiedLink()" (click)="page.copyLink()">
-              <piqo-svg [attr.icon]="page.justCopiedLink() ? 'check' : 'compartir'" size="18"></piqo-svg>
-              {{ page.justCopiedLink() ? 'Copiado' : 'Compartir enlace' }}
+            <button type="button" class="code-btn ghost" (click)="page.shareLink()">
+              <piqo-svg icon="compartir" size="18"></piqo-svg>
+              Compartir enlace
             </button>
           </div>
         </div>
 
-        <p class="link-row mono">{{ page.inviteLink() }}</p>
+        <div class="link-row">
+          <p class="link-text mono">{{ page.inviteLink() }}</p>
+          <button
+            type="button"
+            class="link-copy-btn"
+            [disabled]="page.justCopiedLink()"
+            (click)="page.copyLink()"
+            aria-label="Copiar enlace"
+          >
+            <piqo-svg [attr.icon]="page.justCopiedLink() ? 'check' : 'copiar'" size="16"></piqo-svg>
+          </button>
+        </div>
 
         <div class="members-block">
           <p class="members-title">Ya dentro · {{ page.members().length }}</p>
