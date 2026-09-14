@@ -37,6 +37,40 @@ const FCM_TOKEN_ERROR_EVENT = 'piqoFcmTokenError';
 
 const SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 
+/** Persistido en localStorage: sobrevive a cerrar y reabrir la app (a diferencia de un signal en memoria), que es justo cuando hace falta — para no volver a pedir permiso ni mostrar "Activar" a quien ya lo activo en una sesion anterior. */
+const REGISTERED_STORAGE_KEY = 'piqo.push.registered';
+/** Si ya se intento el aviso automatico de la primera apertura (ver promptOnFirstLaunch), aunque el usuario lo rechazara — no se vuelve a insistir solo. */
+const PROMPTED_STORAGE_KEY = 'piqo.push.prompted';
+
+function readLocalStorageFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    // Safari privado, cuota llena, etc. — sin recordar entre sesiones no es
+    // grave, en el peor caso se vuelve a preguntar/mostrar el boton.
+    return false;
+  }
+}
+
+function writeLocalStorageFlag(key: string, value: boolean): void {
+  try {
+    if (value) {
+      localStorage.setItem(key, '1');
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // No critico, ver readLocalStorageFlag.
+  }
+}
+
+/** PushNotifications.checkPermissions()/requestPermissions() devuelven 'prompt'/'prompt-with-rationale' (nativo) ademas de 'granted'/'denied' — el signal `permission` usa el tipo de la Notification API del navegador (sin 'prompt'), asi que ambos "todavia no decidido" se llevan a 'default'. */
+function mapNativePermissionState(state: string): NotificationPermission {
+  if (state === 'granted') return 'granted';
+  if (state === 'denied') return 'denied';
+  return 'default';
+}
+
 /**
  * Notificaciones push. En web via Firebase Cloud Messaging (SDK y service
  * worker cargados solo al activar, para no pesar en el bundle de quien no
@@ -65,13 +99,62 @@ export class PushNotificationsService {
    * asi fallar el paso siguiente (token nunca llega, o el POST al backend
    * falla) sin que quede ningun rastro visible — de ahi que "Activadas en
    * este dispositivo" antes se mostrara aunque no hubiera token real
-   * guardado. Solo se pone a true tras confirmar el registro en el backend.
+   * guardado. Solo se pone a true tras confirmar el registro en el backend,
+   * y se persiste (ver REGISTERED_STORAGE_KEY) para que siga en true al
+   * reabrir la app — si no, "Activar" volvia a aparecer cada vez pese a que
+   * ya se hubiera completado el registro en una sesion anterior.
    */
-  readonly registered = signal(false);
+  readonly registered = signal(readLocalStorageFlag(REGISTERED_STORAGE_KEY));
+
+  constructor() {
+    if (this.isNative) {
+      // El valor sincrono de arriba (readPermission) es 'default' a falta de
+      // algo mejor; en cuanto el plugin responde (asincrono, no se puede
+      // esperar en el inicializador del signal) se sustituye por el estado
+      // real del permiso del sistema, sin pedirlo ni mostrar dialogo
+      // alguno — para no depender de que el usuario haya llamado a
+      // enable() en esta misma sesion para saber si ya estaba concedido.
+      void PushNotifications.checkPermissions().then((status) => {
+        this.permission.set(mapNativePermissionState(status.receive));
+      });
+    }
+  }
+
+  private setRegistered(value: boolean): void {
+    this.registered.set(value);
+    writeLocalStorageFlag(REGISTERED_STORAGE_KEY, value);
+  }
 
   private readPermission(): NotificationPermission {
-    if (this.isNative) return 'default'; // se resuelve al llamar a enable(); no hay forma de consultarlo sin pedirlo
+    if (this.isNative) return 'default'; // se sustituye async en el constructor (checkPermissions no se puede esperar aqui)
     return this.supported ? Notification.permission : 'denied';
+  }
+
+  /**
+   * Se llama una vez al montar el shell autenticado (ver ShellFacade.init).
+   * Si es la primera vez que se abre la app en este dispositivo y el
+   * permiso del sistema todavia no esta decidido, lanza el mismo flujo que
+   * el boton "Activar" directamente — el usuario solo ve el dialogo nativo
+   * de Apple/Google pidiendo permiso, sin ninguna pantalla intermedia
+   * nuestra; si lo acepta, el registro del token en el backend sigue por
+   * detras sin ningun paso visible mas. Solo se intenta una vez (ver
+   * PROMPTED_STORAGE_KEY), acepte o no.
+   *
+   * Solo nativo: en web, pedir el permiso a bocajarro nada mas entrar es
+   * mucho mas agresivo de lo habitual (no hay un "primer arranque" claro
+   * como en una app instalada) y ademas requiere el service worker propio,
+   * mas facil de dejar al flujo manual de "Preferencias de avisos".
+   */
+  async promptOnFirstLaunch(): Promise<void> {
+    if (!this.isNative || !this.configured) return;
+    if (readLocalStorageFlag(PROMPTED_STORAGE_KEY)) return;
+
+    const status = await PushNotifications.checkPermissions();
+    writeLocalStorageFlag(PROMPTED_STORAGE_KEY, true);
+    if (status.receive !== 'prompt' && status.receive !== 'prompt-with-rationale') {
+      return; // Ya decidido de antes (concedido o denegado) - nada que preguntar.
+    }
+    await this.enable();
   }
 
   async enable(): Promise<boolean> {
@@ -86,7 +169,7 @@ export class PushNotificationsService {
 
     this.loading.set(true);
     this.error.set(null);
-    this.registered.set(false);
+    this.setRegistered(false);
 
     try {
       return this.isNative ? await this.enableNative() : await this.enableWeb();
@@ -116,7 +199,7 @@ export class PushNotificationsService {
       const registerToken = (token: string) => {
         this.profileService.registerNotificationToken(token).subscribe({
           next: () => {
-            this.registered.set(true);
+            this.setRegistered(true);
             resolve(true);
           },
           error: (httpError) => {
@@ -218,7 +301,7 @@ export class PushNotificationsService {
     }
 
     await firstValueFrom(this.profileService.registerNotificationToken(token));
-    this.registered.set(true);
+    this.setRegistered(true);
 
     onMessage(messaging, (payload) => {
       const title = payload.notification?.title ?? 'Piqo';

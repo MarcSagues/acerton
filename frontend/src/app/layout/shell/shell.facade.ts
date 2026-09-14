@@ -3,6 +3,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { AdsService } from '../../core/services/ads.service';
 import { BottomNavService } from '../../core/services/bottom-nav.service';
+import { PushNotificationsService } from '../../core/services/push-notifications.service';
 
 /**
  * Pantallas de conseguir el primer grupo (ver hasGroupGuard/app.routes): son
@@ -18,6 +19,7 @@ export class ShellFacade {
   private readonly ads = inject(AdsService);
   private readonly router = inject(Router);
   private readonly bottomNav = inject(BottomNavService);
+  private readonly pushNotifications = inject(PushNotificationsService);
 
   private readonly currentPath = signal(this.router.url.split('?')[0]);
 
@@ -33,5 +35,12 @@ export class ShellFacade {
     this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe((event) => {
       this.currentPath.set(event.urlAfterRedirects.split('?')[0]);
     });
+
+    // Con retraso corto para no competir visualmente con el aviso de
+    // cookies/legal que tambien puede aparecer nada mas entrar — el dialogo
+    // nativo del sistema no se solapa con la UI de la pagina, pero que
+    // salgan los dos a la vez es mas confuso que darle un respiro a cada
+    // uno. No hace nada si ya se pidio antes (ver promptOnFirstLaunch).
+    setTimeout(() => void this.pushNotifications.promptOnFirstLaunch(), 1500);
   }
 }
