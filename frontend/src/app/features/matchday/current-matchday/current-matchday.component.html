@@ -132,6 +132,13 @@
         </div>
       }
 
+      @if (page.comebackHint(entry); as hint) {
+        <p class="comeback-hint">
+          <piqo-svg icon="comodin" size="16"></piqo-svg>
+          {{ hint }}
+        </p>
+      }
+
       <div class="match-list">
         @for (match of entry.matchday.matches; track match.id; let first = $first) {
           <div
@@ -254,12 +261,16 @@
                solo que sin poder interactuar — antes esta rama no pintaba
                nada y el pronostico enviado desaparecia de la vista hasta
                que el partido acababa. -->
-          <div class="wc-row">
-            <!-- Boton de activar el comodin escondido (ver issue de GitHub
-                 para acabar de implementarlo y volver a mostrarlo): si una
-                 prediccion ya tenia un doubleChanceOption guardado de antes,
-                 se sigue mostrando abajo tal cual, solo que ya no se puede
-                 activar uno nuevo desde aqui. -->
+          <div
+            class="wc-row"
+            (pointerdown)="page.startLongPress(match, locked)"
+            (pointerup)="page.cancelLongPress()"
+            (pointerleave)="page.cancelLongPress()"
+            (pointercancel)="page.cancelLongPress()"
+          >
+            <!-- Mantener pulsada esta fila abre el panel del comodin de
+                 remontada (ComebackSheetComponent), en vez de un boton fijo
+                 aparte junto a las opciones — ver openComebackSheet(). -->
             <div class="options" role="group" [attr.aria-label]="'Pronostico ' + match.homeTeam + ' contra ' + match.awayTeam">
               @if (page.stateFor(match.id).doubleChanceOption) {
                 @for (opt of [{ v: 'HOME_OR_DRAW', l: '1X' }, { v: 'DRAW_OR_AWAY', l: 'X2' }, { v: 'HOME_OR_AWAY', l: '12' }]; track opt.v) {
