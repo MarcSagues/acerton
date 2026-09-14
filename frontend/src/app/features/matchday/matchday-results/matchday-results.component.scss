@@ -519,3 +519,15 @@
     background: var(--p4-error);
   }
 }
+
+.share-card-link {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: var(--p4-radius-pill);
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 700 10px/1 var(--p4-font-ui);
+}

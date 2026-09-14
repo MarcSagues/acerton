@@ -1,5 +1,38 @@
 # Estado actual
 
+## 2026-09-14 — Canvas compartible de resultados de jornada
+
+Añadido debajo de **Copiar resumen** en la pantalla `Enviado` de Jornada
+un botón **Compartir imagen**; la vista cerrada `matchday-results` también
+tiene su propia entrada **Compartir**. Abre una vista previa de marca en
+formato cuadrado 1080×1080 con jugador, grupo, competición, puntos,
+aciertos, puesto, racha y hasta diez partidos del desglose. El PNG usa
+siempre la paleta oscura/champán de Piqo 4.1 para que no dependa del tema
+del dispositivo. Desde la vista previa, **Compartir imagen** abre el panel
+nativo/Web Share cuando admite archivos (con descarga directa del PNG como
+fallback si el navegador no soporta Web Share); **Copiar** copia la imagen
+al portapapeles (Clipboard API) para pegarla directo en otra app o chat —
+se sustituyó el botón inicial de "Descargar PNG" por este, ya que
+descargar la imagen ya es posible desde "Compartir imagen". Sin cambios de
+backend.
+
+Se corrigió además un bug de imagen en negro: `CanvasRenderingContext2D.
+roundRect` no existe en WebKit anterior a iOS 16.4, y el mínimo soportado
+por la app es iOS 15 (`IPHONEOS_DEPLOYMENT_TARGET`) — la llamada lanzaba
+una excepción a mitad del dibujado y dejaba solo el `fillRect` de fondo
+pintado. Se reemplazó por un trazado manual del contorno con `arcTo`,
+compatible con todas las versiones de WebKit soportadas, y se envolvió
+`open()` en try/catch/finally para que un fallo de dibujado muestre un
+toast en vez de dejar el diálogo colgado en "generando" para siempre.
+
+Verificado en navegador (`ng serve`) con sesión real: la variante `picks`
+(Jornada → Enviado → Compartir imagen) se probó de extremo a extremo y
+genera el canvas correctamente. La variante `results` (matchday-results →
+Compartir) se verificó por revisión de código — comparte exactamente las
+mismas rutinas de dibujo ya probadas (`roundRect`, `text`, `predictionRow`)
+sin APIs adicionales — porque los datos locales de seed no incluyen
+ninguna jornada finalizada con puntos reales para abrir esa pantalla.
+
 _A partir de ahora (2026-09-14, instrucción explícita del usuario): todas
 las builds se lanzan contra `dev`, nunca `main`. `dev` no se mergea a
 `main` sin confirmación explícita, y la build de `main` es un paso

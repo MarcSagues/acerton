@@ -71,6 +71,10 @@ export class MatchdayResultsFacade {
   readonly noNextAvailable = signal(false);
   readonly noPreviousAvailable = signal(false);
 
+  readonly resultOwnerName = computed(
+    () => this.targetUserName() ?? (this.viewingSelf ? this.authService.currentUser()?.name : null) ?? 'Jugador',
+  );
+
   readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
   /**
    * Del grupo cargado directamente en ngOnInit (getById), no del

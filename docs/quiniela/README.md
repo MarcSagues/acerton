@@ -45,6 +45,8 @@ GitHub".
 | `decisions.md` | Decisiones técnicas y de producto tomadas durante la implementación, con su motivo. |
 | `history.md` | Historial cronológico de sesiones — se amplía, no se reescribe. |
 | `backlog.md` | Preguntas abiertas, ambigüedades y ampliaciones aplazadas que no bloquean el sprint activo. |
+| `competitive-roadmap.md` | Roadmap independiente para Claude: MVP competitivo con duelos y Elo; reglas propuestas, fases y aceptación. Pendiente de implementar. |
+| `profile-reorganization-plan.md` | Auditoría del perfil ajeno y plan de reorganización de perfiles, estadísticas y comparación dentro del grupo. |
 
 ## Estado de esta preparación (Sprint 0)
 

@@ -1,5 +1,6 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { BottomNavService } from '../../core/services/bottom-nav.service';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -9,4 +10,6 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './bottom-nav.component.html',
   styleUrl: './bottom-nav.component.scss',
 })
-export class BottomNavComponent {}
+export class BottomNavComponent {
+  readonly bottomNav = inject(BottomNavService);
+}

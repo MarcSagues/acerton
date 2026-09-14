@@ -336,7 +336,9 @@ nuevas:
   mecánicas ficticias.
 - Al guardar una jornada se muestra `Enviado` con el resumen exacto de las
   selecciones que devolvió el backend. `Copiar resumen` usa el portapapeles
-  real. No se añadió el botón ficticio de compartir como imagen.
+  real. Justo debajo aparece **Compartir imagen**, que abre un canvas real
+  de 1080×1080 con los pronósticos; la vista cerrada de resultados conserva
+  otra entrada para compartir el resultado final. No son botones ficticios.
 - Avisos deja escrito en código y en pantalla que sus datos son una demo.
   No se creó persistencia de notificaciones.
 - Normas y premios consume grupo/competición reales para mostrar el modo de

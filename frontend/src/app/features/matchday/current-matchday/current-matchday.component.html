@@ -38,14 +38,31 @@
         <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
         {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
       </button>
+      <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="openShareCard()">
+        <piqo-svg icon="compartir" size="18"></piqo-svg>
+        Compartir imagen
+      </button>
       <button type="button" class="piqo-secondary sent-btn" (click)="page.editPredictions()">
         <piqo-svg icon="atras" size="18"></piqo-svg>
         Volver
       </button>
+
+      <app-matchday-share-card
+        variant="picks"
+        [matchday]="entry.matchday"
+        [competitionName]="entry.competition.name"
+        [predictions]="page.sharePredictions()"
+        [scoringMode]="page.shareScoringMode()"
+        [playerName]="page.sharePlayerName()"
+        [groupName]="page.shareGroupName()"
+        [totalPoints]="0"
+        [hits]="0"
+      ></app-matchday-share-card>
     </main>
   }
 } @else {
-  <div class="page">
+  @let comebackBannerText = page.comebackBanner(page.activeEntry());
+  <div class="page" [class.has-comeback-banner]="!!comebackBannerText">
     <div class="head-row">
       <app-group-switcher></app-group-switcher>
     </div>
@@ -87,6 +104,9 @@
           @for (e of page.entries(); track e.competition.id; let i = $index) {
             <button type="button" class="comp-chip" [class.active]="i === page.activeTabIndex()" (click)="page.selectTab(i)">
               {{ e.competition.name }} · {{ e.matchday.matches.length }}
+              @if (page.hasPendingPicks(e)) {
+                <span class="pending-dot" aria-hidden="true"></span>
+              }
             </button>
           }
         </div>
@@ -132,13 +152,6 @@
         </div>
       }
 
-      @if (page.comebackHint(entry); as hint) {
-        <p class="comeback-hint">
-          <piqo-svg icon="comodin" size="16"></piqo-svg>
-          {{ hint }}
-        </p>
-      }
-
       <div class="match-list">
         @for (match of entry.matchday.matches; track match.id; let first = $first) {
           <div
@@ -146,6 +159,9 @@
             [attr.data-tone]="page.matchAccentTone(match)"
             [attr.data-tutorial]="first ? 'first-match' : null"
           >
+            @if (page.isMatchPending(match)) {
+              <span class="pending-dot match-pending-dot" aria-hidden="true"></span>
+            }
             <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
 
             <div class="teams-row">
@@ -320,4 +336,21 @@
       }
     }
   </div>
+
+  @if (comebackBannerText) {
+    <div class="comeback-banner-wrap">
+      <div class="comeback-banner">
+        <piqo-svg icon="comodin" size="18"></piqo-svg>
+        <span>{{ comebackBannerText }}</span>
+        <button
+          type="button"
+          class="comeback-banner-close"
+          aria-label="Cerrar aviso del comodín"
+          (click)="page.dismissComebackBanner(page.activeEntry()!)"
+        >
+          <piqo-svg icon="cerrar" size="14"></piqo-svg>
+        </button>
+      </div>
+    </div>
+  }
 }
