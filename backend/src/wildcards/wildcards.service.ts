@@ -8,11 +8,15 @@ export interface ComebackStatus {
   pointsPerBonus: number;
   /** Diferencia de puntos con el lider del scope que corresponda (0 si vas primero o empatado). */
   gap: number;
-  /** Usos disponibles esta jornada segun el gap actual. */
+  /** Usos disponibles esta jornada segun el gap actual, mas el extra de AdRewardClaim si lo tiene. */
   allowance: number;
   /** Usos ya gastados en la jornada consultada (0 si no se paso matchdayId). */
   used: number;
   remaining: number;
+  /** Ya tiene el comodin extra de esta jornada conseguido viendo un video (ver AdRewardClaim). Siempre false sin matchdayId. */
+  adBonusClaimed: boolean;
+  /** Podria conseguir ese comodin extra ahora mismo (activado en el grupo, jornada aun no finalizada, todavia no reclamado). Siempre false sin matchdayId. */
+  adBonusAvailable: boolean;
 }
 
 type PrismaOrTx = PrismaService | Prisma.TransactionClient;
@@ -52,21 +56,32 @@ export class WildcardsService {
     }
 
     const gap = await this.getGapToLeader(userId, groupId);
-    const allowance = group.comebackEnabled
+    const baseAllowance = group.comebackEnabled
       ? Math.floor(gap / group.comebackPointsPerBonus)
       : 0;
 
-    const used = matchdayId
-      ? await client.prediction.count({
-          where: {
-            userId,
-            groupId,
-            match: { matchdayId },
-            doubleChanceOption: { not: null },
-            ...(excludeMatchId ? { matchId: { not: excludeMatchId } } : {}),
-          },
-        })
-      : 0;
+    const [used, adClaim, matchday] = await Promise.all([
+      matchdayId
+        ? client.prediction.count({
+            where: {
+              userId,
+              groupId,
+              match: { matchdayId },
+              doubleChanceOption: { not: null },
+              ...(excludeMatchId ? { matchId: { not: excludeMatchId } } : {}),
+            },
+          })
+        : Promise.resolve(0),
+      matchdayId
+        ? client.adRewardClaim.findUnique({ where: { userId_groupId_matchdayId: { userId, groupId, matchdayId } } })
+        : Promise.resolve(null),
+      matchdayId ? client.matchday.findUnique({ where: { id: matchdayId } }) : Promise.resolve(null),
+    ]);
+
+    const adBonusClaimed = !!adClaim;
+    const adBonusAvailable =
+      !!matchdayId && group.comebackEnabled && !adBonusClaimed && matchday?.status !== 'FINISHED';
+    const allowance = baseAllowance + (adBonusClaimed ? 1 : 0);
 
     return {
       enabled: group.comebackEnabled,
@@ -75,7 +90,46 @@ export class WildcardsService {
       allowance,
       used,
       remaining: Math.max(allowance - used, 0),
+      adBonusClaimed,
+      adBonusAvailable,
     };
+  }
+
+  /**
+   * Concede el comodin extra de esta jornada tras ver un video de anuncio
+   * (AdMob rewarded). Idempotente: si ya estaba reclamado (doble tap tras
+   * ver el video, red lenta reintentando...) no lanza, simplemente devuelve
+   * el estado actual sin duplicar el comodin.
+   */
+  async claimAdReward(userId: string, groupId: string, matchdayId: string): Promise<ComebackStatus> {
+    const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    if (!group.comebackEnabled) {
+      throw new ForbiddenException('El comodín de remontada está desactivado en este grupo');
+    }
+
+    const matchday = await this.prisma.matchday.findUnique({ where: { id: matchdayId } });
+    if (!matchday || matchday.status === 'FINISHED') {
+      throw new ForbiddenException('Esta jornada ya no admite comodines nuevos');
+    }
+    const activeInGroup = await this.prisma.groupCompetition.findFirst({
+      where: { groupId, competitionId: matchday.competitionId, isActive: true },
+    });
+    if (!activeInGroup) {
+      throw new ForbiddenException('Esa jornada no pertenece a una competición activa de este grupo');
+    }
+
+    try {
+      await this.prisma.adRewardClaim.create({ data: { userId, groupId, matchdayId } });
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+        throw error;
+      }
+    }
+
+    return this.getComebackStatus(userId, groupId, matchdayId);
   }
 
   /**
