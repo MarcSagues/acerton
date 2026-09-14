@@ -254,13 +254,18 @@ export class CurrentMatchdayFacade {
   /**
    * Texto del aviso flotante del comodin de remontada, o null si no aplica:
    * jornada cerrada o todavia no abierta, comodin desactivado o sin usos
-   * (incluido ir primero, que hace remaining=0), o ya cerrado a mano para
-   * esta jornada. Vuelve a aparecer al recargar o cambiar de jornada — solo
-   * se calla mientras de verdad queden comodines por usar.
+   * (incluido ir primero, que hace remaining=0), ya cerrado a mano para esta
+   * jornada, o ya no queda ningun partido sin pronostico donde usarlo (el
+   * comodin tecnicamente podria seguir aplicandose sobre un partido ya
+   * elegido con 1X2 normal, pero una vez esta todo relleno el aviso deja de
+   * tener sentido como recordatorio de "esto te falta"). Vuelve a aparecer
+   * al recargar o cambiar de jornada — solo se calla mientras de verdad haya
+   * algo pendiente y comodines para ello.
    */
   comebackBanner(entry: CurrentMatchdayEntry | null): string | null {
     if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return null;
     if (this.dismissedComebackBanner() === entry.matchday.id) return null;
+    if (!this.hasPendingPicks(entry)) return null;
     const comeback = this.comeback();
     if (!comeback?.enabled || comeback.remaining <= 0) return null;
     const count = comeback.remaining === 1 ? '1 comodín' : `${comeback.remaining} comodines`;
