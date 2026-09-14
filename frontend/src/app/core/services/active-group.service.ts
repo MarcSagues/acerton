@@ -28,6 +28,14 @@ export class ActiveGroupService {
     const activeId = this.activeIdSignal();
     return this.groupsSignal().some((g) => g.hasPendingPicks && g.id !== activeId);
   });
+  /**
+   * Punto rojo de "Jornada": el grupo activo tiene algun partido pendiente
+   * de pronosticar. Viene directamente del listado de grupos (actualizado
+   * en cada navegacion por hasGroupGuard), no de CurrentMatchdayFacade —
+   * asi el aviso es correcto nada mas entrar en la app o cambiar de grupo,
+   * sin depender de haber visitado Jornada primero para que se recalcule.
+   */
+  readonly activeGroupHasPendingPicks = computed(() => this.activeGroup()?.hasPendingPicks ?? false);
 
   constructor() {
     effect(() => {

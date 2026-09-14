@@ -2,7 +2,7 @@
   <a routerLink="/matchday" routerLinkActive="active" class="item" data-tutorial="nav-jornada">
     <span class="pill">
       <piqo-svg icon="jornada" size="22"></piqo-svg>
-      @if (bottomNav.hasPendingJornadaPicks()) {
+      @if (activeGroupService.activeGroupHasPendingPicks()) {
         <span class="pending-dot" aria-hidden="true"></span>
       }
     </span>
