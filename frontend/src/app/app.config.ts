@@ -1,5 +1,5 @@
 import { APP_INITIALIZER, ApplicationConfig, inject, isDevMode, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter, withRouterConfig, withViewTransitions } from '@angular/router';
+import { provideRouter, withInMemoryScrolling, withViewTransitions } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -42,7 +42,7 @@ export const appConfig: ApplicationConfig = {
       // pantallas es el del documento (el layout del shell crece con el
       // contenido, sin un contenedor interno con su propio overflow), asi
       // que esta opcion de Angular Router basta sin nada mas a medida.
-      withRouterConfig({ scrollPositionRestoration: 'enabled' }),
+      withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
       // Solo anima la navegacion que viene del gesto de deslizar desde el
       // borde (ver EdgeSwipeBackService): el resto de navegaciones (enlaces,
       // botones "volver", pestañas) no cambian de comportamiento. Sin
