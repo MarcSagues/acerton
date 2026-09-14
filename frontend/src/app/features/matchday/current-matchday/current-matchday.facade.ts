@@ -9,10 +9,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
+import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption, Prediction } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { ComebackSheetComponent, ComebackSheetData, ComebackSheetResult } from './comeback-sheet.component';
+import { MatchdayShareCardComponent, ShareCardData } from '../matchday-results/matchday-share-card.component';
 import { formatCountdown } from '../../../shared/countdown.util';
 import {
   MatchAccentTone,
@@ -63,6 +65,7 @@ export class CurrentMatchdayFacade {
   private readonly authService = inject(AuthService);
   private readonly wildcardsService = inject(WildcardsService);
   private readonly sheet = inject(BottomSheetService);
+  private readonly dialog = inject(PiqoDialogService);
   private readonly toast = inject(ToastService);
   private readonly bottomNav = inject(BottomNavService);
   private readonly destroyRef = inject(DestroyRef);
@@ -768,6 +771,28 @@ export class CurrentMatchdayFacade {
         pointsEarned: null,
         submittedAt: new Date().toISOString(),
       } satisfies Prediction];
+    });
+  }
+
+  openShareCard(): void {
+    const entry = this.activeEntry();
+    if (!entry) return;
+    this.dialog.open<MatchdayShareCardComponent, void, ShareCardData>(MatchdayShareCardComponent, {
+      panelClass: ['piqo-dialog-panel', 'share-card-panel'],
+      data: {
+        matchday: entry.matchday,
+        competitionName: entry.competition.name,
+        variant: 'picks',
+        predictions: this.sharePredictions(),
+        scoringMode: this.shareScoringMode(),
+        playerName: this.sharePlayerName(),
+        avatarBackground: null,
+        groupName: this.shareGroupName(),
+        totalPoints: 0,
+        hits: 0,
+        position: null,
+        streak: 0,
+      },
     });
   }
 

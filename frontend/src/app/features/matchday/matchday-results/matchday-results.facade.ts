@@ -11,12 +11,14 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { Matchday } from '../../../core/models/matchday.model';
 import { Prediction } from '../../../core/models/prediction.model';
 import { UserBadge } from '../../../core/models/profile.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ScoringMode } from '../../../core/models/group.model';
 import { badgeArtId } from '../../../shared/utils/badge-art';
+import { MatchdayShareCardComponent, ShareCardData } from './matchday-share-card.component';
 
 @Injectable()
 export class MatchdayResultsFacade {
@@ -32,6 +34,7 @@ export class MatchdayResultsFacade {
   readonly activeGroupService = inject(ActiveGroupService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
+  private readonly dialog = inject(PiqoDialogService);
 
   /** Si viene en la ruta, estamos viendo las quinielas de otro miembro del grupo en vez de las propias. */
   readonly routeUserId = this.route.snapshot.paramMap.get('userId');
@@ -176,6 +179,28 @@ export class MatchdayResultsFacade {
     if (!md) return;
     this.router.navigate(['/matchday/calendar'], {
       queryParams: { competitionId: md.competitionId, competitionName: md.competition?.name, from: 'results' },
+    });
+  }
+
+  openShareCard(): void {
+    const md = this.matchday();
+    if (!md) return;
+    this.dialog.open<MatchdayShareCardComponent, void, ShareCardData>(MatchdayShareCardComponent, {
+      panelClass: ['piqo-dialog-panel', 'share-card-panel'],
+      data: {
+        matchday: md,
+        competitionName: null,
+        variant: 'results',
+        predictions: this.predictions(),
+        scoringMode: this.scoringMode(),
+        playerName: this.resultOwnerName(),
+        avatarBackground: this.targetUserAvatarBackground(),
+        groupName: this.groupName(),
+        totalPoints: this.totalPoints(),
+        hits: this.hits(),
+        position: this.position(),
+        streak: this.currentStreak(),
+      },
     });
   }
 
