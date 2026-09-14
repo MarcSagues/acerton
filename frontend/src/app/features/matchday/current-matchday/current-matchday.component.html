@@ -210,10 +210,9 @@
                 <app-spinner [size]="16"></app-spinner>
                 <span>Guardando…</span>
               } @else if (page.stateFor(match.id).saved && !page.isExactScore()) {
-                <piqo-svg icon="check" size="16" class="hit"></piqo-svg>
-                <span class="hit">Guardado</span>
+                <span class="points-badge mono" data-tone="hit">Guardado</span>
               } @else {
-                <span>Pendiente de jugar</span>
+                <span class="points-badge mono" data-tone="pending">Pendiente de jugar</span>
               }
             </div>
           </div>

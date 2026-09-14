@@ -771,6 +771,10 @@ h1 {
   &[data-tone='miss'] {
     color: var(--p4-error);
   }
+
+  &[data-tone='pending'] {
+    color: var(--p4-warning);
+  }
 }
 
 .retry-btn {
