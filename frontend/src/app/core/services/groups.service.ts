@@ -9,6 +9,8 @@ export interface CreateGroupPayload {
   description?: string;
   isPublic?: boolean;
   scoringMode?: ScoringMode;
+  /** Solo aplica en modo 1X2: el backend lo ignora (fuerza false) en resultado exacto. */
+  comebackEnabled?: boolean;
   /** Al menos una: sin competicion activa un grupo nunca llega a tener clasificacion. */
   competitionIds: string[];
 }

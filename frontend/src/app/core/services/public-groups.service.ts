@@ -32,4 +32,9 @@ export class PublicGroupsService {
   preview(groupId: string) {
     return this.http.get<PublicGroupPreview>(`${environment.apiUrl}/groups/public/${groupId}/preview`);
   }
+
+  /** Vista previa por codigo de invitacion (link o codigo manual), antes de decidir si unirse — funciona con grupos privados. */
+  previewByInviteCode(inviteCode: string) {
+    return this.http.get<PublicGroupPreview>(`${environment.apiUrl}/groups/join/${inviteCode}/preview`);
+  }
 }

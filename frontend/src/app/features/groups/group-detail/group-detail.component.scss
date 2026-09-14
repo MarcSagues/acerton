@@ -11,7 +11,15 @@
   min-height: 0;
   min-width: 0;
   color: var(--p4-text);
-  padding-bottom: 100px;
+  padding-bottom: 28px;
+
+  /* El botón flotante "Guardar cambios" vive por encima de la barra de
+     navegación inferior (ver .floating-save): sin este hueco extra tapaba
+     el contenido final de la pantalla (Eliminar grupo) mientras hay
+     cambios pendientes. El resto del tiempo no hace falta el hueco. */
+  &.has-floating-save {
+    padding-bottom: 100px;
+  }
 }
 
 .loading {
@@ -187,10 +195,6 @@
     flex: none;
     color: var(--p4-muted);
   }
-
-  &.disabled {
-    opacity: 0.6;
-  }
 }
 
 .rule-text {
@@ -206,22 +210,20 @@
   font: 600 13px/1.2 var(--p4-font-ui);
 }
 
-.soon-badge {
-  margin-left: 6px;
-  padding: 2px 7px;
-  border-radius: var(--p4-radius-pill);
-  background: var(--p4-soft);
-  color: var(--p4-accent);
-  font: 700 9px/1.4 var(--p4-font-ui);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-
-.rule-value {
+.rule-input {
   flex: none;
+  width: 56px;
+  min-height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--p4-border);
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  text-align: center;
   font: 600 13px/1 var(--p4-font-ui);
-  color: var(--p4-muted);
+
+  &:disabled {
+    opacity: 0.6;
+  }
 }
 
 .toggle {

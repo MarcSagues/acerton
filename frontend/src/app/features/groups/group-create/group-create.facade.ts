@@ -35,6 +35,8 @@ export class GroupCreateFacade {
     description: [''],
     isPublic: [false],
     scoringMode: ['ONE_X_TWO' as ScoringMode, [Validators.required]],
+    /** Solo relevante en 1X2: en resultado exacto no se muestra ni se envia con efecto (el backend lo fuerza a false igualmente). */
+    comebackEnabled: [true],
   });
 
   init(): void {
@@ -47,6 +49,10 @@ export class GroupCreateFacade {
 
   setPrivacy(isPublic: boolean): void {
     this.form.patchValue({ isPublic });
+  }
+
+  setComebackEnabled(enabled: boolean): void {
+    this.form.patchValue({ comebackEnabled: enabled });
   }
 
   trophyId(competition: Competition): string | null {
@@ -106,6 +112,7 @@ export class GroupCreateFacade {
         description: value.description || undefined,
         isPublic: value.isPublic,
         scoringMode: value.scoringMode,
+        comebackEnabled: value.comebackEnabled,
         competitionIds: [...this.selectedCompetitionIds()],
       })
       .subscribe({
