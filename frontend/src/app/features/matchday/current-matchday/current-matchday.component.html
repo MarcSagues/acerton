@@ -103,7 +103,7 @@
         <div class="comp-switcher">
           @for (e of page.entries(); track e.competition.id; let i = $index) {
             <button type="button" class="comp-chip" [class.active]="i === page.activeTabIndex()" (click)="page.selectTab(i)">
-              {{ e.competition.name }} · {{ e.matchday.matches.length }}
+              {{ e.competition.name }}
               @if (page.hasPendingPicks(e)) {
                 <span class="pending-dot" aria-hidden="true"></span>
               }
