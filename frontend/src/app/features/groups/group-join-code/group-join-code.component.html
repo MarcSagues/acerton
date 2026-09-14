@@ -34,14 +34,5 @@
       {{ page.formLoading() ? 'Uniendo…' : 'Unirme al grupo' }}
     </button>
 
-    @if (!page.calloutDismissed()) {
-      <div class="callout info">
-        <piqo-svg icon="info" size="20"></piqo-svg>
-        <span>Los grupos públicos se pueden encontrar sin código. Este acceso es solo para grupos privados.</span>
-        <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.calloutDismissed.set(true)">
-          <piqo-svg icon="cerrar" size="14"></piqo-svg>
-        </button>
-      </div>
-    }
   </form>
 </div>

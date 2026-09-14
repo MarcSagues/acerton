@@ -14,7 +14,6 @@ export class GroupJoinCodeFacade {
 
   readonly formLoading = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly calloutDismissed = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     inviteCode: ['', [Validators.required, Validators.minLength(6)]],
