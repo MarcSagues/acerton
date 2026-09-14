@@ -5,6 +5,7 @@ function buildDeps() {
     matchday: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() },
     match: { findMany: jest.fn(), updateMany: jest.fn() },
     groupCompetition: { findMany: jest.fn() },
+    user: { findMany: jest.fn(), updateMany: jest.fn() },
   };
   const matchdaysService = {
     syncCurrentRound: jest.fn(),
@@ -19,6 +20,7 @@ function buildDeps() {
     notifyMatchesClosingSoon: jest.fn(),
     notifyMatchdayFinished: jest.fn(),
     notifyBadgeEarned: jest.fn(),
+    notifyReengagement: jest.fn().mockResolvedValue(undefined),
   };
   const seasonsService = { checkSeasonClosureAfterMatchdayFinished: jest.fn() };
 
@@ -236,6 +238,46 @@ describe('JobsService.sendClosingReminders', () => {
       where: { id: { in: ['match-1'] } },
       data: { reminder30mSentAt: now },
     });
+
+    jest.useRealTimers();
+  });
+});
+
+describe('JobsService.sendReengagementNotifications', () => {
+  it('avisa a quien lleva 4 dias o mas sin abrir la app y no se le habia avisado ya de esta racha', async () => {
+    const { service, prisma, notificationsService } = buildDeps();
+    const now = new Date('2026-01-10T00:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+
+    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastActiveAt: fiveDaysAgo, reengagementPushSentAt: null }]);
+
+    await service.sendReengagementNotifications();
+
+    expect(notificationsService.notifyReengagement).toHaveBeenCalledWith(['u1']);
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['u1'] } },
+      data: { reengagementPushSentAt: now },
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('no repite el aviso si ya se mando uno despues de la ultima vez que entro', async () => {
+    const { service, prisma, notificationsService } = buildDeps();
+    const now = new Date('2026-01-10T00:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+
+    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    // reengagementPushSentAt (hace 2 dias) es MAS RECIENTE que lastActiveAt (hace 5 dias):
+    // ya se le aviso de esta misma racha de inactividad, no toca repetir.
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastActiveAt: fiveDaysAgo, reengagementPushSentAt: twoDaysAgo }]);
+
+    await service.sendReengagementNotifications();
+
+    expect(notificationsService.notifyReengagement).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
 
     jest.useRealTimers();
   });

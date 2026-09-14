@@ -160,6 +160,35 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   /**
+   * "Piqo te echa de menos": avisa a quien lleva 4 dias sin abrir la app
+   * (User.lastActiveAt, actualizado en cualquier login/refresh — ver
+   * AuthService.issueTokens) y a quien no se le haya avisado ya de esta
+   * misma racha de inactividad (reengagementPushSentAt mas reciente que
+   * lastActiveAt significa que ya se le aviso desde la ultima vez que entro,
+   * asi que no hay que repetirselo cada dia mientras siga sin volver).
+   * Se excluye a quien nunca tiene lastActiveAt registrado (cuentas de antes
+   * de este campo, sin una fecha real de la que partir) y a quien no
+   * pertenece a ningun grupo (el aviso asume que hay un grupo esperandole).
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async sendReengagementNotifications(): Promise<void> {
+    const now = new Date();
+    const threshold = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
+
+    const candidates = await this.prisma.user.findMany({
+      where: { lastActiveAt: { not: null, lte: threshold }, memberships: { some: {} } },
+      select: { id: true, lastActiveAt: true, reengagementPushSentAt: true },
+    });
+    const dueUserIds = candidates
+      .filter((user) => !user.reengagementPushSentAt || user.reengagementPushSentAt <= user.lastActiveAt!)
+      .map((user) => user.id);
+    if (dueUserIds.length === 0) return;
+
+    await this.notificationsService.notifyReengagement(dueUserIds);
+    await this.prisma.user.updateMany({ where: { id: { in: dueUserIds } }, data: { reengagementPushSentAt: now } });
+  }
+
+  /**
    * Cierra jornadas cuyo plazo ha pasado. Corre cada minuto (mas seguido que
    * el resto de jobs) porque de este status depende que las predicciones del
    * grupo se hagan visibles a los demas miembros (ver PredictionsService) —

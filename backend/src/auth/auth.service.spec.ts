@@ -14,7 +14,7 @@ const CONFIG_VALUES: Record<string, unknown> = {
 
 function buildDeps(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {
-    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn().mockResolvedValue({}) },
     authToken: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     refreshToken: {
       create: jest.fn().mockResolvedValue({ id: 'refresh1' }),

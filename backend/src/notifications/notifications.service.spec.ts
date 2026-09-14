@@ -8,6 +8,7 @@ function buildPrismaMock() {
     prediction: { findMany: jest.fn() },
     notificationToken: { findMany: jest.fn() },
     notificationPreference: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
+    user: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn().mockResolvedValue({}) },
   };
 }
 
@@ -128,5 +129,71 @@ describe('NotificationsService.notifyBadgeEarned', () => {
     await service.notifyBadgeEarned('u1', 'Constante');
 
     expect(sendSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('NotificationsService.notifyMatchesClosingSoon', () => {
+  it('avisa a quien le falta el partido y no recibio otro recordatorio en las ultimas 24h', async () => {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', mutedNotifications: false }]);
+    prisma.prediction.findMany.mockResolvedValue([]);
+    prisma.notificationPreference.findMany.mockResolvedValue([{ userId: 'u1', reminder1h: true }]);
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastClosingReminderPushAt: null }]);
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
+
+    await service.notifyMatchesClosingSoon('g1', 'md1', 'J6', ['m1'], '1 hora', 'reminder1h');
+
+    expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.objectContaining({ title: 'Partidos por pronosticar' }));
+    expect(prisma.user.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ['u1'] } },
+      data: { lastClosingReminderPushAt: expect.any(Date) },
+    });
+  });
+
+  it('no avisa a quien ya recibio otro recordatorio de cierre hace menos de 24h', async () => {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', mutedNotifications: false }]);
+    prisma.prediction.findMany.mockResolvedValue([]);
+    prisma.notificationPreference.findMany.mockResolvedValue([{ userId: 'u1', reminder1h: true }]);
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastClosingReminderPushAt: new Date(Date.now() - 60 * 60 * 1000) }]);
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
+
+    await service.notifyMatchesClosingSoon('g1', 'md1', 'J6', ['m1'], '1 hora', 'reminder1h');
+
+    expect(sendSpy).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('NotificationsService.notifyReengagement', () => {
+  it('avisa solo a quien tiene activada la preferencia de reenganche', async () => {
+    const prisma = buildPrismaMock();
+    prisma.notificationPreference.findMany.mockResolvedValue([
+      { userId: 'u1', reengagement: true },
+      { userId: 'u2', reengagement: false },
+    ]);
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
+
+    await service.notifyReengagement(['u1', 'u2']);
+
+    expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.objectContaining({ title: 'Piqo te echa de menos' }));
+  });
+
+  it('sin fila de preferencias (nunca visitadas), usa el valor por defecto (activado)', async () => {
+    const prisma = buildPrismaMock();
+    prisma.notificationPreference.findMany.mockResolvedValue([]);
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
+
+    await service.notifyReengagement(['u1']);
+
+    expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.anything());
   });
 });
