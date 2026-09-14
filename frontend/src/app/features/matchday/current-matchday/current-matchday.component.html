@@ -38,7 +38,7 @@
         <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
         {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
       </button>
-      <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="openShareCard()">
+      <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="page.openShareCard()">
         <piqo-svg icon="compartir" size="18"></piqo-svg>
         Compartir imagen
       </button>
@@ -46,18 +46,6 @@
         <piqo-svg icon="atras" size="18"></piqo-svg>
         Volver
       </button>
-
-      <app-matchday-share-card
-        variant="picks"
-        [matchday]="entry.matchday"
-        [competitionName]="entry.competition.name"
-        [predictions]="page.sharePredictions()"
-        [scoringMode]="page.shareScoringMode()"
-        [playerName]="page.sharePlayerName()"
-        [groupName]="page.shareGroupName()"
-        [totalPoints]="0"
-        [hits]="0"
-      ></app-matchday-share-card>
     </main>
   }
 } @else {

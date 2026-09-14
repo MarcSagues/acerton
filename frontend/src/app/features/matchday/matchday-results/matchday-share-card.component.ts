@@ -1,88 +1,68 @@
-import { CommonModule } from '@angular/common';
-import {
-  CUSTOM_ELEMENTS_SCHEMA,
-  ChangeDetectorRef,
-  Component,
-  ElementRef,
-  HostListener,
-  Input,
-  ViewChild,
-  inject,
-  signal,
-} from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Matchday } from '../../../core/models/matchday.model';
 import { Prediction } from '../../../core/models/prediction.model';
 import { ScoringMode } from '../../../core/models/group.model';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 
+export interface ShareCardData {
+  matchday: Matchday;
+  competitionName: string | null;
+  variant: 'picks' | 'results';
+  predictions: Prediction[];
+  scoringMode: ScoringMode;
+  playerName: string;
+  avatarBackground: string | null;
+  groupName: string | null;
+  totalPoints: number;
+  hits: number;
+  position: { pos: number; total: number } | null;
+  streak: number;
+}
+
+/**
+ * Se abre via PiqoDialogService (CDK Dialog), no como un @if embebido con
+ * position:fixed a mano: ese enfoque anterior sufria el mismo "salto" de
+ * scroll en iOS/WKWebView que ya documenta PiqoDialogService (ver su
+ * comentario sobre scrollStrategies.noop()) — al vivir dentro del flujo
+ * normal de la pagina en vez de en el overlay real de CDK, el navegador
+ * podia desplazar la vista al insertar el dialogo en vez de fijarlo delante
+ * de donde estaba el usuario.
+ */
 @Component({
   selector: 'app-matchday-share-card',
   standalone: true,
-  imports: [CommonModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
-    @if (visible()) {
-      <div class="share-backdrop" (click)="close()">
-        <section
-          class="share-sheet"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="share-title"
-          (click)="$event.stopPropagation()"
-        >
-          <header class="share-head">
-            <div>
-              <p class="share-kicker">Lista para publicar</p>
-              <h2 id="share-title">Comparte tu jornada</h2>
-            </div>
-            <button type="button" class="close-btn" aria-label="Cerrar" (click)="close()">
-              <piqo-svg icon="cerrar" size="18"></piqo-svg>
-            </button>
-          </header>
-
-          <div class="canvas-frame" [class.rendering]="rendering()">
-            <canvas #shareCanvas width="1080" height="1080" aria-label="Vista previa de los resultados"></canvas>
-          </div>
-
-          <p class="share-hint">Formato cuadrado 1080 × 1080, preparado para X, Instagram y mensajería.</p>
-          <div class="share-actions">
-            <button type="button" class="piqo-primary" [disabled]="rendering()" (click)="shareImage()">
-              <piqo-svg icon="compartir" size="18"></piqo-svg>
-              Compartir imagen
-            </button>
-            <button type="button" class="piqo-secondary" [disabled]="rendering() || copying() || justCopied()" (click)="copyImage()">
-              <piqo-svg [attr.icon]="justCopied() ? 'check' : 'copiar'" size="18"></piqo-svg>
-              {{ justCopied() ? 'Copiada' : copying() ? 'Copiando…' : 'Copiar' }}
-            </button>
-          </div>
-        </section>
+    <header class="share-head">
+      <div>
+        <p class="share-kicker">Lista para publicar</p>
+        <h2 id="share-title">Comparte tu jornada</h2>
       </div>
-    }
+      <button type="button" class="close-btn" aria-label="Cerrar" (click)="dialogRef.close()">
+        <piqo-svg icon="cerrar" size="18"></piqo-svg>
+      </button>
+    </header>
+
+    <div class="canvas-frame" [class.rendering]="rendering()">
+      <canvas #shareCanvas width="1080" height="1080" aria-label="Vista previa de los resultados"></canvas>
+    </div>
+
+    <p class="share-hint">Formato cuadrado 1080 × 1080, preparado para X, Instagram y mensajería.</p>
+    <div class="share-actions">
+      <button type="button" class="piqo-primary" [disabled]="rendering()" (click)="shareImage()">
+        <piqo-svg icon="compartir" size="18"></piqo-svg>
+        Compartir imagen
+      </button>
+      <button type="button" class="piqo-secondary" [disabled]="rendering() || copying() || justCopied()" (click)="copyImage()">
+        <piqo-svg [attr.icon]="justCopied() ? 'check' : 'copiar'" size="18"></piqo-svg>
+        {{ justCopied() ? 'Copiada' : copying() ? 'Copiando…' : 'Copiar' }}
+      </button>
+    </div>
   `,
   styles: `
-    .share-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 40;
-      padding: 24px 18px max(24px, env(safe-area-inset-bottom));
-      background: var(--scrim);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: shareFade 160ms ease-out;
-    }
-
-    .share-sheet {
-      width: min(100%, 480px);
-      max-height: calc(100dvh - 48px);
-      overflow-y: auto;
-      border-radius: var(--p4-radius-lg);
-      border: 1px solid var(--p4-border);
-      background: var(--p4-sheet-bg);
-      box-shadow: var(--shadow-dialog-strong);
-      padding: 18px;
-      backdrop-filter: blur(22px);
-      animation: shareUp 220ms cubic-bezier(.2,.8,.2,1);
+    :host {
+      display: block;
     }
 
     .share-head {
@@ -167,51 +147,31 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
     }
 
     @media (max-width: 390px) {
-      .share-backdrop { padding-inline: 12px; }
-      .share-sheet { padding: 15px; }
       .share-actions { grid-template-columns: 1fr; }
     }
 
-    @keyframes shareFade { from { opacity: 0; } }
-    @keyframes shareUp { from { opacity: 0; transform: translateY(16px) scale(.98); } }
     @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
   `,
 })
 export class MatchdayShareCardComponent {
   private readonly toast = inject(ToastService);
-  private readonly cdr = inject(ChangeDetectorRef);
-
-  @Input({ required: true }) matchday!: Matchday;
-  @Input() competitionName: string | null = null;
-  @Input() variant: 'picks' | 'results' = 'results';
-  @Input({ required: true }) predictions: Prediction[] = [];
-  @Input({ required: true }) scoringMode: ScoringMode = 'ONE_X_TWO';
-  @Input({ required: true }) playerName = '';
-  @Input() avatarBackground: string | null = null;
-  @Input() groupName: string | null = null;
-  @Input({ required: true }) totalPoints = 0;
-  @Input({ required: true }) hits = 0;
-  @Input() position: { pos: number; total: number } | null = null;
-  @Input() streak = 0;
+  readonly dialogRef = inject(DialogRef<void, MatchdayShareCardComponent>);
+  private readonly data = inject<ShareCardData>(DIALOG_DATA);
 
   @ViewChild('shareCanvas') private canvasRef?: ElementRef<HTMLCanvasElement>;
 
-  readonly visible = signal(false);
-  readonly rendering = signal(false);
+  readonly rendering = signal(true);
   readonly copying = signal(false);
   readonly justCopied = signal(false);
   private imageBlob: Blob | null = null;
 
-  async open(): Promise<void> {
-    this.visible.set(true);
-    this.rendering.set(true);
-    this.imageBlob = null;
-    // detectChanges() fuerza a Angular a crear el <canvas> del bloque
-    // @if(visible()) y resolver el ViewChild de forma sincrona: sin esto,
-    // en la primera apertura un solo requestAnimationFrame podia llegar
-    // antes de que la vista se actualizase, y drawCard() abortaba en
-    // silencio (canvasRef aun undefined) dejando el recuadro en negro.
-    this.cdr.detectChanges();
+  /**
+   * El <canvas> ya no vive detras de un @if de visibilidad (el componente
+   * entero solo existe mientras el dialogo esta abierto): en ngAfterViewInit
+   * el ViewChild ya esta resuelto, sin la carrera que antes obligaba a un
+   * detectChanges() manual para forzar su creacion antes de dibujar.
+   */
+  async ngAfterViewInit(): Promise<void> {
     try {
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       await document.fonts?.ready;
@@ -227,15 +187,6 @@ export class MatchdayShareCardComponent {
     }
   }
 
-  close(): void {
-    this.visible.set(false);
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.visible()) this.close();
-  }
-
   async shareImage(): Promise<void> {
     const blob = this.imageBlob ?? (await this.canvasBlob());
     if (!blob) return;
@@ -244,9 +195,9 @@ export class MatchdayShareCardComponent {
     const shareData: ShareData = {
       files: [file],
       title: `Mi jornada en Piqo · ${this.competitionLabel()}`,
-      text: this.variant === 'picks'
-        ? `Estos son mis pronósticos para la jornada ${this.matchday.order} en Piqo.`
-        : `He sumado ${this.totalPoints} puntos en la jornada ${this.matchday.order} de Piqo.`,
+      text: this.data.variant === 'picks'
+        ? `Estos son mis pronósticos para la jornada ${this.data.matchday.order} en Piqo.`
+        : `He sumado ${this.data.totalPoints} puntos en la jornada ${this.data.matchday.order} de Piqo.`,
     };
 
     const canShareFile = !navigator.canShare || navigator.canShare({ files: [file] });
@@ -295,6 +246,7 @@ export class MatchdayShareCardComponent {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) throw new Error('Canvas no disponible');
 
+    const { matchday, variant, predictions, scoringMode, totalPoints, hits, position, streak } = this.data;
     const width = canvas.width;
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
@@ -321,10 +273,10 @@ export class MatchdayShareCardComponent {
     ctx.restore();
 
     await this.drawBrand(ctx);
-    this.text(ctx, this.variant === 'picks' ? 'MI QUINIELA' : 'RESULTADOS DE LA JORNADA', 72, 176, 22, 700, '#d2be94', 'Inter', .12);
+    this.text(ctx, variant === 'picks' ? 'MI QUINIELA' : 'RESULTADOS DE LA JORNADA', 72, 176, 22, 700, '#d2be94', 'Inter', .12);
     this.text(
       ctx,
-      `${this.competitionLabel()} · J${this.matchday.order}`,
+      `${this.competitionLabel()} · J${matchday.order}`,
       72,
       222,
       29,
@@ -335,27 +287,27 @@ export class MatchdayShareCardComponent {
 
     this.circle(ctx, 104, 292, 34, this.safeAvatarColor());
     this.text(ctx, this.initials(), 104, 301, 23, 800, '#121619', 'Inter', 0, 'center');
-    this.text(ctx, this.ellipsize(ctx, this.playerName || 'Jugador', 360, '700 28px Inter'), 154, 286, 28, 700, '#f1f0ea', 'Inter');
-    this.text(ctx, this.ellipsize(ctx, this.groupName || 'Mi grupo', 360, '500 20px Inter'), 154, 318, 20, 500, '#9aa0a3', 'Inter');
+    this.text(ctx, this.ellipsize(ctx, this.data.playerName || 'Jugador', 360, '700 28px Inter'), 154, 286, 28, 700, '#f1f0ea', 'Inter');
+    this.text(ctx, this.ellipsize(ctx, this.data.groupName || 'Mi grupo', 360, '500 20px Inter'), 154, 318, 20, 500, '#9aa0a3', 'Inter');
 
     // Bloque de cifras arriba a la derecha, en el hueco que dejaba libre
     // el logo/avatar de la izquierda — así los partidos pueden empezar
     // mucho antes y caben jornadas de hasta 18 partidos (9 filas x 2
     // columnas) en vez de solo 10.
-    if (this.variant === 'picks') {
-      this.statBox(ctx, 520, 66, 488, 118, 'JORNADA', String(this.matchday.order), 56);
-      this.statBox(ctx, 520, 200, 232, 118, 'PRONÓSTICOS', `${this.predictions.length}/${this.matchday.matches.length}`);
-      this.statBox(ctx, 776, 200, 232, 118, 'MODO', this.scoringMode === 'EXACT_SCORE' ? 'Marcador' : '1X2');
+    if (variant === 'picks') {
+      this.statBox(ctx, 520, 66, 488, 118, 'JORNADA', String(matchday.order), 56);
+      this.statBox(ctx, 520, 200, 232, 118, 'PRONÓSTICOS', `${predictions.length}/${matchday.matches.length}`);
+      this.statBox(ctx, 776, 200, 232, 118, 'MODO', scoringMode === 'EXACT_SCORE' ? 'Marcador' : '1X2');
     } else {
-      this.statBox(ctx, 520, 66, 488, 118, 'PUNTOS', String(this.totalPoints), 56);
-      this.statBox(ctx, 520, 200, 232, 118, this.scoringMode === 'EXACT_SCORE' ? 'ACIERTOS' : 'ACIERTOS 1X2', `${this.hits}/${this.predictions.length}`);
-      this.statBox(ctx, 776, 200, 232, 118, 'PUESTO', this.position ? `${this.position.pos}º de ${this.position.total}` : '—');
+      this.statBox(ctx, 520, 66, 488, 118, 'PUNTOS', String(totalPoints), 56);
+      this.statBox(ctx, 520, 200, 232, 118, scoringMode === 'EXACT_SCORE' ? 'ACIERTOS' : 'ACIERTOS 1X2', `${hits}/${predictions.length}`);
+      this.statBox(ctx, 776, 200, 232, 118, 'PUESTO', position ? `${position.pos}º de ${position.total}` : '—');
     }
 
-    const extra = this.variant === 'picks'
+    const extra = variant === 'picks'
       ? 'Pronósticos guardados'
-      : this.streak > 0 ? `${this.streak} jornadas seguidas` : 'Sigue sumando';
-    this.text(ctx, this.variant === 'picks' ? 'MIS PRONÓSTICOS' : 'MI DESGLOSE', 72, 360, 19, 700, '#d2be94', 'Inter', .13);
+      : streak > 0 ? `${streak} jornadas seguidas` : 'Sigue sumando';
+    this.text(ctx, variant === 'picks' ? 'MIS PRONÓSTICOS' : 'MI DESGLOSE', 72, 360, 19, 700, '#d2be94', 'Inter', .13);
     this.text(ctx, extra, 1008, 360, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
 
     const rowsPerColumn = 9;
@@ -363,7 +315,7 @@ export class MatchdayShareCardComponent {
     const rowSpacing = 65;
     const columnWidth = 456;
     const columnGap = 552 - 72;
-    const shown = this.predictions
+    const shown = predictions
       .filter((prediction) => this.pickLabel(prediction) !== '?')
       .slice(0, rowsPerColumn * 2);
     shown.forEach((prediction, index) => {
@@ -417,7 +369,7 @@ export class MatchdayShareCardComponent {
     width: number,
     height: number,
   ): void {
-    const match = this.matchday.matches.find((candidate) => candidate.id === prediction.matchId);
+    const match = this.data.matchday.matches.find((candidate) => candidate.id === prediction.matchId);
     if (!match) return;
 
     const points = prediction.pointsEarned;
@@ -428,21 +380,21 @@ export class MatchdayShareCardComponent {
     const teams = this.ellipsize(ctx, `${match.homeTeam} · ${match.awayTeam}`, width - 164, '600 17px Inter');
     this.text(ctx, teams, x + 18, midY, 17, 600, '#f1f0ea', 'Inter');
 
-    if (this.variant === 'results') {
+    if (this.data.variant === 'results') {
       const score = match.homeScore == null || match.awayScore == null ? '—' : `${match.homeScore}-${match.awayScore}`;
       this.text(ctx, score, x + width - 104, midY, 17, 700, '#9aa0a3', 'Inter', 0, 'right');
     }
 
     const badgeHeight = height - 22;
-    this.roundRect(ctx, x + width - 88, y + (height - badgeHeight) / 2, 38, badgeHeight, 9, this.variant === 'picks' ? '#373126' : hit ? '#193c30' : '#43272e');
-    this.text(ctx, this.pickLabel(prediction), x + width - 69, midY, 15, 800, this.variant === 'picks' ? '#d2be94' : hit ? '#91c7ae' : '#f1a4aa', 'Inter', 0, 'center');
-    if (this.variant === 'results') {
+    this.roundRect(ctx, x + width - 88, y + (height - badgeHeight) / 2, 38, badgeHeight, 9, this.data.variant === 'picks' ? '#373126' : hit ? '#193c30' : '#43272e');
+    this.text(ctx, this.pickLabel(prediction), x + width - 69, midY, 15, 800, this.data.variant === 'picks' ? '#d2be94' : hit ? '#91c7ae' : '#f1a4aa', 'Inter', 0, 'center');
+    if (this.data.variant === 'results') {
       this.text(ctx, points == null ? '—' : points > 0 ? `+${points}` : '0', x + width - 16, midY, 15, 800, hit ? '#91c7ae' : '#9aa0a3', 'Inter', 0, 'right');
     }
   }
 
   private pickLabel(prediction: Prediction): string {
-    if (this.scoringMode === 'EXACT_SCORE') {
+    if (this.data.scoringMode === 'EXACT_SCORE') {
       return prediction.predictedHomeScore == null || prediction.predictedAwayScore == null
         ? '?'
         : `${prediction.predictedHomeScore}-${prediction.predictedAwayScore}`;
@@ -531,7 +483,7 @@ export class MatchdayShareCardComponent {
   }
 
   private initials(): string {
-    return (this.playerName || 'P')
+    return (this.data.playerName || 'P')
       .trim()
       .split(/\s+/)
       .slice(0, 2)
@@ -540,8 +492,8 @@ export class MatchdayShareCardComponent {
   }
 
   private safeAvatarColor(): string {
-    return this.avatarBackground && /^#[0-9a-f]{6}$/i.test(this.avatarBackground)
-      ? this.avatarBackground
+    return this.data.avatarBackground && /^#[0-9a-f]{6}$/i.test(this.data.avatarBackground)
+      ? this.data.avatarBackground
       : '#d2be94';
   }
 
@@ -584,10 +536,10 @@ export class MatchdayShareCardComponent {
 
   private fileName(): string {
     const competition = this.competitionLabel().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    return `piqo-${competition}-j${this.matchday.order}.png`;
+    return `piqo-${competition}-j${this.data.matchday.order}.png`;
   }
 
   private competitionLabel(): string {
-    return this.competitionName ?? this.matchday.competition?.name ?? 'Competición';
+    return this.data.competitionName ?? this.data.matchday.competition?.name ?? 'Competición';
   }
 }
