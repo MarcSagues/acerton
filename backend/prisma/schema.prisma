@@ -355,15 +355,6 @@ model Matchday {
   /// Cierre de predicciones = kickoff del primer partido de la jornada
   closesAt          DateTime
   status            MatchdayStatus @default(SCHEDULED)
-  /// Recordatorios push de cierre escalonados (null = ese aviso aun no se ha
-  /// enviado). Cada uno se dispara como mucho una vez, independientemente de
-  /// los demas; ver JobsService.REMINDER_TIERS. El envio real a cada usuario
-  /// ademas se filtra por NotificationPreference (que franjas quiere) y por
-  /// GroupMembership.mutedNotifications (grupos silenciados).
-  reminder24hSentAt DateTime?
-  reminder5hSentAt  DateTime?
-  reminder1hSentAt  DateTime?
-  reminder30mSentAt DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
@@ -392,6 +383,18 @@ model Match {
   homeScore    Int?
   awayScore    Int?
   result       PredictionChoice?
+  /// Recordatorios push escalonados antes de SU PROPIO kickoff (null = ese
+  /// aviso aun no se ha enviado). Viven aqui, no en Matchday, porque una
+  /// jornada puede repartirse en varios dias — un aviso anclado solo al
+  /// cierre de la jornada (kickoff del primer partido) nunca avisaria de un
+  /// partido concreto que empieza mas tarde. Cada uno se dispara como mucho
+  /// una vez, independientemente de los demas; ver JobsService.REMINDER_TIERS.
+  /// El envio real a cada usuario ademas se filtra por NotificationPreference
+  /// (que franjas quiere) y por GroupMembership.mutedNotifications.
+  reminder24hSentAt DateTime?
+  reminder5hSentAt  DateTime?
+  reminder1hSentAt  DateTime?
+  reminder30mSentAt DateTime?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 

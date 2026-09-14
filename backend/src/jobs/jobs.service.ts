@@ -8,7 +8,7 @@ import { StreaksService } from '../streaks/streaks.service';
 import { BadgesService } from '../badges/badges.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SeasonsService } from '../seasons/seasons.service';
-import { shouldSendReminder } from '../matchdays/matchday.util';
+import { shouldSendMatchReminder } from '../matchdays/matchday.util';
 import { NotificationPreferenceFields } from '../notifications/notification-preferences.service';
 
 type ReminderField = 'reminder24hSentAt' | 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
@@ -88,50 +88,62 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   /**
-   * Envia los recordatorios de cierre (5h / 1h / 30min antes) a quien
-   * todavia no ha completado su quiniela. Corre cada 5 minutos para que el
-   * aviso de "30 minutos" tenga margen suficiente de precision.
+   * Envia los recordatorios de cierre (24h / 5h / 1h / 30min antes) a quien
+   * todavia no ha pronosticado un partido concreto — anclados al kickoff de
+   * CADA partido, no al cierre global de la jornada (que solo refleja el
+   * primer partido): una jornada repartida en varios dias avisa de cada uno
+   * segun cuando empieza de verdad el, no solo del primero. Corre cada 5
+   * minutos para que el aviso de "30 minutos" tenga margen de precision.
+   *
+   * Los partidos que entran a la vez en una misma franja se agrupan por
+   * jornada para mandar un unico aviso consolidado por destinatario en vez
+   * de una notificacion suelta por partido (evita una rafaga cuando varios
+   * partidos de la misma jornada empiezan casi a la vez).
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async sendClosingReminders(): Promise<void> {
     const now = new Date();
 
     for (const tier of REMINDER_TIERS) {
-      const candidates = await this.prisma.matchday.findMany({
-        where: { status: 'OPEN', [tier.field]: null },
+      const candidates = await this.prisma.match.findMany({
+        where: { status: 'SCHEDULED', [tier.field]: null, matchday: { status: 'OPEN' } },
+        include: { matchday: true },
       });
-      const matchdays = candidates.filter((matchday) =>
-        shouldSendReminder(
-          {
-            status: matchday.status,
-            closesAt: matchday.closesAt,
-            reminderSentAt: matchday[tier.field],
-          },
+      const dueMatches = candidates.filter((match) =>
+        shouldSendMatchReminder(
+          { status: match.status, kickoff: match.kickoff, reminderSentAt: match[tier.field] },
           tier.windowMs,
           now,
         ),
       );
+      if (dueMatches.length === 0) continue;
 
-      for (const matchday of matchdays) {
+      const matchdayIds = [...new Set(dueMatches.map((match) => match.matchdayId))];
+      for (const matchdayId of matchdayIds) {
+        const matchesForMatchday = dueMatches.filter((match) => match.matchdayId === matchdayId);
+        const { competitionId, name: matchdayName } = matchesForMatchday[0].matchday;
+        const matchIds = matchesForMatchday.map((match) => match.id);
+
         const groupCompetitions = await this.prisma.groupCompetition.findMany({
-          where: { competitionId: matchday.competitionId, isActive: true },
+          where: { competitionId, isActive: true },
         });
 
         for (const gc of groupCompetitions) {
-          await this.notificationsService.notifyMatchdayClosingSoon(
+          await this.notificationsService.notifyMatchesClosingSoon(
             gc.groupId,
-            matchday.id,
-            matchday.name,
+            matchdayId,
+            matchdayName,
+            matchIds,
             tier.urgencyLabel,
             tier.preferenceField,
           );
         }
-
-        await this.prisma.matchday.update({
-          where: { id: matchday.id },
-          data: { [tier.field]: now },
-        });
       }
+
+      await this.prisma.match.updateMany({
+        where: { id: { in: dueMatches.map((match) => match.id) } },
+        data: { [tier.field]: now },
+      });
     }
   }
 
