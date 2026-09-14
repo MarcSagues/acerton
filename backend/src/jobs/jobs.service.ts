@@ -103,20 +103,32 @@ export class JobsService implements OnApplicationBootstrap {
   @Cron(CronExpression.EVERY_5_MINUTES)
   async sendClosingReminders(): Promise<void> {
     const now = new Date();
+    // De la franja mas urgente (30min) a la menos (24h): un partido que ya
+    // esta a 20 minutos de empezar tambien cumple, tecnicamente, la ventana
+    // de 24h/5h/1h — sin esto, la primera vez que corre este cron para un
+    // partido concreto (p.ej. justo tras desplegar, con los 4 campos recien
+    // creados a null) le llegarian las 4 franjas seguidas de golpe en la
+    // misma pasada. Una vez una franja "reclama" un partido en esta pasada,
+    // las franjas menos urgentes lo ignoran (no tiene sentido avisar de un
+    // cierre "en 24h" a quien ya esta a 20 minutos del pitido inicial).
+    const claimedMatchIds = new Set<string>();
 
-    for (const tier of REMINDER_TIERS) {
+    for (const tier of [...REMINDER_TIERS].reverse()) {
       const candidates = await this.prisma.match.findMany({
         where: { status: 'SCHEDULED', [tier.field]: null, matchday: { status: 'OPEN' } },
         include: { matchday: true },
       });
-      const dueMatches = candidates.filter((match) =>
-        shouldSendMatchReminder(
-          { status: match.status, kickoff: match.kickoff, reminderSentAt: match[tier.field] },
-          tier.windowMs,
-          now,
-        ),
+      const dueMatches = candidates.filter(
+        (match) =>
+          !claimedMatchIds.has(match.id) &&
+          shouldSendMatchReminder(
+            { status: match.status, kickoff: match.kickoff, reminderSentAt: match[tier.field] },
+            tier.windowMs,
+            now,
+          ),
       );
       if (dueMatches.length === 0) continue;
+      for (const match of dueMatches) claimedMatchIds.add(match.id);
 
       const matchdayIds = [...new Set(dueMatches.map((match) => match.matchdayId))];
       for (const matchdayId of matchdayIds) {
