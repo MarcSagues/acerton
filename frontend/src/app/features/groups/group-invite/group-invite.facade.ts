@@ -89,4 +89,29 @@ export class GroupInviteFacade {
       // fallo real, no hace falta avisar de nada.
     }
   }
+
+  /**
+   * Nombre del miembro mostrado al pulsar su avatar (mismo patron que
+   * MatchdayResultsFacade.toggleComparisonTooltip): coordenadas relativas a
+   * .page, no al viewport, para que .page (position:relative) actue de
+   * containing block sin pelear con la animacion de entrada de la pagina.
+   */
+  readonly memberTooltip = signal<{ userId: string; name: string; top: number; left: number } | null>(null);
+
+  toggleMemberTooltip(userId: string, name: string, target: HTMLElement): void {
+    if (this.memberTooltip()?.userId === userId) {
+      this.memberTooltip.set(null);
+      return;
+    }
+    const page = target.closest('.page') as HTMLElement | null;
+    const pageRect = page?.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
+    const top = rect.top - (pageRect?.top ?? 0);
+    const left = rect.left + rect.width / 2 - (pageRect?.left ?? 0);
+    this.memberTooltip.set({ userId, name, top, left });
+  }
+
+  closeMemberTooltip(): void {
+    this.memberTooltip.set(null);
+  }
 }

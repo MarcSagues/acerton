@@ -46,11 +46,18 @@
           <p class="members-title">Ya dentro · {{ page.members().length }}</p>
           <div class="members-row">
             @for (member of page.members(); track member.id) {
-              <app-avatar [url]="member.user.avatarUrl" [background]="member.user.avatarBackground" [name]="member.user.name" [size]="38"></app-avatar>
+              <span class="member-avatar-wrap" #avatarWrap (click)="page.toggleMemberTooltip(member.id, member.user.name, avatarWrap)">
+                <app-avatar [url]="member.user.avatarUrl" [background]="member.user.avatarBackground" [name]="member.user.name" [size]="38"></app-avatar>
+              </span>
             }
           </div>
         </div>
       </div>
+
+      @if (page.memberTooltip(); as tip) {
+        <button type="button" class="member-tooltip-backdrop" aria-label="Cerrar" (click)="page.closeMemberTooltip()"></button>
+        <span class="member-tooltip-floating" [style.top.px]="tip.top" [style.left.px]="tip.left">{{ tip.name }}</span>
+      }
     </div>
   }
 }
