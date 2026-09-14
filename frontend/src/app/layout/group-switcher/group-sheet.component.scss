@@ -65,6 +65,7 @@
 }
 
 .avatar {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 13px;
@@ -79,6 +80,17 @@
     background: var(--p4-accent);
     color: var(--p4-on-accent);
   }
+}
+
+.pending-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--p4-error);
+  border: 2px solid var(--p4-surface);
 }
 
 .meta {

@@ -166,3 +166,109 @@ describe('GroupsService.findPublicGroupById', () => {
     expect(result).toBe(group);
   });
 });
+
+describe('GroupsService.findMineForUser', () => {
+  function buildOwnGroup(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'g1',
+      scoringMode: 'ONE_X_TWO',
+      groupCompetitions: [{ competitionId: 'c1', isActive: true, competition: {} }],
+      ...overrides,
+    };
+  }
+
+  function buildFindMineDeps(matchday: unknown, predictions: unknown[] = [], groupOverrides: Record<string, unknown> = {}) {
+    const prisma = {
+      group: { findMany: jest.fn().mockResolvedValue([buildOwnGroup(groupOverrides)]) },
+      rankingSnapshot: { findFirst: jest.fn().mockResolvedValue(null) },
+      prediction: { findMany: jest.fn().mockResolvedValue(predictions) },
+    };
+    const configService = { get: jest.fn() };
+    const competitionsService = { findActiveByGroup: jest.fn() };
+    const matchdaysService = {
+      getCurrentMatchdayForCompetition: jest.fn().mockResolvedValue(matchday),
+    };
+    const service = new GroupsService(
+      prisma as never,
+      configService as never,
+      competitionsService as never,
+      matchdaysService as never,
+    );
+    return { service, prisma };
+  }
+
+  const openMatchday = (matches: unknown[]) => ({
+    id: 'md1',
+    status: 'OPEN',
+    canPredict: true,
+    opensAt: new Date(Date.now() - 1000).toISOString(),
+    matches,
+  });
+
+  const futureMatch = { id: 'm1', status: 'SCHEDULED', kickoff: new Date(Date.now() + 3600_000) };
+
+  it('marca hasPendingPicks a true si hay un partido futuro sin pronosticar', async () => {
+    const { service } = buildFindMineDeps(openMatchday([futureMatch]), []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(true);
+  });
+
+  it('marca hasPendingPicks a false si ya se pronostico ese partido', async () => {
+    const { service } = buildFindMineDeps(openMatchday([futureMatch]), [
+      { matchId: 'm1', choice: 'HOME', doubleChanceOption: null },
+    ]);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(false);
+  });
+
+  it('marca hasPendingPicks a false si el partido ya empezo (bloqueado)', async () => {
+    const startedMatch = { id: 'm1', status: 'SCHEDULED', kickoff: new Date(Date.now() - 1000) };
+    const { service } = buildFindMineDeps(openMatchday([startedMatch]), []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(false);
+  });
+
+  it('marca hasPendingPicks a false si la jornada aun no puede recibir pronosticos', async () => {
+    const matchday = { ...openMatchday([futureMatch]), canPredict: false };
+    const { service } = buildFindMineDeps(matchday, []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(false);
+  });
+
+  it('marca hasPendingPicks a false si la jornada ya esta finalizada', async () => {
+    const matchday = { ...openMatchday([futureMatch]), status: 'FINISHED' };
+    const { service } = buildFindMineDeps(matchday, []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(false);
+  });
+
+  it('sin ninguna jornada abierta para la competicion, hasPendingPicks es false', async () => {
+    const { service } = buildFindMineDeps(null, []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(false);
+  });
+
+  it('en modo EXACT_SCORE exige ambos marcadores para no quedar pendiente', async () => {
+    const { service } = buildFindMineDeps(
+      openMatchday([futureMatch]),
+      [{ matchId: 'm1', predictedHomeScore: 1, predictedAwayScore: null }],
+      { scoringMode: 'EXACT_SCORE' },
+    );
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(true);
+  });
+});
