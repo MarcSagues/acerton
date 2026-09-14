@@ -798,23 +798,6 @@ h1 {
   gap: 8px;
 }
 
-.cta-bar {
-  margin: 20px 20px 0;
-  min-height: 48px;
-  border-radius: var(--p4-radius-sm);
-  background: var(--p4-soft);
-  color: var(--p4-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font: 600 13px/1 var(--p4-font-ui);
-
-  .hit {
-    color: var(--p4-success);
-  }
-}
-
 /* ---- Pantalla "Enviado" ------------------------------------------------ */
 .sent-page {
   min-height: 100%;

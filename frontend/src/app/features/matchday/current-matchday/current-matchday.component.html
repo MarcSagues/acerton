@@ -162,7 +162,14 @@
             @if (page.isMatchPending(match)) {
               <span class="pending-dot match-pending-dot" aria-hidden="true"></span>
             }
-            <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
+            <p class="kickoff mono">
+              @if (page.matchDayLabel(match.kickoff) === 'Hoy') {
+                <strong>Hoy</strong>
+              } @else {
+                {{ page.matchDayLabel(match.kickoff) }}
+              }
+              · {{ match.kickoff | date: 'HH:mm' }}
+            </p>
 
             <div class="teams-row">
               <div class="teams">
@@ -206,7 +213,7 @@
                 <piqo-svg icon="check" size="16" class="hit"></piqo-svg>
                 <span class="hit">Guardado</span>
               } @else {
-                <span></span>
+                <span>Pendiente de jugar</span>
               }
             </div>
           </div>
@@ -328,11 +335,6 @@
         <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">
           <piqo-svg icon="historial" size="20"></piqo-svg>Ver desglose de resultados
         </a>
-      } @else if (!page.isLocked(entry) && page.pickingAllowed() && page.doneCount() === entry.matchday.matches.length) {
-        <div class="cta-bar">
-          <piqo-svg icon="check" size="18" class="hit"></piqo-svg>
-          <span>Completado</span>
-        </div>
       }
     }
   </div>
