@@ -205,6 +205,16 @@ export class CurrentMatchdayFacade {
     return entry.matchday.matches.some((m) => this.isMatchPendingIn(m, pickingAllowedForEntry));
   }
 
+  /** Punto rojo de "Jornada" en la barra inferior: alguna pestana (competicion) tiene algo pendiente. */
+  private hasAnyPendingPicks(): boolean {
+    return this.entries().some((e) => this.hasPendingPicks(e));
+  }
+
+  /** Empuja el valor en vivo a BottomNavService tras cualquier cambio que pueda alterar lo pendiente (guardar, quitar comodin...) — el effect() del constructor ya lo recalcula solo con el paso del tiempo (this.now()), esto es solo para que un guardado se refleje al instante en vez de esperar al siguiente tick de 1s. */
+  private updatePendingBadge(): void {
+    this.bottomNav.setLiveJornadaPending(this.hasAnyPendingPicks());
+  }
+
   /** Se abre solo si el usuario pulsa "Ver resumen" — antes se abria solo tras cada guardado, lo que lo hacia reaparecer cada vez que se editaba un pronostico ya completo. */
   openSummary(): void {
     this.submissionConfirmed.set(true);
@@ -313,9 +323,24 @@ export class CurrentMatchdayFacade {
     // mismo mecanismo que usan las rutas sin barra (ver ShellFacade).
     effect(() => this.bottomNav.setForceHidden(this.submissionConfirmed()), { allowSignalWrites: true });
 
+    // Recalcula el punto de "Jornada" solo con el paso del tiempo (this.now()
+    // tambien se lee dentro de hasAnyPendingPicks): sin esto, una ventana de
+    // pronostico que se abre mientras el usuario ya esta parado aqui no
+    // pondria el aviso hasta el siguiente guardado o cambio de pestana. Los
+    // guardados llaman ademas a updatePendingBadge() a mano para no esperar
+    // al siguiente tick de 1s.
+    effect(() => this.bottomNav.setLiveJornadaPending(this.hasAnyPendingPicks()), { allowSignalWrites: true });
+
     const interval = setInterval(() => this.now.set(new Date()), 1000);
     this.destroyRef.onDestroy(() => {
       this.bottomNav.setForceHidden(false);
+      // Al salir de Jornada, el punto vuelve a depender del ultimo dato
+      // conocido del grupo activo (ActiveGroupService.
+      // activeGroupHasPendingPicks, refrescado por hasGroupGuard en esta
+      // misma navegacion) en vez de quedarse pegado al ultimo valor en vivo
+      // calculado aqui, que podria corresponder a un grupo distinto tras
+      // cambiar de pestana del bottom nav.
+      this.bottomNav.setLiveJornadaPending(null);
       clearInterval(interval);
       // Sin esto, el requestAnimationFrame de un guardado todavia en curso al
       // salir de la pantalla seguiria llamandose a si mismo indefinidamente
@@ -345,6 +370,7 @@ export class CurrentMatchdayFacade {
         this.activeTabIndex.set(0);
         this.loadExistingPredictions(groupId, entries);
         this.refreshComeback(groupId);
+        this.updatePendingBadge();
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -459,6 +485,7 @@ export class CurrentMatchdayFacade {
             pointsEarned: prediction.pointsEarned,
           });
         }
+        this.updatePendingBadge();
       });
     }
   }
@@ -598,12 +625,14 @@ export class CurrentMatchdayFacade {
     } else {
       state.predictedAwayScore = value;
     }
+    this.updatePendingBadge();
   }
 
   selectChoice(match: Match, choice: PredictionChoice): void {
     if (this.consumeLongPress() || this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     state.choice = choice;
+    this.updatePendingBadge();
     this.save(match.id, state);
   }
 
@@ -611,6 +640,7 @@ export class CurrentMatchdayFacade {
     if (this.consumeLongPress() || this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     state.doubleChanceOption = option;
+    this.updatePendingBadge();
     this.save(match.id, state);
   }
 
@@ -674,10 +704,12 @@ export class CurrentMatchdayFacade {
       if ('remove' in result) {
         state.doubleChanceOption = null;
         state.saved = false;
+        this.updatePendingBadge();
         return;
       }
       state.choice = null;
       state.doubleChanceOption = result.option;
+      this.updatePendingBadge();
       this.save(match.id, state);
     });
   }
