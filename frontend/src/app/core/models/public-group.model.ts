@@ -17,6 +17,8 @@ export interface PublicGroupSummary {
   comebackEnabled: boolean;
   createdAt: string;
   competitions: PublicGroupCompetitionSummary[];
+  /** Si el usuario actual ya pertenece a este grupo: "Unirme" pasa a "Unido" y deshabilitado. */
+  isMember: boolean;
 }
 
 export interface PublicGroupsPage {

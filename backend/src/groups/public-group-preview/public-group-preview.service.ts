@@ -29,11 +29,12 @@ export class PublicGroupPreviewService {
    * publico, sin crear membresia. Rechaza grupos privados o eliminados como
    * si no existieran, igual que el resto de accesos por id.
    */
-  async getPreview(groupId: string): Promise<PublicGroupPreview> {
+  async getPreview(groupId: string, userId: string): Promise<PublicGroupPreview> {
     const group = await this.groupsService.findPublicGroupById(groupId);
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
     }
+    const isMember = await this.groupsService.isGroupMember(groupId, userId);
 
     const activeCompetitionIds = group.groupCompetitions.map((gc) => gc.competitionId);
     const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;
@@ -51,7 +52,7 @@ export class PublicGroupPreviewService {
       : [];
 
     return {
-      ...toPublicGroupSummary(group),
+      ...toPublicGroupSummary(group, isMember),
       comebackPointsPerBonus:
         group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled ? group.comebackPointsPerBonus : null,
       topRanking,

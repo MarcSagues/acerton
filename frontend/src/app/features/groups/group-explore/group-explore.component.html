@@ -141,10 +141,10 @@
             <button
               type="button"
               class="piqo-primary sm"
-              [disabled]="page.joiningGroupId() === group.id"
+              [disabled]="group.isMember || page.joiningGroupId() === group.id"
               (click)="page.join(group.id)"
             >
-              {{ page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirme' }}
+              {{ group.isMember ? 'Unido' : page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirme' }}
             </button>
           </div>
         </div>

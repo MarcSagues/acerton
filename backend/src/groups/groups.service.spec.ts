@@ -2,7 +2,10 @@ import { BadRequestException } from '@nestjs/common';
 import { GroupsService } from './groups.service';
 
 function buildDeps(activeCompetitionIds: string[], prismaOverrides: Record<string, unknown> = {}) {
-  const prisma = { ...prismaOverrides };
+  const prisma = {
+    groupMembership: { findMany: jest.fn().mockResolvedValue([]) },
+    ...prismaOverrides,
+  };
   const configService = { get: jest.fn() };
   const competitionsService = {
     findActiveByGroup: jest.fn().mockResolvedValue(activeCompetitionIds.map((competitionId) => ({ competitionId }))),
@@ -84,7 +87,7 @@ describe('GroupsService.searchPublicGroups', () => {
     const findMany = jest.fn().mockResolvedValue([buildGroup()]);
     const { service } = buildDeps([], { group: { findMany } });
 
-    const result = await service.searchPublicGroups({});
+    const result = await service.searchPublicGroups({}, 'user1');
 
     expect(findMany.mock.calls[0][0].where).toMatchObject({ deletedAt: null, isPublic: true });
     expect(result.items[0]).not.toHaveProperty('inviteCode');
@@ -93,11 +96,26 @@ describe('GroupsService.searchPublicGroups', () => {
     expect(result.items[0].competitions).toEqual([{ id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null }]);
   });
 
+  it('marca isMember segun si el usuario pertenece a cada grupo devuelto', async () => {
+    const findMany = jest.fn().mockResolvedValue([buildGroup({ id: 'g1' }), buildGroup({ id: 'g2' })]);
+    const membershipFindMany = jest.fn().mockResolvedValue([{ groupId: 'g1' }]);
+    const { service } = buildDeps([], { group: { findMany }, groupMembership: { findMany: membershipFindMany } });
+
+    const result = await service.searchPublicGroups({}, 'user1');
+
+    expect(membershipFindMany).toHaveBeenCalledWith({
+      where: { userId: 'user1', groupId: { in: ['g1', 'g2'] } },
+      select: { groupId: true },
+    });
+    expect(result.items.find((item) => item.id === 'g1')?.isMember).toBe(true);
+    expect(result.items.find((item) => item.id === 'g2')?.isMember).toBe(false);
+  });
+
   it('exige que el grupo cumpla TODAS las ligas seleccionadas (una condicion AND por liga)', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const { service } = buildDeps([], { group: { findMany } });
 
-    await service.searchPublicGroups({ competitionIds: ['c1', 'c2'] });
+    await service.searchPublicGroups({ competitionIds: ['c1', 'c2'] }, 'user1');
 
     expect(findMany.mock.calls[0][0].where.AND).toEqual([
       { groupCompetitions: { some: { competitionId: 'c1', isActive: true } } },
@@ -110,7 +128,7 @@ describe('GroupsService.searchPublicGroups', () => {
     const findMany = jest.fn().mockResolvedValue(threeGroups);
     const { service } = buildDeps([], { group: { findMany } });
 
-    const result = await service.searchPublicGroups({ limit: 2 });
+    const result = await service.searchPublicGroups({ limit: 2 }, 'user1');
 
     expect(findMany.mock.calls[0][0].take).toBe(3);
     expect(result.items).toHaveLength(2);
@@ -121,7 +139,7 @@ describe('GroupsService.searchPublicGroups', () => {
     const findMany = jest.fn().mockResolvedValue([buildGroup({ id: 'g1' })]);
     const { service } = buildDeps([], { group: { findMany } });
 
-    const result = await service.searchPublicGroups({ limit: 20 });
+    const result = await service.searchPublicGroups({ limit: 20 }, 'user1');
 
     expect(result.nextCursor).toBeNull();
   });

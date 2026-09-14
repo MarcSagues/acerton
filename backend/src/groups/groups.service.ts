@@ -45,10 +45,12 @@ export interface PublicGroupSummary {
   comebackEnabled: boolean;
   createdAt: Date;
   competitions: PublicGroupCompetitionSummary[];
+  /** Si quien pide el listado ya pertenece a este grupo: el frontend cambia "Unirme" por "Unido" y deshabilita el boton en vez de dejar que se una dos veces. */
+  isMember: boolean;
 }
 
 /** Fuera de la clase para poder reutilizarse sin instanciar GroupsService (ver PublicGroupPreviewService). */
-export function toPublicGroupSummary(group: PublicGroupRecord): PublicGroupSummary {
+export function toPublicGroupSummary(group: PublicGroupRecord, isMember: boolean): PublicGroupSummary {
   return {
     id: group.id,
     name: group.name,
@@ -63,6 +65,7 @@ export function toPublicGroupSummary(group: PublicGroupRecord): PublicGroupSumma
       name: gc.competition.name,
       logoUrl: gc.competition.logoUrl,
     })),
+    isMember,
   };
 }
 
@@ -191,6 +194,7 @@ export class GroupsService {
    */
   async searchPublicGroups(
     filters: SearchPublicGroupsDto,
+    userId: string,
   ): Promise<{ items: PublicGroupSummary[]; nextCursor: string | null }> {
     const limit = filters.limit ?? 20;
     const where: Prisma.GroupWhereInput = {
@@ -219,10 +223,31 @@ export class GroupsService {
 
     const hasMore = groups.length > limit;
     const page = hasMore ? groups.slice(0, limit) : groups;
+
+    // Un unico findMany para toda la pagina en vez de una consulta de
+    // membresia por grupo (N+1): con hasta 20 grupos por pagina, la
+    // diferencia es real.
+    const memberships =
+      page.length > 0
+        ? await this.prisma.groupMembership.findMany({
+            where: { userId, groupId: { in: page.map((group) => group.id) } },
+            select: { groupId: true },
+          })
+        : [];
+    const memberGroupIds = new Set(memberships.map((m) => m.groupId));
+
     return {
-      items: page.map((group) => toPublicGroupSummary(group)),
+      items: page.map((group) => toPublicGroupSummary(group, memberGroupIds.has(group.id))),
       nextCursor: hasMore ? page[page.length - 1].id : null,
     };
+  }
+
+  /** Para la vista previa de un grupo publico (PublicGroupPreviewService): si quien la pide ya es miembro, el frontend cambia "Unirme" por "Unido". */
+  async isGroupMember(groupId: string, userId: string): Promise<boolean> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    return membership !== null;
   }
 
   /**

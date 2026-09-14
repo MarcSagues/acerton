@@ -19,7 +19,7 @@ function buildGroup(overrides: Record<string, unknown> = {}) {
 }
 
 function buildDeps() {
-  const groupsService = { findPublicGroupById: jest.fn() };
+  const groupsService = { findPublicGroupById: jest.fn(), isGroupMember: jest.fn().mockResolvedValue(false) };
   const rankingsService = { hasRanking: jest.fn(), getLatestRanking: jest.fn() };
   const service = new PublicGroupPreviewService(groupsService as never, rankingsService as never);
   return { service, groupsService, rankingsService };
@@ -30,7 +30,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     const { service, groupsService } = buildDeps();
     groupsService.findPublicGroupById.mockResolvedValue(null);
 
-    await expect(service.getPreview('g1')).rejects.toThrow(NotFoundException);
+    await expect(service.getPreview('g1', 'user1')).rejects.toThrow(NotFoundException);
   });
 
   it('devuelve el top vacio si todavia no hay clasificacion calculada, sin pedirla', async () => {
@@ -38,7 +38,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     groupsService.findPublicGroupById.mockResolvedValue(buildGroup());
     rankingsService.hasRanking.mockResolvedValue(false);
 
-    const preview = await service.getPreview('g1');
+    const preview = await service.getPreview('g1', 'user1');
 
     expect(preview.topRanking).toEqual([]);
     expect(rankingsService.getLatestRanking).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     }));
     rankingsService.getLatestRanking.mockResolvedValue(rows);
 
-    const preview = await service.getPreview('g1');
+    const preview = await service.getPreview('g1', 'user1');
 
     expect(rankingsService.hasRanking).toHaveBeenCalledWith('g1', 'TOTAL', 'c1');
     expect(rankingsService.getLatestRanking).toHaveBeenCalledWith('g1', 'TOTAL', 'c1');
@@ -80,7 +80,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     );
     rankingsService.hasRanking.mockResolvedValue(false);
 
-    await service.getPreview('g1');
+    await service.getPreview('g1', 'user1');
 
     expect(rankingsService.hasRanking).toHaveBeenCalledWith('g1', 'TOTAL', null);
   });
@@ -92,7 +92,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     );
     rankingsService.hasRanking.mockResolvedValue(false);
 
-    const preview = await service.getPreview('g1');
+    const preview = await service.getPreview('g1', 'user1');
 
     expect(preview.comebackPointsPerBonus).toBeNull();
   });
@@ -102,7 +102,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     groupsService.findPublicGroupById.mockResolvedValue(buildGroup({ comebackEnabled: false }));
     rankingsService.hasRanking.mockResolvedValue(false);
 
-    const preview = await service.getPreview('g1');
+    const preview = await service.getPreview('g1', 'user1');
 
     expect(preview.comebackPointsPerBonus).toBeNull();
   });
@@ -112,7 +112,7 @@ describe('PublicGroupPreviewService.getPreview', () => {
     groupsService.findPublicGroupById.mockResolvedValue(buildGroup({ comebackEnabled: true, comebackPointsPerBonus: 8 }));
     rankingsService.hasRanking.mockResolvedValue(false);
 
-    const preview = await service.getPreview('g1');
+    const preview = await service.getPreview('g1', 'user1');
 
     expect(preview.comebackPointsPerBonus).toBe(8);
   });

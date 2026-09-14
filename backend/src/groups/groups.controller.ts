@@ -24,8 +24,8 @@ export class GroupsController {
   }
 
   @Get('public')
-  findPublic(@Query() query: SearchPublicGroupsDto) {
-    return this.groupsService.searchPublicGroups(query);
+  findPublic(@Query() query: SearchPublicGroupsDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.groupsService.searchPublicGroups(query, user.id);
   }
 
   @Get(':id')
