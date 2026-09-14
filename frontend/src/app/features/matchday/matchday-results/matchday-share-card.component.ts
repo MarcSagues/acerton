@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   CUSTOM_ELEMENTS_SCHEMA,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   HostListener,
@@ -178,6 +179,7 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 })
 export class MatchdayShareCardComponent {
   private readonly toast = inject(ToastService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   @Input({ required: true }) matchday!: Matchday;
   @Input() competitionName: string | null = null;
@@ -204,6 +206,12 @@ export class MatchdayShareCardComponent {
     this.visible.set(true);
     this.rendering.set(true);
     this.imageBlob = null;
+    // detectChanges() fuerza a Angular a crear el <canvas> del bloque
+    // @if(visible()) y resolver el ViewChild de forma sincrona: sin esto,
+    // en la primera apertura un solo requestAnimationFrame podia llegar
+    // antes de que la vista se actualizase, y drawCard() abortaba en
+    // silencio (canvasRef aun undefined) dejando el recuadro en negro.
+    this.cdr.detectChanges();
     try {
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       await document.fonts?.ready;
@@ -285,7 +293,7 @@ export class MatchdayShareCardComponent {
   private async drawCard(): Promise<void> {
     const canvas = this.canvasRef?.nativeElement;
     const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx) throw new Error('Canvas no disponible');
 
     const width = canvas.width;
     const height = canvas.height;
