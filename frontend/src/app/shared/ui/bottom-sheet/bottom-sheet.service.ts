@@ -28,6 +28,13 @@ export class BottomSheetService {
       backdropClass: 'piqo-dialog-backdrop',
       autoFocus: 'first-tabbable',
       positionStrategy: this.overlay.position().global().centerHorizontally().bottom('0'),
+      // Sin esto, CDK bloquea el scroll de fondo con su estrategia por
+      // defecto (BlockScrollStrategy): fija el <body> con position:fixed en
+      // el scroll actual y lo restaura al cerrar — en iOS/WKWebView, ese
+      // truco desplaza el contenido de fondo fuera de la vista (parece que
+      // "desaparece" en vez de quedarse detras del sheet). Mismo arreglo que
+      // PiqoDialogService (ver ese archivo).
+      scrollStrategy: this.overlay.scrollStrategies.noop(),
       ...config,
     });
   }
