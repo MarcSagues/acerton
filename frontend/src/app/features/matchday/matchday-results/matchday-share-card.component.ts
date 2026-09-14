@@ -338,32 +338,42 @@ export class MatchdayShareCardComponent {
     this.text(ctx, this.ellipsize(ctx, this.playerName || 'Jugador', 360, '700 28px Inter'), 154, 286, 28, 700, '#f1f0ea', 'Inter');
     this.text(ctx, this.ellipsize(ctx, this.groupName || 'Mi grupo', 360, '500 20px Inter'), 154, 318, 20, 500, '#9aa0a3', 'Inter');
 
-    this.text(ctx, this.variant === 'picks' ? 'JORNADA' : 'PUNTOS', 72, 392, 19, 700, '#9aa0a3', 'Inter', .13);
-    this.text(ctx, String(this.variant === 'picks' ? this.matchday.order : this.totalPoints), 66, 520, 144, 750, '#f1f0ea', 'Manrope');
-
+    // Bloque de cifras arriba a la derecha, en el hueco que dejaba libre
+    // el logo/avatar de la izquierda — así los partidos pueden empezar
+    // mucho antes y caben jornadas de hasta 18 partidos (9 filas x 2
+    // columnas) en vez de solo 10.
     if (this.variant === 'picks') {
-      this.statBox(ctx, 520, 368, 218, 160, 'PRONÓSTICOS', `${this.predictions.length}/${this.matchday.matches.length}`);
-      this.statBox(ctx, 758, 368, 250, 160, 'MODO', this.scoringMode === 'EXACT_SCORE' ? 'Marcador' : '1X2');
+      this.statBox(ctx, 520, 66, 488, 118, 'JORNADA', String(this.matchday.order), 56);
+      this.statBox(ctx, 520, 200, 232, 118, 'PRONÓSTICOS', `${this.predictions.length}/${this.matchday.matches.length}`);
+      this.statBox(ctx, 776, 200, 232, 118, 'MODO', this.scoringMode === 'EXACT_SCORE' ? 'Marcador' : '1X2');
     } else {
-      this.statBox(ctx, 520, 368, 218, 160, this.scoringMode === 'EXACT_SCORE' ? 'ACIERTOS' : 'ACIERTOS 1X2', `${this.hits}/${this.predictions.length}`);
-      this.statBox(ctx, 758, 368, 250, 160, 'PUESTO', this.position ? `${this.position.pos}º de ${this.position.total}` : '—');
+      this.statBox(ctx, 520, 66, 488, 118, 'PUNTOS', String(this.totalPoints), 56);
+      this.statBox(ctx, 520, 200, 232, 118, this.scoringMode === 'EXACT_SCORE' ? 'ACIERTOS' : 'ACIERTOS 1X2', `${this.hits}/${this.predictions.length}`);
+      this.statBox(ctx, 776, 200, 232, 118, 'PUESTO', this.position ? `${this.position.pos}º de ${this.position.total}` : '—');
     }
 
     const extra = this.variant === 'picks'
       ? 'Pronósticos guardados'
       : this.streak > 0 ? `${this.streak} jornadas seguidas` : 'Sigue sumando';
-    this.text(ctx, this.variant === 'picks' ? 'MIS PRONÓSTICOS' : 'MI DESGLOSE', 72, 600, 19, 700, '#d2be94', 'Inter', .13);
-    this.text(ctx, extra, 1008, 600, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
+    this.text(ctx, this.variant === 'picks' ? 'MIS PRONÓSTICOS' : 'MI DESGLOSE', 72, 360, 19, 700, '#d2be94', 'Inter', .13);
+    this.text(ctx, extra, 1008, 360, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
 
-    const shown = this.predictions.filter((prediction) => this.pickLabel(prediction) !== '?').slice(0, 10);
+    const rowsPerColumn = 9;
+    const rowHeight = 50;
+    const rowSpacing = 65;
+    const columnWidth = 456;
+    const columnGap = 552 - 72;
+    const shown = this.predictions
+      .filter((prediction) => this.pickLabel(prediction) !== '?')
+      .slice(0, rowsPerColumn * 2);
     shown.forEach((prediction, index) => {
-      const column = index >= 5 ? 1 : 0;
-      const row = index % 5;
-      this.predictionRow(ctx, prediction, 72 + column * 486, 632 + row * 68, 462);
+      const column = index >= rowsPerColumn ? 1 : 0;
+      const row = index % rowsPerColumn;
+      this.predictionRow(ctx, prediction, 72 + column * columnGap, 392 + row * rowSpacing, columnWidth, rowHeight);
     });
 
     if (shown.length === 0) {
-      this.text(ctx, 'Sin pronósticos registrados', 72, 686, 24, 600, '#9aa0a3', 'Inter');
+      this.text(ctx, 'Sin pronósticos registrados', 72, 420, 24, 600, '#9aa0a3', 'Inter');
     }
 
     ctx.strokeStyle = 'rgba(241,240,234,.1)';
@@ -392,32 +402,42 @@ export class MatchdayShareCardComponent {
     height: number,
     label: string,
     value: string,
+    valueSize?: number,
   ): void {
     this.roundRect(ctx, x, y, width, height, 26, 'rgba(241,240,234,.065)', 'rgba(241,240,234,.1)');
-    this.text(ctx, label, x + 28, y + 48, 16, 700, '#9aa0a3', 'Inter', .1);
-    this.text(ctx, value, x + 28, y + 119, value.length > 7 ? 37 : 48, 750, '#f1f0ea', 'Manrope');
+    this.text(ctx, label, x + 28, y + height * 0.3, 16, 700, '#9aa0a3', 'Inter', .1);
+    this.text(ctx, value, x + 28, y + height * 0.74, valueSize ?? (value.length > 7 ? 37 : 48), 750, '#f1f0ea', 'Manrope');
   }
 
-  private predictionRow(ctx: CanvasRenderingContext2D, prediction: Prediction, x: number, y: number, width: number): void {
+  private predictionRow(
+    ctx: CanvasRenderingContext2D,
+    prediction: Prediction,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): void {
     const match = this.matchday.matches.find((candidate) => candidate.id === prediction.matchId);
     if (!match) return;
 
     const points = prediction.pointsEarned;
     const hit = (points ?? 0) > 0;
-    this.roundRect(ctx, x, y, width, 54, 15, 'rgba(241,240,234,.05)');
+    this.roundRect(ctx, x, y, width, height, 15, 'rgba(241,240,234,.05)');
 
+    const midY = y + height * 0.61;
     const teams = this.ellipsize(ctx, `${match.homeTeam} · ${match.awayTeam}`, width - 164, '600 17px Inter');
-    this.text(ctx, teams, x + 18, y + 33, 17, 600, '#f1f0ea', 'Inter');
+    this.text(ctx, teams, x + 18, midY, 17, 600, '#f1f0ea', 'Inter');
 
     if (this.variant === 'results') {
       const score = match.homeScore == null || match.awayScore == null ? '—' : `${match.homeScore}-${match.awayScore}`;
-      this.text(ctx, score, x + width - 104, y + 33, 17, 700, '#9aa0a3', 'Inter', 0, 'right');
+      this.text(ctx, score, x + width - 104, midY, 17, 700, '#9aa0a3', 'Inter', 0, 'right');
     }
 
-    this.roundRect(ctx, x + width - 88, y + 11, 38, 32, 9, this.variant === 'picks' ? '#373126' : hit ? '#193c30' : '#43272e');
-    this.text(ctx, this.pickLabel(prediction), x + width - 69, y + 33, 15, 800, this.variant === 'picks' ? '#d2be94' : hit ? '#91c7ae' : '#f1a4aa', 'Inter', 0, 'center');
+    const badgeHeight = height - 22;
+    this.roundRect(ctx, x + width - 88, y + (height - badgeHeight) / 2, 38, badgeHeight, 9, this.variant === 'picks' ? '#373126' : hit ? '#193c30' : '#43272e');
+    this.text(ctx, this.pickLabel(prediction), x + width - 69, midY, 15, 800, this.variant === 'picks' ? '#d2be94' : hit ? '#91c7ae' : '#f1a4aa', 'Inter', 0, 'center');
     if (this.variant === 'results') {
-      this.text(ctx, points == null ? '—' : points > 0 ? `+${points}` : '0', x + width - 16, y + 33, 15, 800, hit ? '#91c7ae' : '#9aa0a3', 'Inter', 0, 'right');
+      this.text(ctx, points == null ? '—' : points > 0 ? `+${points}` : '0', x + width - 16, midY, 15, 800, hit ? '#91c7ae' : '#9aa0a3', 'Inter', 0, 'right');
     }
   }
 
