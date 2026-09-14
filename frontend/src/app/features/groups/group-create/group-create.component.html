@@ -86,14 +86,50 @@
             <span class="radio-title">Resultado exacto</span>
           </button>
         </div>
-        @if (page.form.value.scoringMode === 'ONE_X_TWO') {
-          <button type="button" class="link-btn" (click)="page.showComebackDetail()">¿Cómo funciona el comodín?</button>
-        }
         <p class="hint">
-          {{ page.form.value.scoringMode === 'EXACT_SCORE' ? '5 puntos por marcador exacto, 2 por acertar solo el resultado. Sin comodín.' : '1 punto por acertar 1X2. Incluye comodín de remontada.' }}
+          {{ page.form.value.scoringMode === 'EXACT_SCORE' ? '5 puntos por marcador exacto, 2 por acertar solo el resultado.' : '1 punto por acertar 1X2.' }}
           No podrás cambiar el modo después de crear el grupo.
         </p>
       </div>
+
+      @if (page.form.value.scoringMode === 'ONE_X_TWO') {
+        <div class="field">
+          <span class="field-label">Comodín de remontada</span>
+          <div class="radio-group">
+            <button
+              type="button"
+              role="radio"
+              class="radio-card"
+              [attr.aria-checked]="page.form.value.comebackEnabled"
+              [class.checked]="page.form.value.comebackEnabled"
+              (click)="page.setComebackEnabled(true)"
+            >
+              <piqo-svg icon="comodin" size="18"></piqo-svg>
+              <span class="radio-title">Activado</span>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              class="radio-card"
+              [attr.aria-checked]="!page.form.value.comebackEnabled"
+              [class.checked]="!page.form.value.comebackEnabled"
+              (click)="page.setComebackEnabled(false)"
+            >
+              <piqo-svg icon="cerrar" size="18"></piqo-svg>
+              <span class="radio-title">Desactivado</span>
+            </button>
+          </div>
+          <button type="button" class="link-btn" (click)="page.showComebackDetail()">¿Cómo funciona el comodín?</button>
+          <p class="hint">
+            {{
+              page.form.value.comebackEnabled
+                ? 'Doble oportunidad (1X/X2/12) para quien va por detrás.'
+                : 'Nadie tendrá doble oportunidad.'
+            }}
+            Podrás cambiarlo después desde los ajustes del grupo.
+          </p>
+        </div>
+      }
 
       <div class="field">
         <span class="field-label">Privacidad</span>
