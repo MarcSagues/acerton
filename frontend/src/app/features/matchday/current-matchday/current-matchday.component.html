@@ -50,7 +50,8 @@
   }
 } @else {
   @let comebackBannerText = page.comebackBanner(page.activeEntry());
-  <div class="page" [class.has-comeback-banner]="!!comebackBannerText">
+  @let showAdRewardBanner = page.showAdRewardBanner(page.activeEntry());
+  <div class="page" [class.has-comeback-banner]="!!comebackBannerText || showAdRewardBanner">
     <div class="head-row">
       <app-group-switcher></app-group-switcher>
     </div>
@@ -325,7 +326,25 @@
     }
   </div>
 
-  @if (comebackBannerText) {
+  @if (showAdRewardBanner) {
+    <div class="comeback-banner-wrap">
+      <div class="comeback-banner ad-reward-banner">
+        <piqo-svg icon="comodin" size="18"></piqo-svg>
+        <span>Consigue 1 comodín extra viendo un vídeo</span>
+        <button type="button" class="ad-reward-watch-btn" [disabled]="page.watchingAd()" (click)="page.watchAdForComebackBonus()">
+          {{ page.watchingAd() ? 'Cargando…' : 'Ver vídeo' }}
+        </button>
+        <button
+          type="button"
+          class="comeback-banner-close"
+          aria-label="Cerrar aviso del vídeo"
+          (click)="page.dismissAdRewardBanner(page.activeEntry()!)"
+        >
+          <piqo-svg icon="cerrar" size="14"></piqo-svg>
+        </button>
+      </div>
+    </div>
+  } @else if (comebackBannerText) {
     <div class="comeback-banner-wrap">
       <div class="comeback-banner">
         <piqo-svg icon="comodin" size="18"></piqo-svg>

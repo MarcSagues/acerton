@@ -7,6 +7,7 @@ import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
+import { AdsService } from '../../../core/services/ads.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
@@ -64,6 +65,7 @@ export class CurrentMatchdayFacade {
   private readonly predictionsService = inject(PredictionsService);
   private readonly authService = inject(AuthService);
   private readonly wildcardsService = inject(WildcardsService);
+  private readonly adsService = inject(AdsService);
   private readonly sheet = inject(BottomSheetService);
   private readonly dialog = inject(PiqoDialogService);
   private readonly toast = inject(ToastService);
@@ -89,6 +91,9 @@ export class CurrentMatchdayFacade {
   private readonly dismissedLiveAviso = signal<string | null>(null);
   /** Aviso del comodin de remontada cerrado para esta jornada en esta sesion (id de jornada) — igual que dismissedLiveAviso, se olvida al recargar o cambiar de jornada. */
   private readonly dismissedComebackBanner = signal<string | null>(null);
+  /** Igual que dismissedComebackBanner pero para el aviso de "consigue un comodin extra viendo un video". */
+  private readonly dismissedAdRewardBanner = signal<string | null>(null);
+  readonly watchingAd = signal(false);
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -282,6 +287,54 @@ export class CurrentMatchdayFacade {
 
   dismissComebackBanner(entry: CurrentMatchdayEntry): void {
     this.dismissedComebackBanner.set(entry.matchday.id);
+  }
+
+  /**
+   * Aviso flotante de "consigue 1 comodín extra viendo un vídeo": mismas
+   * condiciones de partida que comebackBanner (jornada abierta y admitiendo
+   * pronosticos), mas que el grupo tenga el comodin activado y todavia no
+   * se haya reclamado el extra de esta jornada concreta (ComebackStatus.
+   * adBonusAvailable, ver WildcardsService en el backend). Tiene prioridad
+   * sobre comebackBanner en la plantilla: una vez reclamado, adBonusAvailable
+   * pasa a false y el hueco lo ocupa el aviso normal de comodines restantes.
+   */
+  showAdRewardBanner(entry: CurrentMatchdayEntry | null): boolean {
+    if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return false;
+    if (this.dismissedAdRewardBanner() === entry.matchday.id) return false;
+    return this.comeback()?.adBonusAvailable ?? false;
+  }
+
+  dismissAdRewardBanner(entry: CurrentMatchdayEntry): void {
+    this.dismissedAdRewardBanner.set(entry.matchday.id);
+  }
+
+  /** Lanza el video recompensado y, si AdMob confirma que se vio entero, reclama el comodin extra contra el backend. */
+  async watchAdForComebackBonus(): Promise<void> {
+    if (this.watchingAd()) return;
+    const entry = this.activeEntry();
+    const groupId = this.activeGroupService.activeId();
+    const userId = this.authService.currentUser()?.id;
+    if (!entry || !groupId || !userId) return;
+
+    this.watchingAd.set(true);
+    try {
+      const earned = await this.adsService.watchRewardedAd(userId);
+      if (!earned) {
+        this.toast.show('No se pudo cargar el vídeo. Inténtalo de nuevo en unos segundos.');
+        return;
+      }
+      this.wildcardsService.claimAdReward(groupId, entry.matchday.id).subscribe({
+        next: (status) => {
+          this.comeback.set(status);
+          this.toast.show('¡Comodín extra conseguido! Ya puedes usarlo en un pronóstico.');
+        },
+        error: () => {
+          this.toast.show('El vídeo se vio bien, pero no se pudo aplicar el comodín. Inténtalo de nuevo.');
+        },
+      });
+    } finally {
+      this.watchingAd.set(false);
+    }
   }
 
   /** Cierra el aviso mostrado bajo la cabecera, cualquiera que sea su tono. */

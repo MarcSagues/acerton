@@ -8,8 +8,21 @@ export const environment = {
   appUrl: 'https://app-dev.piqo.es',
   googleWebClientId: '274153738044-0lnso05j0rpi3pvegl20r5rh8obias9n.apps.googleusercontent.com',
   admob: {
-    android: { appId: 'ca-app-pub-1185144357301303~6197649742', bannerAdUnitId: 'ca-app-pub-1185144357301303/4884568079' },
-    ios: { appId: 'ca-app-pub-1185144357301303~8853049890', bannerAdUnitId: 'ca-app-pub-1185144357301303/1167694667' },
+    // rewardedAdUnitId: todavia no hay una unidad de "recompensado" real
+    // creada en la cuenta de AdMob — se usa el id de prueba oficial de
+    // Google (siempre sirve anuncios de test, sin generar ingresos ni
+    // contar contra la cuenta real) hasta que se cree una unidad real en
+    // el panel de AdMob y se sustituya aqui.
+    android: {
+      appId: 'ca-app-pub-1185144357301303~6197649742',
+      bannerAdUnitId: 'ca-app-pub-1185144357301303/4884568079',
+      rewardedAdUnitId: 'ca-app-pub-3940256099942544/5224354917',
+    },
+    ios: {
+      appId: 'ca-app-pub-1185144357301303~8853049890',
+      bannerAdUnitId: 'ca-app-pub-1185144357301303/1167694667',
+      rewardedAdUnitId: 'ca-app-pub-3940256099942544/1712485313',
+    },
   },
   firebase: {
     apiKey: 'AIzaSyCbYMyNUeENK5PfohH_NX1CuxvKgG6k11Y',

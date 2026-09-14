@@ -365,6 +365,24 @@ h1 {
   color: var(--p4-muted);
 }
 
+/* Icono + texto + cerrar en la primera fila (igual que .comeback-banner);
+   el boton "Ver video" se fuerza a una segunda fila propia (flex-basis:100%)
+   para no apretar el texto en el ancho estrecho del banner flotante. */
+.ad-reward-banner {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.ad-reward-watch-btn {
+  flex: 1 0 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--p4-radius-sm);
+  background: var(--p4-accent);
+  color: var(--p4-on-accent);
+  font: 700 13px/1 var(--p4-font-ui);
+}
+
 .match-list {
   padding: 19px 20px 0;
   display: flex;

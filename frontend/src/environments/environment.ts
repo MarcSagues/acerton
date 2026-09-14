@@ -15,8 +15,16 @@ export const environment = {
   // no generar impresiones/clics automatizados contra la cuenta real durante
   // las pruebas — ver AdsService.
   admob: {
-    android: { appId: 'ca-app-pub-3940256099942544~3347511713', bannerAdUnitId: 'ca-app-pub-3940256099942544/6300978111' },
-    ios: { appId: 'ca-app-pub-3940256099942544~1458002511', bannerAdUnitId: 'ca-app-pub-3940256099942544/2934735716' },
+    android: {
+      appId: 'ca-app-pub-3940256099942544~3347511713',
+      bannerAdUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      rewardedAdUnitId: 'ca-app-pub-3940256099942544/5224354917',
+    },
+    ios: {
+      appId: 'ca-app-pub-3940256099942544~1458002511',
+      bannerAdUnitId: 'ca-app-pub-3940256099942544/2934735716',
+      rewardedAdUnitId: 'ca-app-pub-3940256099942544/1712485313',
+    },
   },
   // Config publica del proyecto Firebase (no son secretos: se protegen con
   // las reglas de seguridad de Firebase, no ocultandolas). Rellena con los

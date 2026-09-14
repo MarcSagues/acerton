@@ -136,6 +136,7 @@ model User {
   refreshTokens          RefreshToken[]
   notificationTokens     NotificationToken[]
   notificationPreference NotificationPreference?
+  adRewardClaims         AdRewardClaim[]
   authTokens             AuthToken[]
 
   @@map("users")
@@ -266,6 +267,7 @@ model Group {
   streaks           Streak[]
   userBadges        UserBadge[]
   seasons           GroupSeason[]
+  adRewardClaims    AdRewardClaim[]
 
   @@map("groups")
 }
@@ -379,10 +381,33 @@ model Matchday {
   rankingSnapshots        RankingSnapshot[]
   streaksLastPlayed       Streak[]          @relation("StreakLastMatchday")
   globalStreaksLastPlayed GlobalStreak[]    @relation("GlobalStreakLastMatchday")
+  adRewardClaims          AdRewardClaim[]
 
   @@unique([competitionId, season, name])
   @@index([competitionId, status])
   @@map("matchdays")
+}
+
+/// Comodin de remontada extra conseguido viendo un video de anuncio (AdMob
+/// rewarded), a peticion explicita del usuario. Uno por (usuario, grupo,
+/// jornada): la jornada ya identifica la competicion, asi que en un usuario
+/// con 3 grupos x 3 ligas activas cada uno esto permite hasta 9 comodines
+/// extra por semana, uno por cada combinacion grupo+liga+jornada abierta —
+/// ver WildcardsService.getComebackStatus, que suma +1 al `allowance`
+/// calculado por el gap con el lider si existe una fila aqui.
+model AdRewardClaim {
+  id         String   @id @default(cuid())
+  userId     String
+  groupId    String
+  matchdayId String
+  claimedAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  matchday Matchday @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId, matchdayId])
+  @@map("ad_reward_claims")
 }
 
 model Match {
