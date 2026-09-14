@@ -135,6 +135,15 @@
             <span class="knob"></span>
           </button>
         </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">Piqo te echa de menos</p>
+            <p class="hint">Un aviso si llevas varios días sin entrar.</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.reengagement" [class.disabled]="page.isSaving('reengagement')" (click)="page.togglePreference('reengagement')">
+            <span class="knob"></span>
+          </button>
+        </div>
       </div>
     </details>
 

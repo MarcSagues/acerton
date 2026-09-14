@@ -109,6 +109,20 @@ model User {
   /// se marcaron verificadas con su propio createdAt, para no dejar a nadie
   /// fuera retroactivamente.
   emailVerifiedAt    DateTime?
+  /// Ultima vez que abrio la app (login, verify-email, Google o refresh de
+  /// sesion — ver AuthService.issueTokens). Base para el aviso de
+  /// reenganche tras dias sin entrar.
+  lastActiveAt         DateTime?
+  /// Cuando se envio el ultimo aviso de reenganche ("Piqo te echa de
+  /// menos"): si es mas reciente que lastActiveAt, ya se aviso de esta
+  /// racha de inactividad concreta y no hay que repetirlo cada dia
+  /// mientras siga sin volver — ver JobsService.sendReengagementNotifications.
+  reengagementPushSentAt DateTime?
+  /// Cuando se envio el ultimo recordatorio de cierre de cualquier tipo
+  /// (24h/5h/1h/30min, de cualquier grupo): limita a como mucho uno cada 24h
+  /// por persona aunque varios grupos/competiciones tengan avisos a la vez
+  /// — ver NotificationsService.notifyMatchesClosingSoon.
+  lastClosingReminderPushAt DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -205,6 +219,8 @@ model NotificationPreference {
   badgeEarned Boolean @default(true)
   /// Fin de temporada de un grupo y trofeos otorgados (sin efecto todavia: depende del Sprint 6).
   seasonFinishedTrophies Boolean @default(true)
+  /// "Piqo te echa de menos" tras varios dias sin abrir la app. No depende de ningun grupo.
+  reengagement Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
