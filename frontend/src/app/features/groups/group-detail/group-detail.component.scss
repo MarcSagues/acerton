@@ -11,7 +11,15 @@
   min-height: 0;
   min-width: 0;
   color: var(--p4-text);
-  padding-bottom: 100px;
+  padding-bottom: 28px;
+
+  /* El botón flotante "Guardar cambios" vive por encima de la barra de
+     navegación inferior (ver .floating-save): sin este hueco extra tapaba
+     el contenido final de la pantalla (Eliminar grupo) mientras hay
+     cambios pendientes. El resto del tiempo no hace falta el hueco. */
+  &.has-floating-save {
+    padding-bottom: 100px;
+  }
 }
 
 .loading {

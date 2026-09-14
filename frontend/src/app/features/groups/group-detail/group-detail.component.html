@@ -2,7 +2,7 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
   @if (page.group(); as g) {
-    <div class="page">
+    <div class="page" [class.has-floating-save]="page.isAdmin() && page.hasAnyChanges()">
       <div class="head-row">
         <a routerLink="/groups" class="back-link">
           <piqo-svg icon="atras" size="20"></piqo-svg>
