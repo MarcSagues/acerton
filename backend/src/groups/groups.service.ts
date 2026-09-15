@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
+import { BadgesService } from '../badges/badges.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
@@ -79,15 +80,13 @@ export class GroupsService {
     private readonly competitionsService: CompetitionsService,
     @Inject(forwardRef(() => MatchdaysService))
     private readonly matchdaysService: MatchdaysService,
+    private readonly badgesService: BadgesService,
   ) {}
 
   async create(userId: string, dto: CreateGroupDto): Promise<Group> {
     const inviteCode = await this.generateUniqueInviteCode();
     const defaults = this.configService.get('comeback', { infer: true });
     const scoringMode = dto.scoringMode ?? 'ONE_X_TWO';
-    // El comodin de remontada es un concepto 1X2 (doble oportunidad); en modo
-    // resultado exacto se fuerza desactivado pase lo que llegue en el DTO.
-    const isExactScore = scoringMode === 'EXACT_SCORE';
 
     const group = await this.prisma.group.create({
       data: {
@@ -96,7 +95,7 @@ export class GroupsService {
         isPublic: dto.isPublic ?? false,
         inviteCode,
         scoringMode,
-        comebackEnabled: isExactScore ? false : (dto.comebackEnabled ?? defaults.enabled),
+        comebackEnabled: dto.comebackEnabled ?? defaults.enabled,
         comebackPointsPerBonus: dto.comebackPointsPerBonus ?? defaults.pointsPerBonus,
         ownerId: userId,
         memberships: {
@@ -108,6 +107,10 @@ export class GroupsService {
     // clasificacion (ver GroupsService.findMineForUser) — se obliga a elegir
     // desde la propia creacion en vez de dejarlo como paso opcional posterior.
     await this.setCompetitions(group.id, dto.competitionIds);
+    // "Fundador": unica insignia que se concede al momento en vez de esperar
+    // a que cierre una jornada (ver BadgesService.checkGroupFounder) — no
+    // debe poder romper la creacion del grupo si falla.
+    await this.badgesService.checkGroupFounder(userId, group.id);
     return this.findByIdForMember(group.id, userId);
   }
 
@@ -123,7 +126,12 @@ export class GroupsService {
     return group.scoringMode;
   }
 
-  /** Solo el admin puede tocar las reglas del grupo; se editan por separado de las competiciones. */
+  /**
+   * Solo el admin puede tocar las reglas del grupo; se editan por separado
+   * de las competiciones. El comodin de remontada se admite en ambos modos
+   * de puntuacion (doble oportunidad en 1X2, duplicar puntos en resultado
+   * exacto — ver WildcardsService.getComebackStatus).
+   */
   async updateRules(groupId: string, dto: UpdateGroupRulesDto): Promise<Group> {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
@@ -132,15 +140,10 @@ export class GroupsService {
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
     }
-    // El comodin de remontada no existe en modo resultado exacto: se ignora
-    // cualquier intento de reactivarlo aunque se llame al endpoint directamente.
-    if (group.scoringMode === 'EXACT_SCORE' && dto.comebackEnabled === true) {
-      throw new BadRequestException('El comodín de remontada no está disponible en grupos de resultado exacto');
-    }
     return this.prisma.group.update({
       where: { id: groupId },
       data: {
-        comebackEnabled: group.scoringMode === 'EXACT_SCORE' ? false : dto.comebackEnabled,
+        comebackEnabled: dto.comebackEnabled,
         comebackPointsPerBonus: dto.comebackPointsPerBonus,
         isPublic: dto.isPublic,
       },
@@ -165,25 +168,71 @@ export class GroupsService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const now = new Date();
     return Promise.all(
       groups.map(async (group) => {
         const activeCompetitionIds = group.groupCompetitions
           .filter((gc) => gc.isActive)
           .map((gc) => gc.competitionId);
         if (activeCompetitionIds.length === 0) {
-          return { ...group, myPosition: null };
+          return { ...group, myPosition: null, hasPendingPicks: false };
         }
         const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;
-        const snapshot = await this.prisma.rankingSnapshot.findFirst({
-          where: { groupId: group.id, userId, period: 'TOTAL', competitionId },
-          orderBy: { createdAt: 'desc' },
-        });
+        const [snapshot, hasPendingPicks] = await Promise.all([
+          this.prisma.rankingSnapshot.findFirst({
+            where: { groupId: group.id, userId, period: 'TOTAL', competitionId },
+            orderBy: { createdAt: 'desc' },
+          }),
+          this.hasPendingPicksForGroup(group.id, activeCompetitionIds, group.scoringMode, userId, now),
+        ]);
         return {
           ...group,
           myPosition: snapshot ? { position: snapshot.position, points: snapshot.points } : null,
+          hasPendingPicks,
         };
       }),
     );
+  }
+
+  /**
+   * true si a este usuario le queda algun partido abierto sin pronosticar en
+   * alguna de las competiciones activas del grupo — misma regla que el punto
+   * rojo de "Jornada" (ver CurrentMatchdayFacade.hasPendingPicks en el
+   * frontend), pero calculada aqui para poder mostrar el aviso en el
+   * selector/listado de grupos sin tener que cargar la jornada completa de
+   * cada uno en el cliente.
+   */
+  private async hasPendingPicksForGroup(
+    groupId: string,
+    competitionIds: string[],
+    scoringMode: ScoringMode,
+    userId: string,
+    now: Date,
+  ): Promise<boolean> {
+    for (const competitionId of competitionIds) {
+      const matchday = await this.matchdaysService.getCurrentMatchdayForCompetition(competitionId);
+      if (!matchday || matchday.status === 'FINISHED') continue;
+
+      const isMatchdayOpenByTime = new Date(matchday.opensAt).getTime() <= now.getTime();
+      if (!matchday.canPredict || !isMatchdayOpenByTime) continue;
+
+      const predictions = await this.prisma.prediction.findMany({
+        where: { userId, groupId, match: { matchdayId: matchday.id } },
+      });
+      const byMatchId = new Map(predictions.map((p) => [p.matchId, p]));
+
+      const pending = matchday.matches.some((match) => {
+        const isPredictable = match.status === 'SCHEDULED' && match.kickoff.getTime() > now.getTime();
+        if (!isPredictable) return false;
+        const prediction = byMatchId.get(match.id);
+        if (scoringMode === 'EXACT_SCORE') {
+          return prediction?.predictedHomeScore == null || prediction?.predictedAwayScore == null;
+        }
+        return !prediction?.choice && !prediction?.doubleChanceOption;
+      });
+      if (pending) return true;
+    }
+    return false;
   }
 
   /**

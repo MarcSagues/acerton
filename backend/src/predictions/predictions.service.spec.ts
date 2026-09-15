@@ -140,6 +140,22 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
         group: { scoringMode: 'EXACT_SCORE' },
         match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
       },
+      {
+        id: 'p5',
+        predictedHomeScore: 2,
+        predictedAwayScore: 0,
+        doublePointsWildcard: true,
+        group: { scoringMode: 'EXACT_SCORE' },
+        match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
+      },
+      {
+        id: 'p6',
+        predictedHomeScore: 1,
+        predictedAwayScore: 0,
+        doublePointsWildcard: true,
+        group: { scoringMode: 'EXACT_SCORE' },
+        match: { status: 'FINISHED', result: 'HOME', homeScore: 2, awayScore: 0 },
+      },
     ]);
 
     const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never);
@@ -149,6 +165,8 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
     expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p2' }, data: { pointsEarned: 5 } });
     expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p3' }, data: { pointsEarned: 2 } });
     expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p4' }, data: { pointsEarned: 0 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p5' }, data: { pointsEarned: 10 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p6' }, data: { pointsEarned: 4 } });
   });
 });
 
@@ -228,8 +246,14 @@ describe('PredictionsService.submit', () => {
 
       expect(prisma.prediction.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          update: { predictedHomeScore: 2, predictedAwayScore: 1, choice: null, doubleChanceOption: null },
-          create: expect.objectContaining({ predictedHomeScore: 2, predictedAwayScore: 1 }),
+          update: {
+            predictedHomeScore: 2,
+            predictedAwayScore: 1,
+            doublePointsWildcard: false,
+            choice: null,
+            doubleChanceOption: null,
+          },
+          create: expect.objectContaining({ predictedHomeScore: 2, predictedAwayScore: 1, doublePointsWildcard: false }),
         }),
       );
     });
@@ -240,6 +264,45 @@ describe('PredictionsService.submit', () => {
       await expect(
         service.submit('u1', 'g1', { matchId: 'm1', predictedHomeScore: 2, predictedAwayScore: 1 }),
       ).rejects.toThrow();
+    });
+
+    it('con el comodin de remontada activo, comprueba el cupo y lo guarda en doublePointsWildcard', async () => {
+      const { service, prisma, wildcardsService } = buildSubmitDeps(
+        { status: 'SCHEDULED', kickoff: future },
+        { scoringMode: 'EXACT_SCORE' },
+      );
+
+      await service.submit('u1', 'g1', {
+        matchId: 'm1',
+        predictedHomeScore: 2,
+        predictedAwayScore: 1,
+        doublePointsWildcard: true,
+      });
+
+      expect(wildcardsService.assertCanUseDoubleChance).toHaveBeenCalledWith('u1', 'g1', 'md1', 'm1');
+      expect(prisma.prediction.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.objectContaining({ doublePointsWildcard: true }),
+          create: expect.objectContaining({ doublePointsWildcard: true }),
+        }),
+      );
+    });
+
+    it('rechaza el comodin de remontada si no quedan usos disponibles', async () => {
+      const { service, wildcardsService } = buildSubmitDeps(
+        { status: 'SCHEDULED', kickoff: future },
+        { scoringMode: 'EXACT_SCORE' },
+      );
+      wildcardsService.assertCanUseDoubleChance.mockRejectedValue(new Error('sin cupo'));
+
+      await expect(
+        service.submit('u1', 'g1', {
+          matchId: 'm1',
+          predictedHomeScore: 2,
+          predictedAwayScore: 1,
+          doublePointsWildcard: true,
+        }),
+      ).rejects.toThrow('sin cupo');
     });
   });
 });

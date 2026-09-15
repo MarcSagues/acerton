@@ -36,4 +36,8 @@ export class UpdateNotificationPreferencesDto {
   @IsOptional()
   @IsBoolean()
   seasonFinishedTrophies?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  reengagement?: boolean;
 }

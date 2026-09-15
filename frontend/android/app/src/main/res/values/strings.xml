@@ -8,5 +8,5 @@
          el de pruebas de Google via src/debug/res/values/strings.xml, para
          no generar impresiones/clics reales contra la cuenta durante el
          desarrollo. -->
-    <string name="admob_app_id">ca-app-pub-1185144357301303~6197649742</string>
+    <string name="admob_app_id">ca-app-pub-6403313027738561~6956033343</string>
 </resources>

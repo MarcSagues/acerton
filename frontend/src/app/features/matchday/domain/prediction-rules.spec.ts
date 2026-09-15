@@ -4,6 +4,7 @@ import {
   exactScorePoints,
   isMatchPredictable,
   isPredictionHit,
+  matchAccentTone,
   pointsForPrediction,
   predictionLabel,
 } from './prediction-rules';
@@ -57,5 +58,20 @@ describe('prediction rules', () => {
     expect(isPredictionHit(match({ result: 'DRAW' }), doubleChance, false)).toBeTrue();
     expect(isPredictionHit(match({ result: 'AWAY' }), doubleChance, false)).toBeFalse();
     expect(pointsForPrediction(match(), selection({ pointsEarned: 9 }), false)).toBe(9);
+  });
+
+  it('el comodin de remontada en resultado exacto (doublePointsWildcard) duplica 5/2 a 10/4', () => {
+    const exact = selection({ predictedHomeScore: 2, predictedAwayScore: 1, doublePointsWildcard: true });
+    expect(exactScorePoints(match(), exact)).toBe(10);
+    expect(predictionLabel(exact, true)).toBe('2-1 (x2)');
+    expect(matchAccentTone(match(), exact, true)).toBe('hit');
+
+    const partial = selection({ predictedHomeScore: 3, predictedAwayScore: 0, doublePointsWildcard: true });
+    expect(exactScorePoints(match(), partial)).toBe(4);
+    expect(matchAccentTone(match(), partial, true)).toBe('partial');
+
+    const miss = selection({ predictedHomeScore: 0, predictedAwayScore: 1, doublePointsWildcard: true });
+    expect(exactScorePoints(match(), miss)).toBe(0);
+    expect(matchAccentTone(match(), miss, true)).toBe('miss');
   });
 });

@@ -38,7 +38,7 @@
         <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
         {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
       </button>
-      <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="openShareCard()">
+      <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="page.openShareCard()">
         <piqo-svg icon="compartir" size="18"></piqo-svg>
         Compartir imagen
       </button>
@@ -46,23 +46,12 @@
         <piqo-svg icon="atras" size="18"></piqo-svg>
         Volver
       </button>
-
-      <app-matchday-share-card
-        variant="picks"
-        [matchday]="entry.matchday"
-        [competitionName]="entry.competition.name"
-        [predictions]="page.sharePredictions()"
-        [scoringMode]="page.shareScoringMode()"
-        [playerName]="page.sharePlayerName()"
-        [groupName]="page.shareGroupName()"
-        [totalPoints]="0"
-        [hits]="0"
-      ></app-matchday-share-card>
     </main>
   }
 } @else {
   @let comebackBannerText = page.comebackBanner(page.activeEntry());
-  <div class="page" [class.has-comeback-banner]="!!comebackBannerText">
+  @let showAdRewardBanner = page.showAdRewardBanner(page.activeEntry());
+  <div class="page" [class.has-comeback-banner]="!!comebackBannerText || showAdRewardBanner">
     <div class="head-row">
       <app-group-switcher></app-group-switcher>
     </div>
@@ -103,7 +92,7 @@
         <div class="comp-switcher">
           @for (e of page.entries(); track e.competition.id; let i = $index) {
             <button type="button" class="comp-chip" [class.active]="i === page.activeTabIndex()" (click)="page.selectTab(i)">
-              {{ e.competition.name }} · {{ e.matchday.matches.length }}
+              {{ e.competition.name }}
               @if (page.hasPendingPicks(e)) {
                 <span class="pending-dot" aria-hidden="true"></span>
               }
@@ -162,7 +151,14 @@
             @if (page.isMatchPending(match)) {
               <span class="pending-dot match-pending-dot" aria-hidden="true"></span>
             }
-            <p class="kickoff mono">{{ page.matchDayLabel(match.kickoff) }} · {{ match.kickoff | date: 'HH:mm' }}</p>
+            <p class="kickoff mono">
+              @if (page.matchDayLabel(match.kickoff) === 'Hoy') {
+                <strong>Hoy</strong>
+              } @else {
+                {{ page.matchDayLabel(match.kickoff) }}
+              }
+              · {{ match.kickoff | date: 'HH:mm' }}
+            </p>
 
             <div class="teams-row">
               <div class="teams">
@@ -190,8 +186,7 @@
                   {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
                 </span>
               } @else if (page.isMatchLocked(match)) {
-                <piqo-svg icon="candado" size="16"></piqo-svg>
-                <span>{{ page.matchLockedLabel(match) }}</span>
+                <span class="points-badge mono" data-tone="none">{{ page.matchLockedLabel(match) }}</span>
               } @else if (!page.pickingAllowed()) {
                 <piqo-svg icon="reloj" size="16"></piqo-svg>
                 <span>Aún no</span>
@@ -203,10 +198,9 @@
                 <app-spinner [size]="16"></app-spinner>
                 <span>Guardando…</span>
               } @else if (page.stateFor(match.id).saved && !page.isExactScore()) {
-                <piqo-svg icon="check" size="16" class="hit"></piqo-svg>
-                <span class="hit">Guardado</span>
+                <span class="points-badge mono" data-tone="hit">Guardado</span>
               } @else {
-                <span></span>
+                <span class="points-badge mono" data-tone="pending">Pendiente de jugar</span>
               }
             </div>
           </div>
@@ -224,13 +218,25 @@
                 <span class="score-label mono">V</span>
               </div>
               <div class="exact-score-box" [attr.data-tone]="page.matchAccentTone(match)">
+                @if (page.stateFor(match.id).doublePointsWildcard) {
+                  <span class="wildcard-x2-badge">x2</span>
+                }
                 <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedHomeScore" />
                 <span class="score-sep mono">-</span>
                 <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedAwayScore" />
               </div>
             </div>
           } @else {
-            <div class="score-widget">
+            <div
+              class="score-widget"
+              (pointerdown)="page.startLongPress(match, locked)"
+              (pointerup)="page.cancelLongPress()"
+              (pointerleave)="page.cancelLongPress()"
+              (pointercancel)="page.cancelLongPress()"
+            >
+              <!-- Mantener pulsada esta fila abre el panel del comodin de
+                   remontada (ComebackSheetComponent, modo 'double-points'),
+                   igual que en 1X2 — ver openComebackSheet(). -->
               <div class="score-labels">
                 <span class="score-label mono">L</span>
                 <span class="score-sep-spacer mono">-</span>
@@ -243,6 +249,9 @@
                 [class.confirmed]="page.stateFor(match.id).saved"
                 [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
               >
+                @if (page.stateFor(match.id).doublePointsWildcard) {
+                  <span class="wildcard-x2-badge">x2</span>
+                }
                 <input
                   class="score-input mono"
                   type="number"
@@ -328,16 +337,29 @@
         <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">
           <piqo-svg icon="historial" size="20"></piqo-svg>Ver desglose de resultados
         </a>
-      } @else if (!page.isLocked(entry) && page.pickingAllowed() && page.doneCount() === entry.matchday.matches.length) {
-        <div class="cta-bar">
-          <piqo-svg icon="check" size="18" class="hit"></piqo-svg>
-          <span>Completado</span>
-        </div>
       }
     }
   </div>
 
-  @if (comebackBannerText) {
+  @if (showAdRewardBanner) {
+    <div class="comeback-banner-wrap">
+      <div class="comeback-banner ad-reward-banner">
+        <piqo-svg icon="comodin" size="18"></piqo-svg>
+        <span>Consigue 1 comodín extra viendo un vídeo</span>
+        <button type="button" class="ad-reward-watch-btn" [disabled]="page.watchingAd()" (click)="page.watchAdForComebackBonus()">
+          {{ page.watchingAd() ? 'Cargando…' : 'Ver vídeo' }}
+        </button>
+        <button
+          type="button"
+          class="comeback-banner-close"
+          aria-label="Cerrar aviso del vídeo"
+          (click)="page.dismissAdRewardBanner(page.activeEntry()!)"
+        >
+          <piqo-svg icon="cerrar" size="14"></piqo-svg>
+        </button>
+      </div>
+    </div>
+  } @else if (comebackBannerText) {
     <div class="comeback-banner-wrap">
       <div class="comeback-banner">
         <piqo-svg icon="comodin" size="18"></piqo-svg>

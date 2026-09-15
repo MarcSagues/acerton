@@ -77,51 +77,67 @@ enum ScoringMode {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String    @unique
-  passwordHash        String? // null cuando el usuario solo usa Google OAuth
-  googleId            String?   @unique
-  name                String
+  id                        String    @id @default(cuid())
+  email                     String    @unique
+  passwordHash              String? // null cuando el usuario solo usa Google OAuth
+  googleId                  String?   @unique
+  name                      String
   /// false solo para cuentas de Google recien creadas, cuyo nombre viene
   /// del perfil de Google sin que el usuario lo haya elegido — se les pide
   /// confirmarlo/cambiarlo en el onboarding antes de entrar a la app. Las
   /// cuentas registradas con email ya piden el nombre en el propio
   /// formulario, asi que nacen con esto en true.
-  usernameConfirmed   Boolean   @default(true)
+  usernameConfirmed         Boolean   @default(true)
   /// Ultima vez que se cambio `name` tras el onboarding — limita la
   /// frecuencia de cambio (ver UsersService.updateName) para que no se use
   /// como forma de troll en las clasificaciones del grupo.
-  nameChangedAt       DateTime?
-  avatarUrl           String?
+  nameChangedAt             DateTime?
+  avatarUrl                 String?
   /// Color de fondo detras del avatar (catalogo de mascota con fondo
   /// transparente, o cualquier avatar futuro). Null = sin color propio
   /// (fondo neutro por defecto en el render). Restringido a la paleta de
   /// AVATAR_BACKGROUNDS (ver users.constants.ts) — validado en el DTO.
-  avatarBackground    String?
+  avatarBackground          String?
   /// Cuando el usuario termino u omitio el tutorial por primera vez — no se
   /// reinicia al repetirlo manualmente desde Perfil (ver TutorialService),
   /// solo marca que ya no debe aparecer solo al entrar a un grupo.
-  tutorialCompletedAt DateTime?
+  tutorialCompletedAt       DateTime?
   /// Null = no ha confirmado el correo todavia: no puede iniciar sesion
   /// (ver AuthService.login). Las cuentas de Google se marcan verificadas
   /// en el momento de crearse (Google ya verifico ese email). Backfill de
   /// la migracion que anadio esta columna: todas las cuentas ya existentes
   /// se marcaron verificadas con su propio createdAt, para no dejar a nadie
   /// fuera retroactivamente.
-  emailVerifiedAt    DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  emailVerifiedAt           DateTime?
+  /// Ultima vez que abrio la app (login, verify-email, Google o refresh de
+  /// sesion — ver AuthService.issueTokens). Base para el aviso de
+  /// reenganche tras dias sin entrar.
+  lastActiveAt              DateTime?
+  /// Cuando se envio el ultimo aviso de reenganche ("Piqo te echa de
+  /// menos"): si es mas reciente que lastActiveAt, ya se aviso de esta
+  /// racha de inactividad concreta y no hay que repetirlo cada dia
+  /// mientras siga sin volver — ver JobsService.sendReengagementNotifications.
+  reengagementPushSentAt    DateTime?
+  /// Cuando se envio el ultimo recordatorio de cierre de cualquier tipo
+  /// (24h/5h/1h/30min, de cualquier grupo): limita a como mucho uno cada 24h
+  /// por persona aunque varios grupos/competiciones tengan avisos a la vez
+  /// — ver NotificationsService.notifyMatchesClosingSoon.
+  lastClosingReminderPushAt DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 
-  memberships        GroupMembership[]
-  ownedGroups        Group[]
-  predictions        Prediction[]
-  userBadges         UserBadge[]
-  streaks            Streak[]
-  globalStreak       GlobalStreak?
-  rankingSnapshots   RankingSnapshot[]
+  memberships            GroupMembership[]
+  ownedGroups            Group[]
+  predictions            Prediction[]
+  userBadges             UserBadge[]
+  streaks                Streak[]
+  globalStreak           GlobalStreak?
+  rankingSnapshots       RankingSnapshot[]
   refreshTokens          RefreshToken[]
   notificationTokens     NotificationToken[]
   notificationPreference NotificationPreference?
+  notifications          Notification[]
+  adRewardClaims         AdRewardClaim[]
   authTokens             AuthToken[]
 
   @@map("users")
@@ -138,13 +154,13 @@ enum AuthTokenPurpose {
 /// `expiresAt` limita su validez (ver MailService para el texto de cada
 /// correo).
 model AuthToken {
-  id        String            @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
   purpose   AuthTokenPurpose
   tokenHash String
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime          @default(now())
+  createdAt DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -191,20 +207,22 @@ model NotificationPreference {
   userId String @unique
 
   /// Aviso de que una jornada nueva ya se puede pronosticar.
-  matchdayOpening Boolean @default(true)
+  matchdayOpening        Boolean @default(true)
   /// Recordatorios de cierre por franja, cada uno independiente (seleccion multiple).
-  reminder24h Boolean @default(false)
-  reminder5h  Boolean @default(false)
-  reminder1h  Boolean @default(true)
-  reminder30m Boolean @default(false)
+  reminder24h            Boolean @default(false)
+  reminder5h             Boolean @default(false)
+  reminder1h             Boolean @default(true)
+  reminder30m            Boolean @default(false)
   /// Aviso por partido propio ya terminado con los puntos ya calculados.
-  matchFinishedPoints Boolean @default(false)
+  matchFinishedPoints    Boolean @default(false)
   /// Aviso de jornada terminada con resultado y posicion en la clasificacion.
   matchdayFinishedResult Boolean @default(true)
   /// Insignia conseguida.
-  badgeEarned Boolean @default(true)
+  badgeEarned            Boolean @default(true)
   /// Fin de temporada de un grupo y trofeos otorgados (sin efecto todavia: depende del Sprint 6).
   seasonFinishedTrophies Boolean @default(true)
+  /// "Piqo te echa de menos" tras varios dias sin abrir la app. No depende de ningun grupo.
+  reengagement           Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,6 +230,42 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
+}
+
+/// Tipo de aviso persistido, igual a `data.type` del push equivalente
+/// (ver NotificationsService) — un unico valor sirve para decidir el icono
+/// en el frontend y para saber que evento lo genero.
+enum NotificationType {
+  MATCHDAY_CLOSING_SOON
+  MATCHDAY_FINISHED
+  BADGE_EARNED
+  REENGAGEMENT
+}
+
+/// Historial real de avisos por usuario (pantalla "Avisos" / campanita del
+/// top-bar — ver issue #21 "Terminar el feed de avisos"). Se crea una fila
+/// aqui en el mismo momento en que se decide enviar el push equivalente
+/// (mismos filtros de preferencia/silencio ya aplicados en
+/// NotificationsService), asi que esta tabla es la fuente de verdad de "que
+/// le hemos avisado a este usuario y de que", independiente de si el push
+/// llego a entregarse de verdad (sin token registrado, permiso denegado...).
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  body       String
+  /// Contexto opcional segun el tipo (jornada terminada, recordatorio de cierre...); null para avisos sin grupo (reenganche).
+  groupId    String?
+  matchdayId String?
+  /// null = no leido. Se marca en bloque desde "Leer todo", no aviso por aviso.
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 // ---------------------------------------------------------------------------
@@ -250,6 +304,7 @@ model Group {
   streaks           Streak[]
   userBadges        UserBadge[]
   seasons           GroupSeason[]
+  adRewardClaims    AdRewardClaim[]
 
   @@map("groups")
 }
@@ -278,16 +333,16 @@ model GroupSeason {
 }
 
 model GroupMembership {
-  id       String    @id @default(cuid())
-  userId   String
-  groupId  String
-  role     GroupRole @default(MEMBER)
-  joinedAt DateTime  @default(now())
+  id                 String    @id @default(cuid())
+  userId             String
+  groupId            String
+  role               GroupRole @default(MEMBER)
+  joinedAt           DateTime  @default(now())
   /// Silencia los avisos de este grupo para este usuario (product-rules.md
   /// "Notificaciones": no avisar de grupos silenciados). No afecta a otros
   /// miembros ni a la preferencia global de tipo de aviso — se combinan
   /// (hace falta que el tipo este activado Y el grupo no silenciado).
-  mutedNotifications Boolean @default(false)
+  mutedNotifications Boolean   @default(false)
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -345,55 +400,81 @@ model GroupCompetition {
 }
 
 model Matchday {
-  id                String         @id @default(cuid())
-  competitionId     String
-  season            Int
+  id            String         @id @default(cuid())
+  competitionId String
+  season        Int
   /// Nombre de ronda tal como lo expone el proveedor (ej. "Regular Season - 5")
-  name              String
+  name          String
   /// Orden secuencial dentro de la temporada, para ordenar jornadas en UI
-  order             Int
+  order         Int
   /// Cierre de predicciones = kickoff del primer partido de la jornada
-  closesAt          DateTime
-  status            MatchdayStatus @default(SCHEDULED)
-  /// Recordatorios push de cierre escalonados (null = ese aviso aun no se ha
-  /// enviado). Cada uno se dispara como mucho una vez, independientemente de
-  /// los demas; ver JobsService.REMINDER_TIERS. El envio real a cada usuario
-  /// ademas se filtra por NotificationPreference (que franjas quiere) y por
-  /// GroupMembership.mutedNotifications (grupos silenciados).
-  reminder24hSentAt DateTime?
-  reminder5hSentAt  DateTime?
-  reminder1hSentAt  DateTime?
-  reminder30mSentAt DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  closesAt      DateTime
+  status        MatchdayStatus @default(SCHEDULED)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   competition             Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   matches                 Match[]
   rankingSnapshots        RankingSnapshot[]
   streaksLastPlayed       Streak[]          @relation("StreakLastMatchday")
   globalStreaksLastPlayed GlobalStreak[]    @relation("GlobalStreakLastMatchday")
+  adRewardClaims          AdRewardClaim[]
 
   @@unique([competitionId, season, name])
   @@index([competitionId, status])
   @@map("matchdays")
 }
 
+/// Comodin de remontada extra conseguido viendo un video de anuncio (AdMob
+/// rewarded), a peticion explicita del usuario. Uno por (usuario, grupo,
+/// jornada): la jornada ya identifica la competicion, asi que en un usuario
+/// con 3 grupos x 3 ligas activas cada uno esto permite hasta 9 comodines
+/// extra por semana, uno por cada combinacion grupo+liga+jornada abierta —
+/// ver WildcardsService.getComebackStatus, que suma +1 al `allowance`
+/// calculado por el gap con el lider si existe una fila aqui.
+model AdRewardClaim {
+  id         String   @id @default(cuid())
+  userId     String
+  groupId    String
+  matchdayId String
+  claimedAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  matchday Matchday @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId, matchdayId])
+  @@map("ad_reward_claims")
+}
+
 model Match {
-  id           String            @id @default(cuid())
-  matchdayId   String
+  id                String            @id @default(cuid())
+  matchdayId        String
   /// Id del partido en el proveedor de datos activo (ver FootballProvider).
-  externalId   Int               @unique
-  homeTeam     String
-  awayTeam     String
-  homeTeamLogo String?
-  awayTeamLogo String?
-  kickoff      DateTime
-  status       MatchStatus       @default(SCHEDULED)
-  homeScore    Int?
-  awayScore    Int?
-  result       PredictionChoice?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  externalId        Int               @unique
+  homeTeam          String
+  awayTeam          String
+  homeTeamLogo      String?
+  awayTeamLogo      String?
+  kickoff           DateTime
+  status            MatchStatus       @default(SCHEDULED)
+  homeScore         Int?
+  awayScore         Int?
+  result            PredictionChoice?
+  /// Recordatorios push escalonados antes de SU PROPIO kickoff (null = ese
+  /// aviso aun no se ha enviado). Viven aqui, no en Matchday, porque una
+  /// jornada puede repartirse en varios dias — un aviso anclado solo al
+  /// cierre de la jornada (kickoff del primer partido) nunca avisaria de un
+  /// partido concreto que empieza mas tarde. Cada uno se dispara como mucho
+  /// una vez, independientemente de los demas; ver JobsService.REMINDER_TIERS.
+  /// El envio real a cada usuario ademas se filtra por NotificationPreference
+  /// (que franjas quiere) y por GroupMembership.mutedNotifications.
+  reminder24hSentAt DateTime?
+  reminder5hSentAt  DateTime?
+  reminder1hSentAt  DateTime?
+  reminder30mSentAt DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
   predictions Prediction[]
@@ -414,22 +495,28 @@ model Match {
 /// (puede reutilizar el mismo pick, pero el comodin y los puntos se calculan
 /// por separado en cada grupo).
 model Prediction {
-  id                 String              @id @default(cuid())
-  userId             String
-  groupId            String
-  matchId            String
+  id                   String              @id @default(cuid())
+  userId               String
+  groupId              String
+  matchId              String
   /// Null cuando la prediccion usa el comodin de remontada (ver doubleChanceOption)
-  choice             PredictionChoice?
+  choice               PredictionChoice?
   /// Solo se rellena cuando se usa el comodin de remontada; en ese caso
   /// sustituye a `choice` como fuente de verdad para puntuar.
-  doubleChanceOption DoubleChanceOption?
+  doubleChanceOption   DoubleChanceOption?
   /// Solo se rellenan si el grupo juega en modo EXACT_SCORE; en ese caso
   /// sustituyen a choice/doubleChanceOption como fuente de verdad para puntuar.
-  predictedHomeScore Int?
-  predictedAwayScore Int?
-  pointsEarned       Int?
-  submittedAt        DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
+  predictedHomeScore   Int?
+  predictedAwayScore   Int?
+  /// Comodin de remontada en grupos EXACT_SCORE (equivalente a
+  /// doubleChanceOption en 1X2, pero no hay combinacion que elegir: solo
+  /// duplica los puntos de este partido si acierta). Mismo cupo/`allowance`
+  /// que doubleChanceOption — ver WildcardsService.getComebackStatus, que
+  /// cuenta uno u otro segun Group.scoringMode.
+  doublePointsWildcard Boolean             @default(false)
+  pointsEarned         Int?
+  submittedAt          DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)

@@ -18,16 +18,22 @@ export class BottomNavService {
   }
 
   /**
-   * Punto rojo sobre "Jornada": queda algun partido abierto sin pronostico,
-   * en cualquiera de las competiciones del grupo activo. Vive aqui (no en
-   * CurrentMatchdayFacade) porque la barra inferior no es hija de esa
-   * pantalla — sigue mostrando el ultimo valor conocido aunque se navegue
-   * fuera de Jornada, que es justo el punto de un recordatorio persistente.
+   * Punto rojo de "Jornada": mientras esa pantalla esta montada,
+   * CurrentMatchdayFacade empuja aqui el valor calculado en vivo (reactivo
+   * a la cuenta atras y a cada guardado), porque solo ella tiene cargadas
+   * las predicciones del grupo activo — ActiveGroupService.
+   * activeGroupHasPendingPicks() (el mismo dato que ya alimenta "Grupos")
+   * solo se refresca en cada navegacion via hasGroupGuard, asi que por si
+   * solo se quedaria desfasado si una ventana de pronostico se abre
+   * mientras el usuario ya esta parado en Jornada sin volver a navegar.
+   * Al salir de Jornada esto vuelve a null y el punto cae de nuevo en ese
+   * dato del grupo, que hasGroupGuard ya habra refrescado con la
+   * navegacion de salida.
    */
-  private readonly hasPendingJornadaPicksSignal = signal(false);
-  readonly hasPendingJornadaPicks = this.hasPendingJornadaPicksSignal.asReadonly();
+  private readonly liveJornadaPendingSignal = signal<boolean | null>(null);
+  readonly liveJornadaPending = this.liveJornadaPendingSignal.asReadonly();
 
-  setHasPendingJornadaPicks(pending: boolean): void {
-    this.hasPendingJornadaPicksSignal.set(pending);
+  setLiveJornadaPending(pending: boolean | null): void {
+    this.liveJornadaPendingSignal.set(pending);
   }
 }

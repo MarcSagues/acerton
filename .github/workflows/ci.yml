@@ -1,0 +1,66 @@
+name: CI
+
+# Corre en cada push a dev/main y en cada PR contra dev/main. No incluye la
+# suite Playwright (e2e/): necesita backend+frontend+DB levantados y de
+# momento se deja fuera para no ralentizar/afinar esto (ver docs/quiniela).
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  backend:
+    name: backend (tests + tsc)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Los tests son unitarios (Prisma mockeado, ver *.spec.ts), pero el
+      # cliente de Prisma tiene que existir para que los tipos/imports
+      # resuelvan al compilar.
+      - name: Generar cliente de Prisma
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Comprobar tipos (tsc --noEmit)
+        working-directory: backend
+        run: npx tsc --noEmit
+
+      - name: Tests unitarios
+        working-directory: backend
+        run: npm test -- --ci
+
+  frontend:
+    name: frontend (build + tsc + karma)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Comprobar tipos (tsc --noEmit)
+        working-directory: frontend
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Tests unitarios (Karma + ChromeHeadless)
+        working-directory: frontend
+        run: npx ng test --watch=false --browsers=ChromeHeadlessCI
+
+      - name: Build de produccion
+        working-directory: frontend
+        run: npm run build

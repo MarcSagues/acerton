@@ -18,4 +18,12 @@ export class WildcardsService {
       { params },
     );
   }
+
+  /** Se llama justo despues de que AdMob confirme la recompensa del video (ver AdsService). */
+  claimAdReward(groupId: string, matchdayId: string) {
+    return this.http.post<ComebackStatus>(
+      `${environment.apiUrl}/groups/${groupId}/wildcards/comeback/ad-reward`,
+      { matchdayId },
+    );
+  }
 }

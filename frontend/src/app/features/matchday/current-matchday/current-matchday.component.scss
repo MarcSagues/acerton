@@ -330,12 +330,13 @@ h1 {
 }
 
 .comeback-banner {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   max-width: 350px;
-  padding: 12px 14px;
+  padding: 16px 14px 12px;
   border-radius: 14px;
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-accent);
@@ -353,7 +354,9 @@ h1 {
 }
 
 .comeback-banner-close {
-  flex: none;
+  position: absolute;
+  top: -8px;
+  right: -8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,6 +366,24 @@ h1 {
   border: 0;
   background: var(--p4-soft);
   color: var(--p4-muted);
+}
+
+/* Icono + texto + cerrar en la primera fila (igual que .comeback-banner);
+   el boton "Ver video" se fuerza a una segunda fila propia (flex-basis:100%)
+   para no apretar el texto en el ancho estrecho del banner flotante. */
+.ad-reward-banner {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.ad-reward-watch-btn {
+  flex: 1 0 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--p4-radius-sm);
+  background: var(--p4-accent);
+  color: var(--p4-on-accent);
+  font: 700 13px/1 var(--p4-font-ui);
 }
 
 .match-list {
@@ -732,6 +753,24 @@ h1 {
   color: var(--p4-muted);
 }
 
+/* Comodin de remontada activo en este partido (resultado exacto): mismo
+   sitio en la esquina que la cruz de cerrar del banner flotante (ver
+   .comeback-banner-close), sobresaliendo del borde para no tapar los
+   digitos del marcador. */
+.wildcard-x2-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: var(--p4-accent);
+  color: var(--p4-on-accent);
+  font: 700 10px/20px var(--p4-font-ui);
+  text-align: center;
+}
+
 .status-row {
   margin-top: 14px;
   display: flex;
@@ -771,6 +810,10 @@ h1 {
   &[data-tone='miss'] {
     color: var(--p4-error);
   }
+
+  &[data-tone='pending'] {
+    color: var(--p4-warning);
+  }
 }
 
 .retry-btn {
@@ -796,23 +839,6 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-
-.cta-bar {
-  margin: 20px 20px 0;
-  min-height: 48px;
-  border-radius: var(--p4-radius-sm);
-  background: var(--p4-soft);
-  color: var(--p4-text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font: 600 13px/1 var(--p4-font-ui);
-
-  .hit {
-    color: var(--p4-success);
-  }
 }
 
 /* ---- Pantalla "Enviado" ------------------------------------------------ */
