@@ -23,7 +23,12 @@
           }
         </span>
         <span class="meta">
-          <span class="name">{{ group.name }}</span>
+          <span class="name">
+            @if (group.isFavorite) {
+              <piqo-svg icon="estrella-llena" size="13" class="favorite-mark"></piqo-svg>
+            }
+            {{ group.name }}
+          </span>
           <span class="sub">
             <span class="member-count">
               {{ group._count?.memberships ?? 0 }}

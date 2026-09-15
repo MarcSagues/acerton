@@ -343,6 +343,10 @@ model GroupMembership {
   /// miembros ni a la preferencia global de tipo de aviso — se combinan
   /// (hace falta que el tipo este activado Y el grupo no silenciado).
   mutedNotifications Boolean   @default(false)
+  /// Grupo marcado como favorito por este usuario (boton "favoritos" en
+  /// Grupos): se usa para fijarlo siempre arriba, tanto en la lista de
+  /// grupos como en el selector/pop-up — ver GroupsService.findMineForUser.
+  isFavorite         Boolean   @default(false)
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
