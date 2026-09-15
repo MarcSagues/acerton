@@ -753,6 +753,24 @@ h1 {
   color: var(--p4-muted);
 }
 
+/* Comodin de remontada activo en este partido (resultado exacto): mismo
+   sitio en la esquina que la cruz de cerrar del banner flotante (ver
+   .comeback-banner-close), sobresaliendo del borde para no tapar los
+   digitos del marcador. */
+.wildcard-x2-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: var(--p4-accent);
+  color: var(--p4-on-accent);
+  font: 700 10px/20px var(--p4-font-ui);
+  text-align: center;
+}
+
 .status-row {
   margin-top: 14px;
   display: flex;

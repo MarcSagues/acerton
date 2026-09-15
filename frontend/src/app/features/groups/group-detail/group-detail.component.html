@@ -91,40 +91,44 @@
             <piqo-svg icon="candado" size="18"></piqo-svg>
           </div>
 
-          @if (g.scoringMode === 'ONE_X_TWO') {
-            <div class="rule-card">
-              <piqo-svg icon="comodin" size="22"></piqo-svg>
-              <div class="rule-text">
-                <p class="rule-name">Comodín de remontada</p>
-                <p class="hint">Doble oportunidad (1X/X2/12) para quien va por detrás.</p>
-              </div>
-              <button
-                type="button"
-                class="toggle"
-                [class.on]="page.selectedComebackEnabled()"
-                [class.disabled]="!page.isAdmin()"
-                (click)="page.toggleComebackEnabled()"
-              >
-                <span class="knob"></span>
-              </button>
+          <div class="rule-card">
+            <piqo-svg icon="comodin" size="22"></piqo-svg>
+            <div class="rule-text">
+              <p class="rule-name">Comodín de remontada</p>
+              <p class="hint">
+                @if (g.scoringMode === 'EXACT_SCORE') {
+                  Duplicar puntos de un partido para quien va por detrás.
+                } @else {
+                  Doble oportunidad (1X/X2/12) para quien va por detrás.
+                }
+              </p>
             </div>
-            <div class="rule-card">
-              <piqo-svg icon="marcador" size="22"></piqo-svg>
-              <div class="rule-text">
-                <p class="rule-name">Puntos por opción doble</p>
-                <p class="hint">Cada N puntos de diferencia con el líder dan 1 uso más esa jornada.</p>
-              </div>
-              <input
-                class="rule-input mono"
-                type="number"
-                min="1"
-                max="50"
-                [value]="page.comebackPointsPerBonusInput()"
-                [disabled]="!page.isAdmin()"
-                (input)="page.updateComebackPointsPerBonusInput($any($event.target).value)"
-              />
+            <button
+              type="button"
+              class="toggle"
+              [class.on]="page.selectedComebackEnabled()"
+              [class.disabled]="!page.isAdmin()"
+              (click)="page.toggleComebackEnabled()"
+            >
+              <span class="knob"></span>
+            </button>
+          </div>
+          <div class="rule-card">
+            <piqo-svg icon="marcador" size="22"></piqo-svg>
+            <div class="rule-text">
+              <p class="rule-name">Puntos por opción doble</p>
+              <p class="hint">Cada N puntos de diferencia con el líder dan 1 uso más esa jornada.</p>
             </div>
-          }
+            <input
+              class="rule-input mono"
+              type="number"
+              min="1"
+              max="50"
+              [value]="page.comebackPointsPerBonusInput()"
+              [disabled]="!page.isAdmin()"
+              (input)="page.updateComebackPointsPerBonusInput($any($event.target).value)"
+            />
+          </div>
 
           <div class="rule-card">
             <piqo-svg icon="candado" size="22"></piqo-svg>
