@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prediction } from '@prisma/client';
@@ -9,6 +10,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WildcardsService } from '../wildcards/wildcards.service';
 import { GroupsService } from '../groups/groups.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
+import { XpService } from '../xp/xp.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SubmitPredictionDto } from './dto/submit-prediction.dto';
 import { calculateExactScorePoints, calculatePoints } from './scoring.util';
 import { isMatchPredictable } from '../matchdays/matchday.util';
@@ -16,11 +19,15 @@ import { xpProgressForLevel } from '../xp/xp.util';
 
 @Injectable()
 export class PredictionsService {
+  private readonly logger = new Logger(PredictionsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly wildcardsService: WildcardsService,
     private readonly groupsService: GroupsService,
     private readonly matchdaysService: MatchdaysService,
+    private readonly xpService: XpService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async submit(userId: string, groupId: string, dto: SubmitPredictionDto): Promise<Prediction> {
@@ -40,6 +47,15 @@ export class PredictionsService {
       );
     }
 
+    /** Es primera vez que este usuario pronostica este partido (ver awardParticipationXp abajo): comprobado ahora, antes del upsert, para no confundir "primer pronostico" con "lo acabo de cambiar". */
+    const isFirstPick =
+      (await this.prisma.prediction.findUnique({
+        where: { userId_groupId_matchId: { userId, groupId, matchId: dto.matchId } },
+        select: { id: true },
+      })) === null;
+
+    let prediction: Prediction;
+
     if (scoringMode === 'EXACT_SCORE') {
       if (dto.choice || dto.doubleChanceOption) {
         throw new BadRequestException('Este grupo juega en modo resultado exacto, no admite pronóstico 1X2');
@@ -58,7 +74,7 @@ export class PredictionsService {
         );
       }
 
-      return this.prisma.prediction.upsert({
+      prediction = await this.prisma.prediction.upsert({
         where: { userId_groupId_matchId: { userId, groupId, matchId: dto.matchId } },
         update: {
           predictedHomeScore: dto.predictedHomeScore,
@@ -76,34 +92,58 @@ export class PredictionsService {
           doublePointsWildcard,
         },
       });
+    } else {
+      if (dto.predictedHomeScore !== undefined || dto.predictedAwayScore !== undefined) {
+        throw new BadRequestException('Este grupo juega en modo 1X2, no admite resultado exacto');
+      }
+
+      const isDoubleChance = !!dto.doubleChanceOption;
+      if (!isDoubleChance && !dto.choice) {
+        throw new BadRequestException('Falta el pronóstico 1X2');
+      }
+
+      if (isDoubleChance) {
+        await this.wildcardsService.assertCanUseDoubleChance(
+          userId,
+          groupId,
+          match.matchdayId,
+          dto.matchId,
+        );
+      }
+
+      const choice = isDoubleChance ? null : (dto.choice ?? null);
+      const doubleChanceOption = isDoubleChance ? (dto.doubleChanceOption ?? null) : null;
+
+      prediction = await this.prisma.prediction.upsert({
+        where: { userId_groupId_matchId: { userId, groupId, matchId: dto.matchId } },
+        update: { choice, doubleChanceOption },
+        create: { userId, groupId, matchId: dto.matchId, choice, doubleChanceOption },
+      });
     }
 
-    if (dto.predictedHomeScore !== undefined || dto.predictedAwayScore !== undefined) {
-      throw new BadRequestException('Este grupo juega en modo 1X2, no admite resultado exacto');
+    if (isFirstPick) {
+      await this.awardParticipationXp(userId, groupId, match.matchdayId);
     }
 
-    const isDoubleChance = !!dto.doubleChanceOption;
-    if (!isDoubleChance && !dto.choice) {
-      throw new BadRequestException('Falta el pronóstico 1X2');
+    return prediction;
+  }
+
+  /**
+   * XP de participar en tiempo real (a peticion explicita del usuario: la
+   * barra de nivel debe notarse nada mas pronosticar un partido, no solo
+   * al cerrar la jornada — ver XpService.awardParticipation). Envuelto en
+   * try/catch a proposito: esto es secundario al pronostico en si, un
+   * fallo aqui (DB, push) no debe impedir que se guarde la prediccion.
+   */
+  private async awardParticipationXp(userId: string, groupId: string, matchdayId: string): Promise<void> {
+    try {
+      const levelUp = await this.xpService.awardParticipation(userId, groupId, matchdayId);
+      if (levelUp) {
+        await this.notificationsService.notifyLevelUp(levelUp.userId, levelUp.level);
+      }
+    } catch (error) {
+      this.logger.warn(`No se pudo conceder XP de participacion a ${userId}: ${error}`);
     }
-
-    if (isDoubleChance) {
-      await this.wildcardsService.assertCanUseDoubleChance(
-        userId,
-        groupId,
-        match.matchdayId,
-        dto.matchId,
-      );
-    }
-
-    const choice = isDoubleChance ? null : (dto.choice ?? null);
-    const doubleChanceOption = isDoubleChance ? (dto.doubleChanceOption ?? null) : null;
-
-    return this.prisma.prediction.upsert({
-      where: { userId_groupId_matchId: { userId, groupId, matchId: dto.matchId } },
-      update: { choice, doubleChanceOption },
-      create: { userId, groupId, matchId: dto.matchId, choice, doubleChanceOption },
-    });
   }
 
   async getMine(userId: string, groupId: string, matchdayId: string) {
