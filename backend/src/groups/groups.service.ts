@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
+import { BadgesService } from '../badges/badges.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
@@ -79,6 +80,7 @@ export class GroupsService {
     private readonly competitionsService: CompetitionsService,
     @Inject(forwardRef(() => MatchdaysService))
     private readonly matchdaysService: MatchdaysService,
+    private readonly badgesService: BadgesService,
   ) {}
 
   async create(userId: string, dto: CreateGroupDto): Promise<Group> {
@@ -105,6 +107,10 @@ export class GroupsService {
     // clasificacion (ver GroupsService.findMineForUser) — se obliga a elegir
     // desde la propia creacion en vez de dejarlo como paso opcional posterior.
     await this.setCompetitions(group.id, dto.competitionIds);
+    // "Fundador": unica insignia que se concede al momento en vez de esperar
+    // a que cierre una jornada (ver BadgesService.checkGroupFounder) — no
+    // debe poder romper la creacion del grupo si falla.
+    await this.badgesService.checkGroupFounder(userId, group.id);
     return this.findByIdForMember(group.id, userId);
   }
 

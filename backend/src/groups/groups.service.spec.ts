@@ -14,13 +14,17 @@ function buildDeps(activeCompetitionIds: string[], prismaOverrides: Record<strin
   const matchdaysService = {
     syncCurrentRound: jest.fn().mockResolvedValue(null),
   };
+  const badgesService = {
+    checkGroupFounder: jest.fn().mockResolvedValue([]),
+  };
   const service = new GroupsService(
     prisma as never,
     configService as never,
     competitionsService as never,
     matchdaysService as never,
+    badgesService as never,
   );
-  return { service, competitionsService, matchdaysService, prisma };
+  return { service, competitionsService, matchdaysService, prisma, badgesService };
 }
 
 describe('GroupsService.setCompetitions', () => {
@@ -54,6 +58,42 @@ describe('GroupsService.setCompetitions', () => {
 
     await expect(service.setCompetitions('g1', [])).rejects.toThrow(BadRequestException);
     expect(competitionsService.setGroupCompetitions).not.toHaveBeenCalled();
+  });
+});
+
+describe('GroupsService.create', () => {
+  function buildCreateDeps() {
+    const prisma = {
+      group: {
+        findUnique: jest.fn().mockResolvedValue(null), // codigo de invitacion libre a la primera
+        create: jest.fn().mockResolvedValue({ id: 'g1', isPublic: false }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'g1', isPublic: false, groupCompetitions: [], _count: { memberships: 1 } }),
+      },
+      groupMembership: { findUnique: jest.fn().mockResolvedValue({ userId: 'u1', groupId: 'g1' }) },
+    };
+    const configService = { get: jest.fn().mockReturnValue({ enabled: true, pointsPerBonus: 6 }) };
+    const competitionsService = {
+      findActiveByGroup: jest.fn().mockResolvedValue([]),
+      setGroupCompetitions: jest.fn().mockResolvedValue(undefined),
+    };
+    const matchdaysService = { syncCurrentRound: jest.fn().mockResolvedValue(null) };
+    const badgesService = { checkGroupFounder: jest.fn().mockResolvedValue([{ userId: 'u1', badgeName: 'Fundador' }]) };
+    const service = new GroupsService(
+      prisma as never,
+      configService as never,
+      competitionsService as never,
+      matchdaysService as never,
+      badgesService as never,
+    );
+    return { service, prisma, badgesService };
+  }
+
+  it('concede la insignia "Fundador" al creador justo despues de crear el grupo', async () => {
+    const { service, badgesService } = buildCreateDeps();
+
+    await service.create('u1', { name: 'Mi grupo', competitionIds: ['c1'] } as never);
+
+    expect(badgesService.checkGroupFounder).toHaveBeenCalledWith('u1', 'g1');
   });
 });
 
@@ -188,11 +228,13 @@ describe('GroupsService.findMineForUser', () => {
     const matchdaysService = {
       getCurrentMatchdayForCompetition: jest.fn().mockResolvedValue(matchday),
     };
+    const badgesService = { checkGroupFounder: jest.fn().mockResolvedValue([]) };
     const service = new GroupsService(
       prisma as never,
       configService as never,
       competitionsService as never,
       matchdaysService as never,
+      badgesService as never,
     );
     return { service, prisma };
   }
