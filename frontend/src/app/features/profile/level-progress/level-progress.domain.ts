@@ -22,6 +22,22 @@ export function mascotAssetPath(mascotId: string): string {
 }
 
 /**
+ * Que nivel hace falta para poder elegir este color/mascota en
+ * `/profile/avatar` (Sprint 14, gating real por nivel). El champán y
+ * 'reposo' (avatar "de fábrica", nunca en LEVEL_REWARDS) devuelven 1,
+ * igual que 'tristeza' (mascota normal que quedó fuera del catálogo de
+ * 18 premios por diseño) — siempre disponibles. Mismo criterio que el
+ * backend (`users/avatar-level-rewards.ts`, duplicado a propósito).
+ */
+export function levelRequiredForBackground(swatch: string): number {
+  return LEVEL_REWARDS.find((r) => r.kind === 'color' && r.swatch === swatch)?.n ?? 1;
+}
+
+export function levelRequiredForMascot(mascotId: string): number {
+  return LEVEL_REWARDS.find((r) => r.kind === 'mascot' && r.mascotId === mascotId)?.n ?? 1;
+}
+
+/**
  * Catálogo de recompensas por nivel: alterna colores y mascotas del
  * catálogo real (backend avatar-catalog.ts), de menos a más vistoso — se
  * excluyen a propósito 'reposo' (mascota) y el champán (#d2be94), porque

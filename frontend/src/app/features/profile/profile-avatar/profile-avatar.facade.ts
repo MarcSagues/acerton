@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { AvatarMascotOption } from '../../../core/models/avatar-catalog.model';
 import { mascotIdFromUrl } from '../domain/avatar-catalog.util';
 import { TROPHIES } from '../domain/trophies';
+import { levelRequiredForBackground, levelRequiredForMascot } from '../level-progress/level-progress.domain';
 
 @Injectable()
 export class ProfileAvatarFacade {
@@ -57,12 +58,29 @@ export class ProfileAvatarFacade {
    * correspondiente conseguido. Ver el aviso en avatar-catalog.ts
    * (backend): "conseguido" hoy es el mismo catalogo de muestra que ya se
    * ve en la Vitrina de Perfil (recuento fijo, igual para todos), no un
-   * dato real por usuario todavia.
+   * dato real por usuario todavia. Las mascotas normales, en cambio, son
+   * recompensas de nivel reales (Sprint 14) — el nivel ya viaja en
+   * `AuthService.currentUser()`, mismo dato que valida el backend en
+   * `UsersService.updateAvatar`.
    */
   isMascotLocked(mascot: AvatarMascotOption): boolean {
-    if (!mascot.requiresTrophyId) return false;
-    const trophy = TROPHIES.find((t) => t.id === mascot.requiresTrophyId);
-    return !trophy || trophy.count <= 0;
+    if (mascot.requiresTrophyId) {
+      const trophy = TROPHIES.find((t) => t.id === mascot.requiresTrophyId);
+      return !trophy || trophy.count <= 0;
+    }
+    return (this.currentUser()?.level ?? 1) < levelRequiredForMascot(mascot.id);
+  }
+
+  requiredLevelForMascot(mascot: AvatarMascotOption): number {
+    return levelRequiredForMascot(mascot.id);
+  }
+
+  isBackgroundLocked(background: string): boolean {
+    return (this.currentUser()?.level ?? 1) < levelRequiredForBackground(background);
+  }
+
+  requiredLevelForBackground(background: string): number {
+    return levelRequiredForBackground(background);
   }
 
   selectMascot(mascot: AvatarMascotOption): void {
@@ -71,6 +89,7 @@ export class ProfileAvatarFacade {
   }
 
   selectBackground(background: string): void {
+    if (this.isBackgroundLocked(background)) return;
     this.selectedBackground.set(background);
   }
 

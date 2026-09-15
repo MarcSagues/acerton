@@ -2,7 +2,9 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicUser } from '../auth/auth.types';
 import { NAME_CHANGE_COOLDOWN_MS, toPublicUser } from '../auth/public-user.util';
-import { AvatarBackground, AvatarMascotId, mascotAssetPath } from './avatar-catalog';
+import { AvatarBackground, AvatarMascotId, DEFAULT_MASCOT_IDS, mascotAssetPath } from './avatar-catalog';
+import { levelRequiredForBackground, levelRequiredForMascot } from './avatar-level-rewards';
+import { xpProgressForLevel } from '../xp/xp.util';
 
 @Injectable()
 export class UsersService {
@@ -48,12 +50,37 @@ export class UsersService {
     return toPublicUser(updated);
   }
 
-  /** Elige un avatar del catalogo de mascota con un color de fondo de la paleta cerrada (ver avatar-catalog.ts). */
+  /**
+   * Elige un avatar del catalogo de mascota con un color de fondo de la
+   * paleta cerrada (ver avatar-catalog.ts). Los colores/mascotas "de
+   * premio" del pase de nivel (Sprint 14) exigen haber llegado a ese
+   * nivel — a diferencia de las mascotas de trofeo (todavia sin
+   * comprobacion real en servidor, ver avatar-catalog.ts), el nivel ya es
+   * un dato real por usuario (`User.experience`), asi que aqui si se
+   * valida en servidor y no solo en el frontend.
+   */
   async updateAvatar(
     userId: string,
     mascotId: AvatarMascotId,
     background: AvatarBackground,
   ): Promise<PublicUser> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const level = xpProgressForLevel(user.experience).level;
+
+    if ((DEFAULT_MASCOT_IDS as readonly string[]).includes(mascotId)) {
+      const requiredLevel = levelRequiredForMascot(mascotId);
+      if (level < requiredLevel) {
+        throw new ForbiddenException(`Necesitas el nivel ${requiredLevel} para usar esta mascota.`);
+      }
+    }
+    const requiredBackgroundLevel = levelRequiredForBackground(background);
+    if (level < requiredBackgroundLevel) {
+      throw new ForbiddenException(`Necesitas el nivel ${requiredBackgroundLevel} para usar este color.`);
+    }
+
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl: mascotAssetPath(mascotId), avatarBackground: background },
