@@ -365,7 +365,7 @@ resolverse).
 | Preferencia de silenciar chat por grupo | ⬜ | Mismo patrón que `GroupMembership.mutedNotifications` (Sprint 9) — evitar que compita con avisos de jornada/insignias sin control. |
 | Alternativa más barata a evaluar antes de construir chat completo | ⬜ | Reacciones/emoji sobre pronósticos o un feed de actividad del grupo dan parte de la interacción social sin la carga de moderar texto libre — valorar si cubre la necesidad antes de meterse en todo lo anterior. |
 
-## Sprint 14 — Sistema de nivel y experiencia ⬜ (añadido 2026-09-15, a petición del usuario)
+## Sprint 14 — Sistema de nivel y experiencia 🟡 en curso (añadido 2026-09-15, a petición del usuario)
 
 Gamificación transversal (no depende de grupos ni de temporadas): cada
 cuenta gana experiencia (XP) al participar y acertar, sube de nivel, y
@@ -393,31 +393,40 @@ se calcula tras el mismo evento de cierre/puntuación de jornada
 7. Participar (flat, por el mero hecho de pronosticar).
 
 Progresión dentro de una misma jornada: más aciertos da
-proporcionalmente más XP por acierto adicional (ejemplo dado por el
-usuario: 1 acierto → 1xp; 2 aciertos → 1xp + 2xp; 3 aciertos → 1xp +
-2xp + 3xp — a concretar la fórmula exacta y cómo combina con la lista
-de fuentes de arriba antes de implementar, como se hizo con las 20
-insignias).
+proporcionalmente más XP por acierto adicional — **no implementado
+así**: se optó por un valor fijo por tipo de acierto (ver tabla), más
+simple y ya ordenado igual que pidió el usuario; revisar si hace falta
+más adelante una escala progresiva de verdad.
+
+**Valores implementados** (`backend/src/xp/xp.util.ts`, `XP_VALUES`):
+participar 5 XP, acierto con comodín en 1X2 15 XP, acierto 1X2 normal
+25 XP, acierto ganador en resultado exacto 25 XP, acierto de resultado
+exacto (marcador clavado) 60 XP, pleno de jornada en 1X2 130 XP, pleno
+de jornada en resultado exacto 150 XP — mismo orden pedido por el
+usuario. Curva de nivel: 200 XP el nivel 1, +150 XP cada nivel
+siguiente, tope en nivel 18 (`xpProgressForLevel`).
 
 | Tarea | Estado | Notas |
 |---|---|---|
-| Modelo de XP total + log de eventos por usuario | ⬜ | Nuevo, similar a `Notification`: una fila por cada XP ganado para poder explicar el detalle en el botón de info, no solo el total acumulado. |
-| Curva de nivel (XP necesario por nivel) | ⬜ | Catálogo a definir, mismo estilo que `BADGE_TARGETS`/`TROPHIES` (constante en código, no configurable en runtime). |
-| Cálculo de XP enganchado al cierre de jornada | ⬜ | Mismo evento que `evaluateAfterMatchdayClose` (insignias) y `updateGlobalStreaks` (racha global, Sprint 5). |
-| Sistema de referidos (link único, registro invitado↔invitador) | ⬜ | Nuevo de cero. Riesgo principal: abuso multicuenta — mitigado por la caída de XP descrita arriba, sin necesidad de verificación de dispositivo/IP. |
-| Desbloqueables: colores/avatares por nivel | ⬜ | Reutiliza el catálogo cerrado de `avatar-catalog.ts` (mismo gating que "tener ese trofeo", cambiando la condición a "tener ese nivel"). |
+| Modelo de XP total + log de eventos por usuario | ✅ | `User.experience` (total acumulado, nunca baja) + `XpEvent` (una fila por racion concedida, mismo criterio que `Notification`). |
+| Curva de nivel (XP necesario por nivel) | ✅ | `xp.util.ts`: `xpForLevel`/`xpProgressForLevel`, tope en nivel 18. Mismos valores en el frontend (`level-progress.domain.ts`, todavía sin unificar en un paquete compartido — duplicado a propósito, igual que `scoring.util.ts` no se comparte con el frontend). |
+| Cálculo de XP enganchado al cierre de jornada | ✅ | `XpService.evaluateAfterMatchdayClose`, mismo punto que `BadgesService` en `JobsService.finalizeMatchday`. Cubre participar, acierto 1X2 (normal y con comodín), acierto de resultado exacto (marcador exacto vs solo ganador) y pleno de jornada (ambos modos). Sin cubrir todavía: XP por invitar a un amigo y por entrar cada día (ver filas de abajo). |
+| Sistema de referidos (link único, registro invitado↔invitador) | ⬜ | Sin empezar. Riesgo principal: abuso multicuenta — mitigado por la caída de XP descrita arriba, sin necesidad de verificación de dispositivo/IP. |
+| XP por entrar cada día | ⬜ | Sin empezar — no estaba en la lista de prioridad que dio el usuario, era solo un ejemplo del diseño de Claude Design; decidir si se implementa de verdad. |
+| Desbloqueables: colores/avatares por nivel | ⬜ | El nivel ya es real, pero las recompensas del pase siguen siendo el catálogo de muestra de `level-progress.domain.ts` (`LEVEL_REWARDS`) — falta conectar con el catálogo cerrado real de `avatar-catalog.ts` (mismo gating que "tener ese trofeo", cambiando la condición a "tener ese nivel"). |
 | Marcos de foto por nivel | 🔒 | El concepto de "marco" no existe todavía en absoluto (mismo hueco pendiente que Sprint 11 Premium) — diseñar desde cero cuando toque. |
-| Barra de progreso de nivel en Perfil | ⬜ | Nivel actual → siguiente, pulsable. |
-| Pantalla de progreso de nivel (scroll horizontal) | ⬜ | Track tipo pase de temporada: NIVEL+RECOMPENSA — barra — NIVEL+RECOMPENSA — barra... (`scroll-snap` CSS, sin librería). Auto-centrado en el nivel actual al abrir, no empezar siempre desde el Nivel 1. Diseño visual de esta vista concreta encargado a Claude Design (ver más abajo) — el resto de la implementación (backend, lógica, resto de UI) no. |
-| Botón de info (qué XP da cada acción) | ⬜ | Texto explicativo de la lista de fuentes de arriba, una vez tengan valores numéricos definitivos. |
-| Insignia de nivel sobre el avatar en todos los sitios | ⬜ | Depende de terminar de extender el componente compartido `app-avatar` a Tabla/miembros de grupo (Sprint 7, pendiente — hoy esos sitios siguen solo con iniciales). Posición (abajo-izquierda o abajo-derecha) a decidir en el diseño visual. |
+| Barra de progreso de nivel en Perfil | ✅ web | Tarjeta con nivel y XP real (`ProfileController` → `xp: xpProgressForLevel(...)`), pulsable a `/profile/level`. |
+| Pantalla de progreso de nivel (scroll horizontal) | ✅ web | Track tipo pase de temporada: NIVEL+RECOMPENSA — barra — NIVEL+RECOMPENSA — barra... (`scroll-snap` CSS, sin librería), centrado en el nivel real al abrir. Diseñada visualmente en Claude Design (ver nota de abajo) e implementada en Angular a partir de ese diseño, con los tokens de color reales de Piqo. Nivel/XP reales; recompensas del pase siguen siendo catálogo de muestra — aviso "vista de demostración parcial" en la propia pantalla. Verificado en navegador con cuenta nueva (nivel 1, 0/200 XP). |
+| Botón de info (qué XP da cada acción) | ✅ web | Bottom sheet "Cómo ganar XP" (`LevelInfoSheetComponent`, reutiliza `BottomSheetService`) — contenido todavía con los ejemplos del diseño original (racha, entrar cada día, ganar liga privada), pendiente de actualizar a los valores/fuentes reales de la tabla de arriba. |
+| Insignia de nivel sobre el avatar en todos los sitios | ✅ web | `AvatarComponent` con `[level]` opcional (insignia circular abajo-derecha, para no chocar con el punto rojo de pendientes). Conectado en los 9 sitios que ya usaban `app-avatar`: top-bar, Perfil, Tabla, miembros de grupo, invitar, resultados de jornada (propios y ajenos), detalle de miembro — para "otros" usuarios el nivel viaja en la misma respuesta que ya traía su avatar (`GroupsService.listMembers`, `RankingsService`, `PredictionsService.getGroupPredictionsForMatchday`, `MemberProfileService`), sin round-trips nuevos. |
 
 **Diseño de la pantalla de nivel encargado a Claude Design** (2026-09-15):
-alcance acotado explícitamente a esa vista concreta (el track horizontal
-con scroll), no al resto de la funcionalidad ni de la app. Bloqueado por
-ahora: `DesignSync` requiere que el usuario autorice el acceso con
-`/design-login` antes de poder listar/crear el proyecto y sincronizar
-los componentes con el estilo real de Piqo.
+proyecto "Pantalla de progreso Piqo" (`DesignSync`, tras autorizar con
+`/design-login`). Alcance acotado explícitamente a esa vista concreta,
+no al resto de la app — el resto de la implementación (backend, lógica,
+resto de UI) la hizo Claude Code a partir del `.dc.html` exportado,
+traduciendo los estilos a los tokens reales de Piqo (`--p4-*`) en vez
+de los hex fijos del diseño, para que respete claro/oscuro.
 
 ---
 
