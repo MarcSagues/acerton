@@ -21,7 +21,7 @@ import { initials } from '../../utils/initials';
         }
       </span>
       @if (level) {
-        <span class="level-badge" [style.fontSize.px]="Math.max(9, size * 0.28)">{{ level }}</span>
+        <span class="level-badge" [style.fontSize.px]="Math.min(13, Math.max(9, size * 0.22))">{{ level }}</span>
       }
     </span>
   `,
