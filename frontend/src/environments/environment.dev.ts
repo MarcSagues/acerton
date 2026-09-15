@@ -6,6 +6,9 @@ export const environment = {
   // hace falta la URL completa).
   apiUrl: 'https://api-dev.piqo.es/api',
   appUrl: 'https://app-dev.piqo.es',
+  // Ver comentario en environment.ts: activo aqui para poder probarlo en
+  // TestFlight dev, desactivado en environment.prod.ts.
+  adRewardedWildcardsEnabled: true,
   googleWebClientId: '274153738044-0lnso05j0rpi3pvegl20r5rh8obias9n.apps.googleusercontent.com',
   admob: {
     android: {

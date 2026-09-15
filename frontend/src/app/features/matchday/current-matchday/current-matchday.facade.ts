@@ -1,6 +1,7 @@
 import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { BottomNavService } from '../../../core/services/bottom-nav.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
@@ -317,6 +318,7 @@ export class CurrentMatchdayFacade {
    * una vez agotados esos.
    */
   showAdRewardBanner(entry: CurrentMatchdayEntry | null): boolean {
+    if (!environment.adRewardedWildcardsEnabled) return false;
     if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return false;
     if (this.dismissedAdRewardBanner() === entry.matchday.id) return false;
     if (!this.hasComebackSlot(entry)) return false;

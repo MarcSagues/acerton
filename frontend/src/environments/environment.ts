@@ -1,6 +1,11 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:3000/api',
+  // Banner "consigue un comodin extra viendo un video" (ver
+  // CurrentMatchdayFacade.showAdRewardBanner) — escondido en produccion a
+  // peticion explicita del usuario antes de la primera subida a main,
+  // sigue activo en dev/local para poder terminarlo y probarlo.
+  adRewardedWildcardsEnabled: true,
   // URL publica de la propia app (no la API): en un WebView nativo
   // (Capacitor) window.location.origin es "capacitor://localhost", que no
   // sirve de nada si se comparte fuera de la app (p.ej. el enlace de
