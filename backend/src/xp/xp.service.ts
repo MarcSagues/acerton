@@ -20,11 +20,42 @@ export class XpService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * XP inmediata al pronosticar un partido por primera vez (a peticion
+   * explicita del usuario: la barra de nivel debe notarse nada mas
+   * participar, no solo al cerrar la jornada). Se concede una sola vez por
+   * partido/grupo/usuario — el llamador (PredictionsService.submit) es
+   * quien decide si es la primera vez comprobando si ya existia
+   * prediccion antes del upsert, asi que volver a cambiar el pronostico
+   * despues no vuelve a dar XP. El resto de fuentes (aciertos, pleno de
+   * jornada) se siguen calculando solo al cerrar la jornada en
+   * evaluateAfterMatchdayClose, porque dependen del resultado real del
+   * partido.
+   */
+  async awardParticipation(userId: string, groupId: string, matchdayId: string): Promise<LevelUpEvent | null> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { experience: true } });
+    if (!user) {
+      return null;
+    }
+    const previousLevel = xpProgressForLevel(user.experience).level;
+    const newLevel = await this.award(
+      userId,
+      groupId,
+      matchdayId,
+      [{ type: 'PARTICIPATION', amount: XP_VALUES.PARTICIPATION }],
+      user.experience,
+    );
+    return newLevel !== null && newLevel > previousLevel ? { userId, level: newLevel } : null;
+  }
+
+  /**
    * Se ejecuta tras cerrar y puntuar una jornada (mismo punto de enganche
-   * que BadgesService.evaluateAfterMatchdayClose, ver JobsService). Todavia
-   * sin implementar: XP por invitar a un amigo (depende del sistema de
-   * referidos, ver roadmap.md Sprint 14) y por racha diaria de entrar a la
-   * app — solo las fuentes ligadas a los pronosticos de esta jornada.
+   * que BadgesService.evaluateAfterMatchdayClose, ver JobsService). La XP
+   * de participar ya no se concede aqui (ver awardParticipation, se
+   * concede en tiempo real al pronosticar) — esta pasada solo cubre lo
+   * que depende del resultado real del partido: aciertos y pleno de
+   * jornada. Todavia sin implementar: XP por invitar a un amigo (depende
+   * del sistema de referidos, ver roadmap.md Sprint 14) y por racha
+   * diaria de entrar a la app.
    *
    * Devuelve quien ha subido de nivel en esta pasada (no cada vez que gana
    * XP), para que JobsService pueda avisar solo de eso — igual patron que
@@ -61,7 +92,7 @@ export class XpService {
         continue;
       }
 
-      const awards: XpAward[] = [{ type: 'PARTICIPATION', amount: XP_VALUES.PARTICIPATION }];
+      const awards: XpAward[] = [];
 
       for (const prediction of predictions) {
         if ((prediction.pointsEarned ?? 0) <= 0) {

@@ -95,7 +95,7 @@ export const XP_GROUPS: XpGroup[] = [
   },
   {
     title: 'PARTICIPACIÓN',
-    rules: [{ title: 'Pronosticar', note: 'Por cada jornada jugada', xp: '+5 XP', tone: 'muted' }],
+    rules: [{ title: 'Pronosticar', note: 'Por cada partido, al enviarlo por primera vez', xp: '+5 XP', tone: 'muted' }],
   },
   {
     title: 'PRÓXIMAMENTE',

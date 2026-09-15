@@ -10,6 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { AdsService } from '../../../core/services/ads.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
@@ -72,6 +73,7 @@ export class CurrentMatchdayFacade {
   private readonly toast = inject(ToastService);
   private readonly bottomNav = inject(BottomNavService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
   readonly entries = signal<CurrentMatchdayEntry[]>([]);
@@ -856,6 +858,12 @@ export class CurrentMatchdayFacade {
             state.saved = true;
             this.refreshComeback(groupId);
           });
+          // El backend da XP de participar en tiempo real solo la primera
+          // vez que se pronostica cada partido (ver PredictionsService.
+          // submit) — refrescamos el feed de avisos ya mismo para que, si
+          // eso cruzo de nivel, el pop-up salte al momento en vez de
+          // esperar al polling de 2 min de ShellFacade.
+          this.notificationsFeed.refresh();
         },
         error: (error: HttpErrorResponse) => {
           if (state.requestSeq !== seq) return;
