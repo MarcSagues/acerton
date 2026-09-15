@@ -39,11 +39,18 @@ export class GroupsService {
     return [...groups].sort((a, b) => Number(!!b.isFavorite) - Number(!!a.isFavorite));
   }
 
+  /**
+   * Solo actualiza el flag (la estrella cambia al momento); NO reordena la
+   * lista visible — moverla en caliente mientras la estas mirando queda
+   * raro (la fila salta bajo el dedo). El orden con favoritos arriba se
+   * aplica en el siguiente load real (backend, ver findMineForUser), la
+   * proxima vez que se entra en Grupos.
+   */
   setFavorite(groupId: string, favorite: boolean) {
     return this.http.patch<void>(`${environment.apiUrl}/groups/${groupId}/favorite`, { favorite }).pipe(
       tap(() =>
         this.myGroupsSignal.update((groups) =>
-          this.sortFavoritesFirst(groups.map((g) => (g.id === groupId ? { ...g, isFavorite: favorite } : g))),
+          groups.map((g) => (g.id === groupId ? { ...g, isFavorite: favorite } : g)),
         ),
       ),
     );
