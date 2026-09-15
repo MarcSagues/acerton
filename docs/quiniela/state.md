@@ -1,5 +1,35 @@
 # Estado actual
 
+## 2026-09-15 — El nivel ya no se queda desfasado hasta reiniciar la app (Sprint 14)
+
+A petición del usuario, que probó en local ("hasta que no cierro la app
+y la vuelvo a abrir no se me desbloquea la mascota... el punto sigue sin
+salir"): séptimo incremento del Sprint 14 el mismo día, y causa raíz real
+de por qué el puntito del incremento anterior "no salía" en su prueba.
+
+`AuthService.currentUser()` (de donde sale el nivel del badge del avatar
+en top-bar/Perfil y el gating de `/profile/avatar`) solo se actualizaba
+en el arranque de la app o tras una acción explícita (login, guardar
+avatar) — nunca solo porque la XP subiera en el backend. Con la app
+abierta, pronosticar un partido que cruzaba de nivel dejaba el nivel
+real ya correcto en el servidor, pero el frontend seguía usando el nivel
+viejo hasta cerrar y reabrir la app: la recompensa nueva seguía
+apareciendo bloqueada, y al estarlo, su puntito rojo tampoco podía salir
+(depende de que ya esté desbloqueada).
+
+Nuevo `AuthService.refreshCurrentUser()` llamado desde `ShellFacade` en
+el mismo punto donde ya se detecta la subida de nivel en vivo (el
+`effect` que abre el pop-up) — el nivel se refresca exactamente cuando
+hace falta, sin tocar ningún otro flujo.
+
+tsc y 17 tests del frontend en verde. Verificado en navegador sin
+recargar la página en ningún momento: pop-up → badge del avatar pasa a
+mostrar "2" al instante → la mascota de esa recompensa aparece
+desbloqueada con su puntito rojo, todo en la misma sesión. Mergeado a
+`dev` y empujado a `origin/dev`; pendiente lanzar un build nuevo de
+TestFlight, ya que el que el usuario tenía instalado era anterior tanto
+a esto como al incremento del puntito rojo en sí.
+
 ## 2026-09-15 — Puntito rojo en el propio color/mascota recién desbloqueado (Sprint 14)
 
 A petición del usuario ("solo falta que cuando tengas un elemento nuevo
