@@ -76,6 +76,20 @@ export async function createGroup(page: Page, options: CreateGroupOptions): Prom
   return group.id as string;
 }
 
+/**
+ * Borrado logico del grupo (ver Group.deletedAt en el schema) para no dejar
+ * decenas de grupos "E2E ..." acumulados en la cuenta semilla cada vez que
+ * corre la suite. Es un "mejor esfuerzo": si falla no se hace fallar el test
+ * por ello, ya ha hecho su trabajo antes de este punto.
+ */
+export async function deleteGroup(page: Page, accessToken: string, groupId: string): Promise<void> {
+  await page.request
+    .delete(`http://localhost:3000/api/groups/${groupId}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    .catch(() => undefined);
+}
+
 /** Id de la jornada actual (la que se ve en /matchday) para ese grupo, via la misma API que usa el frontend. */
 export async function getCurrentMatchdayId(page: Page, accessToken: string, groupId: string): Promise<string> {
   const res = await page.request.get(`http://localhost:3000/api/groups/${groupId}/matchdays/current`, {
