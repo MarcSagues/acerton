@@ -92,6 +92,51 @@ const BADGES: Array<{ code: string; name: string; description: string }> = [
     name: 'Francotirador',
     description: 'Acertaste 10 resultados exactos.',
   },
+  {
+    code: 'HOT_STREAK_10',
+    name: 'Racha de fuego',
+    description: 'Acertaste 10 predicciones seguidas.',
+  },
+  {
+    code: 'PREDICTIONS_500',
+    name: 'Leyenda',
+    description: 'Enviaste 500 pronosticos.',
+  },
+  {
+    code: 'PERFECT_MATCHDAY',
+    name: 'Pleno',
+    description: 'Acertaste todos los partidos de una jornada.',
+  },
+  {
+    code: 'WILDCARD_HITS_5',
+    name: 'Comodín de oro',
+    description: 'El comodín de remontada te dio puntos 5 veces.',
+  },
+  {
+    code: 'GROUPS_JOINED_3',
+    name: 'Sociable',
+    description: 'Formas parte de 3 grupos a la vez.',
+  },
+  {
+    code: 'DRAW_HITS_10',
+    name: 'Especialista en empates',
+    description: 'Acertaste 10 empates.',
+  },
+  {
+    code: 'COMPETITIONS_3',
+    name: 'Multiliga',
+    description: 'Pronosticaste en 3 ligas distintas.',
+  },
+  {
+    code: 'GROUP_FOUNDER',
+    name: 'Fundador',
+    description: 'Creaste un grupo.',
+  },
+  {
+    code: 'PODIUM_5',
+    name: 'En el podio',
+    description: 'Quedaste entre los 3 primeros de la semana, 5 veces.',
+  },
 ];
 
 async function main() {
