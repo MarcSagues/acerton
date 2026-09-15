@@ -62,6 +62,36 @@ const BADGES: Array<{ code: string; name: string; description: string }> = [
     name: 'Jornada perfecta',
     description: 'Quedaste primero en la clasificacion semanal de una jornada.',
   },
+  {
+    code: 'STREAK_25',
+    name: 'Incombustible',
+    description: 'Participaste 25 jornadas seguidas.',
+  },
+  {
+    code: 'PREDICTIONS_100',
+    name: 'Centenario',
+    description: 'Enviaste 100 pronosticos.',
+  },
+  {
+    code: 'ONE_X_TWO_HITS_25',
+    name: 'Buen ojo',
+    description: 'Acertaste 25 pronosticos 1X2.',
+  },
+  {
+    code: 'ONE_X_TWO_HITS_100',
+    name: 'Experto en 1X2',
+    description: 'Acertaste 100 pronosticos 1X2.',
+  },
+  {
+    code: 'EXACT_SCORE_HIT_1',
+    name: 'Al milímetro',
+    description: 'Acertaste un resultado exacto.',
+  },
+  {
+    code: 'EXACT_SCORE_HITS_10',
+    name: 'Francotirador',
+    description: 'Acertaste 10 resultados exactos.',
+  },
 ];
 
 async function main() {

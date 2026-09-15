@@ -1,5 +1,35 @@
 # Estado actual
 
+## 2026-09-15 — Catálogo de insignias ampliado (6 nuevas)
+
+A petición directa del usuario ("5 me parecen pocas"), añadidas 6 de las 7
+insignias que faltaban del catálogo propuesto en `product-rules.md`
+(Sprint 8, ver `roadmap.md` para el detalle completo de condiciones y
+verificación): Incombustible (25 jornadas seguidas), Centenario (100
+pronósticos), Buen ojo/Experto en 1X2 (25/100 aciertos 1X2, solo grupos
+modo 1X2), Al milímetro/Francotirador (1/10 marcadores exactos acertados
+— no solo el ganador —, solo grupos resultado exacto). Total: 11
+insignias. Sin tocar las 5 que ya existían (ni su nombre ni su
+condición) — la renombrada pendiente "Jornada perfecta"→"En lo más alto"
+(ver `backlog.md`) sigue abierta, no se ha decidido en esta sesión.
+
+Queda pendiente solo "Campeón" (primer premio de temporada): no hay
+condición real que evaluar todavía porque depende de temporada cerrada +
+modelo de trofeos (Sprint 6, sigue 🔒 sin modelo de datos) — no se ha
+inventado una aproximación sustituta para no comprometer el criterio
+cuando el Sprint 6 exista de verdad.
+
+Ninguna de las 6 nuevas tiene arte 3D propio (el HANDOFF fijaba los 5
+motivos originales como cerrados) — usan el fallback genérico ya
+existente en la UI (medalla conseguida/candado pendiente). Si se quiere
+arte propio para ellas, es trabajo de diseño aparte, no de esta sesión.
+
+Backend: 10 tests unitarios nuevos en `badges.service.spec.ts` (todos los
+217 tests del backend en verde). Verificado en navegador contra datos
+reales de la cuenta de desarrollo: progreso mostrado (5/25 Buen ojo,
+21/100 Centenario, 3/25 Incombustible, 0/10 Francotirador) coincide con
+los pronósticos reales ya enviados. Sin verificar iOS/Android.
+
 ## 2026-09-14 — Canvas compartible de resultados de jornada
 
 Añadido debajo de **Copiar resumen** en la pantalla `Enviado` de Jornada
