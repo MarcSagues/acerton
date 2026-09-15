@@ -1,5 +1,32 @@
 # Estado actual
 
+## 2026-09-15 — Backend real de XP/nivel (Sprint 14) + insignia de nivel en avatares
+
+A petición del usuario ("añade el nivel en todos los sitios donde sale
+la foto de perfil de un usuario" → "implementamos back[end]"): el
+sistema de nivel/experiencia deja de ser una pantalla de muestra y pasa
+a tener backend real. Ver `roadmap.md` Sprint 14 para el detalle técnico
+completo (valores de XP por fuente, curva de nivel, qué falta —
+referidos, XP por entrar cada día, desbloqueables reales).
+
+Resumen: `User.experience` + `XpEvent` (log), `XpService` enganchado al
+mismo punto que `BadgesService` (`JobsService.finalizeMatchday`). El
+nivel se expone en `toPublicUser` (cubre login/registro/verify-email/
+Google/`users/me` de golpe) y en los endpoints que ya devolvían el
+avatar de otros usuarios (miembros de grupo, Tabla, resultados de
+jornada, detalle de miembro) — sin round-trips nuevos. 275 tests del
+backend en verde (15 nuevos).
+
+`AvatarComponent` gana un `[level]` opcional (insignia circular abajo-
+derecha) conectado en los 9 sitios que ya usaban `app-avatar`. La
+pantalla `/profile/level` (diseñada en Claude Design, ver Sprint 14) y
+la tarjeta mini de Perfil pasan de datos fijos a `/users/me/profile`
+real — las recompensas del pase (colores, mascotas) siguen siendo
+catálogo de muestra, aviso actualizado en la pantalla para reflejarlo.
+
+Verificado en navegador con una cuenta nueva (nivel 1, 0/200 XP) en
+top-bar, Perfil, Tabla y la pantalla de nivel completa.
+
 ## 2026-09-15 — Feed real de avisos (issue #21) + campanita restaurada
 
 A petición del usuario ("podemos crear ya la vista de notificaciones?"),
