@@ -64,8 +64,10 @@ describe('UsersService.updateName', () => {
 });
 
 describe('UsersService.updateAvatar', () => {
-  it('guarda la ruta del mascota elegido y el color de fondo', async () => {
+  it('guarda la ruta del mascota elegido y el color de fondo si el nivel alcanza para ambos', async () => {
     const prisma = buildPrismaMock();
+    // guino exige nivel 4 (ver avatar-level-rewards.ts) — 1050 XP cubre los niveles 1-3 (200+350+500) y llega a nivel 4.
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 1050 });
     prisma.user.update.mockResolvedValue({
       id: 'u1',
       email: 'a@a.com',
@@ -85,5 +87,34 @@ describe('UsersService.updateAvatar', () => {
     });
     expect(result.avatarUrl).toBe('/assets/avatars/mascot/guino.png');
     expect(result.avatarBackground).toBe('#d2be94');
+  });
+
+  it('permite mascota/color "de fabrica" (reposo + champan) en nivel 1', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 0 });
+    prisma.user.update.mockResolvedValue({ id: 'u1', avatarUrl: '/assets/avatars/mascot/reposo.png', avatarBackground: '#d2be94' });
+
+    const service = new UsersService(prisma as never);
+    await service.updateAvatar('u1', 'reposo' as never, '#d2be94' as never);
+
+    expect(prisma.user.update).toHaveBeenCalled();
+  });
+
+  it('rechaza una mascota de premio si el nivel no llega', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 0 });
+
+    const service = new UsersService(prisma as never);
+    await expect(service.updateAvatar('u1', 'guino' as never, '#d2be94' as never)).rejects.toThrow();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un color de premio si el nivel no llega', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 0 });
+
+    const service = new UsersService(prisma as never);
+    await expect(service.updateAvatar('u1', 'reposo' as never, '#6a8caf' as never)).rejects.toThrow();
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

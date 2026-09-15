@@ -110,13 +110,14 @@
                 <span class="node-shine" aria-hidden="true"></span>
               }
             </span>
-            <span class="node-reward" [class.unlocked]="!node.locked">
-              @if (node.locked) {
-                <piqo-svg icon="candado" size="15"></piqo-svg>
-              } @else if (node.kind === 'color') {
+            <span class="node-reward" [class.unlocked]="!node.locked" [class.locked]="node.locked">
+              @if (node.kind === 'color') {
                 <span class="node-swatch" [style.background]="node.swatch"></span>
               } @else {
                 <img class="node-mascot" [src]="node.mascotUrl" alt="" />
+              }
+              @if (node.locked) {
+                <span class="node-reward-lock"><piqo-svg icon="candado" size="10"></piqo-svg></span>
               }
             </span>
             <span class="node-label" [class.unlocked]="!node.locked">{{ node.reward }}</span>
