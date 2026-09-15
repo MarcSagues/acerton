@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { DoubleChanceOption, PredictionChoice } from '@prisma/client';
 
 export class SubmitPredictionDto {
@@ -28,4 +28,9 @@ export class SubmitPredictionDto {
   @Min(0)
   @Max(20)
   predictedAwayScore?: number;
+
+  /** Comodin de remontada en grupos EXACT_SCORE: duplica los puntos de este partido. Solo en grupos EXACT_SCORE. */
+  @IsOptional()
+  @IsBoolean()
+  doublePointsWildcard?: boolean;
 }

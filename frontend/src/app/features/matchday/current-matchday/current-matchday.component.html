@@ -218,13 +218,25 @@
                 <span class="score-label mono">V</span>
               </div>
               <div class="exact-score-box" [attr.data-tone]="page.matchAccentTone(match)">
+                @if (page.stateFor(match.id).doublePointsWildcard) {
+                  <span class="wildcard-x2-badge">x2</span>
+                }
                 <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedHomeScore" />
                 <span class="score-sep mono">-</span>
                 <input class="score-input mono" type="number" disabled [value]="page.stateFor(match.id).predictedAwayScore" />
               </div>
             </div>
           } @else {
-            <div class="score-widget">
+            <div
+              class="score-widget"
+              (pointerdown)="page.startLongPress(match, locked)"
+              (pointerup)="page.cancelLongPress()"
+              (pointerleave)="page.cancelLongPress()"
+              (pointercancel)="page.cancelLongPress()"
+            >
+              <!-- Mantener pulsada esta fila abre el panel del comodin de
+                   remontada (ComebackSheetComponent, modo 'double-points'),
+                   igual que en 1X2 — ver openComebackSheet(). -->
               <div class="score-labels">
                 <span class="score-label mono">L</span>
                 <span class="score-sep-spacer mono">-</span>
@@ -237,6 +249,9 @@
                 [class.confirmed]="page.stateFor(match.id).saved"
                 [style.--progress]="(100 - page.stateFor(match.id).drawOffset) + '%'"
               >
+                @if (page.stateFor(match.id).doublePointsWildcard) {
+                  <span class="wildcard-x2-badge">x2</span>
+                }
                 <input
                   class="score-input mono"
                   type="number"

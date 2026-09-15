@@ -67,7 +67,9 @@ export class WildcardsService {
               userId,
               groupId,
               match: { matchdayId },
-              doubleChanceOption: { not: null },
+              ...(group.scoringMode === 'EXACT_SCORE'
+                ? { doublePointsWildcard: true }
+                : { doubleChanceOption: { not: null } }),
               ...(excludeMatchId ? { matchId: { not: excludeMatchId } } : {}),
             },
           })

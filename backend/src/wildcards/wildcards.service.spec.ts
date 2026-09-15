@@ -1,7 +1,7 @@
 import { WildcardsService } from './wildcards.service';
 
 function buildDeps(
-  group: { comebackEnabled: boolean; comebackPointsPerBonus: number } | null,
+  group: { comebackEnabled: boolean; comebackPointsPerBonus: number; scoringMode?: 'ONE_X_TWO' | 'EXACT_SCORE' } | null,
   groupCompetitions: { competitionId: string }[],
   rankingRows: { userId: string; points: number }[],
   predictionCount = 0,
@@ -158,6 +158,29 @@ describe('WildcardsService.getComebackStatus', () => {
     const status = await service.getComebackStatus('u1', 'g1', 'md1');
 
     expect(status.remaining).toBe(0);
+  });
+
+  it('en grupos EXACT_SCORE cuenta los usos por doublePointsWildcard en vez de doubleChanceOption', async () => {
+    const rows = [
+      { userId: 'u2', points: 20 },
+      { userId: 'u1', points: 2 },
+    ];
+    const { service, prisma } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6, scoringMode: 'EXACT_SCORE' },
+      [{ competitionId: 'c1' }],
+      rows,
+      1,
+    );
+
+    await service.getComebackStatus('u1', 'g1', 'md1');
+
+    expect(prisma.prediction.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ doublePointsWildcard: true }),
+      }),
+    );
+    const callArg = prisma.prediction.count.mock.calls[0][0];
+    expect(callArg.where.doubleChanceOption).toBeUndefined();
   });
 });
 

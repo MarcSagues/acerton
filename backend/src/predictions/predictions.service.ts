@@ -46,11 +46,23 @@ export class PredictionsService {
       if (dto.predictedHomeScore === undefined || dto.predictedAwayScore === undefined) {
         throw new BadRequestException('Falta el resultado exacto (goles local y visitante)');
       }
+
+      const doublePointsWildcard = dto.doublePointsWildcard ?? false;
+      if (doublePointsWildcard) {
+        await this.wildcardsService.assertCanUseDoubleChance(
+          userId,
+          groupId,
+          match.matchdayId,
+          dto.matchId,
+        );
+      }
+
       return this.prisma.prediction.upsert({
         where: { userId_groupId_matchId: { userId, groupId, matchId: dto.matchId } },
         update: {
           predictedHomeScore: dto.predictedHomeScore,
           predictedAwayScore: dto.predictedAwayScore,
+          doublePointsWildcard,
           choice: null,
           doubleChanceOption: null,
         },
@@ -60,6 +72,7 @@ export class PredictionsService {
           matchId: dto.matchId,
           predictedHomeScore: dto.predictedHomeScore,
           predictedAwayScore: dto.predictedAwayScore,
+          doublePointsWildcard,
         },
       });
     }

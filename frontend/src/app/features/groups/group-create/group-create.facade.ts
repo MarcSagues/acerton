@@ -35,7 +35,7 @@ export class GroupCreateFacade {
     description: [''],
     isPublic: [false],
     scoringMode: ['ONE_X_TWO' as ScoringMode, [Validators.required]],
-    /** Solo relevante en 1X2: en resultado exacto no se muestra ni se envia con efecto (el backend lo fuerza a false igualmente). */
+    /** Comodin de remontada: doble oportunidad en 1X2, duplicar puntos en resultado exacto (ver ComebackSheetComponent). */
     comebackEnabled: [true],
   });
 
@@ -60,11 +60,13 @@ export class GroupCreateFacade {
   }
 
   showComebackDetail(): void {
+    const exact = this.form.value.scoringMode === 'EXACT_SCORE';
     this.dialog.open<InfoDialogComponent, void, InfoDialogData>(InfoDialogComponent, {
       data: {
         title: '¿Cómo funciona el comodín?',
-        message:
-          'Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronóstico normal. Los usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.',
+        message: exact
+          ? 'Cada partido se puede jugar con los puntos duplicados (10 por marcador exacto, 4 por acertar solo el resultado) en vez de un pronóstico normal. Los usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.'
+          : 'Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronóstico normal. Los usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.',
       },
     });
   }

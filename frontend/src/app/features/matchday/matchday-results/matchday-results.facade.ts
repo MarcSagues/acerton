@@ -91,7 +91,9 @@ export class MatchdayResultsFacade {
   readonly totalPoints = computed(() => this.predictions().reduce((sum, p) => sum + (p.pointsEarned ?? 0), 0));
   readonly hits = computed(() => this.predictions().filter((p) => (p.pointsEarned ?? 0) > 0).length);
   readonly rescueHits = computed(
-    () => this.predictions().filter((p) => p.doubleChanceOption && (p.pointsEarned ?? 0) > 0).length,
+    () =>
+      this.predictions().filter((p) => (p.doubleChanceOption || p.doublePointsWildcard) && (p.pointsEarned ?? 0) > 0)
+        .length,
   );
 
   /** Un miembro por columna en la comparativa de todos, ordenados por nombre; "tu" fila destacada aparte en la plantilla. */
@@ -298,7 +300,8 @@ export class MatchdayResultsFacade {
   pickLabel(prediction: Prediction): string {
     if (this.scoringMode() === 'EXACT_SCORE') {
       if (prediction.predictedHomeScore == null || prediction.predictedAwayScore == null) return '?';
-      return `${prediction.predictedHomeScore}-${prediction.predictedAwayScore}`;
+      const score = `${prediction.predictedHomeScore}-${prediction.predictedAwayScore}`;
+      return prediction.doublePointsWildcard ? `${score} (x2)` : score;
     }
     if (prediction.doubleChanceOption) {
       return { HOME_OR_DRAW: '1X', DRAW_OR_AWAY: 'X2', HOME_OR_AWAY: '12' }[prediction.doubleChanceOption];

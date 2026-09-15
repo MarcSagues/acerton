@@ -6,6 +6,8 @@ export interface PredictionSelection {
   doubleChanceOption: DoubleChanceOption | null;
   predictedHomeScore: number | null;
   predictedAwayScore: number | null;
+  /** Comodin de remontada en modo EXACT_SCORE: duplica los puntos de este partido. */
+  doublePointsWildcard?: boolean;
   pointsEarned: number | null;
 }
 
@@ -29,7 +31,8 @@ export function predictionLabel(selection: PredictionSelection | undefined, exac
   if (!selection) return null;
   if (exactScore) {
     if (selection.predictedHomeScore == null || selection.predictedAwayScore == null) return null;
-    return `${selection.predictedHomeScore}-${selection.predictedAwayScore}`;
+    const score = `${selection.predictedHomeScore}-${selection.predictedAwayScore}`;
+    return selection.doublePointsWildcard ? `${score} (x2)` : score;
   }
   if (selection.doubleChanceOption) return DOUBLE_CHANCE_LABEL[selection.doubleChanceOption];
   if (selection.choice === 'HOME') return '1';
@@ -53,11 +56,12 @@ export function exactScorePoints(match: Match, selection: PredictionSelection): 
   ) {
     return null;
   }
+  const multiplier = selection.doublePointsWildcard ? 2 : 1;
   if (selection.predictedHomeScore === match.homeScore && selection.predictedAwayScore === match.awayScore) {
-    return 5;
+    return 5 * multiplier;
   }
   return outcomeOf(selection.predictedHomeScore, selection.predictedAwayScore) === outcomeOf(match.homeScore, match.awayScore)
-    ? 2
+    ? 2 * multiplier
     : 0;
 }
 
@@ -112,8 +116,9 @@ export function matchAccentTone(
   if (exactScore) {
     const points = exactScorePoints(match, selection!);
     if (points == null) return 'pending';
-    if (points === 5) return 'hit';
-    if (points === 2) return 'partial';
+    const multiplier = selection?.doublePointsWildcard ? 2 : 1;
+    if (points === 5 * multiplier) return 'hit';
+    if (points === 2 * multiplier) return 'partial';
     return 'miss';
   }
 

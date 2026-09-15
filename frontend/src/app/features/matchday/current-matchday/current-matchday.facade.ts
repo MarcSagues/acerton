@@ -267,12 +267,19 @@ export class CurrentMatchdayFacade {
   /**
    * true si queda algun partido abierto donde el comodin de remontada
    * todavia se pueda aplicar. No es lo mismo que hasPendingPicks: el comodin
-   * se puede poner tambien sobre un partido que ya tiene 1X2 normal elegido
-   * (openComebackSheet lo sustituye), asi que el unico requisito real es que
-   * el partido no este bloqueado y que no tenga ya un comodin puesto.
+   * se puede poner tambien sobre un partido que ya tiene un pronostico
+   * normal elegido (openComebackSheet lo sustituye/complementa), asi que el
+   * unico requisito real es que el partido no este bloqueado y que no tenga
+   * ya un comodin puesto — doubleChanceOption en 1X2, doublePointsWildcard
+   * en EXACT_SCORE.
    */
   private hasComebackSlot(entry: CurrentMatchdayEntry): boolean {
-    return entry.matchday.matches.some((m) => !this.isMatchLocked(m) && !this.stateFor(m.id).doubleChanceOption);
+    const exact = this.isExactScore();
+    return entry.matchday.matches.some(
+      (m) =>
+        !this.isMatchLocked(m) &&
+        (exact ? !this.stateFor(m.id).doublePointsWildcard : !this.stateFor(m.id).doubleChanceOption),
+    );
   }
 
   /**
@@ -543,6 +550,7 @@ export class CurrentMatchdayFacade {
             doubleChanceOption: prediction.doubleChanceOption,
             predictedHomeScore: prediction.predictedHomeScore,
             predictedAwayScore: prediction.predictedAwayScore,
+            doublePointsWildcard: prediction.doublePointsWildcard,
             saving: false,
             saved: true,
             error: false,
@@ -669,6 +677,7 @@ export class CurrentMatchdayFacade {
         doubleChanceOption: null,
         predictedHomeScore: null,
         predictedAwayScore: null,
+        doublePointsWildcard: false,
         saving: false,
         saved: false,
         error: false,
@@ -740,12 +749,18 @@ export class CurrentMatchdayFacade {
     return false;
   }
 
-  /** Abre el panel para activar, cambiar o quitar el comodin de remontada de este partido. */
+  /**
+   * Abre el panel para activar, cambiar o quitar el comodin de remontada de
+   * este partido. En grupos 1X2 deja elegir la combinacion (1X/X2/12); en
+   * grupos EXACT_SCORE no hay combinacion que elegir, solo activa/quita el
+   * duplicador de puntos (doublePointsWildcard) — ver ComebackSheetComponent.
+   */
   openComebackSheet(match: Match): void {
     if (this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     const comeback = this.comeback();
-    const hasCurrent = !!state.doubleChanceOption;
+    const exact = this.isExactScore();
+    const hasCurrent = exact ? !!state.doublePointsWildcard : !!state.doubleChanceOption;
 
     if (!hasCurrent) {
       if (!comeback?.enabled) {
@@ -763,15 +778,30 @@ export class CurrentMatchdayFacade {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         remaining: comeback?.remaining ?? 0,
-        current: state.doubleChanceOption,
+        mode: exact ? 'double-points' : 'double-chance',
+        current: exact ? null : state.doubleChanceOption,
+        currentDoublePoints: exact ? !!state.doublePointsWildcard : undefined,
       },
     });
     ref.closed.subscribe((result) => {
       if (!result) return;
+      const hasScore = state.predictedHomeScore != null && state.predictedAwayScore != null;
       if ('remove' in result) {
-        state.doubleChanceOption = null;
-        state.saved = false;
+        if (exact) {
+          state.doublePointsWildcard = false;
+          this.updatePendingBadge();
+          if (hasScore) this.save(match.id, state);
+        } else {
+          state.doubleChanceOption = null;
+          state.saved = false;
+          this.updatePendingBadge();
+        }
+        return;
+      }
+      if ('doublePoints' in result) {
+        state.doublePointsWildcard = true;
         this.updatePendingBadge();
+        if (hasScore) this.save(match.id, state);
         return;
       }
       state.choice = null;
@@ -801,7 +831,12 @@ export class CurrentMatchdayFacade {
       .submit(
         groupId,
         exact
-          ? { matchId, predictedHomeScore: state.predictedHomeScore!, predictedAwayScore: state.predictedAwayScore! }
+          ? {
+              matchId,
+              predictedHomeScore: state.predictedHomeScore!,
+              predictedAwayScore: state.predictedAwayScore!,
+              doublePointsWildcard: !!state.doublePointsWildcard,
+            }
           : {
               matchId,
               choice: state.doubleChanceOption ? undefined : (state.choice ?? undefined),
@@ -817,9 +852,7 @@ export class CurrentMatchdayFacade {
           this.finishDrawProgress(state, seq, () => {
             state.saving = false;
             state.saved = true;
-            if (!exact) {
-              this.refreshComeback(groupId);
-            }
+            this.refreshComeback(groupId);
           });
         },
         error: (error: HttpErrorResponse) => {
@@ -867,6 +900,7 @@ export class CurrentMatchdayFacade {
         doubleChanceOption: state.doubleChanceOption ?? null,
         predictedHomeScore: state.predictedHomeScore ?? null,
         predictedAwayScore: state.predictedAwayScore ?? null,
+        doublePointsWildcard: !!state.doublePointsWildcard,
         pointsEarned: null,
         submittedAt: new Date().toISOString(),
       } satisfies Prediction];

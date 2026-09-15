@@ -8,10 +8,14 @@ export interface ComebackSheetData {
   awayTeam: string;
   /** Comodines que le quedan al usuario esta jornada, sin contar el de este partido si ya estaba usado aqui. */
   remaining: number;
+  /** 'double-chance' (1X2, elige 1X/X2/12) o 'double-points' (resultado exacto, solo duplica puntos, sin combinacion que elegir). */
+  mode: 'double-chance' | 'double-points';
   current: DoubleChanceOption | null;
+  /** Solo se usa en mode 'double-points'. */
+  currentDoublePoints?: boolean;
 }
 
-export type ComebackSheetResult = { option: DoubleChanceOption } | { remove: true };
+export type ComebackSheetResult = { option: DoubleChanceOption } | { doublePoints: true } | { remove: true };
 
 const DOUBLE_CHANCE_OPTIONS: { v: DoubleChanceOption; l: string }[] = [
   { v: 'HOME_OR_DRAW', l: '1X' },
@@ -33,14 +37,22 @@ const DOUBLE_CHANCE_OPTIONS: { v: DoubleChanceOption; l: string }[] = [
     <p class="sheet-title">Comodín de remontada</p>
     <p class="sheet-teams">{{ data.homeTeam }} - {{ data.awayTeam }}</p>
     <p class="sheet-remaining">{{ remainingLabel() }}</p>
-    <div class="sheet-options">
-      @for (opt of options; track opt.v) {
-        <button type="button" class="opt" [class.selected]="data.current === opt.v" (click)="pick(opt.v)">
-          {{ opt.l }}
+    @if (data.mode === 'double-chance') {
+      <div class="sheet-options">
+        @for (opt of options; track opt.v) {
+          <button type="button" class="opt" [class.selected]="data.current === opt.v" (click)="pick(opt.v)">
+            {{ opt.l }}
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="sheet-options">
+        <button type="button" class="opt wide" [class.selected]="data.currentDoublePoints" (click)="pickDoublePoints()">
+          Duplicar puntos de este partido (x2)
         </button>
-      }
-    </div>
-    @if (data.current) {
+      </div>
+    }
+    @if (hasCurrent()) {
       <button type="button" class="remove-btn" (click)="remove()">Quitar comodín</button>
     }
   `,
@@ -92,6 +104,11 @@ const DOUBLE_CHANCE_OPTIONS: { v: DoubleChanceOption; l: string }[] = [
           border-color: var(--p4-accent);
           color: var(--p4-accent);
         }
+
+        &.wide {
+          min-height: 52px;
+          font-size: 14px;
+        }
       }
       .remove-btn {
         display: block;
@@ -113,8 +130,12 @@ export class ComebackSheetComponent {
   private readonly sheet = inject(BottomSheetService);
   readonly options = DOUBLE_CHANCE_OPTIONS;
 
+  hasCurrent(): boolean {
+    return this.data.mode === 'double-chance' ? !!this.data.current : !!this.data.currentDoublePoints;
+  }
+
   remainingLabel(): string {
-    if (this.data.current) return 'Ya activo en este partido';
+    if (this.hasCurrent()) return 'Ya activo en este partido';
     return this.data.remaining === 1
       ? 'Te queda 1 comodín esta jornada'
       : `Te quedan ${this.data.remaining} comodines esta jornada`;
@@ -122,6 +143,10 @@ export class ComebackSheetComponent {
 
   pick(option: DoubleChanceOption): void {
     this.sheet.closeAnimated(this.ref, { option });
+  }
+
+  pickDoublePoints(): void {
+    this.sheet.closeAnimated(this.ref, { doublePoints: true });
   }
 
   remove(): void {
