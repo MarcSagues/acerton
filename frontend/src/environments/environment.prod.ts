@@ -4,6 +4,12 @@ export const environment = {
   // del mismo dominio, no en el mismo origen, asi que hace falta la URL completa.
   apiUrl: 'https://api.piqo.es/api',
   appUrl: 'https://app.piqo.es',
+  // Banner "consigue un comodin extra viendo un video" (ver
+  // CurrentMatchdayFacade.showAdRewardBanner) — escondido a peticion
+  // explicita del usuario antes de la primera subida a main. El resto del
+  // comodin de remontada sigue funcionando igual, solo se oculta esta via
+  // extra de conseguir uno viendo un anuncio.
+  adRewardedWildcardsEnabled: false,
   googleWebClientId: '274153738044-0lnso05j0rpi3pvegl20r5rh8obias9n.apps.googleusercontent.com',
   admob: {
     android: {
