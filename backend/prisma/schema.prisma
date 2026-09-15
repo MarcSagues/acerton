@@ -228,6 +228,8 @@ model NotificationPreference {
   seasonFinishedTrophies Boolean @default(true)
   /// "Piqo te echa de menos" tras varios dias sin abrir la app. No depende de ningun grupo.
   reengagement           Boolean @default(true)
+  /// Subida de nivel (Sprint 14, XP). No depende de ningun grupo.
+  levelUp                Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,6 +247,7 @@ enum NotificationType {
   MATCHDAY_FINISHED
   BADGE_EARNED
   REENGAGEMENT
+  LEVEL_UP
 }
 
 /// Historial real de avisos por usuario (pantalla "Avisos" / campanita del
@@ -263,7 +266,10 @@ model Notification {
   /// Contexto opcional segun el tipo (jornada terminada, recordatorio de cierre...); null para avisos sin grupo (reenganche).
   groupId    String?
   matchdayId String?
-  /// null = no leido. Se marca en bloque desde "Leer todo", no aviso por aviso.
+  /// Solo para LEVEL_UP: el nivel alcanzado (Sprint 14) — para poder marcar
+  /// esa recompensa concreta en /profile/level sin parsear el texto.
+  level      Int?
+  /// null = no leido. Se puede marcar aviso a aviso (ver markOneRead) ademas de en bloque desde "Leer todo".
   readAt     DateTime?
   createdAt  DateTime         @default(now())
 

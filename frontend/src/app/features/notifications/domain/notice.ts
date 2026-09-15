@@ -6,6 +6,7 @@ export const NOTICE_PERIODS: NoticePeriod[] = ['Hoy', 'Esta semana', 'Anterior']
 
 export interface NoticeItem {
   id: string;
+  type: NotificationType;
   period: NoticePeriod;
   icon: string;
   title: string;
@@ -19,6 +20,7 @@ const ICON_BY_TYPE: Record<NotificationType, string> = {
   MATCHDAY_FINISHED: 'futbol',
   BADGE_EARNED: 'medalla',
   REENGAGEMENT: 'campana',
+  LEVEL_UP: 'corona',
 };
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -52,6 +54,7 @@ export function toNoticeItem(notification: AppNotification, now: Date): NoticeIt
   const createdAt = new Date(notification.createdAt);
   return {
     id: notification.id,
+    type: notification.type,
     period: periodFor(createdAt, now),
     icon: ICON_BY_TYPE[notification.type],
     title: notification.title,

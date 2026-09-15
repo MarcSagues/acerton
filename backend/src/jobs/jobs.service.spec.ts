@@ -20,10 +20,11 @@ function buildDeps() {
     notifyMatchesClosingSoon: jest.fn(),
     notifyMatchdayFinished: jest.fn(),
     notifyBadgeEarned: jest.fn(),
+    notifyLevelUp: jest.fn(),
     notifyReengagement: jest.fn().mockResolvedValue(undefined),
   };
   const seasonsService = { checkSeasonClosureAfterMatchdayFinished: jest.fn() };
-  const xpService = { evaluateAfterMatchdayClose: jest.fn().mockResolvedValue(undefined) };
+  const xpService = { evaluateAfterMatchdayClose: jest.fn().mockResolvedValue([]) };
 
   const service = new JobsService(
     prisma as never,

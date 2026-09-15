@@ -40,4 +40,8 @@ export class UpdateNotificationPreferencesDto {
   @IsOptional()
   @IsBoolean()
   reengagement?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  levelUp?: boolean;
 }

@@ -20,6 +20,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferenceFields = {
   badgeEarned: true,
   seasonFinishedTrophies: true,
   reengagement: true,
+  levelUp: true,
 };
 
 /**

@@ -158,6 +158,49 @@ describe('NotificationsService.notifyBadgeEarned', () => {
   });
 });
 
+describe('NotificationsService.notifyLevelUp', () => {
+  it('avisa cuando la preferencia esta activada (por defecto) y guarda el nivel', async () => {
+    const prisma = buildPrismaMock();
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUser').mockResolvedValue(undefined);
+
+    await service.notifyLevelUp('u1', 8);
+
+    expect(sendSpy).toHaveBeenCalledWith('u1', expect.objectContaining({ body: expect.stringContaining('nivel 8') }));
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u1', type: 'LEVEL_UP', level: 8 }),
+      }),
+    );
+  });
+
+  it('no avisa cuando el usuario ha desactivado la preferencia', async () => {
+    const prisma = buildPrismaMock();
+    prisma.notificationPreference.findUnique.mockResolvedValue({ levelUp: false });
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUser').mockResolvedValue(undefined);
+
+    await service.notifyLevelUp('u1', 8);
+
+    expect(sendSpy).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('NotificationsService.markOneRead', () => {
+  it('marca leido solo el aviso pedido, filtrando tambien por dueño', async () => {
+    const prisma = buildPrismaMock();
+    const service = new NotificationsService(prisma as never, {} as never);
+
+    await service.markOneRead('u1', 'n1');
+
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { id: 'n1', userId: 'u1', readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
+  });
+});
+
 describe('NotificationsService.notifyMatchesClosingSoon', () => {
   it('avisa a quien le falta el partido y no recibio otro recordatorio en las ultimas 24h', async () => {
     const prisma = buildPrismaMock();

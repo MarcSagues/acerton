@@ -2,6 +2,7 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, computed, inject } from '@angular/co
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { BottomNavService } from '../../core/services/bottom-nav.service';
 import { ActiveGroupService } from '../../core/services/active-group.service';
+import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
 
 @Component({
   selector: 'app-bottom-nav',
@@ -14,6 +15,7 @@ import { ActiveGroupService } from '../../core/services/active-group.service';
 export class BottomNavComponent {
   readonly bottomNav = inject(BottomNavService);
   readonly activeGroupService = inject(ActiveGroupService);
+  readonly notificationsFeed = inject(NotificationsFeedService);
 
   /** Ver comentario en BottomNavService.liveJornadaPending: en vivo si Jornada esta montada, si no el ultimo dato conocido del grupo activo. */
   readonly hasPendingJornadaPicks = computed(

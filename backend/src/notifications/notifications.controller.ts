@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { NotificationsService } from './notifications.service';
 
@@ -18,9 +18,15 @@ export class NotificationsController {
     return this.notificationsService.getFeedForUser(user.id);
   }
 
-  /** Boton "Leer todo": no hay interaccion aviso a aviso, solo en bloque. */
+  /** Boton "Leer todo". */
   @Post('me/read-all')
   async markAllRead(@CurrentUser() user: AuthenticatedUser) {
     await this.notificationsService.markAllRead(user.id);
+  }
+
+  /** Marca un aviso concreto como leido (p.ej. al pulsar el de subida de nivel). */
+  @Post('me/:id/read')
+  async markOneRead(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    await this.notificationsService.markOneRead(user.id, id);
   }
 }

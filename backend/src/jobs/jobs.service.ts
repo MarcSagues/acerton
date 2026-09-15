@@ -280,7 +280,10 @@ export class JobsService implements OnApplicationBootstrap {
       for (const { userId, badgeName } of newlyAwarded) {
         await this.notificationsService.notifyBadgeEarned(userId, badgeName);
       }
-      await this.xpService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
+      const levelUps = await this.xpService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
+      for (const { userId, level } of levelUps) {
+        await this.notificationsService.notifyLevelUp(userId, level);
+      }
       await this.notificationsService.notifyMatchdayFinished(gc.groupId, matchdayId, matchdayName);
     }
   }

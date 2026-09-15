@@ -27,7 +27,7 @@
           <div class="section">
             <div class="notices">
               @for (notice of items; track notice.id) {
-                <div class="notice-card" [class.unread]="notice.unread">
+                <button type="button" class="notice-card" [class.unread]="notice.unread" (click)="page.openNotice(notice)">
                   <piqo-svg [attr.icon]="notice.icon" size="20"></piqo-svg>
                   <div class="notice-copy">
                     <div class="notice-title-row">
@@ -39,7 +39,7 @@
                     <p class="notice-body">{{ notice.body }}</p>
                     <p class="notice-time mono">{{ notice.time }}</p>
                   </div>
-                </div>
+                </button>
               }
             </div>
           </div>

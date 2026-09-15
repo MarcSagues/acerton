@@ -22,7 +22,12 @@
     <span class="label">Tabla</span>
   </a>
   <a routerLink="/profile" routerLinkActive="active" class="item" data-tutorial="nav-perfil">
-    <span class="pill"><piqo-svg icon="perfil" size="22"></piqo-svg></span>
+    <span class="pill">
+      <piqo-svg icon="perfil" size="22"></piqo-svg>
+      @if (notificationsFeed.unreadLevelUps().length > 0) {
+        <span class="pending-dot" aria-hidden="true"></span>
+      }
+    </span>
     <span class="label">Perfil</span>
   </a>
 </nav>

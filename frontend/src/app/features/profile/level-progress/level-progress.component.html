@@ -95,6 +95,8 @@
           >
             @if (node.current) {
               <span class="node-pin">TÚ</span>
+            } @else if (node.hasUnclaimedReward) {
+              <span class="node-unclaimed-dot" aria-label="Recompensa nueva"></span>
             }
             <span class="node-rail" [class.hidden]="node.n === page.maxLevel"></span>
             <span
@@ -114,7 +116,7 @@
               } @else if (node.kind === 'color') {
                 <span class="node-swatch" [style.background]="node.swatch"></span>
               } @else {
-                <piqo-svg icon="comodin" size="16"></piqo-svg>
+                <img class="node-mascot" [src]="node.mascotUrl" alt="" />
               }
             </span>
             <span class="node-label" [class.unlocked]="!node.locked">{{ node.reward }}</span>
@@ -127,6 +129,9 @@
       <div class="detail-top">
         <div class="detail-icon" [class.unlocked]="page.selectedUnlocked()">
           <span>{{ page.selected() }}</span>
+          @if (page.selectedHasUnclaimedReward()) {
+            <span class="detail-icon-dot" aria-label="Recompensa nueva"></span>
+          }
         </div>
         <div class="detail-meta">
           <div class="detail-title-row">
@@ -141,7 +146,7 @@
           </div>
         </div>
       </div>
-      <button type="button" class="detail-cta" [class.primary]="page.selectedIsCurrent() && !page.claimed()" [class.claimed]="page.selectedIsCurrent() && page.claimed()" (click)="page.toggleClaim()">
+      <button type="button" class="detail-cta" [class.primary]="page.selectedIsCurrent() && !page.claimed()" [class.claimed]="page.selectedIsCurrent() && page.claimed()" (click)="page.onCtaClick()">
         {{ page.ctaLabel() }}
       </button>
     </div>
