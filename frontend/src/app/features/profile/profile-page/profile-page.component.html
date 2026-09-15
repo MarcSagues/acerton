@@ -13,6 +13,7 @@
           [url]="page.authService.currentUser()?.avatarUrl ?? null"
           [background]="page.authService.currentUser()?.avatarBackground ?? null"
           [name]="page.authService.currentUser()?.name ?? ''"
+          [level]="page.authService.currentUser()?.level ?? null"
           [size]="64"
         ></app-avatar>
         <span class="avatar-edit-badge"><piqo-svg icon="camara" size="14"></piqo-svg></span>
@@ -41,11 +42,11 @@
     <div class="section">
       <a class="card level-card" routerLink="/profile/level">
         <div class="level-card-top">
-          <span class="level-badge mono">Nv. 7</span>
-          <span class="level-hint">640 / 1100 XP</span>
+          <span class="level-badge mono">Nv. {{ p.xp.level }}</span>
+          <span class="level-hint">{{ p.xp.currentLevelXp }} / {{ p.xp.neededForLevel }} XP</span>
         </div>
         <div class="level-bar-track">
-          <div class="level-bar-fill" style="width: 58%"></div>
+          <div class="level-bar-fill" [style.width.%]="(p.xp.currentLevelXp / p.xp.neededForLevel) * 100"></div>
         </div>
       </a>
     </div>

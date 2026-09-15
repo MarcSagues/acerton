@@ -22,6 +22,8 @@ export interface MemberProfile {
   name: string;
   avatarUrl: string | null;
   avatarBackground: string | null;
+  /** Nivel derivado de la XP acumulada (Sprint 14, roadmap). */
+  level: number;
   role: GroupRole;
   joinedAt: string;
   /** El propietario del grupo, distinto de role (ver Group.ownerId). */

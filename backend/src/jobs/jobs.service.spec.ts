@@ -23,6 +23,7 @@ function buildDeps() {
     notifyReengagement: jest.fn().mockResolvedValue(undefined),
   };
   const seasonsService = { checkSeasonClosureAfterMatchdayFinished: jest.fn() };
+  const xpService = { evaluateAfterMatchdayClose: jest.fn().mockResolvedValue(undefined) };
 
   const service = new JobsService(
     prisma as never,
@@ -33,6 +34,7 @@ function buildDeps() {
     badgesService as never,
     notificationsService as never,
     seasonsService as never,
+    xpService as never,
   );
 
   return {
@@ -45,6 +47,7 @@ function buildDeps() {
     badgesService,
     notificationsService,
     seasonsService,
+    xpService,
   };
 }
 

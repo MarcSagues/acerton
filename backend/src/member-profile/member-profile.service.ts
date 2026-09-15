@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { xpProgressForLevel } from '../xp/xp.util';
 
 /**
  * Cuantas jornadas recientes se devuelven en el detalle de un miembro:
@@ -23,7 +24,7 @@ export class MemberProfileService {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
       include: {
-        user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } },
+        user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } },
         group: { select: { id: true, name: true, scoringMode: true, ownerId: true } },
       },
     });
@@ -59,6 +60,7 @@ export class MemberProfileService {
       name: membership.user.name,
       avatarUrl: membership.user.avatarUrl,
       avatarBackground: membership.user.avatarBackground,
+      level: xpProgressForLevel(membership.user.experience).level,
       role: membership.role,
       joinedAt: membership.joinedAt,
       isOwner: membership.group.ownerId === membership.userId,

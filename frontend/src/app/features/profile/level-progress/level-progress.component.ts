@@ -1,4 +1,5 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, OnInit, ViewChild, effect, inject } from '@angular/core';
+import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { LevelProgressFacade } from './level-progress.facade';
 
 /** Ancho de cada nodo del track y relleno lateral — deben coincidir con las medidas fijadas en el SCSS (.track-inner). */
@@ -8,6 +9,7 @@ const TRACK_PADDING = 149;
 @Component({
   selector: 'app-level-progress',
   standalone: true,
+  imports: [SpinnerComponent],
   providers: [LevelProgressFacade],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './level-progress.component.html',
@@ -21,16 +23,27 @@ export class LevelProgressComponent implements OnInit {
   /** Perímetro del anillo de progreso del héroe (r=39 → 2πr ≈ 245), fijo porque el radio del SVG es fijo en la plantilla. */
   readonly ringLength = 245;
 
+  private centeredOnce = false;
+
+  constructor() {
+    // Centra el track en el nivel actual la primera vez que la carga real
+    // (page.loading) termina, en vez de empezar siempre desde el Nivel 1
+    // (pedido explicito del usuario). En un effect (no en ngOnInit) porque
+    // el nivel llega de forma asincrona (ProfileController).
+    effect(() => {
+      if (!this.page.loading() && !this.centeredOnce) {
+        this.centeredOnce = true;
+        queueMicrotask(() => this.scrollToLevel(this.page.currentLevel(), false));
+      }
+    });
+  }
+
   ngOnInit(): void {
-    // Centra el track en el nivel actual nada mas abrir la pantalla, en vez
-    // de empezar siempre desde el Nivel 1 (pedido explicito del usuario).
-    // Se hace en un microtask porque el elemento del track todavia no tiene
-    // su clientWidth definitivo en ngOnInit (el layout no ha corrido).
-    queueMicrotask(() => this.scrollToLevel(this.page.currentLevel, false));
+    this.page.init();
   }
 
   get ringOffset(): number {
-    return this.ringLength * (1 - this.page.levelFraction);
+    return this.ringLength * (1 - this.page.levelFraction());
   }
 
   onNodeClick(n: number): void {

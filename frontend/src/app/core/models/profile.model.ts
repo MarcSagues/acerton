@@ -38,9 +38,18 @@ export interface GroupProfileSummary {
   comeback: ComebackStatus;
 }
 
+/** Nivel y progreso de XP (Sprint 14, roadmap) — ver backend xp.util.ts. */
+export interface XpProgress {
+  level: number;
+  /** XP dentro del nivel actual, no el total acumulado — la barra de progreso es por nivel. */
+  currentLevelXp: number;
+  neededForLevel: number;
+}
+
 export interface UserProfile {
   badges: UserBadge[];
   groups: GroupProfileSummary[];
   /** Racha global: cada jornada de cada competicion presente en los grupos del usuario cuenta una vez, sin duplicar. */
   globalStreak: Streak;
+  xp: XpProgress;
 }

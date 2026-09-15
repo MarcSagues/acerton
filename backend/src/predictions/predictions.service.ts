@@ -12,6 +12,7 @@ import { MatchdaysService } from '../matchdays/matchdays.service';
 import { SubmitPredictionDto } from './dto/submit-prediction.dto';
 import { calculateExactScorePoints, calculatePoints } from './scoring.util';
 import { isMatchPredictable } from '../matchdays/matchday.util';
+import { xpProgressForLevel } from '../xp/xp.util';
 
 @Injectable()
 export class PredictionsService {
@@ -128,10 +129,14 @@ export class PredictionsService {
       throw new ForbiddenException('Las predicciones del grupo se ven cuando cierra la jornada');
     }
 
-    return this.prisma.prediction.findMany({
+    const predictions = await this.prisma.prediction.findMany({
       where: { groupId, match: { matchdayId } },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
     });
+    return predictions.map((p) => ({
+      ...p,
+      user: { ...p.user, level: xpProgressForLevel(p.user.experience).level },
+    }));
   }
 
   /**

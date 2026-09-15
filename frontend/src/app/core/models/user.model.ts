@@ -15,4 +15,6 @@ export interface User {
   emailVerified: boolean;
   /** false en cuentas solo-Google: no tienen contrasena que cambiar. */
   hasPassword: boolean;
+  /** Nivel derivado de la XP acumulada (Sprint 14, roadmap). */
+  level: number;
 }

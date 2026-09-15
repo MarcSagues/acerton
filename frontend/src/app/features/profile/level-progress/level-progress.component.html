@@ -14,12 +14,15 @@
     </button>
   </div>
 
+  @if (page.loading()) {
+    <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+  } @else {
   <div class="scroll-area">
     @if (!page.demoCalloutDismissed()) {
       <div class="section">
         <div class="callout info">
           <piqo-svg icon="info" size="20"></piqo-svg>
-          <span><strong>Vista de demostración.</strong> El nivel, la XP y las recompensas son datos de ejemplo: Piqo todavía no calcula experiencia real.</span>
+          <span><strong>Vista de demostración parcial.</strong> El nivel y la XP ya son reales; las recompensas del pase (colores, mascotas...) siguen siendo un catálogo de muestra.</span>
           <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.demoCalloutDismissed.set(true)">
             <piqo-svg icon="cerrar" size="14"></piqo-svg>
           </button>
@@ -45,19 +48,19 @@
             ></circle>
           </svg>
           <div class="ring-disc">
-            <span class="ring-level">{{ page.currentLevel }}</span>
+            <span class="ring-level">{{ page.currentLevel() }}</span>
             <span class="ring-caption">NIVEL</span>
           </div>
         </div>
         <div class="hero-meta">
-          <div class="tier-badge"><span class="tier-dot"></span>{{ page.tierLabel }}</div>
-          <p class="hero-rank">{{ page.rank }}</p>
-          <p class="hero-hint">{{ page.toNextLabel }}</p>
+          <div class="tier-badge"><span class="tier-dot"></span>{{ page.tierLabel() }}</div>
+          <p class="hero-rank">{{ page.rank() }}</p>
+          <p class="hero-hint">{{ page.toNextLabel() }}</p>
         </div>
       </div>
       <div class="hero-bottom">
         <div>
-          <p class="hero-xp mono">{{ page.currentXp }} / {{ page.needXp }}</p>
+          <p class="hero-xp mono">{{ page.currentXp() }} / {{ page.needXp() }}</p>
           <p class="hero-xp-label">XP de nivel</p>
         </div>
         <div class="right">
@@ -69,7 +72,7 @@
 
     <div class="section-head">
       <p class="section-title">Pase de progreso</p>
-      <p class="section-count mono">{{ page.unlockedLabel }}</p>
+      <p class="section-count mono">{{ page.unlockedLabel() }}</p>
     </div>
 
     <div class="tier-row">
@@ -133,7 +136,7 @@
             </span>
           </div>
           <p class="detail-desc">{{ page.selectedDescription() }}</p>
-          <div class="detail-bar-wrap" [class.faded]="page.selected() > page.currentLevel">
+          <div class="detail-bar-wrap" [class.faded]="page.selected() > page.currentLevel()">
             <div class="detail-bar-fill" [style.width.%]="page.selectedFraction() * 100"></div>
           </div>
         </div>
@@ -165,4 +168,5 @@
       <piqo-svg icon="flecha" size="18"></piqo-svg>
     </div>
   </div>
+  }
 </div>

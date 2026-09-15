@@ -37,7 +37,7 @@ describe('MemberProfileService.getMemberProfile', () => {
       userId: 'u1',
       role: 'MEMBER',
       joinedAt: new Date('2026-01-01'),
-      user: { id: 'u1', name: 'Marta', avatarUrl: null, avatarBackground: '#FFAA00' },
+      user: { id: 'u1', name: 'Marta', avatarUrl: null, avatarBackground: '#FFAA00', experience: 250 },
       group: { id: 'g1', name: 'Los cracks', scoringMode: 'ONE_X_TWO', ownerId: 'u9' },
     });
     prisma.streak.findUnique.mockResolvedValue({ currentStreak: 4, longestStreak: 7 });
@@ -76,6 +76,7 @@ describe('MemberProfileService.getMemberProfile', () => {
       name: 'Marta',
       avatarUrl: null,
       avatarBackground: '#FFAA00',
+      level: 2,
       role: 'MEMBER',
       joinedAt: new Date('2026-01-01'),
       isOwner: false,
