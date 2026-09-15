@@ -1,5 +1,31 @@
 # Estado actual
 
+## 2026-09-15 — Feed real de avisos (issue #21) + campanita restaurada
+
+A petición del usuario ("podemos crear ya la vista de notificaciones?"),
+terminado el issue #21: la pantalla "Avisos" (`/notifications`) dejó de
+ser una lista de muestra (`DEMO_NOTICES`) y pasó a mostrar el historial
+real de avisos del usuario — logros/insignias conseguidas, puntos
+ganados en una jornada terminada, recordatorios de cierre, reenganche.
+Ver `roadmap.md` Sprint 9 para el detalle técnico completo.
+
+Nuevo modelo `Notification` en Prisma: se crea una fila cada vez que
+`NotificationsService` decide enviar el push equivalente (mismos filtros
+de preferencia/silencio ya aplicados), así que el feed nunca puede
+desincronizarse de a quién le llega el push real. Nuevos endpoints
+`GET /notifications/me` y `POST /notifications/me/read-all`. En el
+frontend, `NotificationsFeedService` ya no lee `DEMO_NOTICES`, sino la
+API real; se restauró la campanita del top-bar (escondida a propósito
+desde el 2026-09-12, con un comentario explícito señalando este mismo
+issue) con su contador real de avisos sin leer.
+
+6 tests unitarios nuevos (231 en el backend en verde), y verificado en
+navegador insertando avisos con la forma exacta que generaría el
+backend: iconos por tipo, agrupación Hoy/Esta semana/Anterior, tiempo
+relativo, contador "3" en la campanita, y "Leer todo" confirmado con SQL
+directo (no solo optimista en el cliente) que persiste tras recargar.
+Sin verificar iOS/Android.
+
 ## 2026-09-15 — Catálogo de insignias ampliado a 20 (dos pasadas en la misma sesión)
 
 A petición directa del usuario ("5 me parecen pocas", y después "deberíamos

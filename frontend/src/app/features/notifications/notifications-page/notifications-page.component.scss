@@ -48,49 +48,22 @@
   font: 700 26px/32px var(--p4-font-display);
 }
 
-.callout {
-  margin: 16px 20px 0;
-  border-radius: 12px;
-  padding: 14px;
+.empty-state {
+  margin: 48px 32px 0;
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  font: 400 12px/17px var(--p4-font-ui);
-
-  &.info {
-    background: var(--p4-info-bg);
-    color: var(--p4-info);
-  }
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: var(--p4-muted);
 
   piqo-svg {
-    flex: none;
+    color: var(--p4-accent);
   }
 
-  strong {
-    color: inherit;
-  }
-
-  span {
-    flex: 1;
-  }
-}
-
-.callout-close {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin: -2px -4px -2px 0;
-  border: none;
-  background: none;
-  padding: 0;
-  color: inherit;
-  opacity: 0.7;
-
-  &:active {
-    opacity: 1;
+  p {
+    margin: 0;
+    font: 400 13px/1.5 var(--p4-font-ui);
   }
 }
 

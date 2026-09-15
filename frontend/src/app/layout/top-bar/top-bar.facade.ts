@@ -12,6 +12,13 @@ export class TopBarFacade {
   readonly currentUser = this.authService.currentUser;
   readonly unreadCount = this.notificationsFeed.unreadCount;
 
+  constructor() {
+    // El top-bar esta presente en todo el shell autenticado: es el punto de
+    // entrada natural para tener el contador de sin-leer listo sin esperar
+    // a que el usuario abra la pantalla de avisos.
+    this.notificationsFeed.ensureLoaded();
+  }
+
   goNotifications(): void {
     this.router.navigate(['/notifications']);
   }

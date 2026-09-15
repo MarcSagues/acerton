@@ -1,5 +1,5 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { NOTICE_PERIODS } from '../domain/demo-notice';
+import { Injectable, inject } from '@angular/core';
+import { NOTICE_PERIODS, NoticePeriod } from '../domain/notice';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 
 @Injectable()
@@ -8,7 +8,15 @@ export class NotificationsPageFacade {
 
   readonly notices = this.feed.notices;
   readonly periods = NOTICE_PERIODS;
-  readonly demoCalloutDismissed = signal(false);
+
+  init(): void {
+    this.feed.refresh();
+  }
+
+  /** Solo los avisos de este periodo — evita pintar una cabecera de sección vacía cuando no hay ninguno. */
+  noticesForPeriod(period: NoticePeriod) {
+    return this.notices().filter((notice) => notice.period === period);
+  }
 
   markAllRead(): void {
     this.feed.markAllRead();
