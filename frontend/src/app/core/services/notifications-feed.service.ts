@@ -1,19 +1,46 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { DEMO_NOTICES } from '../../features/notifications/domain/demo-notice';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AppNotification } from '../models/notification.model';
+import { NotificationsService } from './notifications.service';
+import { NoticeItem, toNoticeItem } from '../../features/notifications/domain/notice';
 
 /**
- * Estado compartido de la lista de avisos (ver domain/demo-notice.ts: el
- * producto todavia no tiene un historial de avisos persistido, asi que
- * esto sigue siendo una lista de muestra) — provisto en root para que la
- * campanita del top-bar y la pantalla de avisos lean/marquen el mismo
- * estado de leido/no leido en vez de cada una la suya.
+ * Estado compartido del feed real de avisos (ver Notification en el
+ * schema, issue #21 "Terminar el feed de avisos") — provisto en root para
+ * que la campanita del top-bar y la pantalla de avisos lean/marquen el
+ * mismo estado de leido/no leido en vez de cada una la suya.
  */
 @Injectable({ providedIn: 'root' })
 export class NotificationsFeedService {
-  readonly notices = signal(DEMO_NOTICES.map((notice) => ({ ...notice })));
-  readonly unreadCount = computed(() => this.notices().filter((notice) => notice.unread).length);
+  private readonly notificationsApi = inject(NotificationsService);
+  private readonly rawNotices = signal<AppNotification[]>([]);
+  private loaded = false;
+
+  readonly notices = computed<NoticeItem[]>(() => {
+    const now = new Date();
+    return this.rawNotices().map((notification) => toNoticeItem(notification, now));
+  });
+  readonly unreadCount = computed(() => this.rawNotices().filter((notification) => notification.readAt == null).length);
+
+  /** Carga inicial (campanita del top-bar): solo pide al backend una vez por sesion, salvo refresh() explicito. */
+  ensureLoaded(): void {
+    if (this.loaded) return;
+    this.refresh();
+  }
+
+  /** Pantalla de avisos: siempre vuelve a pedir al backend, por si hay avisos nuevos desde la ultima carga. */
+  refresh(): void {
+    this.loaded = true;
+    this.notificationsApi.getMine().subscribe((notices) => this.rawNotices.set(notices));
+  }
 
   markAllRead(): void {
-    this.notices.update((items) => items.map((notice) => ({ ...notice, unread: false })));
+    const previous = this.rawNotices();
+    if (previous.every((notification) => notification.readAt != null)) return;
+
+    const now = new Date().toISOString();
+    this.rawNotices.set(previous.map((notification) => ({ ...notification, readAt: notification.readAt ?? now })));
+    this.notificationsApi.markAllRead().subscribe({
+      error: () => this.rawNotices.set(previous),
+    });
   }
 }

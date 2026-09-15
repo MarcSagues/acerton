@@ -9,6 +9,12 @@ function buildPrismaMock() {
     notificationToken: { findMany: jest.fn() },
     notificationPreference: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
     user: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn().mockResolvedValue({}) },
+    notification: {
+      create: jest.fn().mockResolvedValue({}),
+      createMany: jest.fn().mockResolvedValue({ count: 0 }),
+      findMany: jest.fn().mockResolvedValue([]),
+      updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
   };
 }
 
@@ -34,6 +40,17 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
     expect(sendSpy).toHaveBeenCalledWith(
       'u2',
       expect.objectContaining({ body: expect.stringContaining('0 puntos') }),
+    );
+    // El feed real (Notification) se persiste con el mismo cuerpo que el push, para cada destinatario.
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u1', type: 'MATCHDAY_FINISHED', body: expect.stringContaining('4 puntos') }),
+      }),
+    );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u2', type: 'MATCHDAY_FINISHED', body: expect.stringContaining('0 puntos') }),
+      }),
     );
   });
 
@@ -68,6 +85,9 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
 
     expect(sendSpy).not.toHaveBeenCalledWith('u1', expect.anything());
     expect(sendSpy).toHaveBeenCalledWith('u2', expect.anything());
+    expect(prisma.notification.create).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: 'u1' }) }),
+    );
   });
 
   it('no avisa a quien ha desactivado la preferencia de jornada terminada', async () => {
@@ -118,6 +138,11 @@ describe('NotificationsService.notifyBadgeEarned', () => {
       'u1',
       expect.objectContaining({ body: expect.stringContaining('Constante') }),
     );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u1', type: 'BADGE_EARNED', body: expect.stringContaining('Constante') }),
+      }),
+    );
   });
 
   it('no avisa cuando el usuario ha desactivado la preferencia', async () => {
@@ -129,6 +154,7 @@ describe('NotificationsService.notifyBadgeEarned', () => {
     await service.notifyBadgeEarned('u1', 'Constante');
 
     expect(sendSpy).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
   });
 });
 
@@ -150,6 +176,9 @@ describe('NotificationsService.notifyMatchesClosingSoon', () => {
       where: { id: { in: ['u1'] } },
       data: { lastClosingReminderPushAt: expect.any(Date) },
     });
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ userId: 'u1', type: 'MATCHDAY_CLOSING_SOON', groupId: 'g1', matchdayId: 'md1' })],
+    });
   });
 
   it('no avisa a quien ya recibio otro recordatorio de cierre hace menos de 24h', async () => {
@@ -166,6 +195,7 @@ describe('NotificationsService.notifyMatchesClosingSoon', () => {
 
     expect(sendSpy).not.toHaveBeenCalled();
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
   });
 });
 
@@ -183,6 +213,9 @@ describe('NotificationsService.notifyReengagement', () => {
     await service.notifyReengagement(['u1', 'u2']);
 
     expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.objectContaining({ title: 'Piqo te echa de menos' }));
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ userId: 'u1', type: 'REENGAGEMENT' })],
+    });
   });
 
   it('sin fila de preferencias (nunca visitadas), usa el valor por defecto (activado)', async () => {
@@ -195,5 +228,37 @@ describe('NotificationsService.notifyReengagement', () => {
     await service.notifyReengagement(['u1']);
 
     expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.anything());
+  });
+});
+
+describe('NotificationsService.getFeedForUser', () => {
+  it('lista los avisos del usuario, mas recientes primero', async () => {
+    const prisma = buildPrismaMock();
+    const notices = [{ id: 'n1' }, { id: 'n2' }];
+    prisma.notification.findMany.mockResolvedValue(notices);
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const result = await service.getFeedForUser('u1');
+
+    expect(prisma.notification.findMany).toHaveBeenCalledWith({
+      where: { userId: 'u1' },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    expect(result).toBe(notices);
+  });
+});
+
+describe('NotificationsService.markAllRead', () => {
+  it('marca como leidos solo los avisos sin leer de ese usuario', async () => {
+    const prisma = buildPrismaMock();
+    const service = new NotificationsService(prisma as never, {} as never);
+
+    await service.markAllRead('u1');
+
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'u1', readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
   });
 });

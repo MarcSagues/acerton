@@ -3,48 +3,48 @@
     <a routerLink="/profile" class="back-btn" aria-label="Volver a Perfil">
       <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
     </a>
-    <button type="button" class="link" (click)="page.markAllRead()">Leer todo</button>
+    @if (page.notices().length > 0) {
+      <button type="button" class="link" (click)="page.markAllRead()">Leer todo</button>
+    }
   </div>
   <div class="title-row">
     <h1>Avisos</h1>
   </div>
 
-  @if (!page.demoCalloutDismissed()) {
-    <div class="callout info">
-      <piqo-svg icon="info" size="20"></piqo-svg>
-      <span><strong>Vista de demostración.</strong> Estos avisos son datos de ejemplo y no representan actividad real de tu cuenta.</span>
-      <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.demoCalloutDismissed.set(true)">
-        <piqo-svg icon="cerrar" size="14"></piqo-svg>
-      </button>
+  @if (page.notices().length === 0) {
+    <div class="empty-state">
+      <piqo-svg icon="campana" size="32"></piqo-svg>
+      <p>Todavía no tienes avisos. Aquí verás recordatorios de cierre, resultados de jornada e insignias conseguidas.</p>
+    </div>
+  } @else {
+    <div class="notice-groups">
+      @for (period of page.periods; track period) {
+        @let items = page.noticesForPeriod(period);
+        @if (items.length > 0) {
+          <div class="section-head">
+            <h2>{{ period }}</h2>
+          </div>
+          <div class="section">
+            <div class="notices">
+              @for (notice of items; track notice.id) {
+                <div class="notice-card" [class.unread]="notice.unread">
+                  <piqo-svg [attr.icon]="notice.icon" size="20"></piqo-svg>
+                  <div class="notice-copy">
+                    <div class="notice-title-row">
+                      <p class="notice-title">{{ notice.title }}</p>
+                      @if (notice.unread) {
+                        <span class="unread-dot" aria-label="No leído"></span>
+                      }
+                    </div>
+                    <p class="notice-body">{{ notice.body }}</p>
+                    <p class="notice-time mono">{{ notice.time }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
     </div>
   }
-
-  <div class="notice-groups">
-    @for (period of page.periods; track period) {
-      <div class="section-head">
-        <h2>{{ period }}</h2>
-      </div>
-      <div class="section">
-        <div class="notices">
-          @for (notice of page.notices(); track notice.id) {
-            @if (notice.period === period) {
-              <div class="notice-card" [class.unread]="notice.unread">
-                <piqo-svg [attr.icon]="notice.icon" size="20" [attr.data-kind]="notice.kind"></piqo-svg>
-                <div class="notice-copy">
-                  <div class="notice-title-row">
-                    <p class="notice-title">{{ notice.title }}</p>
-                    @if (notice.unread) {
-                      <span class="unread-dot" aria-label="No leído"></span>
-                    }
-                  </div>
-                  <p class="notice-body">{{ notice.body }}</p>
-                  <p class="notice-time mono">{{ notice.time }}</p>
-                </div>
-              </div>
-            }
-          }
-        </div>
-      </div>
-    }
-  </div>
 </div>

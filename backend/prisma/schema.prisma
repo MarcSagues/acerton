@@ -136,6 +136,7 @@ model User {
   refreshTokens          RefreshToken[]
   notificationTokens     NotificationToken[]
   notificationPreference NotificationPreference?
+  notifications          Notification[]
   adRewardClaims         AdRewardClaim[]
   authTokens             AuthToken[]
 
@@ -229,6 +230,42 @@ model NotificationPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notification_preferences")
+}
+
+/// Tipo de aviso persistido, igual a `data.type` del push equivalente
+/// (ver NotificationsService) — un unico valor sirve para decidir el icono
+/// en el frontend y para saber que evento lo genero.
+enum NotificationType {
+  MATCHDAY_CLOSING_SOON
+  MATCHDAY_FINISHED
+  BADGE_EARNED
+  REENGAGEMENT
+}
+
+/// Historial real de avisos por usuario (pantalla "Avisos" / campanita del
+/// top-bar — ver issue #21 "Terminar el feed de avisos"). Se crea una fila
+/// aqui en el mismo momento en que se decide enviar el push equivalente
+/// (mismos filtros de preferencia/silencio ya aplicados en
+/// NotificationsService), asi que esta tabla es la fuente de verdad de "que
+/// le hemos avisado a este usuario y de que", independiente de si el push
+/// llego a entregarse de verdad (sin token registrado, permiso denegado...).
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  type       NotificationType
+  title      String
+  body       String
+  /// Contexto opcional segun el tipo (jornada terminada, recordatorio de cierre...); null para avisos sin grupo (reenganche).
+  groupId    String?
+  matchdayId String?
+  /// null = no leido. Se marca en bloque desde "Leer todo", no aviso por aviso.
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 // ---------------------------------------------------------------------------
