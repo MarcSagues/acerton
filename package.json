@@ -5,12 +5,14 @@
   "description": "Quiniela de futbol semanal para grupos de amigos",
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "e2e"
   ],
   "scripts": {
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:frontend": "npm run start --workspace=frontend",
     "test:backend": "npm run test --workspace=backend",
+    "test:e2e": "npm run test --workspace=e2e",
     "prisma:generate": "npm run prisma:generate --workspace=backend",
     "prisma:migrate": "npm run prisma:migrate --workspace=backend",
     "prisma:seed": "npm run prisma:seed --workspace=backend"
