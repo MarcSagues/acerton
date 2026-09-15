@@ -1,5 +1,31 @@
 # Estado actual
 
+## 2026-09-15 — Puntito rojo en el propio color/mascota recién desbloqueado (Sprint 14)
+
+A petición del usuario ("solo falta que cuando tengas un elemento nuevo
+ese elemento se marque con el puntito rojo"): sexto incremento del
+Sprint 14 el mismo día. El puntito rojo de "recompensa sin reclamar" ya
+existía en 3 sitios (pestaña Perfil, nodo del recorrido, tarjeta de
+detalle) pero no en el elemento en sí dentro de `/profile/avatar` — al
+entrar ahí tras subir de nivel, el color/mascota nuevo se veía igual que
+cualquier otro ya desbloqueado antes.
+
+`ProfileAvatarFacade.isMascotNew`/`isBackgroundNew` comparan el nivel
+requerido de cada color/mascota (mismo mapeo que el gating de
+`avatar-level-rewards`) contra `NotificationsFeedService.
+unreadLevelUps()` — mismo dato que ya alimentaba los otros 3 puntitos,
+sin campo nuevo. El punto se apaga solo junto con el resto al marcar
+leído el aviso (pulsándolo desde Avisos o desde el recorrido), no antes
+— verlo en el picker sin haber pulsado la notificación no lo da por
+reclamado, mismo criterio que el resto de puntitos "pendiente" de la
+app (p.ej. Jornada, que tampoco se apaga solo con abrir la pestaña).
+
+tsc y 17 tests del frontend en verde. Verificado en navegador con una
+cuenta real (subida de nivel 1→2 forzada para la prueba): "Mascota
+saludo" aparece con el puntito nada más desbloquearse, y desaparece a
+la vez en los 4 sitios al pulsar la notificación de subida de nivel.
+Mergeado a `dev` y empujado a `origin/dev`.
+
 ## 2026-09-15 — XP de participar en tiempo real al pronosticar, no solo al cerrar la jornada (Sprint 14)
 
 A petición del usuario, que probó en `dev` y vio que la barra de nivel
