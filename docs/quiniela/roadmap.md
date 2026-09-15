@@ -365,6 +365,60 @@ resolverse).
 | Preferencia de silenciar chat por grupo | ⬜ | Mismo patrón que `GroupMembership.mutedNotifications` (Sprint 9) — evitar que compita con avisos de jornada/insignias sin control. |
 | Alternativa más barata a evaluar antes de construir chat completo | ⬜ | Reacciones/emoji sobre pronósticos o un feed de actividad del grupo dan parte de la interacción social sin la carga de moderar texto libre — valorar si cubre la necesidad antes de meterse en todo lo anterior. |
 
+## Sprint 14 — Sistema de nivel y experiencia ⬜ (añadido 2026-09-15, a petición del usuario)
+
+Gamificación transversal (no depende de grupos ni de temporadas): cada
+cuenta gana experiencia (XP) al participar y acertar, sube de nivel, y
+desbloquea colores/avatares (y en el futuro marcos de foto) según el
+nivel alcanzado. Mismo patrón de enganche que insignias/racha global:
+se calcula tras el mismo evento de cierre/puntuación de jornada
+(`evaluateAfterMatchdayClose`), no una arquitectura nueva.
+
+**Fuentes de XP, de más a menos valor (orden dado por el usuario)**:
+1. Pleno de jornada en modo resultado exacto (sube mucho) — misma
+   condición que la insignia `PERFECT_MATCHDAY` (Sprint 8), reutilizable.
+2. Pleno de quiniela — **pendiente de definir exactamente qué cuenta
+   como esto** (¿pleno de una jornada en 1X2, equivalente al anterior
+   pero en el otro modo de puntuación? ¿otra cosa?).
+3. Invitar a un amigo (sistema de referral por link, nuevo) — con caída
+   permanente de XP por cada referido adicional de la misma cuenta
+   (nunca llega a 0, pero el suelo debe ser insignificante frente al
+   XP de un nivel) para que farmear cuentas falsas no compense. El
+   contador de referidos no se resetea nunca (ni por temporada ni por
+   mes).
+4. Aciertos de resultado exacto.
+5. Acierto 1X2 / acierto ganador en modo resultado exacto (mismo valor
+   entre sí).
+6. Acierto con comodín en el 1X2.
+7. Participar (flat, por el mero hecho de pronosticar).
+
+Progresión dentro de una misma jornada: más aciertos da
+proporcionalmente más XP por acierto adicional (ejemplo dado por el
+usuario: 1 acierto → 1xp; 2 aciertos → 1xp + 2xp; 3 aciertos → 1xp +
+2xp + 3xp — a concretar la fórmula exacta y cómo combina con la lista
+de fuentes de arriba antes de implementar, como se hizo con las 20
+insignias).
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| Modelo de XP total + log de eventos por usuario | ⬜ | Nuevo, similar a `Notification`: una fila por cada XP ganado para poder explicar el detalle en el botón de info, no solo el total acumulado. |
+| Curva de nivel (XP necesario por nivel) | ⬜ | Catálogo a definir, mismo estilo que `BADGE_TARGETS`/`TROPHIES` (constante en código, no configurable en runtime). |
+| Cálculo de XP enganchado al cierre de jornada | ⬜ | Mismo evento que `evaluateAfterMatchdayClose` (insignias) y `updateGlobalStreaks` (racha global, Sprint 5). |
+| Sistema de referidos (link único, registro invitado↔invitador) | ⬜ | Nuevo de cero. Riesgo principal: abuso multicuenta — mitigado por la caída de XP descrita arriba, sin necesidad de verificación de dispositivo/IP. |
+| Desbloqueables: colores/avatares por nivel | ⬜ | Reutiliza el catálogo cerrado de `avatar-catalog.ts` (mismo gating que "tener ese trofeo", cambiando la condición a "tener ese nivel"). |
+| Marcos de foto por nivel | 🔒 | El concepto de "marco" no existe todavía en absoluto (mismo hueco pendiente que Sprint 11 Premium) — diseñar desde cero cuando toque. |
+| Barra de progreso de nivel en Perfil | ⬜ | Nivel actual → siguiente, pulsable. |
+| Pantalla de progreso de nivel (scroll horizontal) | ⬜ | Track tipo pase de temporada: NIVEL+RECOMPENSA — barra — NIVEL+RECOMPENSA — barra... (`scroll-snap` CSS, sin librería). Auto-centrado en el nivel actual al abrir, no empezar siempre desde el Nivel 1. Diseño visual de esta vista concreta encargado a Claude Design (ver más abajo) — el resto de la implementación (backend, lógica, resto de UI) no. |
+| Botón de info (qué XP da cada acción) | ⬜ | Texto explicativo de la lista de fuentes de arriba, una vez tengan valores numéricos definitivos. |
+| Insignia de nivel sobre el avatar en todos los sitios | ⬜ | Depende de terminar de extender el componente compartido `app-avatar` a Tabla/miembros de grupo (Sprint 7, pendiente — hoy esos sitios siguen solo con iniciales). Posición (abajo-izquierda o abajo-derecha) a decidir en el diseño visual. |
+
+**Diseño de la pantalla de nivel encargado a Claude Design** (2026-09-15):
+alcance acotado explícitamente a esa vista concreta (el track horizontal
+con scroll), no al resto de la funcionalidad ni de la app. Bloqueado por
+ahora: `DesignSync` requiere que el usuario autorice el acceso con
+`/design-login` antes de poder listar/crear el proyecto y sincronizar
+los componentes con el estilo real de Piqo.
+
 ---
 
 ## Infraestructura — entorno dev/pre (fuera de la numeración de sprints)
