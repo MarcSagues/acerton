@@ -42,6 +42,9 @@
             } @else if (page.selectedBackground() === color) {
               <piqo-svg icon="check" size="16"></piqo-svg>
             }
+            @if (page.isBackgroundNew(color)) {
+              <span class="new-dot" aria-label="Recién desbloqueado"></span>
+            }
           </button>
         }
       </div>
@@ -73,6 +76,8 @@
             <img [src]="mascot.url" alt="" />
             @if (page.isMascotLocked(mascot)) {
               <span class="lock-badge"><piqo-svg icon="candado" size="12"></piqo-svg></span>
+            } @else if (page.isMascotNew(mascot)) {
+              <span class="new-dot" aria-label="Recién desbloqueada"></span>
             }
           </button>
         }
