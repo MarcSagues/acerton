@@ -1,5 +1,39 @@
 # Estado actual
 
+## 2026-09-15 — XP de participar en tiempo real al pronosticar, no solo al cerrar la jornada (Sprint 14)
+
+A petición del usuario, que probó en `dev` y vio que la barra de nivel
+no se movía al pronosticar ("en dev aunque ponga predicciones no sube
+nada la barra de nivel"), y tras aclarar el comportamiento esperado
+("solo al seleccionar un partido ya debe subir un poco, si cambias el
+valor no, pero si no has participado y participas a un partido debe
+funcionar"): quinto incremento del Sprint 14 el mismo día.
+
+Hasta ahora la XP de "participar" (+5) era un flat por jornada, y solo
+se concedía cuando la jornada cerraba de verdad (mismo punto que
+insignias/rachas — necesita resultados reales sincronizados del
+proveedor de partidos, `JobsService.finalizeMatchday`). En `dev`, sin
+partidos reales terminados todavía, eso significaba que nada de XP se
+veía nunca, aunque el usuario sí estuviera pronosticando. Se movió esta
+fuente concreta a tiempo real: `XpService.awardParticipation` concede
++5 XP al momento desde `PredictionsService.submit`, comprobando antes
+del `upsert` si ya existía pronóstico para ese partido/usuario/grupo —
+solo la primera vez cuenta, cambiar después el pronóstico no vuelve a
+dar XP. El resto de fuentes (aciertos, pleno de jornada) sigue
+dependiendo del cierre real, sin cambios.
+
+Si esa XP cruza de nivel, se dispara la misma notificación `LEVEL_UP`
+que ya existía (pop-up en vivo si estás en la app). `current-matchday.
+facade.ts` refresca el feed de avisos justo tras guardar un pronóstico
+para que el pop-up salte al instante en vez de esperar el polling de 2
+min de `ShellFacade`.
+
+11 tests nuevos/actualizados (261 tests del backend en verde), tsc y 17
+tests del frontend en verde. Verificado en navegador con una cuenta real
+de nivel 1: pronosticar un partido nuevo sube la barra de 0/200 a 5/200
+al instante; cambiar después ese mismo pronóstico (1 → X) no vuelve a
+sumar XP. Mergeado a `dev` y empujado a `origin/dev`.
+
 ## 2026-09-15 — Gating real de colores/mascotas por nivel + recorrido muestra la recompensa atenuada (Sprint 14)
 
 A petición del usuario, que probó la pantalla en local con una cuenta de
