@@ -213,13 +213,19 @@ describe('GroupsService.findMineForUser', () => {
       id: 'g1',
       scoringMode: 'ONE_X_TWO',
       groupCompetitions: [{ competitionId: 'c1', isActive: true, competition: {} }],
+      memberships: [{ isFavorite: false }],
       ...overrides,
     };
   }
 
-  function buildFindMineDeps(matchday: unknown, predictions: unknown[] = [], groupOverrides: Record<string, unknown> = {}) {
+  function buildFindMineDeps(
+    matchday: unknown,
+    predictions: unknown[] = [],
+    groupOverrides: Record<string, unknown> = {},
+    groups?: unknown[],
+  ) {
     const prisma = {
-      group: { findMany: jest.fn().mockResolvedValue([buildOwnGroup(groupOverrides)]) },
+      group: { findMany: jest.fn().mockResolvedValue(groups ?? [buildOwnGroup(groupOverrides)]) },
       rankingSnapshot: { findFirst: jest.fn().mockResolvedValue(null) },
       prediction: { findMany: jest.fn().mockResolvedValue(predictions) },
     };
@@ -312,5 +318,54 @@ describe('GroupsService.findMineForUser', () => {
     const [result] = await service.findMineForUser('u1');
 
     expect(result.hasPendingPicks).toBe(true);
+  });
+
+  it('mapea isFavorite desde la membresia propia y no filtra el grupo si no es favorito', async () => {
+    const { service } = buildFindMineDeps(null, [], { memberships: [{ isFavorite: false }] });
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.isFavorite).toBe(false);
+    expect((result as { memberships?: unknown }).memberships).toBeUndefined();
+  });
+
+  it('pone los grupos favoritos primero, conservando el resto del orden', async () => {
+    const groups = [
+      buildOwnGroup({ id: 'g1', createdAt: '2026-01-03', memberships: [{ isFavorite: false }] }),
+      buildOwnGroup({ id: 'g2', createdAt: '2026-01-02', memberships: [{ isFavorite: true }] }),
+      buildOwnGroup({ id: 'g3', createdAt: '2026-01-01', memberships: [{ isFavorite: false }] }),
+    ];
+    const { service } = buildFindMineDeps(null, [], {}, groups);
+
+    const result = await service.findMineForUser('u1');
+
+    expect(result.map((g) => g.id)).toEqual(['g2', 'g1', 'g3']);
+  });
+});
+
+describe('GroupsService.setFavorite', () => {
+  it('rechaza si el usuario no pertenece al grupo', async () => {
+    const prisma = { groupMembership: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() } };
+    const { service } = buildDeps([], prisma);
+
+    await expect(service.setFavorite('g1', 'u1', true)).rejects.toThrow('No perteneces a este grupo');
+    expect(prisma.groupMembership.update).not.toHaveBeenCalled();
+  });
+
+  it('actualiza isFavorite en la membresia del usuario', async () => {
+    const prisma = {
+      groupMembership: {
+        findUnique: jest.fn().mockResolvedValue({ userId: 'u1', groupId: 'g1' }),
+        update: jest.fn().mockResolvedValue(undefined),
+      },
+    };
+    const { service } = buildDeps([], prisma);
+
+    await service.setFavorite('g1', 'u1', true);
+
+    expect(prisma.groupMembership.update).toHaveBeenCalledWith({
+      where: { userId_groupId: { userId: 'u1', groupId: 'g1' } },
+      data: { isFavorite: true },
+    });
   });
 });

@@ -164,18 +164,21 @@ export class GroupsService {
       include: {
         _count: { select: { memberships: true } },
         groupCompetitions: { include: { competition: true } },
+        memberships: { where: { userId }, select: { isFavorite: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
     const now = new Date();
-    return Promise.all(
+    const results = await Promise.all(
       groups.map(async (group) => {
+        const { memberships, ...groupData } = group;
+        const isFavorite = memberships[0]?.isFavorite ?? false;
         const activeCompetitionIds = group.groupCompetitions
           .filter((gc) => gc.isActive)
           .map((gc) => gc.competitionId);
         if (activeCompetitionIds.length === 0) {
-          return { ...group, myPosition: null, hasPendingPicks: false };
+          return { ...groupData, myPosition: null, hasPendingPicks: false, isFavorite };
         }
         const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;
         const [snapshot, hasPendingPicks] = await Promise.all([
@@ -186,12 +189,18 @@ export class GroupsService {
           this.hasPendingPicksForGroup(group.id, activeCompetitionIds, group.scoringMode, userId, now),
         ]);
         return {
-          ...group,
+          ...groupData,
           myPosition: snapshot ? { position: snapshot.position, points: snapshot.points } : null,
           hasPendingPicks,
+          isFavorite,
         };
       }),
     );
+
+    // Favoritos siempre arriba (boton "favoritos" en Grupos), manteniendo el
+    // orden por fecha de creacion dentro de cada bloque — Array.sort es
+    // estable en Node, asi que basta comparar el flag.
+    return results.sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }
 
   /**
@@ -406,6 +415,26 @@ export class GroupsService {
     await this.prisma.groupMembership.update({
       where: { userId_groupId: { userId, groupId } },
       data: { mutedNotifications: muted },
+    });
+  }
+
+  /**
+   * Marca/desmarca un grupo como favorito solo para quien lo pide (boton
+   * "favoritos" en Grupos). Al igual que silenciar, es por membresia
+   * propia, no requiere ser admin. Se usa para fijar el grupo arriba del
+   * todo tanto en la lista de "Mis grupos" como en el selector — ver
+   * findMineForUser.
+   */
+  async setFavorite(groupId: string, userId: string, favorite: boolean): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('No perteneces a este grupo');
+    }
+    await this.prisma.groupMembership.update({
+      where: { userId_groupId: { userId, groupId } },
+      data: { isFavorite: favorite },
     });
   }
 

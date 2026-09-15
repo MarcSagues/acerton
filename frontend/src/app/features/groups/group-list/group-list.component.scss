@@ -182,6 +182,24 @@ h1 {
   color: var(--p4-muted);
 }
 
+.favorite-btn {
+  flex: none;
+  width: var(--p4-touch);
+  height: var(--p4-touch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: var(--p4-muted);
+
+  /* Mismo tono calido que el chip de miembros (--p4-warning): asocia el
+     favorito con "destacado" sin introducir un color nuevo en la paleta. */
+  &.active {
+    color: var(--p4-warning);
+  }
+}
+
 .actions {
   padding: 20px 20px 0;
   display: flex;
