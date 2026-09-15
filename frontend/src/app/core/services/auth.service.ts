@@ -156,6 +156,20 @@ export class AuthService {
     this.currentUserSignal.set(user);
   }
 
+  /**
+   * Vuelve a pedir /users/me para refrescar el signal local (nivel,
+   * avatar...) sin pasar por login/bootstrap — necesario porque
+   * currentUser() solo se actualiza en el arranque de la app o tras una
+   * accion explicita (login, guardar avatar...), nunca solo porque la XP
+   * cambio en el backend. Ver ShellFacade: se llama justo al detectar en
+   * vivo una subida de nivel, para que el nivel usado en el badge del
+   * avatar y en el gating de /profile/avatar no se quede desfasado hasta
+   * cerrar y volver a abrir la app.
+   */
+  refreshCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${environment.apiUrl}/users/me`).pipe(tap((user) => this.currentUserSignal.set(user)));
+  }
+
   logout(): Observable<unknown> {
     return this.http
       .post(`${environment.apiUrl}/auth/logout`, {}, { withCredentials: true })
