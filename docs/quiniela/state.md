@@ -1,5 +1,36 @@
 # Estado actual
 
+## 2026-09-15 — Gating real de colores/mascotas por nivel + recorrido muestra la recompensa atenuada (Sprint 14)
+
+A petición del usuario, que probó la pantalla en local con una cuenta de
+nivel 1 ("porque puedo usar los elementos" + "en el timeline... debería
+salir un círculo con la imagen o el color pero que se vea que no lo has
+desbloqueado"), cuarto incremento del Sprint 14 el mismo día. Cierra el
+hueco que quedó anotado explícitamente al terminar el incremento
+anterior (ver entrada de abajo y `roadmap.md`).
+
+Dos cambios: (1) `UsersService.updateAvatar` ahora valida en servidor
+que el nivel del usuario alcance el que pide `avatar-level-rewards.ts`
+(nuevo, mismo mapeo que `LEVEL_REWARDS` del frontend) antes de guardar
+un color/mascota de premio — 403 si no llega, igual de real que ya lo es
+el nivel (`User.experience`) desde el primer incremento; a diferencia de
+las mascotas de trofeo, que siguen sin comprobación real en servidor
+porque los trofeos todavía no son un dato real. `/profile/avatar` ya no
+deja pulsar un elemento bloqueado (mismo candado/atenuado que ya tenían
+las mascotas de trofeo, extendido también a los colores, que antes no
+tenían ningún bloqueo visual). (2) En `/profile/level`, los nodos
+bloqueados del recorrido ya no esconden la recompensa detrás de un
+candado genérico — muestran el color/mascota real en gris/atenuado con
+un candado pequeño superpuesto encima, para poder ver qué se gana en
+cada nivel sin haberlo desbloqueado todavía.
+
+7 tests nuevos/actualizados en `users.service.spec.ts` (253 tests del
+backend en verde), `tsc`/17 tests del frontend en verde. Verificado en
+navegador con una cuenta real de nivel 1: clic en mascota/color
+bloqueado no cambia nada, y el recorrido muestra "Mascota saludo ·
+BLOQUEADO · Faltan 1 niveles" con su miniatura atenuada. Mergeado a
+`dev` y empujado a `origin/dev`.
+
 ## 2026-09-15 — Catálogo de recompensas real, aviso de subida de nivel y pop-up en vivo (Sprint 14)
 
 A petición explícita del usuario ("añade según tu criterio los elementos
