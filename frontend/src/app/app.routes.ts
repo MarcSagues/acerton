@@ -285,6 +285,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile/level',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/level-progress/level-progress.component').then(
+            (m) => m.LevelProgressComponent,
+          ),
+      },
+      {
         path: 'profile/trophies/:trophyId/:year',
         canActivate: [hasGroupGuard],
         loadComponent: () =>
