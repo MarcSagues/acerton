@@ -1,0 +1,34 @@
+<div class="sheet-inner">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div>
+      <h2>Cómo ganar XP</h2>
+      <p class="sheet-sub">La XP se suma al cerrarse cada jornada.</p>
+    </div>
+    <button type="button" class="close-btn" aria-label="Cerrar" (click)="close()">
+      <piqo-svg icon="cerrar" size="14"></piqo-svg>
+    </button>
+  </div>
+
+  <div class="groups">
+    @for (group of groups; track group.title) {
+      <div class="group">
+        <p class="group-title mono">{{ group.title }}</p>
+        <div class="rules">
+          @for (rule of group.rules; track rule.title) {
+            <div class="rule">
+              <span class="dot-wrap"><span class="dot" [class]="rule.tone"></span></span>
+              <span class="meta">
+                <span class="title">{{ rule.title }}</span>
+                <span class="note">{{ rule.note }}</span>
+              </span>
+              <span class="xp mono">{{ rule.xp }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="tip">Los niveles nunca bajan: la XP acumulada se conserva aunque falles una jornada.</div>
+</div>

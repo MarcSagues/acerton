@@ -1,0 +1,139 @@
+.sheet-inner {
+  padding: 0 20px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--p4-border);
+  margin: 0 auto 18px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font: 700 19px/1.2 var(--p4-font-display);
+}
+
+.sheet-sub {
+  margin: 6px 0 0;
+  font: 400 12.5px/1.45 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--p4-surface);
+  border: 1px solid var(--p4-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--p4-muted);
+}
+
+.groups {
+  margin-top: 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.group-title {
+  font: 600 10px/1 var(--p4-font-ui);
+  letter-spacing: 1.2px;
+  color: var(--p4-muted);
+  margin: 0 0 9px;
+}
+
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--p4-surface);
+  border: 1px solid var(--p4-border);
+}
+
+.dot-wrap {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--p4-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--p4-accent);
+
+  &.warning {
+    border-color: var(--p4-warning);
+  }
+
+  &.success {
+    border-color: var(--p4-success);
+  }
+
+  &.muted {
+    border-color: var(--p4-muted);
+  }
+}
+
+.meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font: 600 13px/1.25 var(--p4-font-ui);
+}
+
+.note {
+  font: 400 11.5px/1.35 var(--p4-font-ui);
+  color: var(--p4-muted);
+  margin-top: 3px;
+}
+
+.xp {
+  flex: none;
+  font: 700 13px/1 var(--p4-font-display);
+  color: var(--p4-accent);
+}
+
+.tip {
+  margin: 18px 0 4px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: var(--p4-warning-bg);
+  border: 1px solid color-mix(in srgb, var(--p4-warning) 30%, transparent);
+  font: 400 11.5px/1.5 var(--p4-font-ui);
+  color: var(--p4-warning);
+}

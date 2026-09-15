@@ -332,6 +332,47 @@ h2 {
   font: 600 13px/1 var(--p4-font-ui);
 }
 
+/* Vista previa de nivel/XP (Sprint 14, roadmap): datos de muestra fijos
+   aqui mismo hasta que exista el backend real — misma cifra que el demo
+   de LevelProgressComponent (nivel 7, 640/1100 XP), para no mostrar dos
+   numeros distintos de la misma "vista de demostracion". */
+.level-card {
+  display: block;
+  color: var(--p4-text);
+}
+
+.level-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.level-badge {
+  font: 700 13px/1 var(--p4-font-display);
+  color: var(--p4-accent);
+}
+
+.level-hint {
+  font: 400 11px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.level-bar-track {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 20px;
+  background: var(--p4-surface-2);
+  overflow: hidden;
+}
+
+.level-bar-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: var(--p4-accent);
+}
+
 .settings-link {
   display: flex;
   align-items: center;

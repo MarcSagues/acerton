@@ -1,0 +1,168 @@
+<div class="page">
+  <div class="halo" aria-hidden="true"></div>
+
+  <div class="head-row">
+    <button type="button" class="head-btn" aria-label="Volver a Perfil" (click)="page.goToProfile()">
+      <piqo-svg icon="atras" size="18"></piqo-svg>
+    </button>
+    <div class="head-title">
+      <h1>Tu nivel</h1>
+      <p>Progreso de tu cuenta</p>
+    </div>
+    <button type="button" class="head-btn" aria-label="Cómo ganar XP" (click)="page.openInfo()">
+      <piqo-svg icon="ayuda" size="20"></piqo-svg>
+    </button>
+  </div>
+
+  <div class="scroll-area">
+    @if (!page.demoCalloutDismissed()) {
+      <div class="section">
+        <div class="callout info">
+          <piqo-svg icon="info" size="20"></piqo-svg>
+          <span><strong>Vista de demostración.</strong> El nivel, la XP y las recompensas son datos de ejemplo: Piqo todavía no calcula experiencia real.</span>
+          <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.demoCalloutDismissed.set(true)">
+            <piqo-svg icon="cerrar" size="14"></piqo-svg>
+          </button>
+        </div>
+      </div>
+    }
+
+    <div class="hero">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-top">
+        <div class="ring-wrap">
+          <div class="ring-halo" aria-hidden="true"></div>
+          <svg width="88" height="88" viewBox="0 0 88 88" class="ring-svg">
+            <circle cx="44" cy="44" r="39" fill="none" class="ring-track"></circle>
+            <circle
+              cx="44"
+              cy="44"
+              r="39"
+              fill="none"
+              class="ring-fill"
+              [attr.stroke-dasharray]="ringLength"
+              [attr.stroke-dashoffset]="ringOffset"
+            ></circle>
+          </svg>
+          <div class="ring-disc">
+            <span class="ring-level">{{ page.currentLevel }}</span>
+            <span class="ring-caption">NIVEL</span>
+          </div>
+        </div>
+        <div class="hero-meta">
+          <div class="tier-badge"><span class="tier-dot"></span>{{ page.tierLabel }}</div>
+          <p class="hero-rank">{{ page.rank }}</p>
+          <p class="hero-hint">{{ page.toNextLabel }}</p>
+        </div>
+      </div>
+      <div class="hero-bottom">
+        <div>
+          <p class="hero-xp mono">{{ page.currentXp }} / {{ page.needXp }}</p>
+          <p class="hero-xp-label">XP de nivel</p>
+        </div>
+        <div class="right">
+          <p class="hero-xp mono success">+340</p>
+          <p class="hero-xp-label">Últimos 7 días</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <p class="section-title">Pase de progreso</p>
+      <p class="section-count mono">{{ page.unlockedLabel }}</p>
+    </div>
+
+    <div class="tier-row">
+      @for (tier of page.tiers(); track tier.label) {
+        <button type="button" class="tier-chip" [class.active]="tier.active" [class.done]="tier.done" (click)="onTierClick(tier.firstLevel)">
+          {{ tier.label }}
+        </button>
+      }
+    </div>
+
+    <div #track class="track">
+      <div class="track-inner">
+        @for (node of page.levels(); track node.n) {
+          <button
+            type="button"
+            class="node"
+            [class.current]="node.current"
+            [class.milestone]="node.milestone"
+            (click)="onNodeClick(node.n)"
+          >
+            @if (node.current) {
+              <span class="node-pin">TÚ</span>
+            }
+            <span class="node-rail" [class.hidden]="node.n === page.maxLevel"></span>
+            <span
+              class="node-rail-fill"
+              [class.hidden]="node.n === page.maxLevel"
+              [style.--fill]="node.fill"
+            ></span>
+            <span class="node-circle" [class.locked]="node.locked" [class.selected]="node.selected && !node.current">
+              <span class="node-num">{{ node.n }}</span>
+              @if (node.current) {
+                <span class="node-shine" aria-hidden="true"></span>
+              }
+            </span>
+            <span class="node-reward" [class.unlocked]="!node.locked">
+              @if (node.locked) {
+                <piqo-svg icon="candado" size="15"></piqo-svg>
+              } @else if (node.kind === 'color') {
+                <span class="node-swatch" [style.background]="node.swatch"></span>
+              } @else {
+                <piqo-svg icon="comodin" size="16"></piqo-svg>
+              }
+            </span>
+            <span class="node-label" [class.unlocked]="!node.locked">{{ node.reward }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-top">
+        <div class="detail-icon" [class.unlocked]="page.selectedUnlocked()">
+          <span>{{ page.selected() }}</span>
+        </div>
+        <div class="detail-meta">
+          <div class="detail-title-row">
+            <p class="detail-title">{{ page.selectedReward().reward }}</p>
+            <span class="detail-chip" [class]="page.selectedStatusLabel() === 'CONSEGUIDO' ? 'done' : page.selectedStatusLabel() === 'EN CURSO' ? 'current' : 'locked'">
+              {{ page.selectedStatusLabel() }}
+            </span>
+          </div>
+          <p class="detail-desc">{{ page.selectedDescription() }}</p>
+          <div class="detail-bar-wrap" [class.faded]="page.selected() > page.currentLevel">
+            <div class="detail-bar-fill" [style.width.%]="page.selectedFraction() * 100"></div>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="detail-cta" [class.primary]="page.selectedIsCurrent() && !page.claimed()" [class.claimed]="page.selectedIsCurrent() && page.claimed()" (click)="page.toggleClaim()">
+        {{ page.ctaLabel() }}
+      </button>
+    </div>
+
+    <div class="section-head tight">
+      <p class="section-title">Tu jornada</p>
+      <button type="button" class="link-btn" (click)="page.openInfo()">Cómo ganar XP</button>
+    </div>
+    <div class="stats-row">
+      @for (stat of page.stats; track stat.label) {
+        <div class="stat-card" [class.warm]="stat.tone === 'warning'">
+          <p class="stat-value mono">{{ stat.value }}</p>
+          <p class="stat-label">{{ stat.label }}</p>
+        </div>
+      }
+    </div>
+
+    <div class="invite-card">
+      <span class="invite-icon"><piqo-svg icon="invitar" size="19"></piqo-svg></span>
+      <span class="invite-meta">
+        <span class="invite-title">Invita a un amigo</span>
+        <span class="invite-sub">+100 XP con su primer pronóstico</span>
+      </span>
+      <piqo-svg icon="flecha" size="18"></piqo-svg>
+    </div>
+  </div>
+</div>
