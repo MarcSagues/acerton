@@ -318,9 +318,13 @@ export class MatchdayShareCardComponent {
     const shown = predictions
       .filter((prediction) => this.pickLabel(prediction) !== '?')
       .slice(0, rowsPerColumn * 2);
+    // Reparto alternado (1 partido a cada columna, no la primera hasta
+    // llenarla y luego la segunda): con un numero impar de partidos (p.ej.
+    // 9) la columna izquierda solo se queda con 1 partido mas que la
+    // derecha en vez de dejar la segunda columna entera vacia.
     shown.forEach((prediction, index) => {
-      const column = index >= rowsPerColumn ? 1 : 0;
-      const row = index % rowsPerColumn;
+      const column = index % 2;
+      const row = Math.floor(index / 2);
       this.predictionRow(ctx, prediction, 72 + column * columnGap, 392 + row * rowSpacing, columnWidth, rowHeight);
     });
 
