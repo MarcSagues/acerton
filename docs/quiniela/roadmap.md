@@ -338,6 +338,33 @@ Pendiente de validar en dispositivo real (iOS) tras la build: el
 comportamiento de Web Share y Clipboard dentro de WKWebView puede diferir
 del navegador de escritorio usado para la verificación en `ng serve`.
 
+## Sprint 13 — Chat de grupo ⬜ (añadido 2026-09-15, a petición del usuario)
+
+Deliberadamente aparcado lejos en el roadmap, **después** del Sprint 11
+(Premium): a diferencia del resto de sprints pendientes, aquí el riesgo
+no es solo de esfuerzo sino de bloqueo de publicación y de cumplimiento
+legal, así que no tiene sentido priorizarlo mientras haya sprints con
+mejor ratio valor/riesgo por delante.
+
+Idea de diseño ya barajada con el usuario: mensajes efímeros con TTL de
+7 días (se borran solos, vía un job de limpieza igual que los ya
+existentes en `@nestjs/schedule`). Ayuda con retención de datos
+(RGPD/DSA) y con que el almacenamiento no crezca sin límite, pero **no
+sustituye** la moderación exigida por Apple — reportar/bloquear hace
+falta igual, independientemente de cuánto dure un mensaje (y un mensaje
+reportado probablemente deba conservarse más allá del TTL hasta
+resolverse).
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| Decidir alcance: chat privado (dentro de grupo) vs también en grupos públicos | ⬜ | En público el riesgo de abuso/spam es mucho mayor — si se hace, probablemente solo grupos privados. |
+| Moderación (guideline 1.2 de Apple para contenido generado por usuarios) | 🔒 | Imprescindible para pasar App Store: reportar mensajes, bloquear usuarios, canal de contacto para abusos, y filtro de contenido. Sin esto la app puede ser rechazada o retirada — no es opcional si hay texto libre entre usuarios, ni aunque los mensajes caduquen solos. |
+| Mensajes efímeros (TTL 7 días) vía job de limpieza | ⬜ | Reduce huella de datos (RGPD/DSA) y acota el almacenamiento; excepción a decidir para mensajes con un reporte abierto (conservarlos hasta resolver, no borrarlos a los 7 días). |
+| Cumplimiento RGPD/DSA de los mensajes | ⬜ | Más datos personales que retener/borrar; bajo la DSA, obligaciones de transparencia de moderación además de la propia declaración de comerciante. |
+| Infraestructura en tiempo real | ⬜ | Hoy la app es REST + cron (`@nestjs/schedule`), sin nada de tiempo real — haría falta WebSockets o Firebase Realtime/Firestore (ya hay proyecto Firebase para push, podría reutilizarse). Pieza de arquitectura nueva, no una extensión de lo existente. |
+| Preferencia de silenciar chat por grupo | ⬜ | Mismo patrón que `GroupMembership.mutedNotifications` (Sprint 9) — evitar que compita con avisos de jornada/insignias sin control. |
+| Alternativa más barata a evaluar antes de construir chat completo | ⬜ | Reacciones/emoji sobre pronósticos o un feed de actividad del grupo dan parte de la interacción social sin la carga de moderar texto libre — valorar si cubre la necesidad antes de meterse en todo lo anterior. |
+
 ---
 
 ## Infraestructura — entorno dev/pre (fuera de la numeración de sprints)
