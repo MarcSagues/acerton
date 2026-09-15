@@ -6,8 +6,14 @@ export const BADGE_CODES = {
   FIRST_MATCHDAY_PLAYED: 'FIRST_MATCHDAY_PLAYED',
   STREAK_5: 'STREAK_5',
   STREAK_10: 'STREAK_10',
+  STREAK_25: 'STREAK_25',
   HOT_STREAK_5: 'HOT_STREAK_5',
   MATCHDAY_TOP_1: 'MATCHDAY_TOP_1',
+  PREDICTIONS_100: 'PREDICTIONS_100',
+  ONE_X_TWO_HITS_25: 'ONE_X_TWO_HITS_25',
+  ONE_X_TWO_HITS_100: 'ONE_X_TWO_HITS_100',
+  EXACT_SCORE_HIT_1: 'EXACT_SCORE_HIT_1',
+  EXACT_SCORE_HITS_10: 'EXACT_SCORE_HITS_10',
 } as const;
 
 /**
@@ -23,7 +29,12 @@ export const BADGE_CODES = {
 export const BADGE_TARGETS: Partial<Record<keyof typeof BADGE_CODES, number>> = {
   STREAK_5: 5,
   STREAK_10: 10,
+  STREAK_25: 25,
   HOT_STREAK_5: 5,
+  PREDICTIONS_100: 100,
+  ONE_X_TWO_HITS_25: 25,
+  ONE_X_TWO_HITS_100: 100,
+  EXACT_SCORE_HITS_10: 10,
 };
 
 export interface BadgeProgress {
@@ -86,16 +97,23 @@ export class BadgesService {
     groupId: string,
     matchdayId: string,
   ): Promise<{ userId: string; badgeName: string }[]> {
-    const members = await this.prisma.groupMembership.findMany({
-      where: { groupId },
-      select: { userId: true },
-    });
+    const [members, group] = await Promise.all([
+      this.prisma.groupMembership.findMany({ where: { groupId }, select: { userId: true } }),
+      this.prisma.group.findUnique({ where: { id: groupId }, select: { scoringMode: true } }),
+    ]);
+    const scoringMode = group?.scoringMode ?? 'ONE_X_TWO';
 
     const newlyAwarded: { userId: string; badgeName: string }[] = [];
     for (const { userId } of members) {
       newlyAwarded.push(...(await this.checkFirstMatchdayPlayed(userId, groupId, matchdayId)));
       newlyAwarded.push(...(await this.checkStreakBadges(userId, groupId, matchdayId)));
       newlyAwarded.push(...(await this.checkHotStreak(userId, groupId, matchdayId)));
+      newlyAwarded.push(...(await this.checkPredictionsMilestones(userId, groupId, matchdayId)));
+      if (scoringMode === 'ONE_X_TWO') {
+        newlyAwarded.push(...(await this.checkOneXTwoHitMilestones(userId, groupId, matchdayId)));
+      } else {
+        newlyAwarded.push(...(await this.checkExactScoreHitMilestones(userId, groupId, matchdayId)));
+      }
     }
 
     newlyAwarded.push(...(await this.checkMatchdayTop1(groupId, matchdayId)));
@@ -136,7 +154,96 @@ export class BadgesService {
     if (streak.currentStreak === BADGE_TARGETS.STREAK_10) {
       awarded.push(...(await this.award(userId, BADGE_CODES.STREAK_10, groupId, matchdayId)));
     }
+    if (streak.currentStreak === BADGE_TARGETS.STREAK_25) {
+      awarded.push(...(await this.award(userId, BADGE_CODES.STREAK_25, groupId, matchdayId)));
+    }
     return awarded;
+  }
+
+  /** "Centenario": 100 pronosticos enviados en este grupo (cualquier partido con prediccion guardada, acertado o no). */
+  private async checkPredictionsMilestones(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
+    const total = await this.prisma.prediction.count({ where: { userId, groupId } });
+    if (total === BADGE_TARGETS.PREDICTIONS_100) {
+      return this.award(userId, BADGE_CODES.PREDICTIONS_100, groupId, matchdayId);
+    }
+    return [];
+  }
+
+  /**
+   * "Buen ojo"/"Experto en 1X2": aciertos totales en grupos de modo 1X2 (doble
+   * oportunidad incluida, igual que en el resto de la app — ver scoring.util).
+   * Solo se llama para grupos ONE_X_TWO (ver evaluateAfterMatchdayClose).
+   */
+  private async checkOneXTwoHitMilestones(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
+    const hits = await this.prisma.prediction.count({
+      where: { userId, groupId, pointsEarned: { gt: 0 } },
+    });
+    const awarded: { userId: string; badgeName: string }[] = [];
+    if (hits === BADGE_TARGETS.ONE_X_TWO_HITS_25) {
+      awarded.push(...(await this.award(userId, BADGE_CODES.ONE_X_TWO_HITS_25, groupId, matchdayId)));
+    }
+    if (hits === BADGE_TARGETS.ONE_X_TWO_HITS_100) {
+      awarded.push(...(await this.award(userId, BADGE_CODES.ONE_X_TWO_HITS_100, groupId, matchdayId)));
+    }
+    return awarded;
+  }
+
+  /**
+   * "Al milímetro"/"Francotirador": marcadores exactos acertados en grupos de
+   * modo resultado exacto (el marcador previsto coincide con el real — no
+   * basta con acertar solo el ganador). Solo se llama para grupos EXACT_SCORE.
+   */
+  private async checkExactScoreHitMilestones(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
+    const hits = await this.countExactScoreHits(userId, groupId);
+    const awarded: { userId: string; badgeName: string }[] = [];
+    if (hits >= 1) {
+      awarded.push(...(await this.award(userId, BADGE_CODES.EXACT_SCORE_HIT_1, groupId, matchdayId)));
+    }
+    if (hits === BADGE_TARGETS.EXACT_SCORE_HITS_10) {
+      awarded.push(...(await this.award(userId, BADGE_CODES.EXACT_SCORE_HITS_10, groupId, matchdayId)));
+    }
+    return awarded;
+  }
+
+  /**
+   * Prisma no permite comparar dos columnas propias en un `where` (aqui,
+   * marcador previsto contra marcador real de otra tabla) sin SQL crudo, asi
+   * que se trae lo necesario de cada prediccion puntuada y se compara en JS
+   * — mismo patron que currentHotStreakForGroup mas abajo.
+   */
+  private async countExactScoreHits(userId: string, groupId: string): Promise<number> {
+    const predictions = await this.prisma.prediction.findMany({
+      where: {
+        userId,
+        groupId,
+        predictedHomeScore: { not: null },
+        predictedAwayScore: { not: null },
+      },
+      select: {
+        predictedHomeScore: true,
+        predictedAwayScore: true,
+        match: { select: { homeScore: true, awayScore: true } },
+      },
+    });
+    return predictions.filter(
+      (p) =>
+        p.match.homeScore != null &&
+        p.match.awayScore != null &&
+        p.predictedHomeScore === p.match.homeScore &&
+        p.predictedAwayScore === p.match.awayScore,
+    ).length;
   }
 
   private async checkHotStreak(
@@ -171,24 +278,43 @@ export class BadgesService {
   async getProgressForUser(userId: string): Promise<Record<string, BadgeProgress>> {
     const memberships = await this.prisma.groupMembership.findMany({
       where: { userId },
-      select: { groupId: true },
+      select: { groupId: true, group: { select: { scoringMode: true } } },
     });
     const groupIds = memberships.map((m) => m.groupId);
+    const oneXTwoGroupIds = memberships.filter((m) => m.group.scoringMode === 'ONE_X_TWO').map((m) => m.groupId);
+    const exactScoreGroupIds = memberships.filter((m) => m.group.scoringMode === 'EXACT_SCORE').map((m) => m.groupId);
 
     const streaks = groupIds.length
       ? await this.prisma.streak.findMany({ where: { userId, groupId: { in: groupIds } } })
       : [];
     const bestStreak = streaks.reduce((max, s) => Math.max(max, s.currentStreak), 0);
 
-    const hotStreaks = await Promise.all(
-      groupIds.map((groupId) => this.currentHotStreakForGroup(userId, groupId)),
-    );
+    const [hotStreaks, predictionTotals, oneXTwoHitTotals, exactScoreHitTotals] = await Promise.all([
+      Promise.all(groupIds.map((groupId) => this.currentHotStreakForGroup(userId, groupId))),
+      Promise.all(groupIds.map((groupId) => this.prisma.prediction.count({ where: { userId, groupId } }))),
+      Promise.all(
+        oneXTwoGroupIds.map((groupId) =>
+          this.prisma.prediction.count({ where: { userId, groupId, pointsEarned: { gt: 0 } } }),
+        ),
+      ),
+      Promise.all(exactScoreGroupIds.map((groupId) => this.countExactScoreHits(userId, groupId))),
+    ]);
     const bestHotStreak = hotStreaks.reduce((max, value) => Math.max(max, value), 0);
+    const bestPredictions = predictionTotals.reduce((max, value) => Math.max(max, value), 0);
+    const bestOneXTwoHits = oneXTwoHitTotals.reduce((max, value) => Math.max(max, value), 0);
+    const bestExactScoreHits = exactScoreHitTotals.reduce((max, value) => Math.max(max, value), 0);
+
+    const capped = (current: number, target: number): BadgeProgress => ({ current: Math.min(current, target), target });
 
     return {
-      [BADGE_CODES.STREAK_5]: { current: Math.min(bestStreak, BADGE_TARGETS.STREAK_5!), target: BADGE_TARGETS.STREAK_5! },
-      [BADGE_CODES.STREAK_10]: { current: Math.min(bestStreak, BADGE_TARGETS.STREAK_10!), target: BADGE_TARGETS.STREAK_10! },
+      [BADGE_CODES.STREAK_5]: capped(bestStreak, BADGE_TARGETS.STREAK_5!),
+      [BADGE_CODES.STREAK_10]: capped(bestStreak, BADGE_TARGETS.STREAK_10!),
+      [BADGE_CODES.STREAK_25]: capped(bestStreak, BADGE_TARGETS.STREAK_25!),
       [BADGE_CODES.HOT_STREAK_5]: { current: bestHotStreak, target: BADGE_TARGETS.HOT_STREAK_5! },
+      [BADGE_CODES.PREDICTIONS_100]: capped(bestPredictions, BADGE_TARGETS.PREDICTIONS_100!),
+      [BADGE_CODES.ONE_X_TWO_HITS_25]: capped(bestOneXTwoHits, BADGE_TARGETS.ONE_X_TWO_HITS_25!),
+      [BADGE_CODES.ONE_X_TWO_HITS_100]: capped(bestOneXTwoHits, BADGE_TARGETS.ONE_X_TWO_HITS_100!),
+      [BADGE_CODES.EXACT_SCORE_HITS_10]: capped(bestExactScoreHits, BADGE_TARGETS.EXACT_SCORE_HITS_10!),
     };
   }
 
