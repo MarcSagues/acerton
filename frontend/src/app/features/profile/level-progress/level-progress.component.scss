@@ -397,6 +397,21 @@
   letter-spacing: 1.1px;
 }
 
+/* Recompensa ya conseguida con un aviso de subida de nivel sin leer (ver
+   NotificationsFeedService.unreadLevelUps) — mismo rojo que el resto de
+   puntitos de "pendiente" de la app (bottom-nav, tarjetas de grupo). */
+.node-unclaimed-dot {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(18px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--p4-error);
+  border: 2px solid var(--p4-surface);
+}
+
 .node-rail,
 .node-rail-fill {
   position: absolute;
@@ -513,6 +528,12 @@
   border: 1px solid color-mix(in srgb, var(--p4-text) 28%, transparent);
 }
 
+.node-mascot {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
 .node-label {
   margin-top: 9px;
   width: 84px;
@@ -541,6 +562,7 @@
 }
 
 .detail-icon {
+  position: relative;
   width: 54px;
   height: 54px;
   flex: none;
@@ -558,6 +580,17 @@
     border-color: transparent;
     color: var(--p4-on-accent);
   }
+}
+
+.detail-icon-dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--p4-error);
+  border: 2px solid var(--p4-surface);
 }
 
 .detail-meta {

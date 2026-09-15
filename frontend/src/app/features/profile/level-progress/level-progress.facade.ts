@@ -2,19 +2,31 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { ProfileService } from '../../../core/services/profile.service';
+import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 import { XpProgress } from '../../../core/models/profile.model';
 import { LevelInfoSheetComponent } from './level-info-sheet.component';
-import { LEVEL_REWARDS, TIER_NAMES, rankForLevel, tierIndexOfLevel, tierRangeLabel, xpForLevel } from './level-progress.domain';
+import {
+  LEVEL_REWARDS,
+  TIER_NAMES,
+  mascotAssetPath,
+  rankForLevel,
+  tierIndexOfLevel,
+  tierRangeLabel,
+  xpForLevel,
+} from './level-progress.domain';
 
 export interface LevelNodeView {
   n: number;
   reward: string;
   kind: 'color' | 'mascot';
   swatch?: string;
+  mascotUrl?: string;
   locked: boolean;
   current: boolean;
   milestone: boolean;
   selected: boolean;
+  /** true si este nivel ya esta desbloqueado pero tiene un aviso de subida de nivel sin leer (ver notice en Avisos). */
+  hasUnclaimedReward: boolean;
   /** 0-1: cuanto del tramo de barra hasta el siguiente nivel esta relleno. */
   fill: number;
 }
@@ -50,6 +62,7 @@ export class LevelProgressFacade {
   private readonly router = inject(Router);
   private readonly sheet = inject(BottomSheetService);
   private readonly profileService = inject(ProfileService);
+  private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
   readonly demoCalloutDismissed = signal(false);
@@ -75,10 +88,16 @@ export class LevelProgressFacade {
 
   readonly selected = computed(() => this.selectedLevel());
 
+  /** Niveles con un aviso de "subiste de nivel" sin leer (ver NotificationsFeedService.unreadLevelUps). */
+  private readonly unclaimedLevels = computed(
+    () => new Set(this.notificationsFeed.unreadLevelUps().map((n) => n.level)),
+  );
+
   readonly levels = computed<LevelNodeView[]>(() => {
     const current = this.currentLevel();
     const fraction = this.levelFraction();
     const selected = this.selectedLevel();
+    const unclaimed = this.unclaimedLevels();
     return LEVEL_REWARDS.map((item) => {
       const isCurrent = item.n === current;
       const unlocked = item.n <= current;
@@ -88,10 +107,12 @@ export class LevelProgressFacade {
         reward: item.reward,
         kind: item.kind,
         swatch: item.swatch,
+        mascotUrl: item.mascotId ? mascotAssetPath(item.mascotId) : undefined,
         locked: !unlocked,
         current: isCurrent,
         milestone: item.n % 6 === 0,
         selected: selected === item.n,
+        hasUnclaimedReward: unlocked && unclaimed.has(item.n),
         fill,
       };
     });
@@ -111,6 +132,9 @@ export class LevelProgressFacade {
   readonly selectedReward = computed(() => LEVEL_REWARDS[this.selected() - 1]);
   readonly selectedUnlocked = computed(() => this.selected() <= this.currentLevel());
   readonly selectedIsCurrent = computed(() => this.selected() === this.currentLevel());
+  readonly selectedHasUnclaimedReward = computed(
+    () => this.selectedUnlocked() && this.unclaimedLevels().has(this.selected()),
+  );
   readonly selectedFraction = computed(() => {
     const sel = this.selected();
     const current = this.currentLevel();
@@ -149,6 +173,7 @@ export class LevelProgressFacade {
       },
       error: () => this.loading.set(false),
     });
+    this.notificationsFeed.refresh();
   }
 
   selectLevel(n: number): void {
@@ -159,6 +184,26 @@ export class LevelProgressFacade {
     if (this.selectedIsCurrent()) {
       this.claimed.update((v) => !v);
     }
+  }
+
+  /** Boton de la tarjeta de detalle: segun el estado del nivel seleccionado, avisa (actual), va a elegir avatar (ya conseguido) o no hace nada (bloqueado). */
+  onCtaClick(): void {
+    if (this.selectedIsCurrent()) {
+      this.toggleClaim();
+      return;
+    }
+    if (this.selected() < this.currentLevel()) {
+      this.viewReward(this.selected());
+    }
+  }
+
+  /** Igual que onCtaClick para un nivel ya conseguido, pero al pulsar directamente el nodo del track. */
+  viewReward(level: number): void {
+    const notice = this.notificationsFeed.unreadLevelUps().find((n) => n.level === level);
+    if (notice) {
+      this.notificationsFeed.markRead(notice.id);
+    }
+    this.router.navigate(['/profile/avatar']);
   }
 
   goToProfile(): void {

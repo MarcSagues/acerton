@@ -15,4 +15,8 @@ export class NotificationsService {
   markAllRead() {
     return this.http.post<void>(`${environment.apiUrl}/notifications/me/read-all`, {});
   }
+
+  markRead(id: string) {
+    return this.http.post<void>(`${environment.apiUrl}/notifications/me/${id}/read`, {});
+  }
 }

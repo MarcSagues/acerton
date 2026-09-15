@@ -72,7 +72,7 @@ export class NotificationsService implements OnModuleInit {
     type: NotificationType,
     title: string,
     body: string,
-    extra: { groupId?: string; matchdayId?: string } = {},
+    extra: { groupId?: string; matchdayId?: string; level?: number } = {},
   ): Promise<void> {
     try {
       await this.prisma.notification.create({ data: { userId, type, title, body, ...extra } });
@@ -112,10 +112,24 @@ export class NotificationsService implements OnModuleInit {
     });
   }
 
-  /** "Leer todo": el feed no tiene interaccion aviso a aviso, solo este boton (ver NotificationsPageFacade). */
+  /** "Leer todo" (ver NotificationsPageFacade). */
   async markAllRead(userId: string): Promise<void> {
     await this.prisma.notification.updateMany({
       where: { userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+  }
+
+  /**
+   * Marca un aviso concreto como leido (p.ej. al pulsar el de "subiste de
+   * nivel", que ademas navega a elegir avatar). Filtrado tambien por
+   * userId en el where, no solo por id: updateMany con 0 filas afectadas
+   * si el aviso no es suyo, en vez de lanzar — evita una consulta extra
+   * solo para comprobar propiedad antes de escribir.
+   */
+  async markOneRead(userId: string, notificationId: string): Promise<void> {
+    await this.prisma.notification.updateMany({
+      where: { id: notificationId, userId, readAt: null },
       data: { readAt: new Date() },
     });
   }
@@ -407,5 +421,21 @@ export class NotificationsService implements OnModuleInit {
     const body = `Has conseguido "${badgeName}".`;
     await this.sendToUser(userId, { title, body, data: { type: 'BADGE_EARNED' } });
     await this.record(userId, NotificationType.BADGE_EARNED, title, body);
+  }
+
+  /**
+   * Subida de nivel (Sprint 14, XP). Igual que la insignia, es de la
+   * cuenta (no depende de ningun grupo): no se filtra por
+   * GroupMembership.mutedNotifications, solo por la preferencia de
+   * cuenta `levelUp`.
+   */
+  async notifyLevelUp(userId: string, level: number): Promise<void> {
+    const preference = (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    if (!preference.levelUp) return;
+
+    const title = '¡Subiste de nivel!';
+    const body = `Has llegado al nivel ${level}. Tienes una recompensa nueva esperando.`;
+    await this.sendToUser(userId, { title, body, data: { type: 'LEVEL_UP', level: String(level) } });
+    await this.record(userId, NotificationType.LEVEL_UP, title, body, { level });
   }
 }

@@ -1,9 +1,12 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { AdsService } from '../../core/services/ads.service';
 import { BottomNavService } from '../../core/services/bottom-nav.service';
 import { PushNotificationsService } from '../../core/services/push-notifications.service';
+import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
+import { PiqoDialogService } from '../../shared/ui/dialog/dialog.service';
+import { LevelUpDialogComponent } from '../../features/profile/level-up-dialog/level-up-dialog.component';
 
 /**
  * Pantallas de conseguir el primer grupo (ver hasGroupGuard/app.routes): son
@@ -14,14 +17,43 @@ import { PushNotificationsService } from '../../core/services/push-notifications
  */
 const ROUTES_WITHOUT_BOTTOM_NAV = ['/groups/create', '/groups/join-code', '/groups/public'];
 
+/**
+ * Cada cuanto se vuelve a pedir el feed de avisos mientras la app sigue
+ * abierta, solo para poder detectar en vivo una subida de nivel ocurrida
+ * mientras se esta usando (ver NotificationsFeedService.
+ * pendingLevelUpPopup) — el resto de la app no necesita esto, ya que
+ * ensureLoaded() basta para la campanita/pantalla de Avisos normales.
+ */
+const LEVEL_UP_POLL_INTERVAL_MS = 2 * 60 * 1000;
+
 @Injectable()
 export class ShellFacade {
   private readonly ads = inject(AdsService);
   private readonly router = inject(Router);
   private readonly bottomNav = inject(BottomNavService);
   private readonly pushNotifications = inject(PushNotificationsService);
+  private readonly notificationsFeed = inject(NotificationsFeedService);
+  private readonly dialog = inject(PiqoDialogService);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly currentPath = signal(this.router.url.split('?')[0]);
+
+  constructor() {
+    // Pop-up de "subiste de nivel" con la app abierta (ver
+    // NotificationsFeedService.pendingLevelUpPopup): el shell se monta una
+    // sola vez por sesion, sitio natural para escuchar esto sin importar
+    // en que pantalla este el usuario cuando llega el aviso.
+    effect(
+      () => {
+        const pending = this.notificationsFeed.pendingLevelUpPopup();
+        if (pending?.level != null) {
+          this.notificationsFeed.pendingLevelUpPopup.set(null);
+          this.dialog.open(LevelUpDialogComponent, { data: { level: pending.level } });
+        }
+      },
+      { allowSignalWrites: true },
+    );
+  }
 
   /** Por ruta (rutas del primer grupo, ver ROUTES_WITHOUT_BOTTOM_NAV) o porque
       la propia pantalla lo pide (ver BottomNavService — p.ej. "Ver resumen" en
@@ -42,5 +74,8 @@ export class ShellFacade {
     // salgan los dos a la vez es mas confuso que darle un respiro a cada
     // uno. No hace nada si ya se pidio antes (ver promptOnFirstLaunch).
     setTimeout(() => void this.pushNotifications.promptOnFirstLaunch(), 1500);
+
+    const pollId = setInterval(() => this.notificationsFeed.refresh(), LEVEL_UP_POLL_INTERVAL_MS);
+    this.destroyRef.onDestroy(() => clearInterval(pollId));
   }
 }

@@ -1,11 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { XpEventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { XP_VALUES } from './xp.util';
+import { XP_VALUES, xpProgressForLevel } from './xp.util';
 
 interface XpAward {
   type: XpEventType;
   amount: number;
+}
+
+export interface LevelUpEvent {
+  userId: string;
+  level: number;
 }
 
 @Injectable()
@@ -20,19 +25,27 @@ export class XpService {
    * sin implementar: XP por invitar a un amigo (depende del sistema de
    * referidos, ver roadmap.md Sprint 14) y por racha diaria de entrar a la
    * app — solo las fuentes ligadas a los pronosticos de esta jornada.
+   *
+   * Devuelve quien ha subido de nivel en esta pasada (no cada vez que gana
+   * XP), para que JobsService pueda avisar solo de eso — igual patron que
+   * BadgesService devolviendo solo las insignias recien concedidas.
    */
-  async evaluateAfterMatchdayClose(groupId: string, matchdayId: string): Promise<void> {
+  async evaluateAfterMatchdayClose(groupId: string, matchdayId: string): Promise<LevelUpEvent[]> {
     const [group, members, matchday] = await Promise.all([
       this.prisma.group.findUnique({ where: { id: groupId }, select: { scoringMode: true } }),
-      this.prisma.groupMembership.findMany({ where: { groupId }, select: { userId: true } }),
+      this.prisma.groupMembership.findMany({
+        where: { groupId },
+        select: { userId: true, user: { select: { experience: true } } },
+      }),
       this.prisma.matchday.findUnique({ where: { id: matchdayId }, select: { matches: { select: { id: true } } } }),
     ]);
     if (!group || !matchday) {
-      return;
+      return [];
     }
     const totalMatches = matchday.matches.length;
 
-    for (const { userId } of members) {
+    const levelUps: LevelUpEvent[] = [];
+    for (const { userId, user } of members) {
       const predictions = await this.prisma.prediction.findMany({
         where: { userId, groupId, match: { matchdayId } },
         select: {
@@ -88,13 +101,25 @@ export class XpService {
         );
       }
 
-      await this.award(userId, groupId, matchdayId, awards);
+      const newLevel = await this.award(userId, groupId, matchdayId, awards, user.experience);
+      const previousLevel = xpProgressForLevel(user.experience).level;
+      if (newLevel !== null && newLevel > previousLevel) {
+        levelUps.push({ userId, level: newLevel });
+      }
     }
+    return levelUps;
   }
 
-  private async award(userId: string, groupId: string, matchdayId: string, awards: XpAward[]): Promise<void> {
+  /** Devuelve el nivel resultante tras aplicar el award, o null si no se concedio nada (o fallo). */
+  private async award(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+    awards: XpAward[],
+    previousExperience: number,
+  ): Promise<number | null> {
     if (awards.length === 0) {
-      return;
+      return null;
     }
     const total = awards.reduce((sum, a) => sum + a.amount, 0);
     try {
@@ -104,8 +129,10 @@ export class XpService {
         }),
         this.prisma.user.update({ where: { id: userId }, data: { experience: { increment: total } } }),
       ]);
+      return xpProgressForLevel(previousExperience + total).level;
     } catch (error) {
       this.logger.warn(`No se pudo conceder XP a ${userId} en jornada ${matchdayId}: ${error}`);
+      return null;
     }
   }
 }

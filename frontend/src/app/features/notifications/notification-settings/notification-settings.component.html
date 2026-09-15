@@ -129,6 +129,14 @@
         </div>
         <div class="row">
           <div class="row-text">
+            <p class="row-title">Subida de nivel</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.levelUp" [class.disabled]="page.isSaving('levelUp')" (click)="page.togglePreference('levelUp')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
             <p class="row-title">Fin de temporada y trofeos</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.seasonFinishedTrophies" [class.disabled]="page.isSaving('seasonFinishedTrophies')" (click)="page.togglePreference('seasonFinishedTrophies')">
