@@ -1,5 +1,44 @@
 # Estado actual
 
+## 2026-09-15 — Catálogo de recompensas real, aviso de subida de nivel y pop-up en vivo (Sprint 14)
+
+A petición explícita del usuario ("añade según tu criterio los elementos
+desbloqueables... y si estás conectado en la app cuando subes de nivel
+debe aparecer un pop up... si no estás en la app tendrás la opción desde
+notificaciones push..."), tercer incremento del Sprint 14 sobre el
+backend real de XP/nivel del mismo día. Ver `roadmap.md` Sprint 14 para
+el detalle técnico completo (tabla actualizada con 4 filas nuevas/
+cambiadas).
+
+Resumen: `LEVEL_REWARDS` pasó de catálogo de muestra a 18 recompensas
+reales (colores/mascotas del catálogo cerrado de avatares, diseño y
+orden a criterio de Claude Code, tal como pidió el usuario). Nuevo tipo
+de notificación `LEVEL_UP` (push + fila in-app), disparado justo después
+de que `XpService.evaluateAfterMatchdayClose` (ahora devuelve qué
+usuarios subieron de nivel en esa pasada) corre en el cierre de jornada.
+Con la app abierta, un polling de 2 min en `ShellFacade` detecta el
+aviso sin leer y abre un pop-up una sola vez por sesión; puntito rojo
+replicado (mismo patrón que Jornada) en la pestaña Perfil, el nodo del
+recorrido y la tarjeta de detalle. Primera vez que existe marcar un
+aviso como leído individualmente (`markOneRead`), usado al pulsar la
+notificación/recompensa para navegar a `/profile/avatar` y apagar su
+puntito rojo.
+
+**Sigue sin implementar** (no pedido en este incremento): el gating real
+en `/profile/avatar` que impida elegir un color/mascota de un nivel
+todavía no alcanzado — el catálogo de ahí sigue abierto para cualquier
+cuenta, ver fila "Desbloqueables" en `roadmap.md`.
+
+250 tests del backend en verde, `tsc --noEmit` limpio, 17 tests unitarios
+del frontend en verde. Verificado de extremo a extremo en navegador
+insertando una fila `Notification` de prueba directamente en Postgres
+(borrada después): pop-up en vivo, puntito rojo en los 4 sitios, y clic
+→ navegación + desaparición del puntito. Corregido en el camino un
+`NG0600` (escritura de señal dentro de un `effect` sin
+`allowSignalWrites: true`). Sin verificar iOS/Android ni la entrega real
+del push (requiere dispositivo). Mergeado a `dev` y empujado a
+`origin/dev`.
+
 ## 2026-09-15 — Backend real de XP/nivel (Sprint 14) + insignia de nivel en avatares
 
 A petición del usuario ("añade el nivel en todos los sitios donde sale
