@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angul
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { AdsService } from '../../core/services/ads.service';
+import { AuthService } from '../../core/services/auth.service';
 import { BottomNavService } from '../../core/services/bottom-nav.service';
 import { PushNotificationsService } from '../../core/services/push-notifications.service';
 import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
@@ -29,6 +30,7 @@ const LEVEL_UP_POLL_INTERVAL_MS = 2 * 60 * 1000;
 @Injectable()
 export class ShellFacade {
   private readonly ads = inject(AdsService);
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly bottomNav = inject(BottomNavService);
   private readonly pushNotifications = inject(PushNotificationsService);
@@ -48,6 +50,12 @@ export class ShellFacade {
         const pending = this.notificationsFeed.pendingLevelUpPopup();
         if (pending?.level != null) {
           this.notificationsFeed.pendingLevelUpPopup.set(null);
+          // AuthService.currentUser() (nivel del avatar, gating de
+          // /profile/avatar) solo se actualiza en el arranque de la app o
+          // tras una accion explicita — sin esto, la mascota/color recien
+          // desbloqueado seguia apareciendo bloqueado hasta cerrar y
+          // volver a abrir la app.
+          this.authService.refreshCurrentUser().subscribe();
           this.dialog.open(LevelUpDialogComponent, { data: { level: pending.level } });
         }
       },
