@@ -15,6 +15,7 @@ import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { BadgesService } from '../badges/badges.service';
+import { xpProgressForLevel } from '../xp/xp.util';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
@@ -382,12 +383,18 @@ export class GroupsService {
     return group;
   }
 
-  listMembers(groupId: string) {
-    return this.prisma.groupMembership.findMany({
+  async listMembers(groupId: string) {
+    const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } },
+      },
       orderBy: { joinedAt: 'asc' },
     });
+    return members.map((m) => ({
+      ...m,
+      user: { ...m.user, level: xpProgressForLevel(m.user.experience).level },
+    }));
   }
 
   async assertIsMember(groupId: string, userId: string): Promise<void> {

@@ -3,6 +3,11 @@ import { RankingPeriod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeasonsService } from '../seasons/seasons.service';
 import { rankEntries, ScoredEntry } from './rank-entries.util';
+import { xpProgressForLevel } from '../xp/xp.util';
+
+function withLevel<T extends { user: { experience: number } }>(row: T): T & { user: T['user'] & { level: number } } {
+  return { ...row, user: { ...row.user, level: xpProgressForLevel(row.user.experience).level } };
+}
 
 @Injectable()
 export class RankingsService {
@@ -181,7 +186,7 @@ export class RankingsService {
       this.prisma.rankingSnapshot.findMany({
         where: { groupId, period, competitionId, matchdayId: latest.matchdayId },
         orderBy: { position: 'asc' },
-        include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
+        include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
       }),
       this.prisma.rankingSnapshot.findFirst({
         where: { groupId, period, competitionId, matchdayId: { not: latest.matchdayId } },
@@ -196,10 +201,12 @@ export class RankingsService {
       : [];
     const previousPositionByUser = new Map(previousRows.map((row) => [row.userId, row.position]));
 
-    return current.map((row) => ({
-      ...row,
-      positionDelta: (previousPositionByUser.get(row.userId) ?? 1) - row.position,
-    }));
+    return current.map((row) =>
+      withLevel({
+        ...row,
+        positionDelta: (previousPositionByUser.get(row.userId) ?? 1) - row.position,
+      }),
+    );
   }
 
   /**
@@ -210,23 +217,25 @@ export class RankingsService {
   private async emptyRanking(groupId: string, period: RankingPeriod, competitionId: string | null) {
     const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
     });
 
     const ranked = rankEntries(members.map((m) => ({ userId: m.userId, points: 0 })));
-    return ranked.map((entry) => ({
-      id: `empty-${entry.userId}`,
-      groupId,
-      competitionId,
-      matchdayId: '',
-      period,
-      userId: entry.userId,
-      points: entry.points,
-      position: entry.position,
-      positionDelta: 0,
-      createdAt: new Date(),
-      user: members.find((m) => m.userId === entry.userId)!.user,
-    }));
+    return ranked.map((entry) =>
+      withLevel({
+        id: `empty-${entry.userId}`,
+        groupId,
+        competitionId,
+        matchdayId: '',
+        period,
+        userId: entry.userId,
+        points: entry.points,
+        position: entry.position,
+        positionDelta: 0,
+        createdAt: new Date(),
+        user: members.find((m) => m.userId === entry.userId)!.user,
+      }),
+    );
   }
 
   /**
@@ -248,11 +257,12 @@ export class RankingsService {
     competitionId: string | null,
     matchdayId: string,
   ) {
-    return this.prisma.rankingSnapshot.findMany({
+    const rows = await this.prisma.rankingSnapshot.findMany({
       where: { groupId, period, competitionId, matchdayId },
       orderBy: { position: 'asc' },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
     });
+    return rows.map(withLevel);
   }
 
   /**

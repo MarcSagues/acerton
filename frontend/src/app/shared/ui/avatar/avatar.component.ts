@@ -12,11 +12,16 @@ import { initials } from '../../utils/initials';
   selector: 'app-avatar',
   standalone: true,
   template: `
-    <span class="avatar" [style.background]="url ? background || 'var(--p4-soft)' : 'var(--p4-soft)'" [style.width.px]="size" [style.height.px]="size">
-      @if (url) {
-        <img [src]="url" alt="" [style.width.px]="size" [style.height.px]="size" />
-      } @else {
-        <span class="initials" [style.fontSize.px]="size * 0.4">{{ initials(name) }}</span>
+    <span class="avatar-wrap" [style.width.px]="size" [style.height.px]="size">
+      <span class="avatar" [style.background]="url ? background || 'var(--p4-soft)' : 'var(--p4-soft)'" [style.width.px]="size" [style.height.px]="size">
+        @if (url) {
+          <img [src]="url" alt="" [style.width.px]="size" [style.height.px]="size" />
+        } @else {
+          <span class="initials" [style.fontSize.px]="size * 0.4">{{ initials(name) }}</span>
+        }
+      </span>
+      @if (level) {
+        <span class="level-badge" [style.fontSize.px]="Math.max(9, size * 0.28)">{{ level }}</span>
       }
     </span>
   `,
@@ -31,6 +36,10 @@ import { initials } from '../../utils/initials';
       :host {
         display: inline-flex;
       }
+      .avatar-wrap {
+        position: relative;
+        flex: none;
+      }
       .avatar {
         flex: none;
         border-radius: 50%;
@@ -38,6 +47,27 @@ import { initials } from '../../utils/initials';
         align-items: center;
         justify-content: center;
         overflow: hidden;
+      }
+      /* Insignia de nivel (Sprint 14): abajo-a-la-derecha para no chocar con
+         el punto rojo de "pendiente de pronosticar" que ya usa arriba-a-la-
+         derecha en las tarjetas de grupo. */
+      .level-badge {
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        min-width: 1.6em;
+        height: 1.6em;
+        padding: 0 0.25em;
+        border-radius: 999px;
+        background: var(--p4-accent);
+        color: var(--p4-on-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: 700 1em var(--p4-font-display);
+        line-height: 1;
+        border: 2px solid var(--p4-surface);
+        box-sizing: border-box;
       }
       /* cover, no contain: la mayoria de mascotas son un cuadrado exacto
          (512x512) y da igual, pero alguna (p.ej. tumbado-balon.png, mas
@@ -60,6 +90,10 @@ export class AvatarComponent {
   @Input() background: string | null = null;
   @Input() name = '';
   @Input() size = 40;
+  /** Nivel (Sprint 14, roadmap) — null/undefined no pinta insignia, para sitios donde el nivel todavia no aplica o no se ha cargado. */
+  @Input() level: number | null = null;
+
+  protected readonly Math = Math;
 
   initials(name: string): string {
     return initials(name);

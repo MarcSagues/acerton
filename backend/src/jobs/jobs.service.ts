@@ -8,6 +8,7 @@ import { StreaksService } from '../streaks/streaks.service';
 import { BadgesService } from '../badges/badges.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SeasonsService } from '../seasons/seasons.service';
+import { XpService } from '../xp/xp.service';
 import { shouldSendMatchReminder } from '../matchdays/matchday.util';
 import { NotificationPreferenceFields } from '../notifications/notification-preferences.service';
 
@@ -49,6 +50,7 @@ export class JobsService implements OnApplicationBootstrap {
     private readonly badgesService: BadgesService,
     private readonly notificationsService: NotificationsService,
     private readonly seasonsService: SeasonsService,
+    private readonly xpService: XpService,
   ) {}
 
   /**
@@ -278,6 +280,7 @@ export class JobsService implements OnApplicationBootstrap {
       for (const { userId, badgeName } of newlyAwarded) {
         await this.notificationsService.notifyBadgeEarned(userId, badgeName);
       }
+      await this.xpService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
       await this.notificationsService.notifyMatchdayFinished(gc.groupId, matchdayId, matchdayName);
     }
   }

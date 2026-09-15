@@ -26,6 +26,13 @@
   color: var(--p4-text);
 }
 
+.loading {
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .halo {
   position: absolute;
   top: -130px;

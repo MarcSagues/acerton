@@ -123,6 +123,10 @@ model User {
   /// por persona aunque varios grupos/competiciones tengan avisos a la vez
   /// — ver NotificationsService.notifyMatchesClosingSoon.
   lastClosingReminderPushAt DateTime?
+  /// Experiencia acumulada (Sprint 14, roadmap): total en bruto, nunca baja.
+  /// El nivel se deriva de esto en el momento de mostrarlo (ver
+  /// xp-catalog.ts), no se guarda por separado para no poder desincronizarse.
+  experience                Int       @default(0)
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
 
@@ -137,6 +141,7 @@ model User {
   notificationTokens     NotificationToken[]
   notificationPreference NotificationPreference?
   notifications          Notification[]
+  xpEvents               XpEvent[]
   adRewardClaims         AdRewardClaim[]
   authTokens             AuthToken[]
 
@@ -305,6 +310,7 @@ model Group {
   userBadges        UserBadge[]
   seasons           GroupSeason[]
   adRewardClaims    AdRewardClaim[]
+  xpEvents          XpEvent[]
 
   @@map("groups")
 }
@@ -605,6 +611,35 @@ model UserBadge {
   @@unique([userId, badgeId, groupId])
   @@index([userId])
   @@map("user_badges")
+}
+
+/// XP (Sprint 14, roadmap): un evento por cada racion de experiencia
+/// concedida (no solo el total), para poder explicar el detalle en el
+/// boton de info de la pantalla de nivel — mismo criterio que Notification.
+enum XpEventType {
+  PARTICIPATION
+  WIN_1X2
+  WIN_1X2_WILDCARD
+  EXACT_SCORE_WINNER
+  EXACT_SCORE_HIT
+  PERFECT_MATCHDAY_1X2
+  PERFECT_MATCHDAY_EXACT
+}
+
+model XpEvent {
+  id         String      @id @default(cuid())
+  userId     String
+  type       XpEventType
+  amount     Int
+  groupId    String
+  matchdayId String?
+  createdAt  DateTime    @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("xp_events")
 }
 
 // ---------------------------------------------------------------------------

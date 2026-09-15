@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { BadgesService } from '../badges/badges.service';
 import { StreaksService } from '../streaks/streaks.service';
 import { WildcardsService } from '../wildcards/wildcards.service';
+import { xpProgressForLevel } from '../xp/xp.util';
 
 @Controller('users/me/profile')
 export class ProfileController {
@@ -21,7 +22,7 @@ export class ProfileController {
       include: { group: { select: { id: true, name: true } } },
     });
 
-    const [badges, groupsSummary, globalStreak] = await Promise.all([
+    const [badges, groupsSummary, globalStreak, me] = await Promise.all([
       this.badgesService.getForUser(user.id),
       Promise.all(
         memberships.map(async (membership) => {
@@ -37,12 +38,14 @@ export class ProfileController {
         }),
       ),
       this.streaksService.getGlobalForUser(user.id),
+      this.prisma.user.findUnique({ where: { id: user.id }, select: { experience: true } }),
     ]);
 
     return {
       badges,
       groups: groupsSummary,
       globalStreak: { currentStreak: globalStreak.currentStreak, longestStreak: globalStreak.longestStreak },
+      xp: xpProgressForLevel(me?.experience ?? 0),
     };
   }
 }

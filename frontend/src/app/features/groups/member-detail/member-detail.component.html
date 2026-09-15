@@ -15,7 +15,7 @@
       </div>
 
       <div class="identity">
-        <app-avatar [url]="p.avatarUrl" [background]="p.avatarBackground" [name]="p.name" [size]="56"></app-avatar>
+        <app-avatar [url]="p.avatarUrl" [background]="p.avatarBackground" [name]="p.name" [level]="p.level" [size]="56"></app-avatar>
         <div>
           <p class="name">{{ p.name }}</p>
           <p class="sub mono">{{ page.roleLabel() }} de {{ p.group.name }} · desde {{ p.joinedAt | date: 'MMM yyyy' }}</p>

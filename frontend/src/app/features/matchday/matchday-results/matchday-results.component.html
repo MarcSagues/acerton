@@ -36,6 +36,7 @@
                 [url]="page.targetUserAvatarUrl()"
                 [background]="page.targetUserAvatarBackground()"
                 [name]="page.targetUserName() ?? ''"
+                [level]="page.targetUserLevel()"
                 [size]="28"
               ></app-avatar>
               <span class="title">{{ page.targetUserName() ?? 'Quinielas' }}</span>
@@ -187,7 +188,7 @@
                 @for (member of page.comparisonMembers(); track member.userId) {
                   <th class="comparison-member-head">
                     <span class="comparison-avatar-wrap" #avatarWrap (click)="page.toggleComparisonTooltip(member.userId, member.name, avatarWrap)">
-                      <app-avatar [url]="member.avatarUrl" [background]="member.avatarBackground" [name]="member.name" [size]="28"></app-avatar>
+                      <app-avatar [url]="member.avatarUrl" [background]="member.avatarBackground" [name]="member.name" [level]="member.level ?? null" [size]="28"></app-avatar>
                     </span>
                   </th>
                 }
