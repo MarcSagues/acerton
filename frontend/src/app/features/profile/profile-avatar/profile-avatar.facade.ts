@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ProfileService } from '../../../core/services/profile.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 import { AvatarMascotOption } from '../../../core/models/avatar-catalog.model';
 import { mascotIdFromUrl } from '../domain/avatar-catalog.util';
 import { TROPHIES } from '../domain/trophies';
@@ -12,6 +13,7 @@ export class ProfileAvatarFacade {
   private readonly router = inject(Router);
   private readonly profileService = inject(ProfileService);
   private readonly authService = inject(AuthService);
+  private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -51,6 +53,7 @@ export class ProfileAvatarFacade {
       },
       error: () => this.loading.set(false),
     });
+    this.notificationsFeed.refresh();
   }
 
   /**
@@ -81,6 +84,20 @@ export class ProfileAvatarFacade {
 
   requiredLevelForBackground(background: string): number {
     return levelRequiredForBackground(background);
+  }
+
+  /** Niveles con un aviso de "subiste de nivel" sin leer (mismo dato que ya usa el recorrido en /profile/level, ver level-progress.facade.ts). */
+  private readonly unclaimedLevels = computed(
+    () => new Set(this.notificationsFeed.unreadLevelUps().map((n) => n.level)),
+  );
+
+  /** Puntito rojo en el elemento concreto que se acaba de desbloquear (mismo patron que Jornada): ya desbloqueado pero su nivel sigue con el aviso de subida de nivel sin leer/reclamar. */
+  isMascotNew(mascot: AvatarMascotOption): boolean {
+    return !this.isMascotLocked(mascot) && this.unclaimedLevels().has(levelRequiredForMascot(mascot.id));
+  }
+
+  isBackgroundNew(background: string): boolean {
+    return !this.isBackgroundLocked(background) && this.unclaimedLevels().has(levelRequiredForBackground(background));
   }
 
   selectMascot(mascot: AvatarMascotOption): void {
