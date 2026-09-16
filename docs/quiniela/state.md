@@ -1,5 +1,54 @@
 # Estado actual
 
+## 2026-09-16 — Pantalla `/profile/level` al 100% con datos reales (Sprint 14)
+
+A petición explícita del usuario ("revisa la vista de lo del nivel y
+complétalo al 100% con datos reales"), sesión fuera de `/quiniela
+continuar` (surgió de una revisión de seguridad general) que sí tocaba
+este roadmap. Cerraba el hueco que quedaba abierto en la pantalla de
+nivel: el aviso "vista de demostración parcial" ya estaba desactualizado
+(las recompensas llevaban desde el 2026-09-15 siendo reales), y debajo de
+él quedaban tres piezas fijas sin conectar — tarjeta "Tu jornada"
+(Aciertos/Racha/Ranking de muestra), "+340 Últimos 7 días" y la tarjeta
+"Invita a un amigo" prometiendo "+100 XP" para una función que no existe
+todavía (Sistema de referidos, sigue ⬜ en este mismo roadmap).
+
+`ProfileController` (`GET /users/me/profile`) amplía su respuesta con
+`xpLast7Days` (suma real de `XpEvent.amount` de los últimos 7 días),
+`accuracy` (aciertos/predicciones puntuadas del usuario en todos sus
+grupos) y `badgesUnlocked` (insignias distintas conseguidas sobre el
+total del catálogo) — sin tocar `globalStreak`, que ya viajaba real en
+esta misma respuesta y simplemente no se estaba usando en esta pantalla.
+Quitado el aviso de demostración; "Tu jornada" pasa a Aciertos/Racha/
+Insignias reales; la tarjeta de invitar deja de prometer una cifra no
+decidida y muestra un chip "PRONTO". De paso, corregido en `roadmap.md`
+un registro desactualizado: el bottom sheet "Cómo ganar XP" ya tenía los
+valores reales de XP desde antes de esta sesión (el roadmap seguía
+diciendo "pendiente de actualizar" por un despiste de documentación, no
+por código sin hacer).
+
+Ver `roadmap.md` Sprint 14 (filas "Pantalla de progreso de nivel" y
+"Botón de info") para el detalle técnico completo.
+
+261 tests del backend en verde (sin tests nuevos — cambio aditivo sobre
+`ProfileController`, sin lógica de negocio propia que testear más allá de
+consultas Prisma directas), 17 tests del frontend en verde, `tsc --noEmit`
+limpio en ambos. Verificado de extremo a extremo en navegador (`ng
+serve` + `nest start --watch`, Postgres local) con una cuenta real de
+desarrollo con historial (`demo-tu@piqo.test`): 9/21 aciertos, racha x3,
+3/20 insignias y +20 XP en los últimos 7 días — los cuatro valores
+coinciden exactamente con lo consultado directamente en Postgres antes de
+la prueba. Sin verificar iOS/Android (solo web). Rama
+`feature/level-view-real-stats`, no fusionada a `dev` todavía — pendiente
+de autorización explícita del usuario para subirla.
+
+De paso (no relacionado con el roadmap): revisión de seguridad general
+del repo a petición del usuario (secretos en `.env`, SQL injection,
+exposición de la base de datos) — sin hallazgos graves; único cambio
+aplicado, ya en `dev`: `docker-compose.yml` publicaba Postgres local en
+`0.0.0.0:5433` en vez de `127.0.0.1:5433`, corregido y confirmado con el
+contenedor recreado.
+
 ## 2026-09-15 — El nivel ya no se queda desfasado hasta reiniciar la app (Sprint 14)
 
 A petición del usuario, que probó en local ("hasta que no cierro la app

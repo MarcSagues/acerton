@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
-import { XpProgress } from '../../../core/models/profile.model';
+import { UserProfile, XpProgress } from '../../../core/models/profile.model';
 import { LevelInfoSheetComponent } from './level-info-sheet.component';
 import {
   LEVEL_REWARDS,
@@ -44,19 +44,6 @@ export interface StatCardView {
   tone: 'text' | 'warning';
 }
 
-/**
- * De momento fijos aqui: no hay todavia agregados reales de "aciertos de
- * esta jornada"/"racha actual en este formato"/"puesto en el ranking
- * global" pensados para esta tarjeta (serian consultas nuevas, distintas
- * de lo que ya expone /users/me/profile) — ver aviso "Vista de
- * demostracion" en la plantilla, que cubre estas 3 tarjetas.
- */
-const DEMO_STATS: StatCardView[] = [
-  { value: '8/12', label: 'Aciertos', tone: 'text' },
-  { value: 'x3', label: 'Racha', tone: 'warning' },
-  { value: '#142', label: 'Ranking', tone: 'text' },
-];
-
 @Injectable()
 export class LevelProgressFacade {
   private readonly router = inject(Router);
@@ -65,13 +52,27 @@ export class LevelProgressFacade {
   private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
-  readonly demoCalloutDismissed = signal(false);
   readonly claimed = signal(false);
   private readonly xp = signal<XpProgress>({ level: 1, currentLevelXp: 0, neededForLevel: xpForLevel(1) });
   private readonly selectedLevel = signal(1);
+  private readonly globalStreak = signal({ currentStreak: 0, longestStreak: 0 });
+  private readonly accuracy = signal({ hits: 0, scored: 0 });
+  private readonly badgesUnlocked = signal({ earned: 0, total: 0 });
+  private readonly xpLast7Days = signal(0);
 
   readonly maxLevel = LEVEL_REWARDS.length;
-  readonly stats = DEMO_STATS;
+
+  readonly xpLast7DaysLabel = computed(() => `${this.xpLast7Days() >= 0 ? '+' : ''}${this.xpLast7Days()}`);
+
+  readonly stats = computed<StatCardView[]>(() => {
+    const acc = this.accuracy();
+    const badges = this.badgesUnlocked();
+    return [
+      { value: acc.scored > 0 ? `${acc.hits}/${acc.scored}` : '—', label: 'Aciertos', tone: 'text' },
+      { value: `x${this.globalStreak().currentStreak}`, label: 'Racha', tone: 'warning' },
+      { value: `${badges.earned}/${badges.total}`, label: 'Insignias', tone: 'text' },
+    ];
+  });
 
   readonly currentLevel = computed(() => this.xp().level);
   readonly needXp = computed(() => this.xp().neededForLevel);
@@ -163,12 +164,16 @@ export class LevelProgressFacade {
     return `Faltan ${this.selected() - this.currentLevel()} niveles`;
   });
 
-  /** Nivel/XP real (ProfileController) — las recompensas del pase (colores, mascotas...) siguen siendo un catalogo de muestra, ver plantilla. */
+  /** Nivel, XP, recompensas y estadisticas de la tarjeta "Tu jornada" — todo real (ProfileController). */
   init(): void {
     this.profileService.getMyProfile().subscribe({
-      next: (profile) => {
+      next: (profile: UserProfile) => {
         this.xp.set(profile.xp);
         this.selectedLevel.set(profile.xp.level);
+        this.globalStreak.set(profile.globalStreak);
+        this.accuracy.set(profile.accuracy);
+        this.badgesUnlocked.set(profile.badgesUnlocked);
+        this.xpLast7Days.set(profile.xpLast7Days);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
