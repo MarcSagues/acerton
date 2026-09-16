@@ -18,6 +18,7 @@ import { DoubleChanceOption, Prediction } from '../../../core/models/prediction.
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { ComebackSheetComponent, ComebackSheetData, ComebackSheetResult } from './comeback-sheet.component';
 import { MatchdayShareCardComponent, ShareCardData } from '../matchday-results/matchday-share-card.component';
+import { MatchShareCardComponent, MatchShareCardData } from './match-share-card.component';
 import { formatCountdown } from '../../../shared/countdown.util';
 import {
   MatchAccentTone,
@@ -886,6 +887,15 @@ export class CurrentMatchdayFacade {
     return predictionSummary(entry, this.predictionState, this.isExactScore());
   }
 
+  /** true si el partido ya tiene un pronostico completo: los dos marcadores en resultado exacto, o una eleccion (simple o doble oportunidad) en 1X2. */
+  hasPick(matchId: string): boolean {
+    const state = this.predictionState.get(matchId);
+    if (!state) return false;
+    return this.isExactScore()
+      ? state.predictedHomeScore != null && state.predictedAwayScore != null
+      : !!(state.choice || state.doubleChanceOption);
+  }
+
   /** Adapta el estado optimista de la jornada al modelo que consume el canvas compartible. */
   sharePredictions(): Prediction[] {
     const entry = this.activeEntry();
@@ -895,11 +905,7 @@ export class CurrentMatchdayFacade {
 
     return entry.matchday.matches.flatMap((match) => {
       const state = this.predictionState.get(match.id);
-      if (!state) return [];
-      const completed = this.isExactScore()
-        ? state.predictedHomeScore != null && state.predictedAwayScore != null
-        : !!(state.choice || state.doubleChanceOption);
-      if (!completed) return [];
+      if (!state || !this.hasPick(match.id)) return [];
 
       return [{
         id: `share-${match.id}`,
@@ -914,6 +920,25 @@ export class CurrentMatchdayFacade {
         pointsEarned: null,
         submittedAt: new Date().toISOString(),
       } satisfies Prediction];
+    });
+  }
+
+  /** Boton de compartir de cada fila de partido: tarjeta vertical (Instagram Stories) con el pronostico/resultado de ese partido concreto. */
+  openMatchShareCard(match: Match): void {
+    const entry = this.activeEntry();
+    if (!entry || !this.hasPick(match.id)) return;
+    this.dialog.open<MatchShareCardComponent, void, MatchShareCardData>(MatchShareCardComponent, {
+      panelClass: ['piqo-dialog-panel', 'share-card-panel'],
+      data: {
+        match,
+        competitionName: entry.competition.name,
+        matchdayOrder: entry.matchday.order,
+        scoringMode: this.shareScoringMode(),
+        selection: this.stateFor(match.id),
+        playerName: this.sharePlayerName(),
+        avatarBackground: this.authService.currentUser()?.avatarBackground ?? null,
+        groupName: this.shareGroupName(),
+      },
     });
   }
 

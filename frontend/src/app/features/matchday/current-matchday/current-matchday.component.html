@@ -161,6 +161,15 @@
             </p>
 
             <div class="teams-row">
+              <button
+                type="button"
+                class="match-share-btn"
+                aria-label="Compartir este partido"
+                [disabled]="!page.hasPick(match.id)"
+                (click)="page.openMatchShareCard(match)"
+              >
+                <piqo-svg icon="compartir" size="13"></piqo-svg>
+              </button>
               <div class="teams">
                 <span class="team-home">
                   {{ match.homeTeam }}

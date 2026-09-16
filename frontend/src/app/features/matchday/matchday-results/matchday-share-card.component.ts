@@ -4,6 +4,8 @@ import { Matchday } from '../../../core/models/matchday.model';
 import { Prediction } from '../../../core/models/prediction.model';
 import { ScoringMode } from '../../../core/models/group.model';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { drawCircleFill, drawRoundRect, drawText, ellipsizeText, loadCanvasImage } from '../../../shared/canvas-share/canvas-draw.util';
+import { canvasToPngBlob, copyImageBlobToClipboard, shareOrDownloadImageBlob } from '../../../shared/canvas-share/share-image.util';
 
 export interface ShareCardData {
   matchday: Matchday;
@@ -191,27 +193,18 @@ export class MatchdayShareCardComponent {
     const blob = this.imageBlob ?? (await this.canvasBlob());
     if (!blob) return;
 
-    const file = new File([blob], this.fileName(), { type: 'image/png' });
-    const shareData: ShareData = {
-      files: [file],
-      title: `Mi jornada en Piqo · ${this.competitionLabel()}`,
-      text: this.data.variant === 'picks'
-        ? `Estos son mis pronósticos para la jornada ${this.data.matchday.order} en Piqo.`
-        : `He sumado ${this.data.totalPoints} puntos en la jornada ${this.data.matchday.order} de Piqo.`,
-    };
-
-    const canShareFile = !navigator.canShare || navigator.canShare({ files: [file] });
-    if (navigator.share && canShareFile) {
-      try {
-        await navigator.share(shareData);
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-      }
-    }
-
-    this.downloadBlob(blob);
-    this.toast.show('Imagen descargada: ya puedes subirla a X o compartirla donde quieras');
+    await shareOrDownloadImageBlob(
+      blob,
+      this.fileName(),
+      {
+        title: `Mi jornada en Piqo · ${this.competitionLabel()}`,
+        text: this.data.variant === 'picks'
+          ? `Estos son mis pronósticos para la jornada ${this.data.matchday.order} en Piqo.`
+          : `He sumado ${this.data.totalPoints} puntos en la jornada ${this.data.matchday.order} de Piqo.`,
+      },
+      this.toast,
+      'Imagen descargada: ya puedes subirla a X o compartirla donde quieras',
+    );
   }
 
   /** Descargar como archivo ya lo cubre "Compartir imagen" (el panel nativo deja guardarla); este botón es solo para pegarla directo en otra app/chat. */
@@ -221,17 +214,7 @@ export class MatchdayShareCardComponent {
     if (!blob) return;
     this.copying.set(true);
     try {
-      if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
-        throw new Error('Clipboard API no disponible');
-      }
-      // Con timeout: en algun WebView/navegador la promesa del portapapeles
-      // se queda colgada sin resolver ni rechazar nunca (visto en pruebas)
-      // en vez de fallar rapido — sin este limite el boton se quedaria
-      // "Copiar" deshabilitado para siempre esperando algo que no llega.
-      await Promise.race([
-        navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
-      ]);
+      await copyImageBlobToClipboard(blob);
       this.justCopied.set(true);
       setTimeout(() => this.justCopied.set(false), 2000);
     } catch {
@@ -421,33 +404,9 @@ export class MatchdayShareCardComponent {
     spacing = 0,
     align: CanvasTextAlign = 'left',
   ): void {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.font = `${weight} ${size}px ${family}, system-ui, sans-serif`;
-    ctx.textAlign = align;
-    ctx.textBaseline = 'alphabetic';
-    if (!spacing) {
-      ctx.fillText(value, x, y);
-    } else {
-      const chars = [...value];
-      const widths = chars.map((char) => ctx.measureText(char).width);
-      const total = widths.reduce((sum, width) => sum + width, 0) + spacing * size * (chars.length - 1);
-      let cursor = align === 'right' ? x - total : align === 'center' ? x - total / 2 : x;
-      chars.forEach((char, index) => {
-        ctx.fillText(char, cursor, y);
-        cursor += widths[index] + spacing * size;
-      });
-    }
-    ctx.restore();
+    drawText(ctx, value, x, y, size, weight, color, family, spacing, align);
   }
 
-  /**
-   * Traza el contorno a mano con arcTo en vez de CanvasRenderingContext2D.roundRect:
-   * ese metodo no existe en WebKit anterior a iOS 16.4, y el minimo soportado
-   * por la app es iOS 15 — sin esto, la primera llamada lanzaba una excepcion
-   * a mitad de drawCard() y dejaba la tarjeta entera en el fondo negro liso
-   * (el unico fillRect que ya se habia pintado antes de fallar).
-   */
   private roundRect(
     ctx: CanvasRenderingContext2D,
     x: number,
@@ -458,32 +417,11 @@ export class MatchdayShareCardComponent {
     fill: string,
     stroke?: string,
   ): void {
-    const r = Math.min(radius, width / 2, height / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + width - r, y);
-    ctx.arcTo(x + width, y, x + width, y + r, r);
-    ctx.lineTo(x + width, y + height - r);
-    ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
-    ctx.lineTo(x + r, y + height);
-    ctx.arcTo(x, y + height, x, y + height - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-    ctx.fillStyle = fill;
-    ctx.fill();
-    if (stroke) {
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
+    drawRoundRect(ctx, x, y, width, height, radius, fill, stroke);
   }
 
   private circle(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, fill: string): void {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = fill;
-    ctx.fill();
+    drawCircleFill(ctx, x, y, radius, fill);
   }
 
   private initials(): string {
@@ -502,40 +440,16 @@ export class MatchdayShareCardComponent {
   }
 
   private loadImage(src: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
-      image.src = src;
-    });
+    return loadCanvasImage(src);
   }
 
   private ellipsize(ctx: CanvasRenderingContext2D, value: string, maxWidth: number, font: string): string {
-    ctx.save();
-    ctx.font = font;
-    if (ctx.measureText(value).width <= maxWidth) {
-      ctx.restore();
-      return value;
-    }
-    let shortened = value;
-    while (shortened.length > 1 && ctx.measureText(`${shortened}…`).width > maxWidth) shortened = shortened.slice(0, -1);
-    ctx.restore();
-    return `${shortened}…`;
+    return ellipsizeText(ctx, value, maxWidth, font);
   }
 
   private canvasBlob(): Promise<Blob | null> {
     const canvas = this.canvasRef?.nativeElement;
-    if (!canvas) return Promise.resolve(null);
-    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
-  }
-
-  private downloadBlob(blob: Blob): void {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = this.fileName();
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return canvas ? canvasToPngBlob(canvas) : Promise.resolve(null);
   }
 
   private fileName(): string {

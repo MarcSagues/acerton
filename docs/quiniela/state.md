@@ -1,5 +1,125 @@
 # Estado actual
 
+## 2026-09-17 — Compartir imagen de un partido individual (fuera de sprint, sin issue)
+
+A petición explícita del usuario ("añade una opcion de compartir con un
+boton... en cada partido... tanto en los partidos 1x2 y resultados
+exactos"), sobre la pantalla `/matchday` ("Tu jornada"): cada fila de
+partido tiene ahora un botón circular pequeño y discreto (icono
+"compartir", teñido levemente en acento/dorado a petición del usuario tras
+verlo demasiado apagado, a la izquierda de los nombres de los equipos) que
+abre `MatchShareCardComponent`, un canvas nuevo en formato **vertical
+1080×1920** (a diferencia del cuadrado 1080×1080 de "Compartir imagen" de
+la jornada completa, del 2026-09-14) pensado para Instagram Stories/Reels/
+TikTok.
+
+**Diseño, tras dos vueltas de feedback explícito del usuario** ("quita los
+circulos con los numeros y pon el resultado debajo del nombre... no me
+gusta esto de separar el partido en otro cuadro que ponga tu pronostico"):
+una única tarjeta (sin escudos ni "VS" grande en medio, que quedaba raro en
+resultado exacto y separaba el pronóstico del partido en otra caja aparte).
+Nombre de cada equipo con su marcador real justo al lado (si el partido ya
+acabó) en su propia fila, igual que ya se lee en la lista real de "Tu
+jornada"; debajo, sin caja aparte, "Tu pronóstico": en modo 1X2 siempre se
+ven las 3 casillas 1/X/2, con la(s) elegida(s) en acento/dorado — con doble
+oportunidad (p.ej. "1X") se pintan las dos casillas que cubre, no solo una,
+tal como pidió el usuario explícitamente; en resultado exacto, el marcador
+predicho en grande ("3-0"), con nota "COMODÍN x2" si aplica. Si el partido
+ya terminó, una sola línea de texto (no una caja) con acierto/fallo y
+puntos, reutilizando `matchAccentTone`/`pointsForPrediction` de
+`domain/prediction-rules.ts` — nada de lógica nueva de puntuación. Sin
+logos de equipo reales (`Match.homeTeamLogo`/`awayTeamLogo` no se usa en
+ningún sitio de la app todavía y son URLs externas — arriesgaba "manchar"
+el canvas por CORS e impedir exportar el PNG), y ya no hacían falta al
+quitar los escudos circulares. Sin el texto de ayuda "Formato vertical
+1080×1920..." bajo la vista previa (quitado a petición explícita).
+
+Tres retoques finales, todos a petición explícita: (1) el logo real de
+Piqo (`/piqo/logo-oscuro.svg`, mismo `drawImage` con fallback a texto que
+ya usaba `MatchdayShareCardComponent`) faltaba en la cabecera del canvas —
+`drawBrand`/`drawCard` se pasaron a async para cargarlo igual que la
+tarjeta de jornada completa. (2) Primer intento de "hay mucho espacio
+abajo": se agrandó tipografía/espaciado de toda la tarjeta (900→1080px de
+alto, nombres de equipo 52→58px, casillas 1/X/2 180→220px, etc.). (3) El
+usuario aclaró que solo quería el logo más grande, no el resto — se
+revirtió (2) a sus medidas originales y en su lugar se agrandó solo el
+logo (174×55 → 262×83px, mismo sitio en la cabecera).
+
+**Rediseño del cuerpo de la tarjeta siguiendo una referencia visual del
+usuario** (un mock HTML exportado desde un artifact de Claude —
+`C:\Users\34655\Downloads\Design.html`, un bundle offline; renderizado en
+un servidor estático local temporal para poder inspeccionar sus estilos
+computados vía DevTools, ya que el archivo no se puede leer como texto
+plano y `file://` no es navegable desde la extensión de automatización).
+Petición explícita: "mantén el fondo que ya tenemos y el logo pero por lo
+otro, sigue el estilo que te pasaré" — no aplicar el mock al 100%, solo su
+lenguaje visual. Fondo/bloom/líneas diagonales y el logo real no se
+tocaron. El resto vuelve a traer círculos de equipo (revirtiendo la
+petición anterior de quitarlos, ahora superada por esta referencia más
+reciente): local relleno en acento con sombreado diagonal sutil,
+visitante oscuro con aro en acento y el mismo sombreado en tinte acento;
+iniciales cortas dentro, nombre completo debajo, "VS" centrado entre
+ambos (sustituido por el marcador real si el partido ya terminó, mismo
+sitio). Debajo, un único divisor y luego el pronóstico: en 1X2, las 3
+casillas 1/X/2 llevan ahora el nombre del equipo (o "Empate") debajo del
+número/letra, tal como en la referencia; en resultado exacto, dos casillas
+cuadradas con el marcador predicho (local relleno, visitante con aro) y un
+guión entre medias, en vez del texto plano "3-0" de antes. Colores propios
+de Piqo mantenidos (no se copiaron los tonos exactos del mock, que son
+casi idénticos de todas formas) para no romper consistencia con el resto
+de la app. `drawRoundRect` (`canvas-draw.util.ts`, compartido con
+`MatchdayShareCardComponent`) ganó un parámetro `strokeWidth` opcional
+(por defecto 1, sin cambiar el comportamiento existente) para poder pintar
+bordes más gruesos en los círculos/casillas nuevas.
+
+`tsc --noEmit`, `ng build` y los 17 tests del frontend en verde. Verificado
+en navegador con `demo-tu@piqo.test` (la sesión expiró a media prueba tras
+un recompilado de `ng serve`, había que reautenticar — nada relacionado
+con este cambio): grupo 1X2 con pick sencillo pendiente y con partido ya
+finalizado en fallo (marcador real "0 - 2" en el sitio del VS, "Fallo · 0
+pts" en rojo debajo de las casillas, nombre largo "Ipswich Town FC" con
+elipsis en la casilla como es esperable), y grupo `EXACT_SCORE` con
+comodín de remontada activo ("3" relleno / "0" con aro + "COMODÍN x2").
+Doble oportunidad con las dos casillas en acento no verificada en vivo en
+esta vuelta tampoco (mismo motivo que antes: ningún grupo de prueba
+disponible tenía el comodín listo) — lógica sin tocar respecto a la
+verificación de código ya hecha anteriormente. Sin verificar iOS/Android
+(solo web). Rama `feature/match-share-card`, sin commit todavía.
+
+**Refactor de paso**: las funciones de dibujado de canvas (texto con
+letter-spacing, `roundRect` a mano por el bug conocido de iOS <16.4,
+círculos, elipsis, carga de imagen) y la lógica de compartir/copiar/
+descargar (Web Share con fallback a descarga, portapapeles con timeout de
+4s por promesas que se quedan colgadas en algunos navegadores) se
+extrajeron a `frontend/src/app/shared/canvas-share/` (`canvas-draw.util.ts`,
+`share-image.util.ts`) y `MatchdayShareCardComponent` (jornada completa) se
+reescribió para usarlas en vez de tener su propia copia — mismo
+comportamiento, solo para no duplicar ese código ya afinado en dos sitios.
+
+`tsc --noEmit`, `ng build` (con el aviso preexistente de presupuesto de
+`current-matchday.component.scss`, ya superado antes de este cambio) y los
+17 tests del frontend en verde tras cada vuelta. Verificado en navegador
+(`ng serve` + `nest start:dev`, Postgres de Docker) con la cuenta real
+`demo-tu@piqo.test`, ya con el diseño final: grupo 1X2 con pick sencillo
+"1" sin acabar, el mismo partido ya finalizado con fallo real ("Fallo · 0
+pts" en rojo, marcador real 0-2 junto a cada equipo), y grupo `EXACT_SCORE`
+con comodín de remontada activo ("3-0" + "COMODÍN x2") — comodín activado y
+retirado de nuevo con el mismo flujo real de la app (`Quitar comodín`) para
+no dejar sucio ese grupo de pruebas. La doble oportunidad 1X2 con las dos
+casillas en amarillo no se pudo forzar en vivo (ninguno de los grupos de
+prueba 1X2 tenía comodín de doble oportunidad disponible en esta sesión) —
+confiado por revisión de código: la tabla de parejas usada es una copia
+literal de `DOUBLE_CHANCE_COVERAGE` (`prediction-rules.ts`, ya cubierta por
+`prediction-rules.spec.ts`) y reutiliza el mismo bucle de casillas ya
+verificado en vivo para una sola selección. Botón "Copiar" ejecuta el flujo
+completo de portapapeles (incluido el timeout de seguridad de 4s, mismo
+comportamiento ya conocido del botón equivalente de la jornada completa).
+"Compartir imagen" no se disparó de verdad (abriría el panel nativo del
+SO) pero usa la misma rutina ya verificada del canvas de jornada completa.
+Sin verificar iOS/Android (solo web). Rama `feature/match-share-card`, sin
+commit todavía — pendiente de que el usuario lo pruebe y autorice mergear a
+`dev`.
+
 ## 2026-09-16 — Recordatorios de cierre poco fiables: causa confirmada, producción ya arreglada
 
 El usuario reportó que los recordatorios de cierre ("faltan X horas")
