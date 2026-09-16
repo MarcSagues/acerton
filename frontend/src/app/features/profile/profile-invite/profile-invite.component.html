@@ -8,6 +8,11 @@
 
   @if (page.loading()) {
     <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+  } @else if (page.error()) {
+    <div class="error-state">
+      <p class="error-msg">No se pudo cargar tu enlace de invitación.</p>
+      <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">Reintentar</button>
+    </div>
   } @else {
     <div class="content">
       <p class="tagline">Comparte tu enlace. Cuando tu amigo se una, ganas XP extra.</p>

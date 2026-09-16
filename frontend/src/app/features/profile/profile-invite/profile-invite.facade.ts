@@ -11,6 +11,7 @@ export class ProfileInviteFacade {
   private readonly referralService = inject(ReferralService);
 
   readonly loading = signal(true);
+  readonly error = signal(false);
   private readonly code = signal<string | null>(null);
   readonly referralCount = signal(0);
   /** true durante los 2s posteriores a un copiado con exito (mismo patron que GroupInviteFacade). */
@@ -28,13 +29,18 @@ export class ProfileInviteFacade {
   readonly redeemMessage = signal<{ text: string; ok: boolean } | null>(null);
 
   init(): void {
+    this.loading.set(true);
+    this.error.set(false);
     this.referralService.getMine().subscribe({
       next: (referral) => {
         this.code.set(referral.code);
         this.referralCount.set(referral.referralCount);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.error.set(true);
+      },
     });
   }
 
