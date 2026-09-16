@@ -1,9 +1,12 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Share } from '@capacitor/share';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
+import { ReferralService } from '../../../core/services/referral.service';
 import { UserProfile, XpProgress } from '../../../core/models/profile.model';
+import { environment } from '../../../../environments/environment';
 import { LevelInfoSheetComponent } from './level-info-sheet.component';
 import { LEVEL_REWARDS, mascotAssetPath, rankForLevel, xpForLevel } from './level-progress.domain';
 
@@ -35,6 +38,7 @@ export class LevelProgressFacade {
   private readonly sheet = inject(BottomSheetService);
   private readonly profileService = inject(ProfileService);
   private readonly notificationsFeed = inject(NotificationsFeedService);
+  private readonly referralService = inject(ReferralService);
 
   readonly loading = signal(true);
   private readonly xp = signal<XpProgress>({ level: 1, currentLevelXp: 0, neededForLevel: xpForLevel(1) });
@@ -43,8 +47,17 @@ export class LevelProgressFacade {
   private readonly accuracy = signal({ hits: 0, scored: 0 });
   private readonly badgesUnlocked = signal({ earned: 0, total: 0 });
   private readonly xpLast7Days = signal(0);
+  private readonly myReferralCode = signal<string | null>(null);
+  /** true durante los 2s posteriores a un copiado con exito (mismo patron que GroupInviteFacade). */
+  readonly justCopiedInvite = signal(false);
 
   readonly maxLevel = LEVEL_REWARDS.length;
+
+  /** Siempre environment.appUrl, nunca window.location.origin (en la app nativa el origin real es "capacitor://localhost"). */
+  readonly myReferralLink = computed(() => {
+    const code = this.myReferralCode();
+    return code ? `${environment.appUrl}/r/${code}` : '';
+  });
 
   readonly xpLast7DaysLabel = computed(() => `${this.xpLast7Days() >= 0 ? '+' : ''}${this.xpLast7Days()}`);
 
@@ -148,6 +161,10 @@ export class LevelProgressFacade {
       error: () => this.loading.set(false),
     });
     this.notificationsFeed.refresh();
+    this.referralService.getMine().subscribe({
+      next: (referral) => this.myReferralCode.set(referral.code),
+      error: () => undefined,
+    });
   }
 
   selectLevel(n: number): void {
@@ -176,5 +193,40 @@ export class LevelProgressFacade {
 
   openInfo(): void {
     this.sheet.open(LevelInfoSheetComponent);
+  }
+
+  copyInviteLink(): void {
+    if (this.justCopiedInvite()) return;
+    const link = this.myReferralLink();
+    if (!link) return;
+    navigator.clipboard
+      ?.writeText(link)
+      .then(() => {
+        this.justCopiedInvite.set(true);
+        setTimeout(() => this.justCopiedInvite.set(false), 2000);
+      })
+      .catch(() => undefined);
+  }
+
+  /** Mismo patron que GroupInviteFacade.shareLink: panel nativo de compartir si esta disponible, copiar si no. */
+  async shareInvite(): Promise<void> {
+    const link = this.myReferralLink();
+    if (!link) return;
+
+    const { value: canShare } = await Share.canShare();
+    if (!canShare) {
+      this.copyInviteLink();
+      return;
+    }
+    try {
+      await Share.share({
+        title: 'Únete a Piqo',
+        text: 'Te invito a jugar a Piqo conmigo',
+        url: link,
+        dialogTitle: 'Compartir invitación',
+      });
+    } catch {
+      // Cierra el panel sin elegir nada: no es un fallo que avisar.
+    }
   }
 }

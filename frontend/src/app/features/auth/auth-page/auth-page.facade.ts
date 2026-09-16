@@ -7,7 +7,7 @@ import { Subscription, catchError, interval, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
-import { GOOGLE_RETURN_URL_KEY } from './auth-page.constants';
+import { GOOGLE_RETURN_URL_KEY, PENDING_REFERRAL_CODE_KEY } from './auth-page.constants';
 
 type AuthMode = 'login' | 'register';
 
@@ -138,6 +138,23 @@ export class AuthPageFacade implements OnDestroy {
     this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route));
   }
 
+  /** Lee (sin borrar) el codigo de referido guardado por referralLinkGuard al abrir un link de invitacion sin cuenta todavia. */
+  private peekPendingReferralCode(): string | undefined {
+    try {
+      return sessionStorage.getItem(PENDING_REFERRAL_CODE_KEY) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private clearPendingReferralCode(): void {
+    try {
+      sessionStorage.removeItem(PENDING_REFERRAL_CODE_KEY);
+    } catch {
+      /* sessionStorage no disponible: no habia nada que limpiar */
+    }
+  }
+
   saveReturnUrlForGoogleRedirect(): void {
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     try {
@@ -154,9 +171,10 @@ export class AuthPageFacade implements OnDestroy {
   loginWithGoogleNative(): void {
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.authService.loginWithGoogleNative().subscribe({
+    this.authService.loginWithGoogleNative(this.peekPendingReferralCode()).subscribe({
       next: () => {
         this.loading.set(false);
+        this.clearPendingReferralCode();
         this.navigateAfterLogin();
       },
       error: (error) => {
@@ -190,9 +208,11 @@ export class AuthPageFacade implements OnDestroy {
     const { name, email, password } = this.form.getRawValue();
 
     if (this.isRegister()) {
-      this.authService.register({ name: name.trim(), email, password }).subscribe({
+      const referralCode = this.peekPendingReferralCode();
+      this.authService.register({ name: name.trim(), email, password, referralCode }).subscribe({
         next: (res) => {
           this.loading.set(false);
+          this.clearPendingReferralCode();
           this.registeredEmail.set(res.email);
           this.startVerificationPolling(email, password);
         },

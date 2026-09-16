@@ -1,4 +1,4 @@
-import { xpForLevel, xpProgressForLevel } from './xp.util';
+import { REFERRAL_FLOOR_XP, xpForLevel, xpForReferral, xpProgressForLevel } from './xp.util';
 
 describe('xp.util', () => {
   it('xpForLevel crece 150 por nivel a partir de un base de 200', () => {
@@ -19,5 +19,16 @@ describe('xp.util', () => {
   it('xpProgressForLevel nunca pasa del nivel maximo (18)', () => {
     const progress = xpProgressForLevel(999_999);
     expect(progress.level).toBe(18);
+  });
+
+  it('xpForReferral cae a la mitad en cada referido hasta tocar el suelo', () => {
+    expect(xpForReferral(1)).toBe(500);
+    expect(xpForReferral(2)).toBe(250);
+    expect(xpForReferral(3)).toBe(125);
+    expect(xpForReferral(4)).toBe(63);
+    expect(xpForReferral(5)).toBe(31);
+    expect(xpForReferral(6)).toBe(16);
+    expect(xpForReferral(7)).toBe(REFERRAL_FLOOR_XP);
+    expect(xpForReferral(20)).toBe(REFERRAL_FLOOR_XP);
   });
 });

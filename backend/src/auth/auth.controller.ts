@@ -121,7 +121,7 @@ export class AuthController {
     @Body() dto: GoogleTokenDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser; accessToken: string }> {
-    const { user, tokens } = await this.authService.loginWithGoogleIdToken(dto.idToken);
+    const { user, tokens } = await this.authService.loginWithGoogleIdToken(dto.idToken, dto.referralCode);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { user, accessToken: tokens.accessToken };
   }

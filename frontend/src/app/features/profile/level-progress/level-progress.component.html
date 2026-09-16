@@ -146,14 +146,16 @@
       }
     </div>
 
-    <div class="invite-card soon">
-      <span class="invite-icon"><piqo-svg icon="invitar" size="19"></piqo-svg></span>
-      <span class="invite-meta">
-        <span class="invite-title">Invita a un amigo</span>
-        <span class="invite-sub">Próximamente: gana XP extra por cada amigo que se una</span>
-      </span>
-      <span class="invite-soon-chip">PRONTO</span>
-    </div>
+    @if (page.myReferralLink()) {
+      <button type="button" class="invite-card" (click)="page.shareInvite()">
+        <span class="invite-icon"><piqo-svg icon="invitar" size="19"></piqo-svg></span>
+        <span class="invite-meta">
+          <span class="invite-title">Invita a un amigo</span>
+          <span class="invite-sub">Gana XP extra cuando se una con tu enlace</span>
+        </span>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </button>
+    }
   </div>
   }
 </div>

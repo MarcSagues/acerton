@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { XpEventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { XP_VALUES, xpProgressForLevel } from './xp.util';
+import { XP_VALUES, xpForReferral, xpProgressForLevel } from './xp.util';
 
 interface XpAward {
   type: XpEventType;
@@ -39,12 +39,30 @@ export class XpService {
     const previousLevel = xpProgressForLevel(user.experience).level;
     const newLevel = await this.award(
       userId,
-      groupId,
-      matchdayId,
       [{ type: 'PARTICIPATION', amount: XP_VALUES.PARTICIPATION }],
       user.experience,
+      groupId,
+      matchdayId,
     );
     return newLevel !== null && newLevel > previousLevel ? { userId, level: newLevel } : null;
+  }
+
+  /**
+   * XP del referidor cuando su codigo se enlaza a una cuenta nueva
+   * (ReferralsService.redeem). No pertenece a ningun grupo — a diferencia
+   * del resto de fuentes, que dependen de una jornada. `referralIndex` es
+   * 1 para el primer referido de esa cuenta, 2 para el segundo... (ver
+   * xpForReferral para la caida).
+   */
+  async awardReferral(referrerId: string, referralIndex: number): Promise<LevelUpEvent | null> {
+    const user = await this.prisma.user.findUnique({ where: { id: referrerId }, select: { experience: true } });
+    if (!user) {
+      return null;
+    }
+    const previousLevel = xpProgressForLevel(user.experience).level;
+    const amount = xpForReferral(referralIndex);
+    const newLevel = await this.award(referrerId, [{ type: 'REFERRAL', amount }], user.experience);
+    return newLevel !== null && newLevel > previousLevel ? { userId: referrerId, level: newLevel } : null;
   }
 
   /**
@@ -53,9 +71,10 @@ export class XpService {
    * de participar ya no se concede aqui (ver awardParticipation, se
    * concede en tiempo real al pronosticar) — esta pasada solo cubre lo
    * que depende del resultado real del partido: aciertos y pleno de
-   * jornada. Todavia sin implementar: XP por invitar a un amigo (depende
-   * del sistema de referidos, ver roadmap.md Sprint 14) y por racha
-   * diaria de entrar a la app.
+   * jornada. La XP de referidos se concede aparte, al enlazar el codigo
+   * (ver awardReferral, ReferralsService.redeem) — no depende de ninguna
+   * jornada. Todavia sin implementar: XP por racha diaria de entrar a la
+   * app.
    *
    * Devuelve quien ha subido de nivel en esta pasada (no cada vez que gana
    * XP), para que JobsService pueda avisar solo de eso — igual patron que
@@ -93,6 +112,7 @@ export class XpService {
       }
 
       const awards: XpAward[] = [];
+      let allExact = true;
 
       for (const prediction of predictions) {
         if ((prediction.pointsEarned ?? 0) <= 0) {
@@ -106,6 +126,9 @@ export class XpService {
             prediction.match.awayScore != null &&
             prediction.predictedHomeScore === prediction.match.homeScore &&
             prediction.predictedAwayScore === prediction.match.awayScore;
+          if (!exact) {
+            allExact = false;
+          }
           awards.push(
             exact
               ? { type: 'EXACT_SCORE_HIT', amount: XP_VALUES.EXACT_SCORE_HIT }
@@ -125,14 +148,19 @@ export class XpService {
         predictions.length === totalMatches &&
         predictions.every((p) => (p.pointsEarned ?? 0) > 0);
       if (perfect) {
-        awards.push(
-          group.scoringMode === 'EXACT_SCORE'
-            ? { type: 'PERFECT_MATCHDAY_EXACT', amount: XP_VALUES.PERFECT_MATCHDAY_EXACT }
-            : { type: 'PERFECT_MATCHDAY_1X2', amount: XP_VALUES.PERFECT_MATCHDAY_1X2 },
-        );
+        if (group.scoringMode === 'EXACT_SCORE' && allExact) {
+          // Pleno con el marcador exacto de todos los partidos — el nivel mas dificil, distinto del pleno "solo ganadores" de abajo.
+          awards.push({ type: 'PERFECT_MATCHDAY_ALL_EXACT', amount: XP_VALUES.PERFECT_MATCHDAY_ALL_EXACT });
+        } else {
+          awards.push(
+            group.scoringMode === 'EXACT_SCORE'
+              ? { type: 'PERFECT_MATCHDAY_EXACT', amount: XP_VALUES.PERFECT_MATCHDAY_EXACT }
+              : { type: 'PERFECT_MATCHDAY_1X2', amount: XP_VALUES.PERFECT_MATCHDAY_1X2 },
+          );
+        }
       }
 
-      const newLevel = await this.award(userId, groupId, matchdayId, awards, user.experience);
+      const newLevel = await this.award(userId, awards, user.experience, groupId, matchdayId);
       const previousLevel = xpProgressForLevel(user.experience).level;
       if (newLevel !== null && newLevel > previousLevel) {
         levelUps.push({ userId, level: newLevel });
@@ -141,13 +169,17 @@ export class XpService {
     return levelUps;
   }
 
-  /** Devuelve el nivel resultante tras aplicar el award, o null si no se concedio nada (o fallo). */
+  /**
+   * Devuelve el nivel resultante tras aplicar el award, o null si no se
+   * concedio nada (o fallo). groupId/matchdayId se omiten para fuentes sin
+   * jornada (REFERRAL, ver awardReferral).
+   */
   private async award(
     userId: string,
-    groupId: string,
-    matchdayId: string,
     awards: XpAward[],
     previousExperience: number,
+    groupId?: string,
+    matchdayId?: string,
   ): Promise<number | null> {
     if (awards.length === 0) {
       return null;
@@ -156,13 +188,19 @@ export class XpService {
     try {
       await this.prisma.$transaction([
         this.prisma.xpEvent.createMany({
-          data: awards.map((a) => ({ userId, type: a.type, amount: a.amount, groupId, matchdayId })),
+          data: awards.map((a) => ({
+            userId,
+            type: a.type,
+            amount: a.amount,
+            groupId: groupId ?? null,
+            matchdayId: matchdayId ?? null,
+          })),
         }),
         this.prisma.user.update({ where: { id: userId }, data: { experience: { increment: total } } }),
       ]);
       return xpProgressForLevel(previousExperience + total).level;
     } catch (error) {
-      this.logger.warn(`No se pudo conceder XP a ${userId} en jornada ${matchdayId}: ${error}`);
+      this.logger.warn(`No se pudo conceder XP a ${userId} (${groupId ?? 'sin grupo'}): ${error}`);
       return null;
     }
   }

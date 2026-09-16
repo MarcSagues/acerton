@@ -15,6 +15,8 @@ export interface RegisterPayload {
   email: string;
   password: string;
   name: string;
+  /** Codigo de referido capturado del link de invitacion (ver referralLinkGuard) — opcional. */
+  referralCode?: string;
 }
 
 export interface LoginPayload {
@@ -132,11 +134,11 @@ export class AuthService {
    * necesidad de redirigir a un navegador — se manda tal cual al backend
    * (ver AuthController.googleToken), que es quien de verdad lo verifica.
    */
-  loginWithGoogleNative(): Observable<AuthResponse> {
-    return from(this.performGoogleNativeSignIn()).pipe(tap((res) => this.setSession(res)));
+  loginWithGoogleNative(referralCode?: string): Observable<AuthResponse> {
+    return from(this.performGoogleNativeSignIn(referralCode)).pipe(tap((res) => this.setSession(res)));
   }
 
-  private async performGoogleNativeSignIn(): Promise<AuthResponse> {
+  private async performGoogleNativeSignIn(referralCode?: string): Promise<AuthResponse> {
     if (!this.googleSignInInitialized) {
       await GoogleSignIn.initialize({ clientId: environment.googleWebClientId });
       this.googleSignInInitialized = true;
@@ -145,7 +147,7 @@ export class AuthService {
     return firstValueFrom(
       this.http.post<AuthResponse>(
         `${environment.apiUrl}/auth/google/token`,
-        { idToken: result.idToken },
+        { idToken: result.idToken, referralCode },
         { withCredentials: true },
       ),
     );

@@ -19,6 +19,7 @@ import { AuthTokens, JwtAccessPayload, JwtRefreshPayload, PublicUser } from './a
 import { hashToken } from './token-hash.util';
 import { toPublicUser } from './public-user.util';
 import { mascotAssetPath, defaultCatalogAvatar } from '../users/avatar-catalog';
+import { ReferralsService } from '../users/referrals.service';
 
 const SALT_ROUNDS = 12;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -31,6 +32,8 @@ export interface GoogleProfileInput {
   email: string;
   name: string;
   avatarUrl?: string;
+  /** Codigo de referido capturado del link de invitacion — solo se aplica si la cuenta se crea de nuevo, ver validateOrCreateGoogleUser. */
+  referralCode?: string;
 }
 
 @Injectable()
@@ -42,6 +45,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly mailService: MailService,
+    private readonly referralsService: ReferralsService,
   ) {
     this.googleOAuthClient = new OAuth2Client(this.configService.get('google.clientId', { infer: true }));
   }
@@ -66,9 +70,11 @@ export class AuthService {
         name: dto.name,
         avatarUrl: mascotAssetPath(mascotId),
         avatarBackground: background,
+        referralCode: await this.referralsService.generateUniqueReferralCode(),
       },
     });
 
+    await this.referralsService.redeemBestEffort(user.id, dto.referralCode);
     await this.sendVerificationEmail(user.id, user.email);
     return { email: user.email };
   }
@@ -208,35 +214,46 @@ export class AuthService {
     profile: GoogleProfileInput,
   ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     let user = await this.prisma.user.findUnique({ where: { googleId: profile.googleId } });
+    let isNewUser = false;
 
     if (!user) {
       const existingByEmail = await this.prisma.user.findUnique({
         where: { email: profile.email },
       });
 
-      user = existingByEmail
-        ? await this.prisma.user.update({
-            where: { id: existingByEmail.id },
-            data: {
-              googleId: profile.googleId,
-              // Enlazar con Google prueba que el email es suyo, aunque la
-              // cuenta se creara antes por email/contrasena sin confirmar.
-              emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
-            },
-          })
-        : await this.prisma.user.create({
-            data: {
-              email: profile.email,
-              name: profile.name,
-              googleId: profile.googleId,
-              avatarUrl: profile.avatarUrl,
-              // El nombre viene del perfil de Google, no lo eligio el usuario:
-              // se le pide confirmarlo/cambiarlo en el onboarding.
-              usernameConfirmed: false,
-              // Google ya verifico este email: no hace falta el paso de confirmacion.
-              emailVerifiedAt: new Date(),
-            },
-          });
+      if (existingByEmail) {
+        user = await this.prisma.user.update({
+          where: { id: existingByEmail.id },
+          data: {
+            googleId: profile.googleId,
+            // Enlazar con Google prueba que el email es suyo, aunque la
+            // cuenta se creara antes por email/contrasena sin confirmar.
+            emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+          },
+        });
+      } else {
+        isNewUser = true;
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            name: profile.name,
+            googleId: profile.googleId,
+            avatarUrl: profile.avatarUrl,
+            // El nombre viene del perfil de Google, no lo eligio el usuario:
+            // se le pide confirmarlo/cambiarlo en el onboarding.
+            usernameConfirmed: false,
+            // Google ya verifico este email: no hace falta el paso de confirmacion.
+            emailVerifiedAt: new Date(),
+            referralCode: await this.referralsService.generateUniqueReferralCode(),
+          },
+        });
+      }
+    }
+
+    // Solo se enlaza un referidor si la cuenta se acaba de crear — enlazar
+    // Google a una cuenta ya existente no es un "nuevo referido".
+    if (isNewUser) {
+      await this.referralsService.redeemBestEffort(user.id, profile.referralCode);
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
@@ -258,7 +275,10 @@ export class AuthService {
    * asi un backend de pre/dev con un client id "web" distinto tambien puede
    * verificar tokens nativos.
    */
-  async loginWithGoogleIdToken(idToken: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+  async loginWithGoogleIdToken(
+    idToken: string,
+    referralCode?: string,
+  ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const clientId = this.configService.get('google.clientId', { infer: true });
     const nativeClientId = this.configService.get('google.nativeClientId', { infer: true });
     const audience = [...new Set([clientId, nativeClientId].filter((id): id is string => !!id))];
@@ -279,6 +299,7 @@ export class AuthService {
       email: payload.email,
       name: payload.name ?? payload.email,
       avatarUrl: payload.picture,
+      referralCode,
     });
   }
 
