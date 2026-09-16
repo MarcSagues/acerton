@@ -505,8 +505,10 @@ coste). **Coste total esperado: ~7 $/mes** (solo producción), dev a 0€.
    **Connection string entregada al usuario directamente en el chat**, no
    guardada en este repo (contiene una contraseña) — la necesitará para
    el paso 3 (variables de entorno del backend de dev en Render).
-2. **Render — producción**: subir el Web Service existente de producción
-   del plan free a **Starter** (7 $/mes).
+2. ✅ **Render — producción**: subida del Web Service de producción del
+   plan free a **Starter** (7 $/mes) — confirmado por el usuario el
+   2026-09-16 ("en pro ya estamos pagando los 7e"). Este documento seguía
+   marcándolo "pendiente" por un despiste de registro; ya está hecho.
 3. **Render — dev**: nuevo Web Service (plan free, se duerme — aceptado)
    desplegado desde la rama `dev` del repo, con `DATABASE_URL`/`DIRECT_URL`
    apuntando a la rama Neon `dev`, `CORS_ORIGIN=https://dev.acerton.app`, y

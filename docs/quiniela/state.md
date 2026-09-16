@@ -1,5 +1,22 @@
 # Estado actual
 
+## 2026-09-16 — Recordatorios de cierre poco fiables: causa confirmada, producción ya arreglada
+
+El usuario reportó que los recordatorios de cierre ("faltan X horas")
+casi nunca llegan, y una vez le llegaron 6 de golpe pese a tener todo
+activado en preferencias. Investigado leyendo el código (sin tocar
+nada): `JobsService.sendClosingReminders` no corre mientras Render está
+dormido (plan free) y no tiene recuperación — una ventana de aviso que
+pasa dormido se pierde para siempre, así que cuando el servidor por fin
+despierta solo llegan los avisos que caen justo en ese instante. Ver
+`decisions.md` para el detalle técnico completo.
+
+**Resuelto sin tocar código**: el usuario confirmó que producción ya
+está en Render Starter (siempre activo) desde antes de esta sesión —
+`roadmap.md` seguía marcándolo "pendiente" por un despiste de registro,
+ya corregido. El síntoma que vio es del entorno de dev (plan free a
+propósito), y confirmó que ahí no hace falta arreglar nada.
+
 ## 2026-09-16 — Sistema de referidos implementado (Sprint 14)
 
 A petición explícita del usuario ("empieza a implementar el tema de la
