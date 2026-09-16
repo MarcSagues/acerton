@@ -453,6 +453,39 @@ h1 {
   gap: 10px;
 }
 
+/* Boton de compartir de cada partido: deliberadamente discreto (circulo
+   pequeno, sin fondo solido, opacidad reducida) para no competir con las
+   opciones de pronostico — abre MatchShareCardComponent (tarjeta vertical
+   1080x1920 lista para Instagram/TikTok) via openMatchShareCard(). */
+.match-share-btn {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--p4-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--p4-accent) 10%, transparent);
+  color: var(--p4-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 120ms ease, background 120ms ease;
+
+  &:active {
+    opacity: 1;
+    background: var(--p4-soft);
+  }
+
+  /* Sin pronostico completo todavia (los dos marcadores en resultado
+     exacto, o una eleccion en 1X2) no hay nada real que compartir. */
+  &:disabled {
+    opacity: 0.25;
+    border-color: var(--p4-border);
+    background: transparent;
+    color: var(--p4-muted);
+  }
+}
+
 .teams {
   flex: 1;
   min-width: 0;
