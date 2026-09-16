@@ -18,18 +18,6 @@
     <div class="loading"><app-spinner [size]="32"></app-spinner></div>
   } @else {
   <div class="scroll-area">
-    @if (!page.demoCalloutDismissed()) {
-      <div class="section">
-        <div class="callout info">
-          <piqo-svg icon="info" size="20"></piqo-svg>
-          <span><strong>Vista de demostración parcial.</strong> El nivel y la XP ya son reales; las recompensas del pase (colores, mascotas...) siguen siendo un catálogo de muestra.</span>
-          <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.demoCalloutDismissed.set(true)">
-            <piqo-svg icon="cerrar" size="14"></piqo-svg>
-          </button>
-        </div>
-      </div>
-    }
-
     <div class="hero">
       <div class="hero-glow" aria-hidden="true"></div>
       <div class="hero-top">
@@ -64,7 +52,7 @@
           <p class="hero-xp-label">XP de nivel</p>
         </div>
         <div class="right">
-          <p class="hero-xp mono success">+340</p>
+          <p class="hero-xp mono success">{{ page.xpLast7DaysLabel() }}</p>
           <p class="hero-xp-label">Últimos 7 días</p>
         </div>
       </div>
@@ -73,14 +61,6 @@
     <div class="section-head">
       <p class="section-title">Pase de progreso</p>
       <p class="section-count mono">{{ page.unlockedLabel() }}</p>
-    </div>
-
-    <div class="tier-row">
-      @for (tier of page.tiers(); track tier.label) {
-        <button type="button" class="tier-chip" [class.active]="tier.active" [class.done]="tier.done" (click)="onTierClick(tier.firstLevel)">
-          {{ tier.label }}
-        </button>
-      }
     </div>
 
     <div #track class="track">
@@ -147,17 +127,18 @@
           </div>
         </div>
       </div>
-      <button type="button" class="detail-cta" [class.primary]="page.selectedIsCurrent() && !page.claimed()" [class.claimed]="page.selectedIsCurrent() && page.claimed()" (click)="page.onCtaClick()">
-        {{ page.ctaLabel() }}
-      </button>
+      @if (!page.selectedIsCurrent()) {
+        <button type="button" class="detail-cta" [class.primary]="page.selected() < page.currentLevel()" (click)="page.onCtaClick()">
+          {{ page.ctaLabel() }}
+        </button>
+      }
     </div>
 
     <div class="section-head tight">
       <p class="section-title">Tu jornada</p>
-      <button type="button" class="link-btn" (click)="page.openInfo()">Cómo ganar XP</button>
     </div>
     <div class="stats-row">
-      @for (stat of page.stats; track stat.label) {
+      @for (stat of page.stats(); track stat.label) {
         <div class="stat-card" [class.warm]="stat.tone === 'warning'">
           <p class="stat-value mono">{{ stat.value }}</p>
           <p class="stat-label">{{ stat.label }}</p>
@@ -165,13 +146,13 @@
       }
     </div>
 
-    <div class="invite-card">
+    <div class="invite-card soon">
       <span class="invite-icon"><piqo-svg icon="invitar" size="19"></piqo-svg></span>
       <span class="invite-meta">
         <span class="invite-title">Invita a un amigo</span>
-        <span class="invite-sub">+100 XP con su primer pronóstico</span>
+        <span class="invite-sub">Próximamente: gana XP extra por cada amigo que se una</span>
       </span>
-      <piqo-svg icon="flecha" size="18"></piqo-svg>
+      <span class="invite-soon-chip">PRONTO</span>
     </div>
   </div>
   }

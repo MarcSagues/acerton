@@ -10,11 +10,6 @@ export interface LevelReward {
   mascotId?: string;
 }
 
-export type LevelTier = 'Bronce' | 'Plata' | 'Oro';
-
-export const TIER_NAMES: LevelTier[] = ['Bronce', 'Plata', 'Oro'];
-const LEVELS_PER_TIER = 6;
-
 export const RANKS = ['Aprendiz', 'Analista', 'Estratega', 'Oráculo', 'Leyenda'];
 
 export function mascotAssetPath(mascotId: string): string {
@@ -106,16 +101,6 @@ export const XP_GROUPS: XpGroup[] = [
 /** XP necesaria para completar el nivel n. */
 export function xpForLevel(n: number): number {
   return 200 + (n - 1) * 150;
-}
-
-export function tierIndexOfLevel(n: number): number {
-  return Math.min(TIER_NAMES.length - 1, Math.floor((n - 1) / LEVELS_PER_TIER));
-}
-
-export function tierRangeLabel(tierIndex: number): string {
-  const start = tierIndex * LEVELS_PER_TIER + 1;
-  const end = start + LEVELS_PER_TIER - 1;
-  return `${TIER_NAMES[tierIndex]} · ${start}-${end}`;
 }
 
 export function rankForLevel(n: number): string {

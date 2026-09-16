@@ -3,17 +3,9 @@ import { Router } from '@angular/router';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
-import { XpProgress } from '../../../core/models/profile.model';
+import { UserProfile, XpProgress } from '../../../core/models/profile.model';
 import { LevelInfoSheetComponent } from './level-info-sheet.component';
-import {
-  LEVEL_REWARDS,
-  TIER_NAMES,
-  mascotAssetPath,
-  rankForLevel,
-  tierIndexOfLevel,
-  tierRangeLabel,
-  xpForLevel,
-} from './level-progress.domain';
+import { LEVEL_REWARDS, mascotAssetPath, rankForLevel, xpForLevel } from './level-progress.domain';
 
 export interface LevelNodeView {
   n: number;
@@ -31,31 +23,11 @@ export interface LevelNodeView {
   fill: number;
 }
 
-export interface TierChipView {
-  label: string;
-  active: boolean;
-  done: boolean;
-  firstLevel: number;
-}
-
 export interface StatCardView {
   value: string;
   label: string;
   tone: 'text' | 'warning';
 }
-
-/**
- * De momento fijos aqui: no hay todavia agregados reales de "aciertos de
- * esta jornada"/"racha actual en este formato"/"puesto en el ranking
- * global" pensados para esta tarjeta (serian consultas nuevas, distintas
- * de lo que ya expone /users/me/profile) — ver aviso "Vista de
- * demostracion" en la plantilla, que cubre estas 3 tarjetas.
- */
-const DEMO_STATS: StatCardView[] = [
-  { value: '8/12', label: 'Aciertos', tone: 'text' },
-  { value: 'x3', label: 'Racha', tone: 'warning' },
-  { value: '#142', label: 'Ranking', tone: 'text' },
-];
 
 @Injectable()
 export class LevelProgressFacade {
@@ -65,22 +37,33 @@ export class LevelProgressFacade {
   private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
-  readonly demoCalloutDismissed = signal(false);
-  readonly claimed = signal(false);
   private readonly xp = signal<XpProgress>({ level: 1, currentLevelXp: 0, neededForLevel: xpForLevel(1) });
   private readonly selectedLevel = signal(1);
+  private readonly globalStreak = signal({ currentStreak: 0, longestStreak: 0 });
+  private readonly accuracy = signal({ hits: 0, scored: 0 });
+  private readonly badgesUnlocked = signal({ earned: 0, total: 0 });
+  private readonly xpLast7Days = signal(0);
 
   readonly maxLevel = LEVEL_REWARDS.length;
-  readonly stats = DEMO_STATS;
+
+  readonly xpLast7DaysLabel = computed(() => `${this.xpLast7Days() >= 0 ? '+' : ''}${this.xpLast7Days()}`);
+
+  readonly stats = computed<StatCardView[]>(() => {
+    const acc = this.accuracy();
+    const badges = this.badgesUnlocked();
+    return [
+      { value: acc.scored > 0 ? `${acc.hits}/${acc.scored}` : '—', label: 'Aciertos', tone: 'text' },
+      { value: `x${this.globalStreak().currentStreak}`, label: 'Racha', tone: 'warning' },
+      { value: `${badges.earned}/${badges.total}`, label: 'Insignias', tone: 'text' },
+    ];
+  });
 
   readonly currentLevel = computed(() => this.xp().level);
   readonly needXp = computed(() => this.xp().neededForLevel);
   readonly currentXp = computed(() => this.xp().currentLevelXp);
   readonly levelFraction = computed(() => Math.max(0, Math.min(1, this.currentXp() / this.needXp())));
   readonly rank = computed(() => rankForLevel(this.currentLevel()));
-  readonly tierLabel = computed(
-    () => `${TIER_NAMES[tierIndexOfLevel(this.currentLevel())].toUpperCase()} · NIVEL ${this.currentLevel()} DE ${this.maxLevel}`,
-  );
+  readonly tierLabel = computed(() => `NIVEL ${this.currentLevel()} DE ${this.maxLevel}`);
   readonly toNextLabel = computed(
     () => `Te faltan ${Math.max(0, this.needXp() - this.currentXp())} XP para desbloquear el nivel ${this.currentLevel() + 1}.`,
   );
@@ -118,17 +101,6 @@ export class LevelProgressFacade {
     });
   });
 
-  readonly tiers = computed<TierChipView[]>(() => {
-    const current = this.currentLevel();
-    const selectedTier = tierIndexOfLevel(this.selectedLevel());
-    return TIER_NAMES.map((_, i) => ({
-      label: tierRangeLabel(i),
-      active: selectedTier === i,
-      done: current > (i + 1) * 6,
-      firstLevel: i * 6 + 1,
-    }));
-  });
-
   readonly selectedReward = computed(() => LEVEL_REWARDS[this.selected() - 1]);
   readonly selectedUnlocked = computed(() => this.selected() <= this.currentLevel());
   readonly selectedIsCurrent = computed(() => this.selected() === this.currentLevel());
@@ -155,20 +127,22 @@ export class LevelProgressFacade {
     }
     return `Se desbloquea al completar los ${this.selectedNeed()} XP del nivel ${sel}.`;
   });
+  /** Solo tiene sentido pulsable para un nivel ya conseguido (navega a elegir avatar) — para el nivel actual no se muestra boton (ver plantilla), y para uno bloqueado el texto es meramente informativo. */
   readonly ctaLabel = computed(() => {
-    if (this.selectedIsCurrent()) {
-      return this.claimed() ? 'Te avisaremos al desbloquearlo' : 'Avisarme al desbloquear';
-    }
     if (this.selected() < this.currentLevel()) return 'Ver en mi perfil';
     return `Faltan ${this.selected() - this.currentLevel()} niveles`;
   });
 
-  /** Nivel/XP real (ProfileController) — las recompensas del pase (colores, mascotas...) siguen siendo un catalogo de muestra, ver plantilla. */
+  /** Nivel, XP, recompensas y estadisticas de la tarjeta "Tu jornada" — todo real (ProfileController). */
   init(): void {
     this.profileService.getMyProfile().subscribe({
-      next: (profile) => {
+      next: (profile: UserProfile) => {
         this.xp.set(profile.xp);
         this.selectedLevel.set(profile.xp.level);
+        this.globalStreak.set(profile.globalStreak);
+        this.accuracy.set(profile.accuracy);
+        this.badgesUnlocked.set(profile.badgesUnlocked);
+        this.xpLast7Days.set(profile.xpLast7Days);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -180,18 +154,8 @@ export class LevelProgressFacade {
     this.selectedLevel.set(n);
   }
 
-  toggleClaim(): void {
-    if (this.selectedIsCurrent()) {
-      this.claimed.update((v) => !v);
-    }
-  }
-
-  /** Boton de la tarjeta de detalle: segun el estado del nivel seleccionado, avisa (actual), va a elegir avatar (ya conseguido) o no hace nada (bloqueado). */
+  /** Boton de la tarjeta de detalle (solo se muestra para un nivel ya conseguido, ver plantilla): va a elegir avatar. */
   onCtaClick(): void {
-    if (this.selectedIsCurrent()) {
-      this.toggleClaim();
-      return;
-    }
     if (this.selected() < this.currentLevel()) {
       this.viewReward(this.selected());
     }

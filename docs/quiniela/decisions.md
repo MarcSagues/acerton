@@ -456,3 +456,32 @@ preguntas que abren están en `backlog.md`.
   desde el frontend) — es de los pocos puntos del encargo que ya cumple
   la regla de fondo, solo falta el detalle de UI (mostrar el nombre dentro
   del input bloqueado en vez de ocultarlo).
+
+## 2026-09-16 — Requisitos de producto para el sistema de referidos (Sprint 14)
+
+A petición explícita del usuario, planteamiento (sin implementar todavía
+— el sistema de referidos sigue ⬜ en `roadmap.md` Sprint 14) de cómo debe
+funcionar cuando se construya:
+
+- **Un único código por usuario, no dos sistemas paralelos**: el mismo
+  código sirve para compartir como link (parámetro tipo `?ref=CODIGO`) y
+  para teclear a mano — no un código de invitación y otro distinto para
+  link.
+- **Dos formas de entrada, un solo resultado**: el destinatario puede
+  vincularse al referidor tanto abriendo el link como introduciendo el
+  código manualmente; ambos caminos deben producir la misma relación
+  referido↔referidor.
+- **El campo para teclear el código va siempre en un sitio de baja
+  visibilidad** (Ajustes, no un flujo destacado ni la pantalla de
+  bienvenida) — decisión explícita de diseño, no un olvido.
+- **Pensado para enganchar con Premium (Sprint 11) más adelante**: la
+  idea es poder aplicar descuentos de Premium según de qué usuario
+  concreto venga el referido. Esto no es una tarea de Sprint 14, pero
+  condiciona el modelo de datos: la relación referido↔referidor debe
+  quedar guardada de una forma que Sprint 11 pueda consultarla sin
+  rediseñar el sistema de referidos desde cero.
+
+Sin decidir todavía (no bloquea nada mientras el sprint no llegue a esta
+tarea, ver `backlog.md` si hiciera falta registrar una pregunta abierta
+más adelante): formato exacto del código, límites de uso por cuenta, y el
+mecanismo de descuento en sí, que es alcance de Sprint 11 cuando toque.

@@ -50,11 +50,6 @@ export class LevelProgressComponent implements OnInit {
     this.page.selectLevel(n);
   }
 
-  onTierClick(firstLevel: number): void {
-    this.page.selectLevel(firstLevel);
-    this.scrollToLevel(firstLevel, true);
-  }
-
   private scrollToLevel(n: number, smooth: boolean): void {
     const el = this.trackRef?.nativeElement;
     if (!el) return;
