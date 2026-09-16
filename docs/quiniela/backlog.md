@@ -33,12 +33,6 @@ marcarla resuelta) de aquí.
   válidos según la nueva regla — hay que decidir si se conservan igualmente
   (regla "conservar desbloqueos existentes durante migraciones" del
   encargo) o se recalculan.
-- **Sprint 9 (notificaciones + hosting)**: Render (plan gratuito) se
-  "duerme" cuando no hay tráfico — confirmar si eso afecta a la precisión
-  de recordatorios en franjas nuevas (24h) antes de prometer puntualidad.
-  No se ha investigado a fondo en esta sesión; si hiciera falta
-  infraestructura de pago o un servicio adicional, requiere autorización
-  explícita del usuario antes de contratarlo.
 - **Sprint 7 (subida de foto propia)**: no existe ningún almacenamiento de
   imágenes hoy (sin S3/Cloudinary/similar, sin `multer`, Render sin disco
   persistente utilizable). El catálogo de avatares (mascota + color) no lo

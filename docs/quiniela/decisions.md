@@ -485,3 +485,37 @@ Sin decidir todavía (no bloquea nada mientras el sprint no llegue a esta
 tarea, ver `backlog.md` si hiciera falta registrar una pregunta abierta
 más adelante): formato exacto del código, límites de uso por cuenta, y el
 mecanismo de descuento en sí, que es alcance de Sprint 11 cuando toque.
+
+## 2026-09-16 — Resuelta la duda de Sprint 9 sobre precisión de recordatorios en Render free
+
+Pregunta que quedó abierta en `backlog.md` desde el Sprint 9 ("confirmar
+si el plan gratuito de Render, que se duerme sin tráfico, afecta a la
+precisión de los recordatorios de cierre — 24h/5h/1h/30min — antes de
+prometer puntualidad"). El usuario reportó el síntoma real: "las
+notificaciones siguen sin llegar cuando faltan X horas... solo las
+recibí un día y 6 de golpe".
+
+**Causa confirmada leyendo el código**: `JobsService.sendClosingReminders`
+corre cada 5 minutos (`@Cron(CronExpression.EVERY_5_MINUTES)`), pero a
+diferencia de `closeDueMatchdays`/`syncResultsAndFinalize` no se relanza
+en `onApplicationBootstrap` — mientras Render duerme, este cron
+simplemente no corre. Además, `shouldSendMatchReminder`
+(`matchday.util.ts`) exige que el partido siga siendo futuro
+(`msUntilKickoff >= 0`): si la ventana de un aviso pasa con el servidor
+dormido, ese aviso se pierde para siempre, no se manda "tarde" después.
+Cuando el servidor por fin despierta y el cron consigue correr, coge de
+golpe todos los avisos que en ese instante caen dentro de su ventana —
+de ahí los "6 de golpe" de un solo tirón y nada el resto del tiempo.
+
+**Resuelto, sin cambios de código**: el usuario confirmó que producción
+ya está en el plan **Render Starter** (siempre activo, ~7$/mes) desde
+antes de esta sesión — el documento de infraestructura seguía marcándolo
+"pendiente" por un despiste de registro (corregido en `roadmap.md`). En
+Starter este problema no puede ocurrir (el proceso nunca duerme). El
+comportamiento irregular que vio el usuario es del entorno de **dev**
+(`api-dev.piqo.es`, plan free a propósito, sin coste) — confirmado con
+él que ahí no hace falta arreglar nada, ya que es solo para pruebas.
+Si en el futuro hiciera falta mantener dev despierto sin pasar a un plan
+de pago, la opción barata es un ping externo periódico (GitHub Actions
+programado, o un servicio gratuito tipo cron-job.org) — no implementado,
+descartado por el usuario por innecesario ahora mismo.
