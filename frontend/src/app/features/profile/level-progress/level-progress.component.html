@@ -63,14 +63,6 @@
       <p class="section-count mono">{{ page.unlockedLabel() }}</p>
     </div>
 
-    <div class="tier-row">
-      @for (tier of page.tiers(); track tier.label) {
-        <button type="button" class="tier-chip" [class.active]="tier.active" [class.done]="tier.done" (click)="onTierClick(tier.firstLevel)">
-          {{ tier.label }}
-        </button>
-      }
-    </div>
-
     <div #track class="track">
       <div class="track-inner">
         @for (node of page.levels(); track node.n) {
@@ -135,14 +127,15 @@
           </div>
         </div>
       </div>
-      <button type="button" class="detail-cta" [class.primary]="page.selectedIsCurrent() && !page.claimed()" [class.claimed]="page.selectedIsCurrent() && page.claimed()" (click)="page.onCtaClick()">
-        {{ page.ctaLabel() }}
-      </button>
+      @if (!page.selectedIsCurrent()) {
+        <button type="button" class="detail-cta" [class.primary]="page.selected() < page.currentLevel()" (click)="page.onCtaClick()">
+          {{ page.ctaLabel() }}
+        </button>
+      }
     </div>
 
     <div class="section-head tight">
       <p class="section-title">Tu jornada</p>
-      <button type="button" class="link-btn" (click)="page.openInfo()">Cómo ganar XP</button>
     </div>
     <div class="stats-row">
       @for (stat of page.stats(); track stat.label) {

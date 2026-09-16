@@ -5,15 +5,7 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 import { UserProfile, XpProgress } from '../../../core/models/profile.model';
 import { LevelInfoSheetComponent } from './level-info-sheet.component';
-import {
-  LEVEL_REWARDS,
-  TIER_NAMES,
-  mascotAssetPath,
-  rankForLevel,
-  tierIndexOfLevel,
-  tierRangeLabel,
-  xpForLevel,
-} from './level-progress.domain';
+import { LEVEL_REWARDS, mascotAssetPath, rankForLevel, xpForLevel } from './level-progress.domain';
 
 export interface LevelNodeView {
   n: number;
@@ -31,13 +23,6 @@ export interface LevelNodeView {
   fill: number;
 }
 
-export interface TierChipView {
-  label: string;
-  active: boolean;
-  done: boolean;
-  firstLevel: number;
-}
-
 export interface StatCardView {
   value: string;
   label: string;
@@ -52,7 +37,6 @@ export class LevelProgressFacade {
   private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
-  readonly claimed = signal(false);
   private readonly xp = signal<XpProgress>({ level: 1, currentLevelXp: 0, neededForLevel: xpForLevel(1) });
   private readonly selectedLevel = signal(1);
   private readonly globalStreak = signal({ currentStreak: 0, longestStreak: 0 });
@@ -79,9 +63,7 @@ export class LevelProgressFacade {
   readonly currentXp = computed(() => this.xp().currentLevelXp);
   readonly levelFraction = computed(() => Math.max(0, Math.min(1, this.currentXp() / this.needXp())));
   readonly rank = computed(() => rankForLevel(this.currentLevel()));
-  readonly tierLabel = computed(
-    () => `${TIER_NAMES[tierIndexOfLevel(this.currentLevel())].toUpperCase()} · NIVEL ${this.currentLevel()} DE ${this.maxLevel}`,
-  );
+  readonly tierLabel = computed(() => `NIVEL ${this.currentLevel()} DE ${this.maxLevel}`);
   readonly toNextLabel = computed(
     () => `Te faltan ${Math.max(0, this.needXp() - this.currentXp())} XP para desbloquear el nivel ${this.currentLevel() + 1}.`,
   );
@@ -119,17 +101,6 @@ export class LevelProgressFacade {
     });
   });
 
-  readonly tiers = computed<TierChipView[]>(() => {
-    const current = this.currentLevel();
-    const selectedTier = tierIndexOfLevel(this.selectedLevel());
-    return TIER_NAMES.map((_, i) => ({
-      label: tierRangeLabel(i),
-      active: selectedTier === i,
-      done: current > (i + 1) * 6,
-      firstLevel: i * 6 + 1,
-    }));
-  });
-
   readonly selectedReward = computed(() => LEVEL_REWARDS[this.selected() - 1]);
   readonly selectedUnlocked = computed(() => this.selected() <= this.currentLevel());
   readonly selectedIsCurrent = computed(() => this.selected() === this.currentLevel());
@@ -156,10 +127,8 @@ export class LevelProgressFacade {
     }
     return `Se desbloquea al completar los ${this.selectedNeed()} XP del nivel ${sel}.`;
   });
+  /** Solo tiene sentido pulsable para un nivel ya conseguido (navega a elegir avatar) — para el nivel actual no se muestra boton (ver plantilla), y para uno bloqueado el texto es meramente informativo. */
   readonly ctaLabel = computed(() => {
-    if (this.selectedIsCurrent()) {
-      return this.claimed() ? 'Te avisaremos al desbloquearlo' : 'Avisarme al desbloquear';
-    }
     if (this.selected() < this.currentLevel()) return 'Ver en mi perfil';
     return `Faltan ${this.selected() - this.currentLevel()} niveles`;
   });
@@ -185,18 +154,8 @@ export class LevelProgressFacade {
     this.selectedLevel.set(n);
   }
 
-  toggleClaim(): void {
-    if (this.selectedIsCurrent()) {
-      this.claimed.update((v) => !v);
-    }
-  }
-
-  /** Boton de la tarjeta de detalle: segun el estado del nivel seleccionado, avisa (actual), va a elegir avatar (ya conseguido) o no hace nada (bloqueado). */
+  /** Boton de la tarjeta de detalle (solo se muestra para un nivel ya conseguido, ver plantilla): va a elegir avatar. */
   onCtaClick(): void {
-    if (this.selectedIsCurrent()) {
-      this.toggleClaim();
-      return;
-    }
     if (this.selected() < this.currentLevel()) {
       this.viewReward(this.selected());
     }
