@@ -1,0 +1,76 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-btn" aria-label="Volver" (click)="page.goBack()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+    </button>
+    <h1>Invitar</h1>
+  </div>
+
+  @if (page.loading()) {
+    <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+  } @else {
+    <div class="content">
+      <p class="tagline">Comparte tu enlace. Cuando tu amigo se una, ganas XP extra.</p>
+
+      <div class="code-card">
+        <p class="code-label mono">TU CÓDIGO</p>
+        <p class="code mono">{{ page.codeLabel() }}</p>
+        <div class="code-actions">
+          <button type="button" class="code-btn primary" [disabled]="page.justCopied()" (click)="page.copyLink()">
+            <piqo-svg [attr.icon]="page.justCopied() ? 'check' : 'copiar'" size="18"></piqo-svg>
+            {{ page.justCopied() ? 'Copiado' : 'Copiar enlace' }}
+          </button>
+          <button type="button" class="code-btn ghost" (click)="page.shareLink()">
+            <piqo-svg icon="compartir" size="18"></piqo-svg>
+            Compartir
+          </button>
+        </div>
+      </div>
+
+      <div class="link-row">
+        <p class="link-text mono">{{ page.link() }}</p>
+        <button
+          type="button"
+          class="link-copy-btn"
+          [disabled]="page.justCopied()"
+          (click)="page.copyLink()"
+          aria-label="Copiar enlace"
+        >
+          <piqo-svg [attr.icon]="page.justCopied() ? 'check' : 'copiar'" size="16"></piqo-svg>
+        </button>
+      </div>
+
+      @if (page.referralCount() > 0) {
+        <p class="referral-count">Has invitado a {{ page.referralCount() }} amigo{{ page.referralCount() === 1 ? '' : 's' }}.</p>
+      }
+
+      <div class="divider"></div>
+
+      <div class="redeem-block">
+        <p class="redeem-label">¿Alguien te invitó a ti?</p>
+        <div class="redeem-form">
+          <input
+            class="redeem-input mono"
+            type="text"
+            maxlength="16"
+            placeholder="CÓDIGO"
+            [ngModel]="page.redeemInput()"
+            (ngModelChange)="page.redeemInput.set($event)"
+            (keydown.enter)="page.redeem()"
+          />
+          <button
+            type="button"
+            class="piqo-secondary redeem-submit"
+            [disabled]="!page.redeemInput().trim() || page.redeeming()"
+            (click)="page.redeem()"
+          >
+            {{ page.redeeming() ? 'Aplicando…' : 'Aplicar' }}
+          </button>
+        </div>
+        @if (page.redeemMessage(); as msg) {
+          <p class="redeem-message" [class.error]="!msg.ok">{{ msg.text }}</p>
+        }
+      </div>
+    </div>
+  }
+</div>

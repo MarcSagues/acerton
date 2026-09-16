@@ -193,6 +193,15 @@
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
     </div>
+    <div class="section">
+      <a class="card settings-link" routerLink="/profile/invite">
+        <div>
+          <p class="card-title">Invitar</p>
+          <p class="hint mono">Tu enlace, y aplicar el código de un amigo</p>
+        </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
+    </div>
     @if (page.authService.currentUser()?.hasPassword) {
       <div class="section">
         <a class="card settings-link" routerLink="/profile/change-password">
@@ -204,36 +213,6 @@
         </a>
       </div>
     }
-
-    <div class="referral-entry">
-      <button type="button" class="referral-toggle" (click)="page.toggleReferralInput()">
-        ¿Tienes un código de invitación?
-      </button>
-      @if (page.referralInputOpen()) {
-        <div class="referral-form">
-          <input
-            class="referral-input mono"
-            type="text"
-            maxlength="16"
-            placeholder="CÓDIGO"
-            [ngModel]="page.referralCodeInput()"
-            (ngModelChange)="page.referralCodeInput.set($event)"
-            (keydown.enter)="page.redeemReferralCode()"
-          />
-          <button
-            type="button"
-            class="piqo-secondary referral-submit"
-            [disabled]="!page.referralCodeInput().trim() || page.redeemingReferral()"
-            (click)="page.redeemReferralCode()"
-          >
-            {{ page.redeemingReferral() ? 'Aplicando…' : 'Aplicar' }}
-          </button>
-        </div>
-        @if (page.referralMessage(); as msg) {
-          <p class="referral-message" [class.error]="!msg.ok">{{ msg.text }}</p>
-        }
-      }
-    </div>
 
     <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">Ver tutorial de nuevo</button>
     <button type="button" class="logout-btn" (click)="page.logout()">Cerrar sesión</button>
