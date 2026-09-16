@@ -470,11 +470,14 @@ probarse antes de tocar prod).
   y dev se queda en el plan free, no hay riesgo de que se compartan
   horas entre ambos.
 - **Dominio/DNS**: gratis, es un subdominio del dominio que ya tienen.
-- **Limitar el acceso**: **Cloudflare Access** (parte de Cloudflare Zero
-  Trust) tiene un plan free hasta 50 usuarios — de sobra para "mi
-  compañero y yo". Deja poner una pantalla de verificación (código por
-  email, o login de Google) delante de `dev.acerton.app` antes de que la
-  petición llegue siquiera a la aplicación, sin tocar código. Gratis.
+- **Limitar el acceso**: ✅ **hecho el 2026-09-16** — **Cloudflare
+  Access** (parte de Cloudflare Zero Trust, plan Free activado, hasta 50
+  usuarios, $0/mes) configurado delante de **`app-dev.piqo.es`** (nombre
+  real tras la migración de dominio a piqo.es — este documento decía
+  `dev.acerton.app`, desactualizado). Política "Equipo Piqo dev" (Allow)
+  con los emails del usuario y su compañero, login por código de un solo
+  uso. Verificado en vivo: la pantalla de login de Cloudflare Access sale
+  antes de servir nada de la app. Ver `state.md` para el detalle completo.
 
 **Decisión (aprobada por el usuario el 2026-09-10, ver `decisions.md`)**:
 producción pasa a Render Starter (~7 $/mes, dentro del tope de 10 €/mes

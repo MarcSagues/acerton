@@ -1,5 +1,44 @@
 # Estado actual
 
+## 2026-09-16 — Cloudflare Access delante de `app-dev.piqo.es` (Infraestructura)
+
+Pendiente desde el 2026-09-10 (ver `roadmap.md` § Infraestructura): a
+petición explícita del usuario ("pon el cloudflare access"), configurado
+usando la extensión de Chrome directamente sobre su cuenta real de
+Cloudflare (con permiso explícito para cada paso sensible — se confirmó
+antes de aceptar el cargo de $0 de activación del plan).
+
+**Corrección de nombre de dominio**: la documentación de este punto
+(`roadmap.md`, `decisions.md`) sigue hablando de `dev.acerton.app`, pero
+ese nombre quedó obsoleto tras la migración de dominio a `piqo.es`
+(rama `feature/piqo-es-domain-migration`) — el dominio real hoy, y sobre
+el que se ha configurado esto, es **`app-dev.piqo.es`** (coincide con
+`environment.dev.ts`). Confirmado con el usuario antes de tocar nada.
+
+Hecho:
+1. Activado **Cloudflare Zero Trust, plan Free** (hasta 50 usuarios,
+   $0/mes — confirmado en la pantalla de facturación antes de aceptar)
+   en la cuenta del usuario (`Marc10sagues@gm...`, team name
+   auto-generado `summer-mouse-3957`).
+2. Creada la aplicación self-hosted **"app-dev"** protegiendo el hostname
+   público `app-dev.piqo.es` (dominio `piqo.es`, ya gestionado en esta
+   misma cuenta de Cloudflare junto con `acerton.app`).
+3. Política de acceso **"Equipo Piqo dev"** (Allow, selector Emails):
+   `marc10sagues@gmail.com`, `oriol119@gmail.com`, `support@piqo.es`
+   (los tres emails los dio el usuario directamente en el chat, no se
+   han guardado en ningún documento del repo). Login por **One-time
+   PIN** (código por email, sin configurar un IdP externo). Sesión de
+   24 horas.
+4. **Verificado en vivo**: abrir `https://app-dev.piqo.es` en una pestaña
+   nueva redirige a la pantalla de login de Cloudflare Access
+   ("Log in to app-dev") antes de servir nada de la aplicación —
+   confirma que el bloqueo funciona de extremo a extremo.
+
+No toca código, DNS, CORS ni el backend — es una capa delante del
+hostname, gestionada solo desde el dashboard de Cloudflare. Se puede
+desactivar borrando la aplicación en Access → Applications si hiciera
+falta.
+
 ## 2026-09-16 — Limpieza de `/profile/level` (quitar notificar/tiers/botón duplicado) + planteamiento de referidos (Sprint 14)
 
 Segunda vuelta sobre `/profile/level` en la misma sesión que el punto
