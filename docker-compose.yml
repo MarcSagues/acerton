@@ -7,7 +7,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: acerton
     ports:
-      - "5433:5432"
+      # Solo accesible desde el propio host: sin bind explicito, Docker
+      # publica en 0.0.0.0 y el puerto queda alcanzable desde cualquier
+      # interfaz de red (riesgo si esto se levanta en un servidor sin
+      # firewall).
+      - "127.0.0.1:5433:5432"
     volumes:
       - acerton_postgres_data:/var/lib/postgresql/data
 
