@@ -127,6 +127,17 @@ model User {
   /// El nivel se deriva de esto en el momento de mostrarlo (ver
   /// xp-catalog.ts), no se guarda por separado para no poder desincronizarse.
   experience                Int       @default(0)
+  /// Codigo propio de referido (Sprint 14): unico, generado al crear la
+  /// cuenta (mismo alfabeto/formato que Group.inviteCode). Sirve tanto para
+  /// compartir como link (?ref=CODIGO) como para teclearlo a mano en
+  /// Ajustes — un unico valor para ambos caminos, a peticion explicita del
+  /// usuario (ver decisions.md 2026-09-16).
+  referralCode              String    @unique
+  /// Quien invito a esta cuenta (null si no entro por referido, o si el
+  /// codigo introducido no se pudo enlazar). Se fija una sola vez, nunca se
+  /// reasigna. Pensado para que Sprint 11 (Premium) pueda aplicar
+  /// descuentos segun el referidor sin rediseñar este modelo.
+  referredById              String?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
 
@@ -144,6 +155,8 @@ model User {
   xpEvents               XpEvent[]
   adRewardClaims         AdRewardClaim[]
   authTokens             AuthToken[]
+  referredBy             User?               @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals              User[]              @relation("Referrals")
 
   @@map("users")
 }
@@ -630,6 +643,12 @@ enum XpEventType {
   EXACT_SCORE_HIT
   PERFECT_MATCHDAY_1X2
   PERFECT_MATCHDAY_EXACT
+  /// Pleno con el marcador exacto de TODOS los partidos de la jornada (solo
+  /// modo resultado exacto) — el nivel mas dificil, distinto de
+  /// PERFECT_MATCHDAY_EXACT (que solo exige acertar el ganador en todos).
+  PERFECT_MATCHDAY_ALL_EXACT
+  /// XP del referidor cuando su codigo se enlaza a una cuenta nueva.
+  REFERRAL
 }
 
 model XpEvent {
@@ -637,12 +656,14 @@ model XpEvent {
   userId     String
   type       XpEventType
   amount     Int
-  groupId    String
+  /// Null para eventos sin grupo (p.ej. REFERRAL) — el resto de tipos
+  /// siempre lo rellenan (jornada cerrada de un grupo concreto).
+  groupId    String?
   matchdayId String?
   createdAt  DateTime    @default(now())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("xp_events")

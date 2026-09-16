@@ -19,7 +19,7 @@ import { xpProgressForLevel } from '../xp/xp.util';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
-import { generateInviteCode } from './invite-code.util';
+import { generateShortCode } from '../common/short-code.util';
 
 /** Todo lo publicado por debajo debe excluir grupos eliminados (borrado logico). */
 const NOT_DELETED = { deletedAt: null } as const;
@@ -611,7 +611,7 @@ export class GroupsService {
 
   private async generateUniqueInviteCode(): Promise<string> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const code = generateInviteCode();
+      const code = generateShortCode();
       const existing = await this.prisma.group.findUnique({ where: { inviteCode: code } });
       if (!existing) {
         return code;

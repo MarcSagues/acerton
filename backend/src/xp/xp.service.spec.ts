@@ -99,7 +99,7 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     expect(eventTypes(prisma)).toEqual(['EXACT_SCORE_HIT:60', 'EXACT_SCORE_WINNER:25']);
   });
 
-  it('anade el bono de pleno de jornada cuando se acierta en todos los partidos pronosticados', async () => {
+  it('anade el bono de pleno con TODOS los marcadores exactos (el nivel mas dificil)', async () => {
     const prisma = buildPrismaMock();
     prisma.group.findUnique.mockResolvedValue({ scoringMode: 'EXACT_SCORE' });
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
@@ -111,7 +111,38 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     const service = new XpService(prisma as never);
     await service.evaluateAfterMatchdayClose('g1', 'md1');
 
-    expect(eventTypes(prisma)).toEqual(['EXACT_SCORE_HIT:60', 'PERFECT_MATCHDAY_EXACT:150']);
+    expect(eventTypes(prisma)).toEqual(['EXACT_SCORE_HIT:60', 'PERFECT_MATCHDAY_ALL_EXACT:1000']);
+  });
+
+  it('anade el bono de pleno de ganadores (no PERFECT_MATCHDAY_ALL_EXACT) si algun partido solo acerto el ganador', async () => {
+    const prisma = buildPrismaMock();
+    prisma.group.findUnique.mockResolvedValue({ scoringMode: 'EXACT_SCORE' });
+    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
+    prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
+    prisma.prediction.findMany.mockResolvedValue([
+      { pointsEarned: 5, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 1, predictedAwayScore: 0, match: { homeScore: 1, awayScore: 0 } },
+      { pointsEarned: 2, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 3, predictedAwayScore: 0, match: { homeScore: 1, awayScore: 0 } },
+    ]);
+
+    const service = new XpService(prisma as never);
+    await service.evaluateAfterMatchdayClose('g1', 'md1');
+
+    expect(eventTypes(prisma)).toEqual(['EXACT_SCORE_HIT:60', 'EXACT_SCORE_WINNER:25', 'PERFECT_MATCHDAY_EXACT:600']);
+  });
+
+  it('anade el bono de pleno de ganadores en modo 1X2', async () => {
+    const prisma = buildPrismaMock();
+    prisma.group.findUnique.mockResolvedValue({ scoringMode: 'ONE_X_TWO' });
+    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
+    prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }] });
+    prisma.prediction.findMany.mockResolvedValue([
+      { pointsEarned: 1, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 0 } },
+    ]);
+
+    const service = new XpService(prisma as never);
+    await service.evaluateAfterMatchdayClose('g1', 'md1');
+
+    expect(eventTypes(prisma)).toEqual(['WIN_1X2:25', 'PERFECT_MATCHDAY_1X2:600']);
   });
 
   it('no da pleno si no pronostico todos los partidos de la jornada aunque acertara los que jugo', async () => {
@@ -194,5 +225,40 @@ describe('XpService.awardParticipation', () => {
 
     expect(levelUp).toBeNull();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('XpService.awardReferral', () => {
+  it('concede la XP del primer referido (500) sin groupId/matchdayId', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.findUnique.mockResolvedValue({ experience: 0 });
+
+    const service = new XpService(prisma as never);
+    await service.awardReferral('u1', 1);
+
+    expect(eventTypes(prisma)).toEqual(['REFERRAL:500']);
+    const call = prisma.xpEvent.createMany.mock.calls[0]?.[0];
+    expect(call.data[0]).toMatchObject({ groupId: null, matchdayId: null });
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { experience: { increment: 500 } } });
+  });
+
+  it('la XP del segundo referido cae a la mitad (250)', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.findUnique.mockResolvedValue({ experience: 0 });
+
+    const service = new XpService(prisma as never);
+    await service.awardReferral('u1', 2);
+
+    expect(eventTypes(prisma)).toEqual(['REFERRAL:250']);
+  });
+
+  it('devuelve el nuevo nivel si el referido cruza de nivel', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.findUnique.mockResolvedValue({ experience: 0 });
+
+    const service = new XpService(prisma as never);
+    const levelUp = await service.awardReferral('u1', 1);
+
+    expect(levelUp).toEqual({ userId: 'u1', level: 2 });
   });
 });

@@ -6,7 +6,8 @@
         "components": [
           { "/": "/verify-email", "comment": "Confirmar cuenta tras registrarse" },
           { "/": "/reset-password", "comment": "Restablecer contrasena" },
-          { "/": "/groups/join/*", "comment": "Unirse a un grupo por invitacion" }
+          { "/": "/groups/join/*", "comment": "Unirse a un grupo por invitacion" },
+          { "/": "/r/*", "comment": "Link de invitacion de referidos (Sprint 14)" }
         ]
       }
     ]

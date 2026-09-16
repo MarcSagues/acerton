@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { hasGroupGuard } from './core/guards/has-group.guard';
+import { referralLinkGuard } from './core/guards/referral-link.guard';
 import { usernameGuard } from './core/guards/username-guard';
 
 export const routes: Routes = [
@@ -63,6 +64,16 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/groups/group-join/group-join.component').then((m) => m.GroupJoinComponent),
+  },
+  {
+    // Link de invitacion de referidos (Sprint 14) — sin authGuard a proposito,
+    // lo tiene que poder abrir alguien sin cuenta todavia (ver referralLinkGuard).
+    path: 'r/:code',
+    canActivate: [referralLinkGuard],
+    loadComponent: () =>
+      import('./features/auth/referral-redirect/referral-redirect.component').then(
+        (m) => m.ReferralRedirectComponent,
+      ),
   },
   {
     // Fuera del shell (sin bottom nav) a proposito: sin ningun grupo no hay

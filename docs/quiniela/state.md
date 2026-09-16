@@ -1,5 +1,69 @@
 # Estado actual
 
+## 2026-09-16 — Sistema de referidos implementado (Sprint 14)
+
+A petición explícita del usuario ("empieza a implementar el tema de la
+invitación"), sobre los requisitos que él mismo fijó unas horas antes en
+la misma sesión (ver `decisions.md`). Antes de tocar código se cerró con
+el usuario el único número que quedaba abierto — cuánta XP da el primer
+referido y cómo decae — y de paso el usuario pidió revisar también los
+valores de "pleno de jornada", que veía flojos.
+
+**Backend**: `User.referralCode` (único, mismo formato/alfabeto que
+`Group.inviteCode`, movido a `common/short-code.util.ts` para
+compartirlo) + `User.referredById` (relación permanente, un solo
+enlace posible). `ReferralsService` (`GET /users/me/referral`,
+`POST /users/me/referral/redeem`) es el único punto de enlace, usado
+tanto desde el registro (email y Google — solo cuando la cuenta es
+nueva de verdad, no al vincular Google a una ya existente) como desde
+el campo manual — mismo resultado por los dos caminos, tal como pidió
+el usuario. Bloquea auto-referirse y reasignar un referidor ya fijado.
+Migración con backfill (`referralCode` no podía quedar nulo en cuentas
+ya existentes) y `XpEvent.groupId` pasa a opcional (REFERRAL no
+pertenece a ningún grupo).
+
+**Valores de XP** (`xp.util.ts`, revisados a petición explícita del
+usuario en esta misma sesión): primer referido 500 XP, cae a la mitad
+en cada uno siguiente hasta un suelo de 10 (`xpForReferral`), sin
+límite de cuántas veces se puede usar un código. De paso: pleno de
+ganadores (antes `PERFECT_MATCHDAY_1X2`/`PERFECT_MATCHDAY_EXACT`,
+130/150) sube a 600 unificado entre modos; nuevo
+`PERFECT_MATCHDAY_ALL_EXACT` (1000) para el pleno con el marcador
+exacto de *todos* los partidos, no solo el ganador — antes no existía
+esta distinción, "pleno" en modo resultado exacto solo exigía acertar
+el ganador en todos.
+
+**Frontend**: ruta pública `/r/:code` (`referralLinkGuard`) — sin
+sesión guarda el código y manda a `/register`; con sesión lo enlaza al
+momento y muestra un toast. La tarjeta "Invita a un amigo" de
+`/profile/level` deja de ser un placeholder "Próximamente": comparte
+el link real (Web Share/portapapeles, mismo patrón que
+`GroupInviteFacade`). Campo "¿Tienes un código de invitación?" en
+Ajustes de Perfil, deliberadamente sin card ni icono (a petición
+explícita: "debe estar siempre en ajustes o un sitio poco visible").
+Botón de info actualizado con los valores reales.
+
+**Verificado de extremo a extremo en navegador** con dos cuentas reales
+de desarrollo (`demo-tu@piqo.test`, `leveltest2@piqo.test`): código
+copiado de una cuenta, aplicado desde Ajustes en la otra — relación
+`referredById` y evento `XpEvent` de 500 XP confirmados directamente en
+Postgres; reintentar con un código (incluido el propio) muestra
+correctamente "Tu cuenta ya tiene un referidor asignado". Los datos de
+prueba se revirtieron después (relación borrada, XP y evento
+deshechos) para no dejar sucios los datos de desarrollo. 281 tests del
+backend y 17 del frontend en verde, `tsc`/`ng build` limpios en ambos.
+
+Sin implementar todavía (fuera de alcance de esta sesión): el
+mecanismo de descuento de Premium en sí (Sprint 11 — el modelo de
+datos ya está listo para que lo consulte cuando toque). Sin verificar
+en iOS/Android (solo web/local) — en particular, `/r/:code` como
+Universal Link depende de que `app-dev.piqo.es`/`app.piqo.es` sirvan el
+AASA actualizado (ya editado en el repo, con el nuevo componente
+`/r/*`) y de que el build sincronice `apple-app-site-association`.
+
+Rama `feature/referral-system`, no fusionada a `dev` todavía —
+pendiente de autorización explícita del usuario para subirla.
+
 ## 2026-09-16 — Cloudflare Access delante de `app-dev.piqo.es` (Infraestructura)
 
 Pendiente desde el 2026-09-10 (ver `roadmap.md` § Infraestructura): a

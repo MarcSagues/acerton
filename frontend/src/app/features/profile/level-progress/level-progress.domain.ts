@@ -84,8 +84,8 @@ export const XP_GROUPS: XpGroup[] = [
       { title: 'Ganador correcto', note: '1X2 o resultado exacto', xp: '+25 XP', tone: 'accent' },
       { title: 'Acierto con comodín en 1X2', note: 'Doble oportunidad', xp: '+15 XP', tone: 'muted' },
       { title: 'Resultado exacto', note: 'Marcador clavado', xp: '+60 XP', tone: 'warning' },
-      { title: 'Pleno de jornada (1X2)', note: 'Todos los partidos', xp: '+130 XP', tone: 'success' },
-      { title: 'Pleno de jornada (resultado exacto)', note: 'Todos los partidos', xp: '+150 XP', tone: 'success' },
+      { title: 'Pleno de ganadores', note: 'Todos los partidos, 1X2 o resultado exacto', xp: '+600 XP', tone: 'success' },
+      { title: 'Pleno de resultado exacto', note: 'Marcador clavado en todos los partidos', xp: '+1000 XP', tone: 'success' },
     ],
   },
   {
@@ -93,8 +93,10 @@ export const XP_GROUPS: XpGroup[] = [
     rules: [{ title: 'Pronosticar', note: 'Por cada partido, al enviarlo por primera vez', xp: '+5 XP', tone: 'muted' }],
   },
   {
-    title: 'PRÓXIMAMENTE',
-    rules: [{ title: 'Invitar a un amigo', note: 'Al hacer su 1er pronóstico', xp: 'Próximamente', tone: 'muted' }],
+    title: 'REFERIDOS',
+    rules: [
+      { title: 'Invitar a un amigo', note: 'Al enlazar tu código con su cuenta — baja con cada uno', xp: '+500 XP', tone: 'accent' },
+    ],
   },
 ];
 
