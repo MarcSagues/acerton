@@ -387,56 +387,6 @@ h2 {
   }
 }
 
-/* A proposito discreto (sin card, sin icono): a peticion explicita del
-   usuario, el campo de codigo de invitacion no debe ser un punto de
-   entrada destacado — ver decisions.md 2026-09-16. */
-.referral-entry {
-  margin: 22px 20px 0;
-}
-
-.referral-toggle {
-  font: 500 12px/1 var(--p4-font-ui);
-  color: var(--p4-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.referral-form {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.referral-input {
-  flex: 1;
-  min-height: 40px;
-  border-radius: 10px;
-  border: 1px solid var(--p4-border);
-  background: var(--p4-bg);
-  color: var(--p4-text);
-  padding: 0 12px;
-  font-size: 13px;
-  text-transform: uppercase;
-}
-
-.referral-submit {
-  flex: none;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font: 600 12.5px/1 var(--p4-font-ui);
-}
-
-.referral-message {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--p4-success);
-
-  &.error {
-    color: var(--p4-error);
-  }
-}
-
 .replay-btn,
 .logout-btn {
   display: flex;

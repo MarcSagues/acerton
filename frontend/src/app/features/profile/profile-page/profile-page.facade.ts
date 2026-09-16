@@ -4,7 +4,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { ReferralService } from '../../../core/services/referral.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { TutorialService } from '../../../core/services/tutorial.service';
 import { BadgesService } from '../../../core/services/badges.service';
@@ -31,13 +30,6 @@ export class ProfilePageFacade {
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly tutorialService = inject(TutorialService);
   private readonly badgesService = inject(BadgesService);
-  private readonly referralService = inject(ReferralService);
-
-  /** Campo de código de invitación (Sprint 14, referidos) — a proposito en un sitio poco visible, ver plantilla. */
-  readonly referralInputOpen = signal(false);
-  readonly referralCodeInput = signal('');
-  readonly redeemingReferral = signal(false);
-  readonly referralMessage = signal<{ text: string; ok: boolean } | null>(null);
 
   readonly loading = signal(true);
   readonly profile = signal<UserProfile | null>(null);
@@ -142,35 +134,6 @@ export class ProfilePageFacade {
       error: (error: HttpErrorResponse) => {
         this.nameSaving.set(false);
         this.nameError.set(error.error?.message ?? 'No se pudo cambiar el nombre');
-      },
-    });
-  }
-
-  toggleReferralInput(): void {
-    this.referralInputOpen.update((v) => !v);
-    this.referralMessage.set(null);
-  }
-
-  /** Mismo camino de enlace que abrir un link de invitacion (referralLinkGuard) — para quien recibio el codigo de palabra o ya cerro el link sin usarlo. */
-  redeemReferralCode(): void {
-    const code = this.referralCodeInput().trim();
-    if (!code || this.redeemingReferral()) {
-      return;
-    }
-    this.redeemingReferral.set(true);
-    this.referralMessage.set(null);
-    this.referralService.redeem(code).subscribe({
-      next: (res) => {
-        this.redeemingReferral.set(false);
-        this.referralCodeInput.set('');
-        this.referralMessage.set({ text: `¡Código aplicado! Invitado por ${res.referrerName}.`, ok: true });
-      },
-      error: (error: HttpErrorResponse) => {
-        this.redeemingReferral.set(false);
-        this.referralMessage.set({
-          text: error.error?.message ?? 'No se pudo aplicar el código',
-          ok: false,
-        });
       },
     });
   }

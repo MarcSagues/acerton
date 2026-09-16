@@ -1,5 +1,35 @@
 # Estado actual
 
+## 2026-09-16 — Pantalla dedicada "Invitar" con el link visible (Sprint 14)
+
+Ajuste sobre el sistema de referidos de la misma sesión, a petición
+explícita del usuario ("me gustaria que debajo de normas y premios
+salga Invitar y ahi dentro este todo esto del link visible etc"): el
+código/link propio solo se podía compartir (share directo desde la
+tarjeta de `/profile/level`), sin verse nunca como texto en pantalla.
+
+Nueva pantalla `/profile/invite` (`ProfileInviteComponent`, mismo
+patrón visual que `GroupInviteComponent`: tarjeta con el código en
+grande, botones "Copiar enlace"/"Compartir", fila con el link completo
+y su propio botón de copiar, contador "Has invitado a N amigos" si
+`referralCount > 0`) enlazada desde una nueva entrada "Invitar" en
+Ajustes del perfil, justo debajo de "Normas y premios". El campo
+"¿Alguien te invitó a ti?" (aplicar el código de un amigo) se trasladó
+aquí desde el sitio poco visible que tenía antes en la página principal
+de Perfil — sigue sin ser un flujo destacado (va después del propio
+código, no antes), pero ya no hace falta desplegar nada para verlo.
+
+La tarjeta "Invita a un amigo" de `/profile/level` no cambia: sigue
+compartiendo directo al pulsarla (comportamiento ya verificado antes en
+esta misma sesión).
+
+Verificado en navegador con las mismas dos cuentas reales de siempre:
+código y link visibles correctamente, aplicar el código de otra cuenta
+funciona igual que desde el sitio anterior (relación y XP confirmadas
+en Postgres, datos de prueba revertidos después). `tsc`/`ng build`
+limpios, 17 tests del frontend en verde (sin tests nuevos — cambio de
+UI puro, misma lógica ya cubierta en `referrals.service.spec.ts`).
+
 ## 2026-09-16 — Sistema de referidos implementado (Sprint 14)
 
 A petición explícita del usuario ("empieza a implementar el tema de la

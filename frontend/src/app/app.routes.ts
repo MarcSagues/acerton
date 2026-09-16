@@ -272,6 +272,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile/invite',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/profile-invite/profile-invite.component').then(
+            (m) => m.ProfileInviteComponent,
+          ),
+      },
+      {
         path: 'profile/badges',
         canActivate: [hasGroupGuard],
         loadComponent: () =>
