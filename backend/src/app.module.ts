@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
@@ -28,6 +29,10 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate }),
     ScheduleModule.forRoot(),
+    // Limite por defecto para toda la API (por IP, ver main.ts trust proxy);
+    // las rutas publicas sensibles de AuthController afinan su propio limite
+    // con @Throttle (login, registro, recuperar contrasena, etc.).
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -47,6 +52,12 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     NotificationsModule,
     JobsModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    // Orden importa: el limite de peticiones se comprueba antes que la
+    // autenticacion, para cortar el abuso (fuerza bruta, spam) barato antes
+    // de verificar el JWT.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+  ],
 })
 export class AppModule {}

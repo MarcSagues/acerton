@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { AppConfig } from '../config/configuration';
 import { Public } from '../common/decorators/public.decorator';
@@ -39,6 +40,7 @@ export class AuthController {
 
   /** No inicia sesion: la cuenta queda sin verificar hasta confirmar el correo (ver login y verify-email). */
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto): Promise<{ email: string }> {
     return this.authService.register(dto);
@@ -46,6 +48,7 @@ export class AuthController {
 
   /** Confirma la cuenta desde el enlace del correo e inicia sesion de una vez. */
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 300_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('verify-email')
   async verifyEmail(
@@ -59,6 +62,7 @@ export class AuthController {
 
   /** Respuesta identica exista o no la cuenta, o ya este verificada: no se puede usar para comprobar si un email esta registrado. */
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 300_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('resend-verification')
   async resendVerification(@Body() dto: ResendVerificationDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
@@ -68,6 +72,7 @@ export class AuthController {
 
   /** Respuesta identica exista o no la cuenta, o sea solo-Google: no se puede usar para comprobar si un email esta registrado. */
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 300_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
@@ -76,6 +81,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 300_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ success: true }> {
@@ -84,6 +90,7 @@ export class AuthController {
   }
 
   /** Cambio de contrasena estando ya conectado (Ajustes de Perfil) — distinto del flujo de "olvide mi contrasena". */
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Patch('me/password')
   async changePassword(
@@ -95,6 +102,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
@@ -115,6 +123,7 @@ export class AuthController {
 
   /** Login con Google desde la app nativa (Capacitor) — ver AuthService.loginWithGoogleIdToken. */
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('google/token')
   async googleToken(
@@ -141,6 +150,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refresh(
