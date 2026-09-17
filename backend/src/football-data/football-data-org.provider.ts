@@ -106,7 +106,10 @@ export class FootballDataOrgProvider implements FootballProvider {
     return matchesResponse.data.matches.map(mapMatch);
   }
 
-  async getFullSeasonMatches(competitionExternalId: number, season: number): Promise<ProviderFixture[]> {
+  async getFullSeasonMatches(
+    competitionExternalId: number,
+    season: number,
+  ): Promise<ProviderFixture[]> {
     this.logger.log(
       `Peticion football-data.org: /competitions/${competitionExternalId}/matches temporada completa`,
     );

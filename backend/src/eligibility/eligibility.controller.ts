@@ -11,7 +11,10 @@ export class EligibilityController {
   ) {}
 
   @Get()
-  async getGroupEligibility(@Param('groupId') groupId: string, @CurrentUser() user: AuthenticatedUser) {
+  async getGroupEligibility(
+    @Param('groupId') groupId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     await this.groupsService.assertIsMember(groupId, user.id);
     return this.eligibilityService.computeGroupEligibility(groupId);
   }

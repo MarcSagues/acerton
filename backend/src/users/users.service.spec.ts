@@ -92,7 +92,11 @@ describe('UsersService.updateAvatar', () => {
   it('permite mascota/color "de fabrica" (reposo + champan) en nivel 1', async () => {
     const prisma = buildPrismaMock();
     prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 0 });
-    prisma.user.update.mockResolvedValue({ id: 'u1', avatarUrl: '/assets/avatars/mascot/reposo.png', avatarBackground: '#d2be94' });
+    prisma.user.update.mockResolvedValue({
+      id: 'u1',
+      avatarUrl: '/assets/avatars/mascot/reposo.png',
+      avatarBackground: '#d2be94',
+    });
 
     const service = new UsersService(prisma as never);
     await service.updateAvatar('u1', 'reposo' as never, '#d2be94' as never);
@@ -105,7 +109,9 @@ describe('UsersService.updateAvatar', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 0 });
 
     const service = new UsersService(prisma as never);
-    await expect(service.updateAvatar('u1', 'guino' as never, '#d2be94' as never)).rejects.toThrow();
+    await expect(
+      service.updateAvatar('u1', 'guino' as never, '#d2be94' as never),
+    ).rejects.toThrow();
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
@@ -114,7 +120,9 @@ describe('UsersService.updateAvatar', () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'u1', experience: 0 });
 
     const service = new UsersService(prisma as never);
-    await expect(service.updateAvatar('u1', 'reposo' as never, '#6a8caf' as never)).rejects.toThrow();
+    await expect(
+      service.updateAvatar('u1', 'reposo' as never, '#6a8caf' as never),
+    ).rejects.toThrow();
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });

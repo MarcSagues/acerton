@@ -66,11 +66,17 @@ export function calculateExactScorePoints(
 
   const multiplier = prediction.doublePointsWildcard ? 2 : 1;
 
-  if (prediction.predictedHomeScore === actualHomeScore && prediction.predictedAwayScore === actualAwayScore) {
+  if (
+    prediction.predictedHomeScore === actualHomeScore &&
+    prediction.predictedAwayScore === actualAwayScore
+  ) {
     return 5 * multiplier;
   }
 
-  const predictedOutcome = computeMatchResult(prediction.predictedHomeScore, prediction.predictedAwayScore);
+  const predictedOutcome = computeMatchResult(
+    prediction.predictedHomeScore,
+    prediction.predictedAwayScore,
+  );
   const actualOutcome = computeMatchResult(actualHomeScore, actualAwayScore);
   return predictedOutcome === actualOutcome ? 2 * multiplier : 0;
 }

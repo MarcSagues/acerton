@@ -25,7 +25,9 @@ const SALT_ROUNDS = 12;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 /** Mensaje generico e identico exista o no la cuenta, para no confirmar por temporizacion ni por contenido si un email esta registrado. */
-export const GENERIC_EMAIL_ACTION_MESSAGE = { message: 'Si la cuenta existe, te hemos enviado un correo.' };
+export const GENERIC_EMAIL_ACTION_MESSAGE = {
+  message: 'Si la cuenta existe, te hemos enviado un correo.',
+};
 
 export interface GoogleProfileInput {
   googleId: string;
@@ -47,7 +49,9 @@ export class AuthService {
     private readonly mailService: MailService,
     private readonly referralsService: ReferralsService,
   ) {
-    this.googleOAuthClient = new OAuth2Client(this.configService.get('google.clientId', { infer: true }));
+    this.googleOAuthClient = new OAuth2Client(
+      this.configService.get('google.clientId', { infer: true }),
+    );
   }
 
   /**
@@ -91,7 +95,9 @@ export class AuthService {
     }
 
     if (!user.emailVerifiedAt) {
-      throw new ForbiddenException('Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+      throw new ForbiddenException(
+        'Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.',
+      );
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
@@ -102,14 +108,22 @@ export class AuthService {
   async verifyEmail(token: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const tokenHash = hashToken(token);
     const record = await this.prisma.authToken.findFirst({
-      where: { tokenHash, purpose: 'EMAIL_VERIFICATION', usedAt: null, expiresAt: { gt: new Date() } },
+      where: {
+        tokenHash,
+        purpose: 'EMAIL_VERIFICATION',
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
     });
     if (!record) {
       throw new BadRequestException('El enlace de confirmación no es válido o ha caducado');
     }
 
     const [user] = await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } }),
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
       this.prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
 
@@ -158,7 +172,9 @@ export class AuthService {
       where: { tokenHash, purpose: 'PASSWORD_RESET', usedAt: null, expiresAt: { gt: new Date() } },
     });
     if (!record) {
-      throw new BadRequestException('El enlace para restablecer la contraseña no es válido o ha caducado');
+      throw new BadRequestException(
+        'El enlace para restablecer la contraseña no es válido o ha caducado',
+      );
     }
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -173,13 +189,19 @@ export class AuthService {
   }
 
   /** Cambio de contrasena estando ya conectado (Ajustes de Perfil), distinto del flujo de "olvide mi contrasena". */
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
     if (!user.passwordHash) {
-      throw new BadRequestException('Esta cuenta usa Google para iniciar sesión y no tiene contraseña que cambiar');
+      throw new BadRequestException(
+        'Esta cuenta usa Google para iniciar sesión y no tiene contraseña que cambiar',
+      );
     }
 
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
@@ -357,7 +379,9 @@ export class AuthService {
     // Unico punto de paso de login/verify-email/Google/refresh: marca
     // "actividad" en cualquier apertura de la app, para el aviso de
     // reenganche tras dias sin entrar (ver JobsService.sendReengagementNotifications).
-    void this.prisma.user.update({ where: { id: userId }, data: { lastActiveAt: new Date() } }).catch(() => undefined);
+    void this.prisma.user
+      .update({ where: { id: userId }, data: { lastActiveAt: new Date() } })
+      .catch(() => undefined);
 
     const accessPayload: JwtAccessPayload = { sub: userId, email, name };
     const accessToken = await this.jwtService.signAsync(accessPayload, {

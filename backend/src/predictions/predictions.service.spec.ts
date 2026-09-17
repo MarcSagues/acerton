@@ -43,7 +43,15 @@ function buildSubmitDeps(
     xpService as never,
     notificationsService as never,
   );
-  return { service, prisma, wildcardsService, groupsService, matchdaysService, xpService, notificationsService };
+  return {
+    service,
+    prisma,
+    wildcardsService,
+    groupsService,
+    matchdaysService,
+    xpService,
+    notificationsService,
+  };
 }
 
 describe('PredictionsService.scoreFinishedMatchday', () => {
@@ -79,7 +87,14 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       },
     ]);
 
-    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never, {} as never, {} as never);
+    const service = new PredictionsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     const scoredCount = await service.scoreFinishedMatchday('matchday-1');
 
     expect(scoredCount).toBe(3);
@@ -111,7 +126,14 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       },
     ]);
 
-    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never, {} as never, {} as never);
+    const service = new PredictionsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     await service.scoreFinishedMatchday('matchday-1');
     await service.scoreFinishedMatchday('matchday-1');
 
@@ -170,15 +192,40 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       },
     ]);
 
-    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never, {} as never, {} as never);
+    const service = new PredictionsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     await service.scoreFinishedMatchday('matchday-1');
 
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { pointsEarned: 1 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p2' }, data: { pointsEarned: 5 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p3' }, data: { pointsEarned: 2 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p4' }, data: { pointsEarned: 0 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p5' }, data: { pointsEarned: 10 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p6' }, data: { pointsEarned: 4 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p1' },
+      data: { pointsEarned: 1 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p2' },
+      data: { pointsEarned: 5 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p3' },
+      data: { pointsEarned: 2 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p4' },
+      data: { pointsEarned: 0 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p5' },
+      data: { pointsEarned: 10 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p6' },
+      data: { pointsEarned: 4 },
+    });
   });
 });
 
@@ -254,7 +301,11 @@ describe('PredictionsService.submit', () => {
         { scoringMode: 'EXACT_SCORE' },
       );
 
-      await service.submit('u1', 'g1', { matchId: 'm1', predictedHomeScore: 2, predictedAwayScore: 1 });
+      await service.submit('u1', 'g1', {
+        matchId: 'm1',
+        predictedHomeScore: 2,
+        predictedAwayScore: 1,
+      });
 
       expect(prisma.prediction.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -265,7 +316,11 @@ describe('PredictionsService.submit', () => {
             choice: null,
             doubleChanceOption: null,
           },
-          create: expect.objectContaining({ predictedHomeScore: 2, predictedAwayScore: 1, doublePointsWildcard: false }),
+          create: expect.objectContaining({
+            predictedHomeScore: 2,
+            predictedAwayScore: 1,
+            doublePointsWildcard: false,
+          }),
         }),
       );
     });
@@ -291,7 +346,12 @@ describe('PredictionsService.submit', () => {
         doublePointsWildcard: true,
       });
 
-      expect(wildcardsService.assertCanUseDoubleChance).toHaveBeenCalledWith('u1', 'g1', 'md1', 'm1');
+      expect(wildcardsService.assertCanUseDoubleChance).toHaveBeenCalledWith(
+        'u1',
+        'g1',
+        'md1',
+        'm1',
+      );
       expect(prisma.prediction.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: expect.objectContaining({ doublePointsWildcard: true }),
@@ -351,10 +411,15 @@ describe('PredictionsService.submit', () => {
     });
 
     it('un fallo al conceder XP no impide guardar el pronostico', async () => {
-      const { service, prisma, xpService } = buildSubmitDeps({ status: 'SCHEDULED', kickoff: future });
+      const { service, prisma, xpService } = buildSubmitDeps({
+        status: 'SCHEDULED',
+        kickoff: future,
+      });
       xpService.awardParticipation.mockRejectedValue(new Error('DB caida'));
 
-      await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).resolves.toEqual({ id: 'p1' });
+      await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).resolves.toEqual({
+        id: 'p1',
+      });
       expect(prisma.prediction.upsert).toHaveBeenCalled();
     });
   });

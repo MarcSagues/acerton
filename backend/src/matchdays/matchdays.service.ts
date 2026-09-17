@@ -357,10 +357,12 @@ export class MatchdaysService {
    * de "Se abre en" — ver canAcceptPredictions para la regla combinada que
    * de verdad manda en el backend a la hora de aceptar un envio.
    */
-  private async attachCanPredict<T extends { order: number; status: string; competitionId: string; closesAt: Date }>(
-    matchday: T,
-  ): Promise<T & { canPredict: boolean; opensAt: string }> {
-    const opensAt = new Date(matchday.closesAt.getTime() - PREDICTIONS_OPEN_BEFORE_MS).toISOString();
+  private async attachCanPredict<
+    T extends { order: number; status: string; competitionId: string; closesAt: Date },
+  >(matchday: T): Promise<T & { canPredict: boolean; opensAt: string }> {
+    const opensAt = new Date(
+      matchday.closesAt.getTime() - PREDICTIONS_OPEN_BEFORE_MS,
+    ).toISOString();
     if (matchday.status === 'FINISHED') {
       return { ...matchday, canPredict: false, opensAt };
     }
@@ -421,7 +423,10 @@ export class MatchdaysService {
     const pointsByMatchday = new Map<string, number>();
     for (const prediction of predictions) {
       const matchdayId = prediction.match.matchdayId;
-      pointsByMatchday.set(matchdayId, (pointsByMatchday.get(matchdayId) ?? 0) + (prediction.pointsEarned ?? 0));
+      pointsByMatchday.set(
+        matchdayId,
+        (pointsByMatchday.get(matchdayId) ?? 0) + (prediction.pointsEarned ?? 0),
+      );
     }
 
     return matchdays.map((matchday) => ({

@@ -24,7 +24,15 @@ export class MemberProfileService {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
       include: {
-        user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            avatarBackground: true,
+            experience: true,
+          },
+        },
         group: { select: { id: true, name: true, scoringMode: true, ownerId: true } },
       },
     });
@@ -45,7 +53,16 @@ export class MemberProfileService {
       }),
       this.prisma.rankingSnapshot.findMany({
         where: { groupId, userId, period: 'WEEKLY' },
-        include: { matchday: { select: { order: true, closesAt: true, status: true, competition: { select: { name: true } } } } },
+        include: {
+          matchday: {
+            select: {
+              order: true,
+              closesAt: true,
+              status: true,
+              competition: { select: { name: true } },
+            },
+          },
+        },
         orderBy: { matchday: { closesAt: 'desc' } },
         take: RECENT_MATCHDAYS_LIMIT,
       }),
@@ -79,7 +96,12 @@ export class MemberProfileService {
       badges: badges.map((ub) => ({
         id: ub.id,
         earnedAt: ub.earnedAt,
-        badge: { id: ub.badge.id, code: ub.badge.code, name: ub.badge.name, description: ub.badge.description },
+        badge: {
+          id: ub.badge.id,
+          code: ub.badge.code,
+          name: ub.badge.name,
+          description: ub.badge.description,
+        },
       })),
       recentMatchdays: snapshots.map((s) => ({
         matchdayId: s.matchdayId,

@@ -50,47 +50,75 @@ describe('calculatePoints', () => {
 
 describe('calculateExactScorePoints', () => {
   it('otorga 5 puntos por marcador exacto', () => {
-    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 2, 0)).toBe(5);
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 2, 0)).toBe(
+      5,
+    );
   });
 
   it('otorga 2 puntos por acertar solo el ganador', () => {
-    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 3, 1)).toBe(2);
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 3, 1)).toBe(
+      2,
+    );
   });
 
   it('un empate previsto vale 2 puntos si el resultado real tambien es empate, aunque el marcador no coincida', () => {
-    expect(calculateExactScorePoints({ predictedHomeScore: 1, predictedAwayScore: 1 }, 2, 2)).toBe(2);
+    expect(calculateExactScorePoints({ predictedHomeScore: 1, predictedAwayScore: 1 }, 2, 2)).toBe(
+      2,
+    );
   });
 
   it('otorga 0 puntos si falla el ganador', () => {
-    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 0, 1)).toBe(0);
-    expect(calculateExactScorePoints({ predictedHomeScore: 1, predictedAwayScore: 1 }, 2, 0)).toBe(0);
+    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, 0, 1)).toBe(
+      0,
+    );
+    expect(calculateExactScorePoints({ predictedHomeScore: 1, predictedAwayScore: 1 }, 2, 0)).toBe(
+      0,
+    );
   });
 
   it('devuelve 0 si el partido todavia no tiene resultado', () => {
-    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, null, null)).toBe(0);
+    expect(
+      calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0 }, null, null),
+    ).toBe(0);
   });
 
   it('devuelve 0 si falta la prediccion', () => {
-    expect(calculateExactScorePoints({ predictedHomeScore: null, predictedAwayScore: null }, 2, 0)).toBe(0);
-    expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: null }, 2, 0)).toBe(0);
+    expect(
+      calculateExactScorePoints({ predictedHomeScore: null, predictedAwayScore: null }, 2, 0),
+    ).toBe(0);
+    expect(
+      calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: null }, 2, 0),
+    ).toBe(0);
   });
 
   describe('con el comodin de remontada activo (doublePointsWildcard)', () => {
     it('duplica a 10 puntos el marcador exacto', () => {
       expect(
-        calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true }, 2, 0),
+        calculateExactScorePoints(
+          { predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true },
+          2,
+          0,
+        ),
       ).toBe(10);
     });
 
     it('duplica a 4 puntos el acierto de solo el ganador', () => {
       expect(
-        calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true }, 3, 1),
+        calculateExactScorePoints(
+          { predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true },
+          3,
+          1,
+        ),
       ).toBe(4);
     });
 
     it('sigue en 0 si falla, aunque este activo', () => {
       expect(
-        calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true }, 0, 1),
+        calculateExactScorePoints(
+          { predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true },
+          0,
+          1,
+        ),
       ).toBe(0);
     });
   });

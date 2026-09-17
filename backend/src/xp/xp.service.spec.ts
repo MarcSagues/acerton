@@ -37,7 +37,14 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 0, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 1 } },
+      {
+        pointsEarned: 0,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 1 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -52,15 +59,32 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 1, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 2, awayScore: 0 } },
-      { pointsEarned: 0, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 1 } },
+      {
+        pointsEarned: 1,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 2, awayScore: 0 },
+      },
+      {
+        pointsEarned: 0,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 1 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
     await service.evaluateAfterMatchdayClose('g1', 'md1');
 
     expect(eventTypes(prisma)).toEqual(['WIN_1X2:25']);
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { experience: { increment: 25 } } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { experience: { increment: 25 } },
+    });
   });
 
   it('el acierto con comodin de remontada en 1X2 vale menos que un acierto normal', async () => {
@@ -69,8 +93,22 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 1, doubleChanceOption: 'HOME_OR_DRAW', doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 1 } },
-      { pointsEarned: 0, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 1 } },
+      {
+        pointsEarned: 1,
+        doubleChanceOption: 'HOME_OR_DRAW',
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 1 },
+      },
+      {
+        pointsEarned: 0,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 1 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -83,14 +121,37 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     const prisma = buildPrismaMock();
     prisma.group.findUnique.mockResolvedValue({ scoringMode: 'EXACT_SCORE' });
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
-    prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }] });
+    prisma.matchday.findUnique.mockResolvedValue({
+      matches: [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }],
+    });
     prisma.prediction.findMany.mockResolvedValue([
       // Marcador exacto
-      { pointsEarned: 5, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 2, predictedAwayScore: 0, match: { homeScore: 2, awayScore: 0 } },
+      {
+        pointsEarned: 5,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: 2,
+        predictedAwayScore: 0,
+        match: { homeScore: 2, awayScore: 0 },
+      },
       // Solo acierta quien gana, no el marcador
-      { pointsEarned: 2, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 3, predictedAwayScore: 0, match: { homeScore: 1, awayScore: 0 } },
+      {
+        pointsEarned: 2,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: 3,
+        predictedAwayScore: 0,
+        match: { homeScore: 1, awayScore: 0 },
+      },
       // Fallo
-      { pointsEarned: 0, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 1, predictedAwayScore: 1, match: { homeScore: 0, awayScore: 2 } },
+      {
+        pointsEarned: 0,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: 1,
+        predictedAwayScore: 1,
+        match: { homeScore: 0, awayScore: 2 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -105,7 +166,14 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 5, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 1, predictedAwayScore: 0, match: { homeScore: 1, awayScore: 0 } },
+      {
+        pointsEarned: 5,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: 1,
+        predictedAwayScore: 0,
+        match: { homeScore: 1, awayScore: 0 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -120,14 +188,32 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 5, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 1, predictedAwayScore: 0, match: { homeScore: 1, awayScore: 0 } },
-      { pointsEarned: 2, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: 3, predictedAwayScore: 0, match: { homeScore: 1, awayScore: 0 } },
+      {
+        pointsEarned: 5,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: 1,
+        predictedAwayScore: 0,
+        match: { homeScore: 1, awayScore: 0 },
+      },
+      {
+        pointsEarned: 2,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: 3,
+        predictedAwayScore: 0,
+        match: { homeScore: 1, awayScore: 0 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
     await service.evaluateAfterMatchdayClose('g1', 'md1');
 
-    expect(eventTypes(prisma)).toEqual(['EXACT_SCORE_HIT:60', 'EXACT_SCORE_WINNER:25', 'PERFECT_MATCHDAY_EXACT:600']);
+    expect(eventTypes(prisma)).toEqual([
+      'EXACT_SCORE_HIT:60',
+      'EXACT_SCORE_WINNER:25',
+      'PERFECT_MATCHDAY_EXACT:600',
+    ]);
   });
 
   it('anade el bono de pleno de ganadores en modo 1X2', async () => {
@@ -136,7 +222,14 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 1, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 0 } },
+      {
+        pointsEarned: 1,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 0 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -151,7 +244,14 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 0 } }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 1, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 0 } },
+      {
+        pointsEarned: 1,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 0 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -164,11 +264,27 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
     const prisma = buildPrismaMock();
     prisma.group.findUnique.mockResolvedValue({ scoringMode: 'ONE_X_TWO' });
     // Nivel 1 necesita 200 XP: con 175 ya acumulados, sumar 25 (acierto 1X2) cruza a nivel 2.
-    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 175 } }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', user: { experience: 175 } },
+    ]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 1, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 0 } },
-      { pointsEarned: 0, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 1 } },
+      {
+        pointsEarned: 1,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 0 },
+      },
+      {
+        pointsEarned: 0,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 1 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -180,10 +296,19 @@ describe('XpService.evaluateAfterMatchdayClose', () => {
   it('no reporta subida de nivel si la XP ganada no llega a cruzar el siguiente nivel', async () => {
     const prisma = buildPrismaMock();
     prisma.group.findUnique.mockResolvedValue({ scoringMode: 'ONE_X_TWO' });
-    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', user: { experience: 100 } }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', user: { experience: 100 } },
+    ]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
     prisma.prediction.findMany.mockResolvedValue([
-      { pointsEarned: 1, doubleChanceOption: null, doublePointsWildcard: null, predictedHomeScore: null, predictedAwayScore: null, match: { homeScore: 1, awayScore: 0 } },
+      {
+        pointsEarned: 1,
+        doubleChanceOption: null,
+        doublePointsWildcard: null,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        match: { homeScore: 1, awayScore: 0 },
+      },
     ]);
 
     const service = new XpService(prisma as never);
@@ -202,7 +327,10 @@ describe('XpService.awardParticipation', () => {
     const levelUp = await service.awardParticipation('u1', 'g1', 'md1');
 
     expect(eventTypes(prisma)).toEqual(['PARTICIPATION:5']);
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { experience: { increment: 5 } } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { experience: { increment: 5 } },
+    });
     expect(levelUp).toBeNull();
   });
 
@@ -239,7 +367,10 @@ describe('XpService.awardReferral', () => {
     expect(eventTypes(prisma)).toEqual(['REFERRAL:500']);
     const call = prisma.xpEvent.createMany.mock.calls[0]?.[0];
     expect(call.data[0]).toMatchObject({ groupId: null, matchdayId: null });
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { experience: { increment: 500 } } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { experience: { increment: 500 } },
+    });
   });
 
   it('la XP del segundo referido cae a la mitad (250)', async () => {

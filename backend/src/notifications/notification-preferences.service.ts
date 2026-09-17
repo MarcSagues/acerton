@@ -52,12 +52,18 @@ export class NotificationPreferencesService {
   }
 
   /** Lista de grupos del usuario con si tiene silenciados los avisos de cada uno. */
-  async getMutedGroups(userId: string): Promise<{ groupId: string; name: string; muted: boolean }[]> {
+  async getMutedGroups(
+    userId: string,
+  ): Promise<{ groupId: string; name: string; muted: boolean }[]> {
     const memberships = await this.prisma.groupMembership.findMany({
       where: { userId },
       select: { mutedNotifications: true, group: { select: { id: true, name: true } } },
       orderBy: { group: { name: 'asc' } },
     });
-    return memberships.map((m) => ({ groupId: m.group.id, name: m.group.name, muted: m.mutedNotifications }));
+    return memberships.map((m) => ({
+      groupId: m.group.id,
+      name: m.group.name,
+      muted: m.mutedNotifications,
+    }));
   }
 }

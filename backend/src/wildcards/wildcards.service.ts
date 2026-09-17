@@ -75,9 +75,13 @@ export class WildcardsService {
           })
         : Promise.resolve(0),
       matchdayId
-        ? client.adRewardClaim.findUnique({ where: { userId_groupId_matchdayId: { userId, groupId, matchdayId } } })
+        ? client.adRewardClaim.findUnique({
+            where: { userId_groupId_matchdayId: { userId, groupId, matchdayId } },
+          })
         : Promise.resolve(null),
-      matchdayId ? client.matchday.findUnique({ where: { id: matchdayId } }) : Promise.resolve(null),
+      matchdayId
+        ? client.matchday.findUnique({ where: { id: matchdayId } })
+        : Promise.resolve(null),
     ]);
 
     const adBonusClaimed = !!adClaim;
@@ -103,7 +107,11 @@ export class WildcardsService {
    * ver el video, red lenta reintentando...) no lanza, simplemente devuelve
    * el estado actual sin duplicar el comodin.
    */
-  async claimAdReward(userId: string, groupId: string, matchdayId: string): Promise<ComebackStatus> {
+  async claimAdReward(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<ComebackStatus> {
     const group = await this.prisma.group.findUnique({ where: { id: groupId } });
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
@@ -120,7 +128,9 @@ export class WildcardsService {
       where: { groupId, competitionId: matchday.competitionId, isActive: true },
     });
     if (!activeInGroup) {
-      throw new ForbiddenException('Esa jornada no pertenece a una competición activa de este grupo');
+      throw new ForbiddenException(
+        'Esa jornada no pertenece a una competición activa de este grupo',
+      );
     }
 
     try {
@@ -174,9 +184,7 @@ export class WildcardsService {
       throw new ForbiddenException('El comodín de remontada está desactivado en este grupo');
     }
     if (status.remaining <= 0) {
-      throw new ForbiddenException(
-        'No te quedan comodines de remontada disponibles esta jornada',
-      );
+      throw new ForbiddenException('No te quedan comodines de remontada disponibles esta jornada');
     }
   }
 }

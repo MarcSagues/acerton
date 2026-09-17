@@ -71,7 +71,11 @@ export interface MatchReminderCheck {
  * dias avisa de cada partido segun cuando empieza de verdad el, no solo el
  * primero de todos.
  */
-export function shouldSendMatchReminder(match: MatchReminderCheck, windowMs: number, now: Date): boolean {
+export function shouldSendMatchReminder(
+  match: MatchReminderCheck,
+  windowMs: number,
+  now: Date,
+): boolean {
   if (match.status !== 'SCHEDULED' || match.reminderSentAt !== null) {
     return false;
   }
@@ -93,7 +97,9 @@ export interface CurrentMatchdayEntrySortKey {
  * pendiente) van al final, mas reciente primero. Logica pura para poder
  * testearla sin base de datos.
  */
-export function sortCurrentMatchdayEntries<T extends CurrentMatchdayEntrySortKey>(entries: T[]): T[] {
+export function sortCurrentMatchdayEntries<T extends CurrentMatchdayEntrySortKey>(
+  entries: T[],
+): T[] {
   return [...entries].sort((a, b) => {
     const aFinished = a.matchday.status === 'FINISHED';
     const bFinished = b.matchday.status === 'FINISHED';

@@ -4,7 +4,10 @@ import * as admin from 'firebase-admin';
 import { NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
-import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferenceFields } from './notification-preferences.service';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  NotificationPreferenceFields,
+} from './notification-preferences.service';
 
 export interface PushNotification {
   title: string;
@@ -77,7 +80,9 @@ export class NotificationsService implements OnModuleInit {
     try {
       await this.prisma.notification.create({ data: { userId, type, title, body, ...extra } });
     } catch (error) {
-      this.logger.warn(`No se pudo registrar el aviso en el feed (${type}) para ${userId}: ${error}`);
+      this.logger.warn(
+        `No se pudo registrar el aviso en el feed (${type}) para ${userId}: ${error}`,
+      );
     }
   }
 
@@ -99,7 +104,9 @@ export class NotificationsService implements OnModuleInit {
       }));
       await this.prisma.notification.createMany({ data });
     } catch (error) {
-      this.logger.warn(`No se pudo registrar el aviso en el feed (${type}) para ${userIds.length} usuarios: ${error}`);
+      this.logger.warn(
+        `No se pudo registrar el aviso en el feed (${type}) para ${userIds.length} usuarios: ${error}`,
+      );
     }
   }
 
@@ -285,9 +292,10 @@ export class NotificationsService implements OnModuleInit {
     const eligibleIds = await this.filterByReminderCooldown(recipientIds);
     if (eligibleIds.length === 0) return;
 
-    const body = matchIds.length === 1
-      ? `Un partido de ${matchdayName} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
-      : `${matchIds.length} partidos de ${matchdayName} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
+    const body =
+      matchIds.length === 1
+        ? `Un partido de ${matchdayName} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
+        : `${matchIds.length} partidos de ${matchdayName} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
 
     const title = 'Partidos por pronosticar';
     await this.sendToUsers(eligibleIds, {
@@ -295,7 +303,10 @@ export class NotificationsService implements OnModuleInit {
       body,
       data: { type: 'MATCHDAY_CLOSING_SOON', groupId, matchdayId },
     });
-    await this.recordMany(eligibleIds, NotificationType.MATCHDAY_CLOSING_SOON, title, body, { groupId, matchdayId });
+    await this.recordMany(eligibleIds, NotificationType.MATCHDAY_CLOSING_SOON, title, body, {
+      groupId,
+      matchdayId,
+    });
 
     const now = new Date();
     await this.prisma.user.updateMany({
@@ -314,7 +325,10 @@ export class NotificationsService implements OnModuleInit {
       select: { id: true, lastClosingReminderPushAt: true },
     });
     return users
-      .filter((u) => !u.lastClosingReminderPushAt || now - u.lastClosingReminderPushAt.getTime() >= cooldownMs)
+      .filter(
+        (u) =>
+          !u.lastClosingReminderPushAt || now - u.lastClosingReminderPushAt.getTime() >= cooldownMs,
+      )
       .map((u) => u.id);
   }
 
@@ -328,9 +342,13 @@ export class NotificationsService implements OnModuleInit {
    */
   async notifyReengagement(userIds: string[]): Promise<void> {
     if (userIds.length === 0) return;
-    const preferences = await this.prisma.notificationPreference.findMany({ where: { userId: { in: userIds } } });
+    const preferences = await this.prisma.notificationPreference.findMany({
+      where: { userId: { in: userIds } },
+    });
     const preferenceByUser = new Map(preferences.map((p) => [p.userId, p]));
-    const recipientIds = userIds.filter((userId) => (preferenceByUser.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES).reengagement);
+    const recipientIds = userIds.filter(
+      (userId) => (preferenceByUser.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES).reengagement,
+    );
 
     const title = 'Piqo te echa de menos';
     const body = 'Hace unos días que no entras — tu grupo sigue pronosticando sin ti.';
@@ -349,7 +367,8 @@ export class NotificationsService implements OnModuleInit {
       where: { groupId, isActive: true },
       select: { competitionId: true },
     });
-    const competitionId = activeCompetitions.length === 1 ? activeCompetitions[0].competitionId : null;
+    const competitionId =
+      activeCompetitions.length === 1 ? activeCompetitions[0].competitionId : null;
     const snapshot = await this.prisma.rankingSnapshot.findFirst({
       where: { groupId, userId, period: 'TOTAL', competitionId },
       orderBy: { createdAt: 'desc' },
@@ -400,8 +419,15 @@ export class NotificationsService implements OnModuleInit {
           const positionText = position != null ? ` Vas ${position}º en la clasificación.` : '';
           const title = `${matchdayName} terminada`;
           const body = `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`;
-          await this.sendToUser(userId, { title, body, data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId } });
-          await this.record(userId, NotificationType.MATCHDAY_FINISHED, title, body, { groupId, matchdayId });
+          await this.sendToUser(userId, {
+            title,
+            body,
+            data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId },
+          });
+          await this.record(userId, NotificationType.MATCHDAY_FINISHED, title, body, {
+            groupId,
+            matchdayId,
+          });
         }),
     );
   }
@@ -414,7 +440,9 @@ export class NotificationsService implements OnModuleInit {
    * propio. Solo se respeta la preferencia de cuenta `badgeEarned`.
    */
   async notifyBadgeEarned(userId: string, badgeName: string): Promise<void> {
-    const preference = (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    const preference =
+      (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ??
+      DEFAULT_NOTIFICATION_PREFERENCES;
     if (!preference.badgeEarned) return;
 
     const title = 'Nueva insignia';
@@ -430,12 +458,18 @@ export class NotificationsService implements OnModuleInit {
    * cuenta `levelUp`.
    */
   async notifyLevelUp(userId: string, level: number): Promise<void> {
-    const preference = (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    const preference =
+      (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ??
+      DEFAULT_NOTIFICATION_PREFERENCES;
     if (!preference.levelUp) return;
 
     const title = '¡Subiste de nivel!';
     const body = `Has llegado al nivel ${level}. Tienes una recompensa nueva esperando.`;
-    await this.sendToUser(userId, { title, body, data: { type: 'LEVEL_UP', level: String(level) } });
+    await this.sendToUser(userId, {
+      title,
+      body,
+      data: { type: 'LEVEL_UP', level: String(level) },
+    });
     await this.record(userId, NotificationType.LEVEL_UP, title, body, { level });
   }
 }

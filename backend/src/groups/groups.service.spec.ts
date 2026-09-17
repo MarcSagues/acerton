@@ -8,7 +8,9 @@ function buildDeps(activeCompetitionIds: string[], prismaOverrides: Record<strin
   };
   const configService = { get: jest.fn() };
   const competitionsService = {
-    findActiveByGroup: jest.fn().mockResolvedValue(activeCompetitionIds.map((competitionId) => ({ competitionId }))),
+    findActiveByGroup: jest
+      .fn()
+      .mockResolvedValue(activeCompetitionIds.map((competitionId) => ({ competitionId }))),
     setGroupCompetitions: jest.fn().mockResolvedValue(undefined),
   };
   const matchdaysService = {
@@ -67,7 +69,12 @@ describe('GroupsService.create', () => {
       group: {
         findUnique: jest.fn().mockResolvedValue(null), // codigo de invitacion libre a la primera
         create: jest.fn().mockResolvedValue({ id: 'g1', isPublic: false }),
-        findFirst: jest.fn().mockResolvedValue({ id: 'g1', isPublic: false, groupCompetitions: [], _count: { memberships: 1 } }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'g1',
+          isPublic: false,
+          groupCompetitions: [],
+          _count: { memberships: 1 },
+        }),
       },
       groupMembership: { findUnique: jest.fn().mockResolvedValue({ userId: 'u1', groupId: 'g1' }) },
     };
@@ -77,7 +84,9 @@ describe('GroupsService.create', () => {
       setGroupCompetitions: jest.fn().mockResolvedValue(undefined),
     };
     const matchdaysService = { syncCurrentRound: jest.fn().mockResolvedValue(null) };
-    const badgesService = { checkGroupFounder: jest.fn().mockResolvedValue([{ userId: 'u1', badgeName: 'Fundador' }]) };
+    const badgesService = {
+      checkGroupFounder: jest.fn().mockResolvedValue([{ userId: 'u1', badgeName: 'Fundador' }]),
+    };
     const service = new GroupsService(
       prisma as never,
       configService as never,
@@ -133,13 +142,20 @@ describe('GroupsService.searchPublicGroups', () => {
     expect(result.items[0]).not.toHaveProperty('inviteCode');
     expect(result.items[0]).not.toHaveProperty('ownerId');
     expect(result.items[0].memberCount).toBe(4);
-    expect(result.items[0].competitions).toEqual([{ id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null }]);
+    expect(result.items[0].competitions).toEqual([
+      { id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null },
+    ]);
   });
 
   it('marca isMember segun si el usuario pertenece a cada grupo devuelto', async () => {
-    const findMany = jest.fn().mockResolvedValue([buildGroup({ id: 'g1' }), buildGroup({ id: 'g2' })]);
+    const findMany = jest
+      .fn()
+      .mockResolvedValue([buildGroup({ id: 'g1' }), buildGroup({ id: 'g2' })]);
     const membershipFindMany = jest.fn().mockResolvedValue([{ groupId: 'g1' }]);
-    const { service } = buildDeps([], { group: { findMany }, groupMembership: { findMany: membershipFindMany } });
+    const { service } = buildDeps([], {
+      group: { findMany },
+      groupMembership: { findMany: membershipFindMany },
+    });
 
     const result = await service.searchPublicGroups({}, 'user1');
 
@@ -164,7 +180,11 @@ describe('GroupsService.searchPublicGroups', () => {
   });
 
   it('pagina por cursor: pide uno de mas para saber si hay siguiente pagina', async () => {
-    const threeGroups = [buildGroup({ id: 'g1' }), buildGroup({ id: 'g2' }), buildGroup({ id: 'g3' })];
+    const threeGroups = [
+      buildGroup({ id: 'g1' }),
+      buildGroup({ id: 'g2' }),
+      buildGroup({ id: 'g3' }),
+    ];
     const findMany = jest.fn().mockResolvedValue(threeGroups);
     const { service } = buildDeps([], { group: { findMany } });
 
@@ -193,7 +213,11 @@ describe('GroupsService.findPublicGroupById', () => {
     const result = await service.findPublicGroupById('g1');
 
     expect(result).toBeNull();
-    expect(findFirst.mock.calls[0][0].where).toMatchObject({ id: 'g1', deletedAt: null, isPublic: true });
+    expect(findFirst.mock.calls[0][0].where).toMatchObject({
+      id: 'g1',
+      deletedAt: null,
+      isPublic: true,
+    });
   });
 
   it('devuelve el grupo con sus competiciones activas y el conteo de miembros cuando existe', async () => {
@@ -345,10 +369,14 @@ describe('GroupsService.findMineForUser', () => {
 
 describe('GroupsService.setFavorite', () => {
   it('rechaza si el usuario no pertenece al grupo', async () => {
-    const prisma = { groupMembership: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() } };
+    const prisma = {
+      groupMembership: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
+    };
     const { service } = buildDeps([], prisma);
 
-    await expect(service.setFavorite('g1', 'u1', true)).rejects.toThrow('No perteneces a este grupo');
+    await expect(service.setFavorite('g1', 'u1', true)).rejects.toThrow(
+      'No perteneces a este grupo',
+    );
     expect(prisma.groupMembership.update).not.toHaveBeenCalled();
   });
 

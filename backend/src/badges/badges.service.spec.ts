@@ -4,12 +4,21 @@ function buildPrismaMock() {
   return {
     groupMembership: { findMany: jest.fn(), count: jest.fn().mockResolvedValue(0) },
     streak: { findMany: jest.fn(), findUnique: jest.fn() },
-    prediction: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    prediction: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
     group: { findUnique: jest.fn().mockResolvedValue({ scoringMode: 'ONE_X_TWO' }) },
     matchday: { findUnique: jest.fn() },
-    rankingSnapshot: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    rankingSnapshot: {
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(0),
+    },
     badge: { findUnique: jest.fn(), findMany: jest.fn() },
-    userBadge: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockResolvedValue({}) },
+    userBadge: {
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest.fn().mockResolvedValue({}),
+    },
   };
 }
 
@@ -44,7 +53,12 @@ describe('BadgesService.getProgressForUser', () => {
       }
       if (where.groupId === 'g2') {
         // g2: 4 aciertos seguidos, ninguno mas antiguo puntuado todavia -> racha de 4.
-        return Promise.resolve([{ pointsEarned: 1 }, { pointsEarned: 1 }, { pointsEarned: 5 }, { pointsEarned: 2 }]);
+        return Promise.resolve([
+          { pointsEarned: 1 },
+          { pointsEarned: 1 },
+          { pointsEarned: 5 },
+          { pointsEarned: 2 },
+        ]);
       }
       // Consultas sin groupId (p.ej. el conteo de competiciones distintas, que mira todos los grupos a la vez).
       return Promise.resolve([]);
@@ -58,10 +72,16 @@ describe('BadgesService.getProgressForUser', () => {
 
   it('una racha caliente rota por un fallo en el partido mas reciente da progreso 0, aunque haya aciertos antes', async () => {
     const prisma = buildPrismaMock();
-    prisma.groupMembership.findMany.mockResolvedValue([{ groupId: 'g1', group: { scoringMode: 'ONE_X_TWO' } }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { groupId: 'g1', group: { scoringMode: 'ONE_X_TWO' } },
+    ]);
     prisma.streak.findMany.mockResolvedValue([]);
     prisma.prediction.findMany.mockImplementation(({ where }: { where: { groupId?: string } }) =>
-      Promise.resolve(where.groupId === 'g1' ? [{ pointsEarned: 0 }, { pointsEarned: 1 }, { pointsEarned: 1 }] : []),
+      Promise.resolve(
+        where.groupId === 'g1'
+          ? [{ pointsEarned: 0 }, { pointsEarned: 1 }, { pointsEarned: 1 }]
+          : [],
+      ),
     );
 
     const service = new BadgesService(prisma as never);
@@ -89,7 +109,9 @@ describe('BadgesService.getProgressForUser', () => {
 
   it('cuenta el total de pronosticos y de aciertos 1X2, topados al objetivo', async () => {
     const prisma = buildPrismaMock();
-    prisma.groupMembership.findMany.mockResolvedValue([{ groupId: 'g1', group: { scoringMode: 'ONE_X_TWO' } }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { groupId: 'g1', group: { scoringMode: 'ONE_X_TWO' } },
+    ]);
     prisma.streak.findMany.mockResolvedValue([]);
     prisma.prediction.count.mockImplementation(({ where }: { where: Record<string, unknown> }) => {
       if (where.pointsEarned) return Promise.resolve(30); // aciertos
@@ -106,21 +128,25 @@ describe('BadgesService.getProgressForUser', () => {
 
   it('en un grupo de resultado exacto, cuenta los marcadores exactos acertados (no solo el ganador)', async () => {
     const prisma = buildPrismaMock();
-    prisma.groupMembership.findMany.mockResolvedValue([{ groupId: 'g1', group: { scoringMode: 'EXACT_SCORE' } }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { groupId: 'g1', group: { scoringMode: 'EXACT_SCORE' } },
+    ]);
     prisma.streak.findMany.mockResolvedValue([]);
     // Distingue la consulta de countExactScoreHits (filtra por predictedHomeScore)
     // de otras que tambien usan prediction.findMany con otra forma de `where`
     // (currentHotStreakForGroup, el conteo de competiciones distintas...).
-    prisma.prediction.findMany.mockImplementation(({ where }: { where: Record<string, unknown> }) => {
-      if (where.predictedHomeScore) {
-        return Promise.resolve([
-          { predictedHomeScore: 2, predictedAwayScore: 1, match: { homeScore: 2, awayScore: 1 } }, // exacto
-          { predictedHomeScore: 1, predictedAwayScore: 0, match: { homeScore: 3, awayScore: 0 } }, // solo ganador
-          { predictedHomeScore: 0, predictedAwayScore: 0, match: { homeScore: 0, awayScore: 0 } }, // exacto
-        ]);
-      }
-      return Promise.resolve([]);
-    });
+    prisma.prediction.findMany.mockImplementation(
+      ({ where }: { where: Record<string, unknown> }) => {
+        if (where.predictedHomeScore) {
+          return Promise.resolve([
+            { predictedHomeScore: 2, predictedAwayScore: 1, match: { homeScore: 2, awayScore: 1 } }, // exacto
+            { predictedHomeScore: 1, predictedAwayScore: 0, match: { homeScore: 3, awayScore: 0 } }, // solo ganador
+            { predictedHomeScore: 0, predictedAwayScore: 0, match: { homeScore: 0, awayScore: 0 } }, // exacto
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+    );
 
     const service = new BadgesService(prisma as never);
     const progress = await service.getProgressForUser('u1');
@@ -137,7 +163,11 @@ describe('BadgesService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.group.findUnique.mockResolvedValue({ scoringMode: 'ONE_X_TWO' });
     prisma.prediction.count.mockResolvedValue(100);
-    prisma.badge.findUnique.mockResolvedValue({ id: 'b1', code: 'PREDICTIONS_100', name: 'Centenario' });
+    prisma.badge.findUnique.mockResolvedValue({
+      id: 'b1',
+      code: 'PREDICTIONS_100',
+      name: 'Centenario',
+    });
 
     const service = new BadgesService(prisma as never);
     const awarded = await service.evaluateAfterMatchdayClose('g1', 'md1');
@@ -150,7 +180,11 @@ describe('BadgesService.evaluateAfterMatchdayClose', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.group.findUnique.mockResolvedValue({ scoringMode: 'ONE_X_TWO' });
     prisma.prediction.count.mockResolvedValue(100);
-    prisma.badge.findUnique.mockResolvedValue({ id: 'b1', code: 'PREDICTIONS_100', name: 'Centenario' });
+    prisma.badge.findUnique.mockResolvedValue({
+      id: 'b1',
+      code: 'PREDICTIONS_100',
+      name: 'Centenario',
+    });
     prisma.userBadge.findUnique.mockResolvedValue({ id: 'existing' });
 
     const service = new BadgesService(prisma as never);
@@ -187,14 +221,16 @@ describe('BadgesService.evaluateAfterMatchdayClose', () => {
     // Distingue la consulta de countExactScoreHits (filtra por predictedHomeScore)
     // de las demas que tambien usan prediction.findMany con otra forma de `where`
     // (checkFirstMatchdayPlayed, checkCompetitions...) para no cruzar datos.
-    prisma.prediction.findMany.mockImplementation(({ where }: { where: Record<string, unknown> }) => {
-      if (where.predictedHomeScore) {
-        return Promise.resolve([
-          { predictedHomeScore: 1, predictedAwayScore: 1, match: { homeScore: 1, awayScore: 1 } },
-        ]);
-      }
-      return Promise.resolve([]);
-    });
+    prisma.prediction.findMany.mockImplementation(
+      ({ where }: { where: Record<string, unknown> }) => {
+        if (where.predictedHomeScore) {
+          return Promise.resolve([
+            { predictedHomeScore: 1, predictedAwayScore: 1, match: { homeScore: 1, awayScore: 1 } },
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+    );
     prisma.badge.findUnique.mockImplementation(({ where }: { where: { code: string } }) =>
       Promise.resolve({ id: where.code, code: where.code, name: where.code }),
     );
@@ -203,7 +239,9 @@ describe('BadgesService.evaluateAfterMatchdayClose', () => {
     const awarded = await service.evaluateAfterMatchdayClose('g1', 'md1');
 
     expect(awarded).toContainEqual({ userId: 'u1', badgeName: 'EXACT_SCORE_HIT_1' });
-    expect(awarded).not.toContainEqual(expect.objectContaining({ badgeName: 'EXACT_SCORE_HITS_10' }));
+    expect(awarded).not.toContainEqual(
+      expect.objectContaining({ badgeName: 'EXACT_SCORE_HITS_10' }),
+    );
   });
 });
 
@@ -211,12 +249,14 @@ describe('BadgesService.evaluateAfterMatchdayClose — insignias añadidas a pet
   it('concede "Racha de fuego" (HOT_STREAK_10) con 10 aciertos seguidos, y no "En racha" a la vez', async () => {
     const prisma = buildPrismaMock();
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
-    prisma.prediction.findMany.mockImplementation(({ where }: { where: Record<string, unknown> }) => {
-      if (where.pointsEarned && !where.match) {
-        return Promise.resolve(Array.from({ length: 10 }, () => ({ pointsEarned: 1 })));
-      }
-      return Promise.resolve([]);
-    });
+    prisma.prediction.findMany.mockImplementation(
+      ({ where }: { where: Record<string, unknown> }) => {
+        if (where.pointsEarned && !where.match) {
+          return Promise.resolve(Array.from({ length: 10 }, () => ({ pointsEarned: 1 })));
+        }
+        return Promise.resolve([]);
+      },
+    );
     prisma.badge.findUnique.mockImplementation(({ where }: { where: { code: string } }) =>
       Promise.resolve({ id: where.code, code: where.code, name: where.code }),
     );
@@ -232,12 +272,14 @@ describe('BadgesService.evaluateAfterMatchdayClose — insignias añadidas a pet
     const prisma = buildPrismaMock();
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
-    prisma.prediction.findMany.mockImplementation(({ where }: { where: { match?: { matchdayId?: string } } }) => {
-      if (where.match?.matchdayId) {
-        return Promise.resolve([{ pointsEarned: 1 }, { pointsEarned: 2 }]);
-      }
-      return Promise.resolve([]);
-    });
+    prisma.prediction.findMany.mockImplementation(
+      ({ where }: { where: { match?: { matchdayId?: string } } }) => {
+        if (where.match?.matchdayId) {
+          return Promise.resolve([{ pointsEarned: 1 }, { pointsEarned: 2 }]);
+        }
+        return Promise.resolve([]);
+      },
+    );
     prisma.badge.findUnique.mockImplementation(({ where }: { where: { code: string } }) =>
       Promise.resolve({ id: where.code, code: where.code, name: where.code }),
     );
@@ -252,12 +294,14 @@ describe('BadgesService.evaluateAfterMatchdayClose — insignias añadidas a pet
     const prisma = buildPrismaMock();
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.matchday.findUnique.mockResolvedValue({ matches: [{ id: 'm1' }, { id: 'm2' }] });
-    prisma.prediction.findMany.mockImplementation(({ where }: { where: { match?: { matchdayId?: string } } }) => {
-      if (where.match?.matchdayId) {
-        return Promise.resolve([{ pointsEarned: 1 }, { pointsEarned: 0 }]);
-      }
-      return Promise.resolve([]);
-    });
+    prisma.prediction.findMany.mockImplementation(
+      ({ where }: { where: { match?: { matchdayId?: string } } }) => {
+        if (where.match?.matchdayId) {
+          return Promise.resolve([{ pointsEarned: 1 }, { pointsEarned: 0 }]);
+        }
+        return Promise.resolve([]);
+      },
+    );
 
     const service = new BadgesService(prisma as never);
     const awarded = await service.evaluateAfterMatchdayClose('g1', 'md1');
@@ -298,8 +342,9 @@ describe('BadgesService.evaluateAfterMatchdayClose — insignias añadidas a pet
   it('concede "Especialista en empates" a los 10 empates acertados', async () => {
     const prisma = buildPrismaMock();
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
-    prisma.prediction.count.mockImplementation(({ where }: { where: { match?: { result?: string } } }) =>
-      Promise.resolve(where.match?.result === 'DRAW' ? 10 : 0),
+    prisma.prediction.count.mockImplementation(
+      ({ where }: { where: { match?: { result?: string } } }) =>
+        Promise.resolve(where.match?.result === 'DRAW' ? 10 : 0),
     );
     prisma.badge.findUnique.mockImplementation(({ where }: { where: { code: string } }) =>
       Promise.resolve({ id: where.code, code: where.code, name: where.code }),
@@ -370,7 +415,11 @@ describe('BadgesService.evaluateAfterMatchdayClose — insignias añadidas a pet
 describe('BadgesService.checkGroupFounder', () => {
   it('concede "Fundador" al crear un grupo', async () => {
     const prisma = buildPrismaMock();
-    prisma.badge.findUnique.mockResolvedValue({ id: 'b1', code: 'GROUP_FOUNDER', name: 'Fundador' });
+    prisma.badge.findUnique.mockResolvedValue({
+      id: 'b1',
+      code: 'GROUP_FOUNDER',
+      name: 'Fundador',
+    });
 
     const service = new BadgesService(prisma as never);
     const awarded = await service.checkGroupFounder('u1', 'g1');

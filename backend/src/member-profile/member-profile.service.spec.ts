@@ -37,7 +37,13 @@ describe('MemberProfileService.getMemberProfile', () => {
       userId: 'u1',
       role: 'MEMBER',
       joinedAt: new Date('2026-01-01'),
-      user: { id: 'u1', name: 'Marta', avatarUrl: null, avatarBackground: '#FFAA00', experience: 250 },
+      user: {
+        id: 'u1',
+        name: 'Marta',
+        avatarUrl: null,
+        avatarBackground: '#FFAA00',
+        experience: 250,
+      },
       group: { id: 'g1', name: 'Los cracks', scoringMode: 'ONE_X_TWO', ownerId: 'u9' },
     });
     prisma.streak.findUnique.mockResolvedValue({ currentStreak: 4, longestStreak: 7 });
@@ -50,7 +56,12 @@ describe('MemberProfileService.getMemberProfile', () => {
       {
         id: 'ub1',
         earnedAt: new Date('2026-02-01'),
-        badge: { id: 'b1', code: 'STREAK_5', name: 'En racha', description: 'Acertaste 5 seguidas' },
+        badge: {
+          id: 'b1',
+          code: 'STREAK_5',
+          name: 'En racha',
+          description: 'Acertaste 5 seguidas',
+        },
       },
     ]);
     prisma.rankingSnapshot.findMany.mockResolvedValue([
@@ -58,13 +69,23 @@ describe('MemberProfileService.getMemberProfile', () => {
         matchdayId: 'md-2',
         points: 6,
         position: 1,
-        matchday: { order: 2, closesAt: new Date('2026-01-08'), status: 'FINISHED', competition: { name: 'LaLiga' } },
+        matchday: {
+          order: 2,
+          closesAt: new Date('2026-01-08'),
+          status: 'FINISHED',
+          competition: { name: 'LaLiga' },
+        },
       },
       {
         matchdayId: 'md-1',
         points: 3,
         position: 2,
-        matchday: { order: 1, closesAt: new Date('2026-01-01'), status: 'FINISHED', competition: { name: 'LaLiga' } },
+        matchday: {
+          order: 1,
+          closesAt: new Date('2026-01-01'),
+          status: 'FINISHED',
+          competition: { name: 'LaLiga' },
+        },
       },
     ]);
 
@@ -88,7 +109,12 @@ describe('MemberProfileService.getMemberProfile', () => {
         {
           id: 'ub1',
           earnedAt: new Date('2026-02-01'),
-          badge: { id: 'b1', code: 'STREAK_5', name: 'En racha', description: 'Acertaste 5 seguidas' },
+          badge: {
+            id: 'b1',
+            code: 'STREAK_5',
+            name: 'En racha',
+            description: 'Acertaste 5 seguidas',
+          },
         },
       ],
       recentMatchdays: [

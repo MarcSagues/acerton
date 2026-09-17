@@ -4,7 +4,12 @@ import { UsersService } from './users.service';
 import { RegisterNotificationTokenDto } from './dto/register-notification-token.dto';
 import { UpdateNameDto } from './dto/update-name.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
-import { AVATAR_BACKGROUNDS, AVATAR_MASCOT_IDS, AVATAR_TROPHY_REQUIREMENT, mascotAssetPath } from './avatar-catalog';
+import {
+  AVATAR_BACKGROUNDS,
+  AVATAR_MASCOT_IDS,
+  AVATAR_TROPHY_REQUIREMENT,
+  mascotAssetPath,
+} from './avatar-catalog';
 
 @Controller('users')
 export class UsersController {
