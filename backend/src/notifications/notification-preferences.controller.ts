@@ -17,7 +17,10 @@ export class NotificationPreferencesController {
   }
 
   @Patch()
-  async update(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateNotificationPreferencesDto) {
+  async update(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateNotificationPreferencesDto,
+  ) {
     const [preferences, groups] = await Promise.all([
       this.preferencesService.updateForUser(user.id, dto),
       this.preferencesService.getMutedGroups(user.id),

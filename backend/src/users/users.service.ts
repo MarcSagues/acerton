@@ -2,7 +2,12 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicUser } from '../auth/auth.types';
 import { NAME_CHANGE_COOLDOWN_MS, toPublicUser } from '../auth/public-user.util';
-import { AvatarBackground, AvatarMascotId, DEFAULT_MASCOT_IDS, mascotAssetPath } from './avatar-catalog';
+import {
+  AvatarBackground,
+  AvatarMascotId,
+  DEFAULT_MASCOT_IDS,
+  mascotAssetPath,
+} from './avatar-catalog';
 import { levelRequiredForBackground, levelRequiredForMascot } from './avatar-level-rewards';
 import { xpProgressForLevel } from '../xp/xp.util';
 
@@ -78,7 +83,9 @@ export class UsersService {
     }
     const requiredBackgroundLevel = levelRequiredForBackground(background);
     if (level < requiredBackgroundLevel) {
-      throw new ForbiddenException(`Necesitas el nivel ${requiredBackgroundLevel} para usar este color.`);
+      throw new ForbiddenException(
+        `Necesitas el nivel ${requiredBackgroundLevel} para usar este color.`,
+      );
     }
 
     const updated = await this.prisma.user.update({

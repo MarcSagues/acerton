@@ -1,4 +1,12 @@
-import { IsEmail, IsOptional, IsString, Length, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { USERNAME_PATTERN, USERNAME_PATTERN_MESSAGE } from '../../users/username.util';
 
 export class RegisterDto {

@@ -24,37 +24,48 @@ export class ProfileController {
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    const [badges, groupsSummary, globalStreak, me, badgesTotal, scoredPredictions, hitPredictions, xpLast7DaysAgg] =
-      await Promise.all([
-        this.badgesService.getForUser(user.id),
-        Promise.all(
-          memberships.map(async (membership) => {
-            const [streak, comeback] = await Promise.all([
-              this.streaksService.getForUserInGroup(user.id, membership.groupId),
-              this.wildcardsService.getComebackStatus(user.id, membership.groupId),
-            ]);
-            return {
-              group: membership.group,
-              streak: { currentStreak: streak.currentStreak, longestStreak: streak.longestStreak },
-              comeback,
-            };
-          }),
-        ),
-        this.streaksService.getGlobalForUser(user.id),
-        this.prisma.user.findUnique({ where: { id: user.id }, select: { experience: true } }),
-        this.prisma.badge.count(),
-        this.prisma.prediction.count({ where: { userId: user.id, pointsEarned: { not: null } } }),
-        this.prisma.prediction.count({ where: { userId: user.id, pointsEarned: { gt: 0 } } }),
-        this.prisma.xpEvent.aggregate({
-          where: { userId: user.id, createdAt: { gte: sevenDaysAgo } },
-          _sum: { amount: true },
+    const [
+      badges,
+      groupsSummary,
+      globalStreak,
+      me,
+      badgesTotal,
+      scoredPredictions,
+      hitPredictions,
+      xpLast7DaysAgg,
+    ] = await Promise.all([
+      this.badgesService.getForUser(user.id),
+      Promise.all(
+        memberships.map(async (membership) => {
+          const [streak, comeback] = await Promise.all([
+            this.streaksService.getForUserInGroup(user.id, membership.groupId),
+            this.wildcardsService.getComebackStatus(user.id, membership.groupId),
+          ]);
+          return {
+            group: membership.group,
+            streak: { currentStreak: streak.currentStreak, longestStreak: streak.longestStreak },
+            comeback,
+          };
         }),
-      ]);
+      ),
+      this.streaksService.getGlobalForUser(user.id),
+      this.prisma.user.findUnique({ where: { id: user.id }, select: { experience: true } }),
+      this.prisma.badge.count(),
+      this.prisma.prediction.count({ where: { userId: user.id, pointsEarned: { not: null } } }),
+      this.prisma.prediction.count({ where: { userId: user.id, pointsEarned: { gt: 0 } } }),
+      this.prisma.xpEvent.aggregate({
+        where: { userId: user.id, createdAt: { gte: sevenDaysAgo } },
+        _sum: { amount: true },
+      }),
+    ]);
 
     return {
       badges,
       groups: groupsSummary,
-      globalStreak: { currentStreak: globalStreak.currentStreak, longestStreak: globalStreak.longestStreak },
+      globalStreak: {
+        currentStreak: globalStreak.currentStreak,
+        longestStreak: globalStreak.longestStreak,
+      },
       xp: xpProgressForLevel(me?.experience ?? 0),
       xpLast7Days: xpLast7DaysAgg._sum.amount ?? 0,
       accuracy: { hits: hitPredictions, scored: scoredPredictions },

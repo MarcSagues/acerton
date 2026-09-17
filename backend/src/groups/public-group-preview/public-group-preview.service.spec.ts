@@ -12,7 +12,11 @@ function buildGroup(overrides: Record<string, unknown> = {}) {
     createdAt: new Date('2026-01-01'),
     _count: { memberships: 4 },
     groupCompetitions: [
-      { competitionId: 'c1', isActive: true, competition: { id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null } },
+      {
+        competitionId: 'c1',
+        isActive: true,
+        competition: { id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null },
+      },
     ],
     ...overrides,
   };
@@ -65,7 +69,12 @@ describe('PublicGroupPreviewService.getPreview', () => {
     expect(rankingsService.hasRanking).toHaveBeenCalledWith('g1', 'TOTAL', 'c1');
     expect(rankingsService.getLatestRanking).toHaveBeenCalledWith('g1', 'TOTAL', 'c1');
     expect(preview.topRanking).toHaveLength(5);
-    expect(preview.topRanking[0]).toEqual({ userId: 'u0', name: 'User 0', position: 1, points: 10 });
+    expect(preview.topRanking[0]).toEqual({
+      userId: 'u0',
+      name: 'User 0',
+      position: 1,
+      points: 10,
+    });
   });
 
   it('usa el scope general (null) cuando el grupo tiene varias competiciones activas', async () => {
@@ -73,7 +82,11 @@ describe('PublicGroupPreviewService.getPreview', () => {
     groupsService.findPublicGroupById.mockResolvedValue(
       buildGroup({
         groupCompetitions: [
-          { competitionId: 'c1', isActive: true, competition: { id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null } },
+          {
+            competitionId: 'c1',
+            isActive: true,
+            competition: { id: 'c1', code: 'LA_LIGA', name: 'LaLiga', logoUrl: null },
+          },
           {
             competitionId: 'c2',
             isActive: true,
@@ -113,7 +126,9 @@ describe('PublicGroupPreviewService.getPreview', () => {
 
   it('incluye comebackPointsPerBonus si el comodin esta activo en 1X2', async () => {
     const { service, groupsService, rankingsService } = buildDeps();
-    groupsService.findPublicGroupById.mockResolvedValue(buildGroup({ comebackEnabled: true, comebackPointsPerBonus: 8 }));
+    groupsService.findPublicGroupById.mockResolvedValue(
+      buildGroup({ comebackEnabled: true, comebackPointsPerBonus: 8 }),
+    );
     rankingsService.hasRanking.mockResolvedValue(false);
 
     const preview = await service.getPreview('g1', 'user1');
@@ -127,7 +142,9 @@ describe('PublicGroupPreviewService.getPreviewByInviteCode', () => {
     const { service, groupsService } = buildDeps();
     groupsService.findGroupByInviteCode.mockResolvedValue(null);
 
-    await expect(service.getPreviewByInviteCode('BADCODE', 'user1')).rejects.toThrow(NotFoundException);
+    await expect(service.getPreviewByInviteCode('BADCODE', 'user1')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('devuelve la vista previa de un grupo privado por codigo, sin exigir que sea publico', async () => {

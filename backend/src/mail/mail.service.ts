@@ -60,7 +60,9 @@ export class MailService {
       // ni el reset de contrasena por el — pero sin loguearlo aqui, un fallo
       // real de Resend (dominio sin verificar, limite de plan, etc.) se
       // perdia en silencio y era imposible de diagnosticar.
-      const detail = axios.isAxiosError(error) ? JSON.stringify(error.response?.data) : String(error);
+      const detail = axios.isAxiosError(error)
+        ? JSON.stringify(error.response?.data)
+        : String(error);
       this.logger.error(`Fallo al enviar correo a ${params.to} ("${params.subject}"): ${detail}`);
       throw error;
     }

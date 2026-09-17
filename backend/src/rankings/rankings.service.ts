@@ -5,7 +5,9 @@ import { SeasonsService } from '../seasons/seasons.service';
 import { rankEntries, ScoredEntry } from './rank-entries.util';
 import { xpProgressForLevel } from '../xp/xp.util';
 
-function withLevel<T extends { user: { experience: number } }>(row: T): T & { user: T['user'] & { level: number } } {
+function withLevel<T extends { user: { experience: number } }>(
+  row: T,
+): T & { user: T['user'] & { level: number } } {
   return { ...row, user: { ...row.user, level: xpProgressForLevel(row.user.experience).level } };
 }
 
@@ -186,7 +188,17 @@ export class RankingsService {
       this.prisma.rankingSnapshot.findMany({
         where: { groupId, period, competitionId, matchdayId: latest.matchdayId },
         orderBy: { position: 'asc' },
-        include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              avatarBackground: true,
+              experience: true,
+            },
+          },
+        },
       }),
       this.prisma.rankingSnapshot.findFirst({
         where: { groupId, period, competitionId, matchdayId: { not: latest.matchdayId } },
@@ -217,7 +229,17 @@ export class RankingsService {
   private async emptyRanking(groupId: string, period: RankingPeriod, competitionId: string | null) {
     const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            avatarBackground: true,
+            experience: true,
+          },
+        },
+      },
     });
 
     const ranked = rankEntries(members.map((m) => ({ userId: m.userId, points: 0 })));
@@ -243,7 +265,11 @@ export class RankingsService {
    * usado por la vista previa de grupos publicos para decidir si mostrar
    * un top real o el estado vacio (ver PublicGroupPreviewService).
    */
-  async hasRanking(groupId: string, period: RankingPeriod, competitionId: string | null): Promise<boolean> {
+  async hasRanking(
+    groupId: string,
+    period: RankingPeriod,
+    competitionId: string | null,
+  ): Promise<boolean> {
     const snapshot = await this.prisma.rankingSnapshot.findFirst({
       where: { groupId, period, competitionId },
       select: { id: true },
@@ -260,7 +286,17 @@ export class RankingsService {
     const rows = await this.prisma.rankingSnapshot.findMany({
       where: { groupId, period, competitionId, matchdayId },
       orderBy: { position: 'asc' },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            avatarBackground: true,
+            experience: true,
+          },
+        },
+      },
     });
     return rows.map(withLevel);
   }
@@ -305,14 +341,18 @@ export class RankingsService {
       return {
         matchdayId: matchday.id,
         order: matchday.order,
-        winner: winner ? { userId: winner.userId, name: winner.user.name, points: winner.points } : null,
+        winner: winner
+          ? { userId: winner.userId, name: winner.user.name, points: winner.points }
+          : null,
         myPoints: mine ? mine.points : null,
       };
     });
 
     const allPoints = snapshots.map((snapshot) => snapshot.points);
     const groupAverage = allPoints.length ? average(allPoints) : null;
-    const myPoints = snapshots.filter((snapshot) => snapshot.userId === userId).map((snapshot) => snapshot.points);
+    const myPoints = snapshots
+      .filter((snapshot) => snapshot.userId === userId)
+      .map((snapshot) => snapshot.points);
     const userAverage = myPoints.length ? average(myPoints) : null;
 
     return { matchdays, groupAverage, userAverage };

@@ -82,8 +82,18 @@ describe('RankingsService.getHistoryForCompetition', () => {
       orderBy: { order: 'desc' },
     });
     expect(result.matchdays).toEqual([
-      { matchdayId: 'md-2', order: 2, winner: { userId: 'u1', name: 'Ana', points: 6 }, myPoints: 6 },
-      { matchdayId: 'md-1', order: 1, winner: { userId: 'u2', name: 'Bea', points: 5 }, myPoints: 3 },
+      {
+        matchdayId: 'md-2',
+        order: 2,
+        winner: { userId: 'u1', name: 'Ana', points: 6 },
+        myPoints: 6,
+      },
+      {
+        matchdayId: 'md-1',
+        order: 1,
+        winner: { userId: 'u2', name: 'Bea', points: 5 },
+        myPoints: 3,
+      },
     ]);
     expect(result.groupAverage).toBe((3 + 5 + 6 + 2) / 4);
     expect(result.userAverage).toBe((3 + 6) / 2);

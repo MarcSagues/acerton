@@ -31,8 +31,15 @@ export class XpService {
    * evaluateAfterMatchdayClose, porque dependen del resultado real del
    * partido.
    */
-  async awardParticipation(userId: string, groupId: string, matchdayId: string): Promise<LevelUpEvent | null> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { experience: true } });
+  async awardParticipation(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<LevelUpEvent | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { experience: true },
+    });
     if (!user) {
       return null;
     }
@@ -55,14 +62,19 @@ export class XpService {
    * xpForReferral para la caida).
    */
   async awardReferral(referrerId: string, referralIndex: number): Promise<LevelUpEvent | null> {
-    const user = await this.prisma.user.findUnique({ where: { id: referrerId }, select: { experience: true } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: referrerId },
+      select: { experience: true },
+    });
     if (!user) {
       return null;
     }
     const previousLevel = xpProgressForLevel(user.experience).level;
     const amount = xpForReferral(referralIndex);
     const newLevel = await this.award(referrerId, [{ type: 'REFERRAL', amount }], user.experience);
-    return newLevel !== null && newLevel > previousLevel ? { userId: referrerId, level: newLevel } : null;
+    return newLevel !== null && newLevel > previousLevel
+      ? { userId: referrerId, level: newLevel }
+      : null;
   }
 
   /**
@@ -87,7 +99,10 @@ export class XpService {
         where: { groupId },
         select: { userId: true, user: { select: { experience: true } } },
       }),
-      this.prisma.matchday.findUnique({ where: { id: matchdayId }, select: { matches: { select: { id: true } } } }),
+      this.prisma.matchday.findUnique({
+        where: { id: matchdayId },
+        select: { matches: { select: { id: true } } },
+      }),
     ]);
     if (!group || !matchday) {
       return [];
@@ -150,7 +165,10 @@ export class XpService {
       if (perfect) {
         if (group.scoringMode === 'EXACT_SCORE' && allExact) {
           // Pleno con el marcador exacto de todos los partidos — el nivel mas dificil, distinto del pleno "solo ganadores" de abajo.
-          awards.push({ type: 'PERFECT_MATCHDAY_ALL_EXACT', amount: XP_VALUES.PERFECT_MATCHDAY_ALL_EXACT });
+          awards.push({
+            type: 'PERFECT_MATCHDAY_ALL_EXACT',
+            amount: XP_VALUES.PERFECT_MATCHDAY_ALL_EXACT,
+          });
         } else {
           awards.push(
             group.scoringMode === 'EXACT_SCORE'
@@ -196,7 +214,10 @@ export class XpService {
             matchdayId: matchdayId ?? null,
           })),
         }),
-        this.prisma.user.update({ where: { id: userId }, data: { experience: { increment: total } } }),
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { experience: { increment: total } },
+        }),
       ]);
       return xpProgressForLevel(previousExperience + total).level;
     } catch (error) {

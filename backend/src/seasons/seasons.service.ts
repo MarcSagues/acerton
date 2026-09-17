@@ -48,7 +48,9 @@ export class SeasonsService {
   }
 
   /** Variante que reutiliza una fila de Competition ya cargada, para no volver a pedirla dentro del mismo flujo. */
-  private async refreshCompetitionPreviewFor(competition: Competition): Promise<{ finished: boolean } | null> {
+  private async refreshCompetitionPreviewFor(
+    competition: Competition,
+  ): Promise<{ finished: boolean } | null> {
     const fixtures = await this.footballProvider.getFullSeasonMatches(
       competition.externalId,
       competition.currentSeason,
@@ -77,7 +79,10 @@ export class SeasonsService {
    * confirmar que la competicion ha terminado del todo TODAS las
    * competiciones activas de un grupo tambien lo estan, cierra su temporada.
    */
-  async checkSeasonClosureAfterMatchdayFinished(competitionId: string, matchdayClosesAt: Date): Promise<void> {
+  async checkSeasonClosureAfterMatchdayFinished(
+    competitionId: string,
+    matchdayClosesAt: Date,
+  ): Promise<void> {
     const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
     if (!competition) {
       return;
@@ -126,7 +131,10 @@ export class SeasonsService {
     }
 
     const openSeason = await this.getOpenSeason(groupId);
-    await this.prisma.groupSeason.update({ where: { id: openSeason.id }, data: { endedAt: new Date() } });
+    await this.prisma.groupSeason.update({
+      where: { id: openSeason.id },
+      data: { endedAt: new Date() },
+    });
     this.logger.log(`Temporada ${openSeason.label} cerrada para el grupo ${groupId}`);
   }
 }

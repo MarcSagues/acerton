@@ -38,7 +38,12 @@ describe('SeasonsService.getOpenSeason', () => {
   it('crea una temporada nueva si el grupo no tiene ninguna abierta', async () => {
     const prisma = buildPrismaMock();
     prisma.groupSeason.findFirst.mockResolvedValue(null);
-    prisma.groupSeason.create.mockResolvedValue({ id: 's2', groupId: 'g1', label: '2026/27', endedAt: null });
+    prisma.groupSeason.create.mockResolvedValue({
+      id: 's2',
+      groupId: 'g1',
+      label: '2026/27',
+      endedAt: null,
+    });
 
     const service = new SeasonsService(prisma as never, {} as never);
     const season = await service.getOpenSeason('g1');
@@ -53,7 +58,11 @@ describe('SeasonsService.getOpenSeason', () => {
 describe('SeasonsService.refreshCompetitionPreview', () => {
   it('guarda la fecha del partido mas tardio y dice que no ha terminado si queda alguno pendiente', async () => {
     const prisma = buildPrismaMock();
-    prisma.competition.findUnique.mockResolvedValue({ id: 'c1', externalId: 39, currentSeason: 2026 });
+    prisma.competition.findUnique.mockResolvedValue({
+      id: 'c1',
+      externalId: 39,
+      currentSeason: 2026,
+    });
     const footballProvider = {
       getFullSeasonMatches: jest.fn().mockResolvedValue([
         fixture('2026-08-01T18:00:00Z', 'FINISHED'),
@@ -73,12 +82,18 @@ describe('SeasonsService.refreshCompetitionPreview', () => {
 
   it('dice que ha terminado cuando todos los partidos estan FINISHED o CANCELLED', async () => {
     const prisma = buildPrismaMock();
-    prisma.competition.findUnique.mockResolvedValue({ id: 'c1', externalId: 39, currentSeason: 2026 });
+    prisma.competition.findUnique.mockResolvedValue({
+      id: 'c1',
+      externalId: 39,
+      currentSeason: 2026,
+    });
     const footballProvider = {
-      getFullSeasonMatches: jest.fn().mockResolvedValue([
-        fixture('2026-08-01T18:00:00Z', 'FINISHED'),
-        fixture('2027-05-20T18:00:00Z', 'CANCELLED'),
-      ]),
+      getFullSeasonMatches: jest
+        .fn()
+        .mockResolvedValue([
+          fixture('2026-08-01T18:00:00Z', 'FINISHED'),
+          fixture('2027-05-20T18:00:00Z', 'CANCELLED'),
+        ]),
     };
 
     const service = new SeasonsService(prisma as never, footballProvider as never);
@@ -89,7 +104,11 @@ describe('SeasonsService.refreshCompetitionPreview', () => {
 
   it('no toca nada si el proveedor todavia no tiene calendario', async () => {
     const prisma = buildPrismaMock();
-    prisma.competition.findUnique.mockResolvedValue({ id: 'c1', externalId: 39, currentSeason: 2026 });
+    prisma.competition.findUnique.mockResolvedValue({
+      id: 'c1',
+      externalId: 39,
+      currentSeason: 2026,
+    });
     const footballProvider = { getFullSeasonMatches: jest.fn().mockResolvedValue([]) };
 
     const service = new SeasonsService(prisma as never, footballProvider as never);
@@ -120,8 +139,18 @@ describe('SeasonsService.checkSeasonClosureAfterMatchdayFinished', () => {
   it('no cierra la temporada del grupo si otra de sus competiciones activas todavia no ha terminado', async () => {
     const prisma = buildPrismaMock();
     prisma.competition.findUnique
-      .mockResolvedValueOnce({ id: 'c1', externalId: 39, currentSeason: 2026, seasonEndPreviewAt: null }) // trigger
-      .mockResolvedValueOnce({ id: 'c2', externalId: 40, currentSeason: 2026, seasonEndPreviewAt: null }); // otra activa del grupo
+      .mockResolvedValueOnce({
+        id: 'c1',
+        externalId: 39,
+        currentSeason: 2026,
+        seasonEndPreviewAt: null,
+      }) // trigger
+      .mockResolvedValueOnce({
+        id: 'c2',
+        externalId: 40,
+        currentSeason: 2026,
+        seasonEndPreviewAt: null,
+      }); // otra activa del grupo
     const footballProvider = {
       getFullSeasonMatches: jest
         .fn()
@@ -144,8 +173,18 @@ describe('SeasonsService.checkSeasonClosureAfterMatchdayFinished', () => {
   it('cierra la temporada del grupo cuando TODAS sus competiciones activas han terminado', async () => {
     const prisma = buildPrismaMock();
     prisma.competition.findUnique
-      .mockResolvedValueOnce({ id: 'c1', externalId: 39, currentSeason: 2026, seasonEndPreviewAt: null })
-      .mockResolvedValueOnce({ id: 'c2', externalId: 40, currentSeason: 2026, seasonEndPreviewAt: null });
+      .mockResolvedValueOnce({
+        id: 'c1',
+        externalId: 39,
+        currentSeason: 2026,
+        seasonEndPreviewAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'c2',
+        externalId: 40,
+        currentSeason: 2026,
+        seasonEndPreviewAt: null,
+      });
     const footballProvider = {
       getFullSeasonMatches: jest
         .fn()
@@ -158,7 +197,12 @@ describe('SeasonsService.checkSeasonClosureAfterMatchdayFinished', () => {
         { groupId: 'g1', competitionId: 'c1', isActive: true },
         { groupId: 'g1', competitionId: 'c2', isActive: true },
       ]);
-    prisma.groupSeason.findFirst.mockResolvedValue({ id: 's1', groupId: 'g1', label: '2026/27', endedAt: null });
+    prisma.groupSeason.findFirst.mockResolvedValue({
+      id: 's1',
+      groupId: 'g1',
+      label: '2026/27',
+      endedAt: null,
+    });
 
     const service = new SeasonsService(prisma as never, footballProvider as never);
     await service.checkSeasonClosureAfterMatchdayFinished('c1', new Date('2027-05-20T18:00:00Z'));

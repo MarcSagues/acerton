@@ -58,7 +58,9 @@ export class PredictionsService {
 
     if (scoringMode === 'EXACT_SCORE') {
       if (dto.choice || dto.doubleChanceOption) {
-        throw new BadRequestException('Este grupo juega en modo resultado exacto, no admite pronóstico 1X2');
+        throw new BadRequestException(
+          'Este grupo juega en modo resultado exacto, no admite pronóstico 1X2',
+        );
       }
       if (dto.predictedHomeScore === undefined || dto.predictedAwayScore === undefined) {
         throw new BadRequestException('Falta el resultado exacto (goles local y visitante)');
@@ -135,7 +137,11 @@ export class PredictionsService {
    * try/catch a proposito: esto es secundario al pronostico en si, un
    * fallo aqui (DB, push) no debe impedir que se guarde la prediccion.
    */
-  private async awardParticipationXp(userId: string, groupId: string, matchdayId: string): Promise<void> {
+  private async awardParticipationXp(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+  ): Promise<void> {
     try {
       const levelUp = await this.xpService.awardParticipation(userId, groupId, matchdayId);
       if (levelUp) {
@@ -171,7 +177,17 @@ export class PredictionsService {
 
     const predictions = await this.prisma.prediction.findMany({
       where: { groupId, match: { matchdayId } },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true, experience: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            avatarBackground: true,
+            experience: true,
+          },
+        },
+      },
     });
     return predictions.map((p) => ({
       ...p,
@@ -197,7 +213,11 @@ export class PredictionsService {
       }
       const points =
         prediction.group.scoringMode === 'EXACT_SCORE'
-          ? calculateExactScorePoints(prediction, prediction.match.homeScore, prediction.match.awayScore)
+          ? calculateExactScorePoints(
+              prediction,
+              prediction.match.homeScore,
+              prediction.match.awayScore,
+            )
           : calculatePoints(
               { choice: prediction.choice, doubleChanceOption: prediction.doubleChanceOption },
               prediction.match.result,

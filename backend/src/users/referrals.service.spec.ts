@@ -44,7 +44,10 @@ describe('ReferralsService.redeem', () => {
       where: { referralCode: 'ABC23456' },
       select: { id: true, name: true },
     });
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u2' }, data: { referredById: 'referrer1' } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u2' },
+      data: { referredById: 'referrer1' },
+    });
     expect(xpService.awardReferral).toHaveBeenCalledWith('referrer1', 1);
     expect(result).toEqual({ referrerName: 'Ana' });
   });

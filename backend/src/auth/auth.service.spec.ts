@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 
@@ -76,13 +81,19 @@ describe('AuthService.register', () => {
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ emailVerifiedAt: null }));
 
-    const result = await service.register({ email: 'test@example.com', password: 'password123', name: 'Test' });
+    const result = await service.register({
+      email: 'test@example.com',
+      password: 'password123',
+      name: 'Test',
+    });
 
     expect(prisma.user.create.mock.calls[0][0].data).toMatchObject({
       avatarUrl: '/assets/avatars/mascot/reposo.png',
       avatarBackground: '#d2be94',
     });
-    expect(prisma.authToken.create.mock.calls[0][0].data).toMatchObject({ purpose: 'EMAIL_VERIFICATION' });
+    expect(prisma.authToken.create.mock.calls[0][0].data).toMatchObject({
+      purpose: 'EMAIL_VERIFICATION',
+    });
     expect(mailService.sendVerificationEmail).toHaveBeenCalled();
     expect(result).toEqual({ email: 'test@example.com' });
     expect(result).not.toHaveProperty('tokens');
@@ -113,7 +124,9 @@ describe('AuthService.register', () => {
   it('intenta enlazar el codigo de referido recibido, sin bloquear el registro si falla', async () => {
     const { service, prisma, referralsService } = buildDeps();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ id: 'nuevo1', emailVerifiedAt: null }));
+    (prisma.user.create as jest.Mock).mockResolvedValue(
+      buildUser({ id: 'nuevo1', emailVerifiedAt: null }),
+    );
 
     await service.register({
       email: 'test@example.com',
@@ -132,7 +145,9 @@ describe('AuthService.validateOrCreateGoogleUser', () => {
     (prisma.user.findUnique as jest.Mock)
       .mockResolvedValueOnce(null) // por googleId: no existe
       .mockResolvedValueOnce(null); // por email: tampoco existe -> cuenta nueva
-    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ id: 'nuevo1', googleId: 'g1' }));
+    (prisma.user.create as jest.Mock).mockResolvedValue(
+      buildUser({ id: 'nuevo1', googleId: 'g1' }),
+    );
 
     await service.validateOrCreateGoogleUser({
       googleId: 'g1',
@@ -165,7 +180,9 @@ describe('AuthService.validateOrCreateGoogleUser', () => {
     (prisma.user.findUnique as jest.Mock)
       .mockResolvedValueOnce(null) // por googleId: no existe
       .mockResolvedValueOnce(buildUser({ id: 'existente1' })); // por email: ya existia sin Google
-    (prisma.user.update as jest.Mock).mockResolvedValue(buildUser({ id: 'existente1', googleId: 'g1' }));
+    (prisma.user.update as jest.Mock).mockResolvedValue(
+      buildUser({ id: 'existente1', googleId: 'g1' }),
+    );
 
     await service.validateOrCreateGoogleUser({
       googleId: 'g1',
@@ -184,17 +201,21 @@ describe('AuthService.login', () => {
     const { service, prisma } = buildDeps();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.login({ email: 'x@x.com', password: 'bad' })).rejects.toThrow(UnauthorizedException);
+    await expect(service.login({ email: 'x@x.com', password: 'bad' })).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('bloquea el login si el email no esta verificado', async () => {
     const { service, prisma } = buildDeps();
     const passwordHash = await bcrypt.hash('password123', 4);
-    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash, emailVerifiedAt: null }));
-
-    await expect(service.login({ email: 'test@example.com', password: 'password123' })).rejects.toThrow(
-      ForbiddenException,
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(
+      buildUser({ passwordHash, emailVerifiedAt: null }),
     );
+
+    await expect(
+      service.login({ email: 'test@example.com', password: 'password123' }),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('permite el login si el email esta verificado y la contrasena es correcta', async () => {
@@ -229,7 +250,10 @@ describe('AuthService.verifyEmail', () => {
       where: { id: 'u1' },
       data: { emailVerifiedAt: expect.any(Date) },
     });
-    expect(prisma.authToken.update).toHaveBeenCalledWith({ where: { id: 'tok1' }, data: { usedAt: expect.any(Date) } });
+    expect(prisma.authToken.update).toHaveBeenCalledWith({
+      where: { id: 'tok1' },
+      data: { usedAt: expect.any(Date) },
+    });
     expect(result.tokens.accessToken).toBe('signed-jwt');
   });
 });
@@ -280,7 +304,9 @@ describe('AuthService.requestPasswordReset', () => {
 
     await service.requestPasswordReset('test@example.com');
 
-    expect(prisma.authToken.create.mock.calls[0][0].data).toMatchObject({ purpose: 'PASSWORD_RESET' });
+    expect(prisma.authToken.create.mock.calls[0][0].data).toMatchObject({
+      purpose: 'PASSWORD_RESET',
+    });
     expect(mailService.sendPasswordResetEmail).toHaveBeenCalled();
   });
 });
@@ -290,7 +316,9 @@ describe('AuthService.resetPassword', () => {
     const { service, prisma } = buildDeps();
     (prisma.authToken.findFirst as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.resetPassword('bad-token', 'newpassword123')).rejects.toThrow(BadRequestException);
+    await expect(service.resetPassword('bad-token', 'newpassword123')).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('actualiza la contrasena, marca el token usado y revoca las sesiones activas', async () => {
@@ -302,7 +330,10 @@ describe('AuthService.resetPassword', () => {
 
     await service.resetPassword('good-token', 'newpassword123');
 
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { passwordHash: expect.any(String) } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { passwordHash: expect.any(String) },
+    });
     expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
       where: { userId: 'u1', revokedAt: null },
       data: { revokedAt: expect.any(Date) },
@@ -315,7 +346,9 @@ describe('AuthService.changePassword', () => {
     const { service, prisma } = buildDeps();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash: null }));
 
-    await expect(service.changePassword('u1', 'whatever', 'newpassword123')).rejects.toThrow(BadRequestException);
+    await expect(service.changePassword('u1', 'whatever', 'newpassword123')).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('rechaza si la contrasena actual no coincide', async () => {
@@ -323,7 +356,9 @@ describe('AuthService.changePassword', () => {
     const passwordHash = await bcrypt.hash('correct', 4);
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash }));
 
-    await expect(service.changePassword('u1', 'incorrect', 'newpassword123')).rejects.toThrow(UnauthorizedException);
+    await expect(service.changePassword('u1', 'incorrect', 'newpassword123')).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('actualiza la contrasena si la actual es correcta', async () => {
@@ -333,6 +368,9 @@ describe('AuthService.changePassword', () => {
 
     await service.changePassword('u1', 'correct', 'newpassword123');
 
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { passwordHash: expect.any(String) } });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { passwordHash: expect.any(String) },
+    });
   });
 });

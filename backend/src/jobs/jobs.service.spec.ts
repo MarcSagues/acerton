@@ -72,8 +72,15 @@ describe('JobsService.onApplicationBootstrap', () => {
 
 describe('JobsService.syncResultsAndFinalize', () => {
   it('puntua y recalcula clasificacion para jornadas en curso sin tocar rachas/insignias/notificaciones', async () => {
-    const { service, matchdaysService, predictionsService, rankingsService, streaksService, badgesService, notificationsService } =
-      buildDeps();
+    const {
+      service,
+      matchdaysService,
+      predictionsService,
+      rankingsService,
+      streaksService,
+      badgesService,
+      notificationsService,
+    } = buildDeps();
     matchdaysService.syncResultsForClosedMatchdays.mockResolvedValue({
       newlyFinished: [],
       inProgress: ['md-live'],
@@ -103,7 +110,11 @@ describe('JobsService.syncResultsAndFinalize', () => {
       newlyFinished: ['md-done'],
       inProgress: [],
     });
-    prisma.matchday.findUnique.mockResolvedValue({ id: 'md-done', competitionId: 'comp-1', name: 'Jornada 1' });
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'md-done',
+      competitionId: 'comp-1',
+      name: 'Jornada 1',
+    });
     prisma.groupCompetition.findMany.mockResolvedValue([{ groupId: 'group-1' }]);
 
     await service.syncResultsAndFinalize();
@@ -112,7 +123,11 @@ describe('JobsService.syncResultsAndFinalize', () => {
     expect(rankingsService.computeForFinishedMatchday).toHaveBeenCalledWith('md-done');
     expect(streaksService.updateAfterMatchdayClose).toHaveBeenCalledWith('md-done');
     expect(badgesService.evaluateAfterMatchdayClose).toHaveBeenCalledWith('group-1', 'md-done');
-    expect(notificationsService.notifyMatchdayFinished).toHaveBeenCalledWith('group-1', 'md-done', 'Jornada 1');
+    expect(notificationsService.notifyMatchdayFinished).toHaveBeenCalledWith(
+      'group-1',
+      'md-done',
+      'Jornada 1',
+    );
   });
 });
 
@@ -163,7 +178,12 @@ describe('JobsService.sendClosingReminders', () => {
     const now = new Date('2026-01-01T00:00:00.000Z');
     jest.useFakeTimers().setSystemTime(now);
 
-    const sharedMatchday = { id: 'md-1', name: 'Jornada 1', status: 'OPEN', competitionId: 'comp-1' };
+    const sharedMatchday = {
+      id: 'md-1',
+      name: 'Jornada 1',
+      status: 'OPEN',
+      competitionId: 'comp-1',
+    };
     const matches = [
       {
         id: 'match-1',
@@ -254,7 +274,9 @@ describe('JobsService.sendReengagementNotifications', () => {
     jest.useFakeTimers().setSystemTime(now);
 
     const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
-    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastActiveAt: fiveDaysAgo, reengagementPushSentAt: null }]);
+    prisma.user.findMany.mockResolvedValue([
+      { id: 'u1', lastActiveAt: fiveDaysAgo, reengagementPushSentAt: null },
+    ]);
 
     await service.sendReengagementNotifications();
 
@@ -276,7 +298,9 @@ describe('JobsService.sendReengagementNotifications', () => {
     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
     // reengagementPushSentAt (hace 2 dias) es MAS RECIENTE que lastActiveAt (hace 5 dias):
     // ya se le aviso de esta misma racha de inactividad, no toca repetir.
-    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastActiveAt: fiveDaysAgo, reengagementPushSentAt: twoDaysAgo }]);
+    prisma.user.findMany.mockResolvedValue([
+      { id: 'u1', lastActiveAt: fiveDaysAgo, reengagementPushSentAt: twoDaysAgo },
+    ]);
 
     await service.sendReengagementNotifications();
 
