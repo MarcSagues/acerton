@@ -1,0 +1,102 @@
+name: Telegram Notify
+
+# Reenvia a Telegram (bot @saguidev_bot) lo que antes llegaba por email de
+# GitHub: comentarios nuevos (incluidos los de Codex), issues nuevas, PRs
+# abiertas/cerradas y el resultado de los workflows de build (CI, iOS).
+# Requiere los secrets TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID (ya configurados).
+#
+# Los valores que vienen del evento (titulo, cuerpo del comentario...) se
+# pasan siempre via `env`, nunca interpolados directamente en el `run:` -
+# de lo contrario un titulo de issue con backticks o `$(...)` se
+# ejecutaria como shell (script injection classico de Actions). Los
+# mensajes se arman con `printf -v` (una sola linea logica) para que el
+# bloque YAML `|` no dependa de la indentacion de lineas literales sueltas.
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, closed]
+  workflow_run:
+    workflows: ["CI", "iOS Build"]
+    types: [completed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comentario nuevo
+        if: github.event_name == 'issue_comment'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AUTHOR: ${{ github.event.comment.user.login }}
+          BODY: ${{ github.event.comment.body }}
+          URL: ${{ github.event.comment.html_url }}
+          TITLE: ${{ github.event.issue.title }}
+          NUMBER: ${{ github.event.issue.number }}
+          IS_PR: ${{ github.event.issue.pull_request != null }}
+        run: |
+          KIND="issue"
+          [ "$IS_PR" = "true" ] && KIND="PR"
+          printf -v TEXT '💬 %s comento en %s #%s (%s)\n%s\n\n%s' "$AUTHOR" "$KIND" "$NUMBER" "$TITLE" "$BODY" "$URL"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}"
+
+      - name: Tarea nueva
+        if: github.event_name == 'issues'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+          TITLE: ${{ github.event.issue.title }}
+          NUMBER: ${{ github.event.issue.number }}
+          URL: ${{ github.event.issue.html_url }}
+        run: |
+          printf -v TEXT '📋 Nueva tarea #%s: %s\npor %s\n%s' "$NUMBER" "$TITLE" "$AUTHOR" "$URL"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}"
+
+      - name: PR abierta o cerrada
+        if: github.event_name == 'pull_request'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ACTION: ${{ github.event.action }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          TITLE: ${{ github.event.pull_request.title }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if [ "$ACTION" = "closed" ] && [ "$MERGED" = "true" ]; then
+            EMOJI="✅"; VERB="fusionada en ${BASE}"
+          elif [ "$ACTION" = "closed" ]; then
+            EMOJI="❌"; VERB="cerrada sin fusionar"
+          else
+            EMOJI="🔀"; VERB="abierta contra ${BASE}"
+          fi
+          printf -v TEXT '%s PR #%s %s: %s\n%s' "$EMOJI" "$NUMBER" "$VERB" "$TITLE" "$URL"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}"
+
+      - name: Resultado de build
+        if: github.event_name == 'workflow_run'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          WORKFLOW: ${{ github.event.workflow_run.name }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          EMOJI="⚠️"
+          [ "$CONCLUSION" = "success" ] && EMOJI="✅"
+          printf -v TEXT '%s %s (%s): %s\n%s' "$EMOJI" "$WORKFLOW" "$BRANCH" "$CONCLUSION" "$URL"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}"
