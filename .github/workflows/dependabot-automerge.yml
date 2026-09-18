@@ -1,0 +1,47 @@
+name: Dependabot Auto-merge
+
+# Fusiona sola cualquier PR de Dependabot que sea patch/minor (nunca major,
+# eso puede romper cosas) y que ya haya pasado los checks requeridos de
+# ci.yml. `gh pr merge --auto` no fusiona al instante: deja el auto-merge
+# armado y GitHub lo dispara solo en cuanto los checks obligatorios del
+# ruleset se ponen en verde.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Leer metadata de la actualizacion
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Auto-merge (patch/minor)
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
+
+      - name: Avisar por Telegram (major, requiere revisar a mano)
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DEP: ${{ steps.metadata.outputs.dependency-names }}
+          FROM: ${{ steps.metadata.outputs.previous-version }}
+          TO: ${{ steps.metadata.outputs.new-version }}
+          URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          printf -v TEXT '🔶 Dependabot: %s %s -> %s es un cambio MAJOR, revisalo a mano\n%s' "$DEP" "$FROM" "$TO" "$URL"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}"
