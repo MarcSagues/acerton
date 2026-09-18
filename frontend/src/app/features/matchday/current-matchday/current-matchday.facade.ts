@@ -1,18 +1,22 @@
 import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { BottomNavService } from '../../../core/services/bottom-nav.service';
 import { MatchdaysService } from '../../../core/services/matchdays.service';
 import { PredictionsService } from '../../../core/services/predictions.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
+import { AdsService } from '../../../core/services/ads.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
+import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption, Prediction } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { ComebackSheetComponent, ComebackSheetData, ComebackSheetResult } from './comeback-sheet.component';
+import { MatchdayShareCardComponent, ShareCardData } from '../matchday-results/matchday-share-card.component';
 import { formatCountdown } from '../../../shared/countdown.util';
 import {
   MatchAccentTone,
@@ -62,7 +66,9 @@ export class CurrentMatchdayFacade {
   private readonly predictionsService = inject(PredictionsService);
   private readonly authService = inject(AuthService);
   private readonly wildcardsService = inject(WildcardsService);
+  private readonly adsService = inject(AdsService);
   private readonly sheet = inject(BottomSheetService);
+  private readonly dialog = inject(PiqoDialogService);
   private readonly toast = inject(ToastService);
   private readonly bottomNav = inject(BottomNavService);
   private readonly destroyRef = inject(DestroyRef);
@@ -86,6 +92,9 @@ export class CurrentMatchdayFacade {
   private readonly dismissedLiveAviso = signal<string | null>(null);
   /** Aviso del comodin de remontada cerrado para esta jornada en esta sesion (id de jornada) — igual que dismissedLiveAviso, se olvida al recargar o cambiar de jornada. */
   private readonly dismissedComebackBanner = signal<string | null>(null);
+  /** Igual que dismissedComebackBanner pero para el aviso de "consigue un comodin extra viendo un video". */
+  private readonly dismissedAdRewardBanner = signal<string | null>(null);
+  readonly watchingAd = signal(false);
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -207,9 +216,9 @@ export class CurrentMatchdayFacade {
     return this.entries().some((e) => this.hasPendingPicks(e));
   }
 
-  /** Se llama tras cualquier cambio que pueda alterar lo pendiente (cargar, guardar, quitar comodin, cambiar de jornada): el punto de "Jornada" en la barra inferior vive en un servicio global porque esa barra no es hija de este componente. */
+  /** Empuja el valor en vivo a BottomNavService tras cualquier cambio que pueda alterar lo pendiente (guardar, quitar comodin...) — el effect() del constructor ya lo recalcula solo con el paso del tiempo (this.now()), esto es solo para que un guardado se refleje al instante en vez de esperar al siguiente tick de 1s. */
   private updatePendingBadge(): void {
-    this.bottomNav.setHasPendingJornadaPicks(this.hasAnyPendingPicks());
+    this.bottomNav.setLiveJornadaPending(this.hasAnyPendingPicks());
   }
 
   /** Se abre solo si el usuario pulsa "Ver resumen" — antes se abria solo tras cada guardado, lo que lo hacia reaparecer cada vez que se editaba un pronostico ya completo. */
@@ -257,20 +266,35 @@ export class CurrentMatchdayFacade {
   }
 
   /**
+   * true si queda algun partido abierto donde el comodin de remontada
+   * todavia se pueda aplicar. No es lo mismo que hasPendingPicks: el comodin
+   * se puede poner tambien sobre un partido que ya tiene un pronostico
+   * normal elegido (openComebackSheet lo sustituye/complementa), asi que el
+   * unico requisito real es que el partido no este bloqueado y que no tenga
+   * ya un comodin puesto — doubleChanceOption en 1X2, doublePointsWildcard
+   * en EXACT_SCORE.
+   */
+  private hasComebackSlot(entry: CurrentMatchdayEntry): boolean {
+    const exact = this.isExactScore();
+    return entry.matchday.matches.some(
+      (m) =>
+        !this.isMatchLocked(m) &&
+        (exact ? !this.stateFor(m.id).doublePointsWildcard : !this.stateFor(m.id).doubleChanceOption),
+    );
+  }
+
+  /**
    * Texto del aviso flotante del comodin de remontada, o null si no aplica:
    * jornada cerrada o todavia no abierta, comodin desactivado o sin usos
    * (incluido ir primero, que hace remaining=0), ya cerrado a mano para esta
-   * jornada, o ya no queda ningun partido sin pronostico donde usarlo (el
-   * comodin tecnicamente podria seguir aplicandose sobre un partido ya
-   * elegido con 1X2 normal, pero una vez esta todo relleno el aviso deja de
-   * tener sentido como recordatorio de "esto te falta"). Vuelve a aparecer
-   * al recargar o cambiar de jornada — solo se calla mientras de verdad haya
-   * algo pendiente y comodines para ello.
+   * jornada, o ya no queda ningun partido sin comodin donde ponerlo (ver
+   * hasComebackSlot). Vuelve a aparecer al recargar o cambiar de jornada —
+   * solo se calla mientras de verdad haya hueco y comodines para ello.
    */
   comebackBanner(entry: CurrentMatchdayEntry | null): string | null {
     if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return null;
     if (this.dismissedComebackBanner() === entry.matchday.id) return null;
-    if (!this.hasPendingPicks(entry)) return null;
+    if (!this.hasComebackSlot(entry)) return null;
     const comeback = this.comeback();
     if (!comeback?.enabled || comeback.remaining <= 0) return null;
     const count = comeback.remaining === 1 ? '1 comodín' : `${comeback.remaining} comodines`;
@@ -279,6 +303,61 @@ export class CurrentMatchdayFacade {
 
   dismissComebackBanner(entry: CurrentMatchdayEntry): void {
     this.dismissedComebackBanner.set(entry.matchday.id);
+  }
+
+  /**
+   * Aviso flotante de "consigue 1 comodín extra viendo un vídeo": mismas
+   * condiciones de partida que comebackBanner (jornada abierta y admitiendo
+   * pronosticos, y que quede hueco para un comodin — ver hasComebackSlot),
+   * mas que el grupo tenga el comodin activado y todavia no se haya
+   * reclamado el extra de esta jornada concreta (ComebackStatus.
+   * adBonusAvailable, ver WildcardsService en el backend). El aviso normal
+   * de comebackBanner tiene SIEMPRE prioridad sobre este: no tiene sentido
+   * ofrecer ganar un comodin extra viendo publicidad si todavia te quedan
+   * comodines ya disponibles sin usar (remaining > 0) — este solo aparece
+   * una vez agotados esos.
+   */
+  showAdRewardBanner(entry: CurrentMatchdayEntry | null): boolean {
+    if (!environment.adRewardedWildcardsEnabled) return false;
+    if (!entry || this.isLocked(entry) || !this.pickingAllowed()) return false;
+    if (this.dismissedAdRewardBanner() === entry.matchday.id) return false;
+    if (!this.hasComebackSlot(entry)) return false;
+    const comeback = this.comeback();
+    if (!comeback?.adBonusAvailable) return false;
+    return comeback.remaining <= 0;
+  }
+
+  dismissAdRewardBanner(entry: CurrentMatchdayEntry): void {
+    this.dismissedAdRewardBanner.set(entry.matchday.id);
+  }
+
+  /** Lanza el video recompensado y, si AdMob confirma que se vio entero, reclama el comodin extra contra el backend. */
+  async watchAdForComebackBonus(): Promise<void> {
+    if (this.watchingAd()) return;
+    const entry = this.activeEntry();
+    const groupId = this.activeGroupService.activeId();
+    const userId = this.authService.currentUser()?.id;
+    if (!entry || !groupId || !userId) return;
+
+    this.watchingAd.set(true);
+    try {
+      const earned = await this.adsService.watchRewardedAd(userId);
+      if (!earned) {
+        this.toast.show('No se pudo cargar el vídeo. Inténtalo de nuevo en unos segundos.');
+        return;
+      }
+      this.wildcardsService.claimAdReward(groupId, entry.matchday.id).subscribe({
+        next: (status) => {
+          this.comeback.set(status);
+          this.toast.show('¡Comodín extra conseguido! Ya puedes usarlo en un pronóstico.');
+        },
+        error: () => {
+          this.toast.show('El vídeo se vio bien, pero no se pudo aplicar el comodín. Inténtalo de nuevo.');
+        },
+      });
+    } finally {
+      this.watchingAd.set(false);
+    }
   }
 
   /** Cierra el aviso mostrado bajo la cabecera, cualquiera que sea su tono. */
@@ -320,9 +399,24 @@ export class CurrentMatchdayFacade {
     // mismo mecanismo que usan las rutas sin barra (ver ShellFacade).
     effect(() => this.bottomNav.setForceHidden(this.submissionConfirmed()), { allowSignalWrites: true });
 
+    // Recalcula el punto de "Jornada" solo con el paso del tiempo (this.now()
+    // tambien se lee dentro de hasAnyPendingPicks): sin esto, una ventana de
+    // pronostico que se abre mientras el usuario ya esta parado aqui no
+    // pondria el aviso hasta el siguiente guardado o cambio de pestana. Los
+    // guardados llaman ademas a updatePendingBadge() a mano para no esperar
+    // al siguiente tick de 1s.
+    effect(() => this.bottomNav.setLiveJornadaPending(this.hasAnyPendingPicks()), { allowSignalWrites: true });
+
     const interval = setInterval(() => this.now.set(new Date()), 1000);
     this.destroyRef.onDestroy(() => {
       this.bottomNav.setForceHidden(false);
+      // Al salir de Jornada, el punto vuelve a depender del ultimo dato
+      // conocido del grupo activo (ActiveGroupService.
+      // activeGroupHasPendingPicks, refrescado por hasGroupGuard en esta
+      // misma navegacion) en vez de quedarse pegado al ultimo valor en vivo
+      // calculado aqui, que podria corresponder a un grupo distinto tras
+      // cambiar de pestana del bottom nav.
+      this.bottomNav.setLiveJornadaPending(null);
       clearInterval(interval);
       // Sin esto, el requestAnimationFrame de un guardado todavia en curso al
       // salir de la pantalla seguiria llamandose a si mismo indefinidamente
@@ -458,6 +552,7 @@ export class CurrentMatchdayFacade {
             doubleChanceOption: prediction.doubleChanceOption,
             predictedHomeScore: prediction.predictedHomeScore,
             predictedAwayScore: prediction.predictedAwayScore,
+            doublePointsWildcard: prediction.doublePointsWildcard,
             saving: false,
             saved: true,
             error: false,
@@ -584,6 +679,7 @@ export class CurrentMatchdayFacade {
         doubleChanceOption: null,
         predictedHomeScore: null,
         predictedAwayScore: null,
+        doublePointsWildcard: false,
         saving: false,
         saved: false,
         error: false,
@@ -655,12 +751,18 @@ export class CurrentMatchdayFacade {
     return false;
   }
 
-  /** Abre el panel para activar, cambiar o quitar el comodin de remontada de este partido. */
+  /**
+   * Abre el panel para activar, cambiar o quitar el comodin de remontada de
+   * este partido. En grupos 1X2 deja elegir la combinacion (1X/X2/12); en
+   * grupos EXACT_SCORE no hay combinacion que elegir, solo activa/quita el
+   * duplicador de puntos (doublePointsWildcard) — ver ComebackSheetComponent.
+   */
   openComebackSheet(match: Match): void {
     if (this.isMatchLocked(match)) return;
     const state = this.stateFor(match.id);
     const comeback = this.comeback();
-    const hasCurrent = !!state.doubleChanceOption;
+    const exact = this.isExactScore();
+    const hasCurrent = exact ? !!state.doublePointsWildcard : !!state.doubleChanceOption;
 
     if (!hasCurrent) {
       if (!comeback?.enabled) {
@@ -678,15 +780,30 @@ export class CurrentMatchdayFacade {
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
         remaining: comeback?.remaining ?? 0,
-        current: state.doubleChanceOption,
+        mode: exact ? 'double-points' : 'double-chance',
+        current: exact ? null : state.doubleChanceOption,
+        currentDoublePoints: exact ? !!state.doublePointsWildcard : undefined,
       },
     });
     ref.closed.subscribe((result) => {
       if (!result) return;
+      const hasScore = state.predictedHomeScore != null && state.predictedAwayScore != null;
       if ('remove' in result) {
-        state.doubleChanceOption = null;
-        state.saved = false;
+        if (exact) {
+          state.doublePointsWildcard = false;
+          this.updatePendingBadge();
+          if (hasScore) this.save(match.id, state);
+        } else {
+          state.doubleChanceOption = null;
+          state.saved = false;
+          this.updatePendingBadge();
+        }
+        return;
+      }
+      if ('doublePoints' in result) {
+        state.doublePointsWildcard = true;
         this.updatePendingBadge();
+        if (hasScore) this.save(match.id, state);
         return;
       }
       state.choice = null;
@@ -716,7 +833,12 @@ export class CurrentMatchdayFacade {
       .submit(
         groupId,
         exact
-          ? { matchId, predictedHomeScore: state.predictedHomeScore!, predictedAwayScore: state.predictedAwayScore! }
+          ? {
+              matchId,
+              predictedHomeScore: state.predictedHomeScore!,
+              predictedAwayScore: state.predictedAwayScore!,
+              doublePointsWildcard: !!state.doublePointsWildcard,
+            }
           : {
               matchId,
               choice: state.doubleChanceOption ? undefined : (state.choice ?? undefined),
@@ -732,9 +854,7 @@ export class CurrentMatchdayFacade {
           this.finishDrawProgress(state, seq, () => {
             state.saving = false;
             state.saved = true;
-            if (!exact) {
-              this.refreshComeback(groupId);
-            }
+            this.refreshComeback(groupId);
           });
         },
         error: (error: HttpErrorResponse) => {
@@ -782,9 +902,32 @@ export class CurrentMatchdayFacade {
         doubleChanceOption: state.doubleChanceOption ?? null,
         predictedHomeScore: state.predictedHomeScore ?? null,
         predictedAwayScore: state.predictedAwayScore ?? null,
+        doublePointsWildcard: !!state.doublePointsWildcard,
         pointsEarned: null,
         submittedAt: new Date().toISOString(),
       } satisfies Prediction];
+    });
+  }
+
+  openShareCard(): void {
+    const entry = this.activeEntry();
+    if (!entry) return;
+    this.dialog.open<MatchdayShareCardComponent, void, ShareCardData>(MatchdayShareCardComponent, {
+      panelClass: ['piqo-dialog-panel', 'share-card-panel'],
+      data: {
+        matchday: entry.matchday,
+        competitionName: entry.competition.name,
+        variant: 'picks',
+        predictions: this.sharePredictions(),
+        scoringMode: this.shareScoringMode(),
+        playerName: this.sharePlayerName(),
+        avatarBackground: null,
+        groupName: this.shareGroupName(),
+        totalPoints: 0,
+        hits: 0,
+        position: null,
+        streak: 0,
+      },
     });
   }
 

@@ -28,6 +28,9 @@
             <button type="button" class="group-main" (click)="page.goToGroup(group.id)">
               <span class="avatar" [class.exact]="group.scoringMode === 'EXACT_SCORE'">
                 <piqo-svg [attr.icon]="page.scoringModeIcon(group.scoringMode)" size="22"></piqo-svg>
+                @if (group.hasPendingPicks && group.id !== page.activeGroupId()) {
+                  <span class="pending-dot" aria-hidden="true"></span>
+                }
               </span>
               <span class="meta">
                 <span class="name">{{ group.name }}</span>

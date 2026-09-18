@@ -1,5 +1,83 @@
 # Estado actual
 
+## 2026-09-15 — Feed real de avisos (issue #21) + campanita restaurada
+
+A petición del usuario ("podemos crear ya la vista de notificaciones?"),
+terminado el issue #21: la pantalla "Avisos" (`/notifications`) dejó de
+ser una lista de muestra (`DEMO_NOTICES`) y pasó a mostrar el historial
+real de avisos del usuario — logros/insignias conseguidas, puntos
+ganados en una jornada terminada, recordatorios de cierre, reenganche.
+Ver `roadmap.md` Sprint 9 para el detalle técnico completo.
+
+Nuevo modelo `Notification` en Prisma: se crea una fila cada vez que
+`NotificationsService` decide enviar el push equivalente (mismos filtros
+de preferencia/silencio ya aplicados), así que el feed nunca puede
+desincronizarse de a quién le llega el push real. Nuevos endpoints
+`GET /notifications/me` y `POST /notifications/me/read-all`. En el
+frontend, `NotificationsFeedService` ya no lee `DEMO_NOTICES`, sino la
+API real; se restauró la campanita del top-bar (escondida a propósito
+desde el 2026-09-12, con un comentario explícito señalando este mismo
+issue) con su contador real de avisos sin leer.
+
+6 tests unitarios nuevos (231 en el backend en verde), y verificado en
+navegador insertando avisos con la forma exacta que generaría el
+backend: iconos por tipo, agrupación Hoy/Esta semana/Anterior, tiempo
+relativo, contador "3" en la campanita, y "Leer todo" confirmado con SQL
+directo (no solo optimista en el cliente) que persiste tras recargar.
+Sin verificar iOS/Android.
+
+## 2026-09-15 — Catálogo de insignias ampliado a 20 (dos pasadas en la misma sesión)
+
+A petición directa del usuario ("5 me parecen pocas", y después "deberíamos
+tener hasta 20"), el catálogo de insignias pasó de 5 a 20. Ver `roadmap.md`
+Sprint 8 para el detalle completo de condiciones y verificación.
+
+**Primera pasada** (6 insignias, completando 11 de las 12 propuestas en
+`product-rules.md`): Incombustible (25 jornadas seguidas), Centenario (100
+pronósticos), Buen ojo/Experto en 1X2 (25/100 aciertos 1X2, solo grupos
+modo 1X2), Al milímetro/Francotirador (1/10 marcadores exactos acertados
+— no solo el ganador —, solo grupos resultado exacto).
+
+**Segunda pasada** (9 insignias más, ya no del catálogo de
+`product-rules.md` — no propone más de 12 —, sino ideadas sobre mecánicas
+ya existentes de la app): Racha de fuego (10 aciertos seguidos), Leyenda
+(500 pronósticos), Pleno (todos los partidos de una jornada con puntos),
+Comodín de oro (el comodín de remontada dio puntos 5 veces — mismo
+criterio que `rescueHits` del frontend), Sociable (3 grupos a la vez),
+Especialista en empates (10 empates acertados), Multiliga (3 ligas
+distintas), Fundador (crear un grupo — única que se concede al momento,
+en `GroupsService.create()`, no al cerrar una jornada), En el podio
+(top-3 semanal 5 veces).
+
+Sin tocar las 5 que ya existían (ni su nombre ni su condición) — la
+renombrada pendiente "Jornada perfecta"→"En lo más alto" (ver
+`backlog.md`) sigue abierta, no se ha decidido en esta sesión.
+
+Queda pendiente solo "Campeón" (primer premio de temporada, la única de
+las 12 originales de `product-rules.md` sin implementar): no hay
+condición real que evaluar todavía porque depende de temporada cerrada +
+modelo de trofeos (Sprint 6, sigue 🔒 sin modelo de datos) — no se ha
+inventado una aproximación sustituta para no comprometer el criterio
+cuando el Sprint 6 exista de verdad.
+
+Ninguna de las 15 nuevas tiene arte 3D propio (el HANDOFF fijaba los 5
+motivos originales como cerrados) — usan el fallback genérico ya
+existente en la UI (medalla conseguida/candado pendiente). Si se quiere
+arte propio para ellas, es trabajo de diseño aparte, no de esta sesión.
+Sociable/Multiliga/En el podio son condiciones de cuenta (no de un grupo
+concreto) pero se conceden ancladas al grupo que disparó la comprobación
+— no hay insignia "sin grupo" hoy (el alcance global sigue 🔒 bloqueado
+por la deduplicación pendiente, ver ese mismo Sprint 8 más abajo).
+
+Backend: 31 tests unitarios nuevos (21 en `badges.service.spec.ts`, 1 en
+`groups.service.spec.ts` para Fundador; los otros 9 son ajustes a tests ya
+existentes que se vieron afectados por compartir mocks de
+`prisma.prediction.findMany`/`count` con las nuevas consultas) — los 229
+tests del backend en verde. Verificado en navegador y en base de datos
+real de desarrollo: progreso mostrado coincide con los pronósticos reales
+ya enviados, y "Fundador" se concedió de verdad al crear un grupo de
+prueba (borrado después). Sin verificar iOS/Android.
+
 ## 2026-09-14 — Canvas compartible de resultados de jornada
 
 Añadido debajo de **Copiar resumen** en la pantalla `Enviado` de Jornada

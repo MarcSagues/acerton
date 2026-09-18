@@ -2,7 +2,8 @@ name: iOS Build
 
 # Manual only: un runner macOS consume minutos de Actions mucho mas rapido
 # que uno Linux, asi que esto no corre en cada push, solo cuando se lanza
-# a mano desde la pestana "Actions" de GitHub.
+# a mano desde la pestana "Actions" de GitHub, o al empujar un tag de
+# version (v1.0.1...) para una release de produccion.
 on:
   workflow_dispatch:
     inputs:
@@ -14,12 +15,33 @@ on:
           - production
           - dev
         default: production
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Un tag v1.0.1 siempre es produccion (asi se cortan las releases);
+      # el disparo manual sigue dejando elegir dev/production como hasta
+      # ahora. MARKETING_VERSION solo se fija cuando hay tag: en un build
+      # manual se deja el valor que ya tiene el .pbxproj.
+      - name: Resolver entorno y version
+        id: vars
+        run: |
+          if [[ "${{ github.ref_type }}" = "tag" ]]; then
+            echo "environment=production" >> "$GITHUB_OUTPUT"
+            echo "marketing_version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "environment=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+            echo "marketing_version=" >> "$GITHUB_OUTPUT"
+          fi
 
       # Capacitor 8 (distribuido por SPM) requiere Xcode 26 / Swift 6.2: con
       # una version mas antigua, una parte de su API queda oculta tras un
@@ -49,7 +71,7 @@ jobs:
         working-directory: frontend
         run: |
           npm ci
-          if [ "${{ inputs.environment }}" = "dev" ]; then
+          if [ "${{ steps.vars.outputs.environment }}" = "dev" ]; then
             npm run build:dev
           else
             npm run build
@@ -66,7 +88,7 @@ jobs:
       # builds nativos (ver auth.service.ts frontend/backend), el backend de
       # dev es el que aprende a aceptarlo via GOOGLE_NATIVE_CLIENT_ID.
       - name: Renombrar la app para el build de dev
-        if: inputs.environment == 'dev'
+        if: steps.vars.outputs.environment == 'dev'
         run: |
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName Piqo (dev)" \
             frontend/ios/App/App/Info.plist
@@ -106,6 +128,14 @@ jobs:
           # por linea de comandos se aplica a TODOS los targets del build,
           # incluidos los paquetes SPM de terceros (Google Sign-In, etc.), que
           # no admiten perfil de aprovisionamiento y hacen fallar el archivado.
+          #
+          # MARKETING_VERSION solo se sobreescribe cuando el build viene de un
+          # tag v1.0.1 (ver paso "Resolver entorno y version"); en un build
+          # manual se deja el valor fijo del .pbxproj tal cual estaba.
+          EXTRA_SETTINGS=()
+          if [ -n "${{ steps.vars.outputs.marketing_version }}" ]; then
+            EXTRA_SETTINGS+=("MARKETING_VERSION=${{ steps.vars.outputs.marketing_version }}")
+          fi
           xcodebuild archive \
             -project App.xcodeproj \
             -scheme App \
@@ -113,7 +143,8 @@ jobs:
             -configuration Release \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -destination "generic/platform=iOS" \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            "${EXTRA_SETTINGS[@]}"
 
       # Clave de API de App Store Connect (rol "App Manager"), usada por
       # xcodebuild para autenticar la subida a TestFlight sin Xcode/Transporter.
@@ -159,9 +190,19 @@ jobs:
       - name: Subir el .ipa como artefacto de este workflow
         uses: actions/upload-artifact@v4
         with:
-          name: Piqo-ios-${{ inputs.environment }}-${{ github.run_number }}
+          name: Piqo-ios-${{ steps.vars.outputs.environment }}-${{ github.run_number }}
           path: ${{ runner.temp }}/export/*.ipa
           retention-days: 30
+
+      # Solo cuando el build viene de un tag v1.0.1: deja un registro de la
+      # release (notas autogeneradas desde los commits) para tener un
+      # historial y un borrador rapido del "Novedades de esta version" de
+      # App Store, sin tener que llevar un CHANGELOG.md a mano.
+      - name: Crear GitHub Release
+        if: github.ref_type == 'tag'
+        run: gh release create "${{ github.ref_name }}" --title "${{ github.ref_name }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       # ntfy.sh: gratis, sin registro. El topic actua como "contraseña" del
       # canal — no es privado de verdad (cualquiera que lo adivine puede
@@ -171,11 +212,11 @@ jobs:
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            TITLE="iOS Build #${{ github.run_number }} (${{ inputs.environment }}) completado"
+            TITLE="iOS Build #${{ github.run_number }} (${{ steps.vars.outputs.environment }}) completado"
             TAGS="white_check_mark"
             PRIORITY="default"
           else
-            TITLE="iOS Build #${{ github.run_number }} (${{ inputs.environment }}) fallo"
+            TITLE="iOS Build #${{ github.run_number }} (${{ steps.vars.outputs.environment }}) fallo"
             TAGS="x"
             PRIORITY="high"
           fi

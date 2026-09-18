@@ -74,4 +74,24 @@ describe('calculateExactScorePoints', () => {
     expect(calculateExactScorePoints({ predictedHomeScore: null, predictedAwayScore: null }, 2, 0)).toBe(0);
     expect(calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: null }, 2, 0)).toBe(0);
   });
+
+  describe('con el comodin de remontada activo (doublePointsWildcard)', () => {
+    it('duplica a 10 puntos el marcador exacto', () => {
+      expect(
+        calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true }, 2, 0),
+      ).toBe(10);
+    });
+
+    it('duplica a 4 puntos el acierto de solo el ganador', () => {
+      expect(
+        calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true }, 3, 1),
+      ).toBe(4);
+    });
+
+    it('sigue en 0 si falla, aunque este activo', () => {
+      expect(
+        calculateExactScorePoints({ predictedHomeScore: 2, predictedAwayScore: 0, doublePointsWildcard: true }, 0, 1),
+      ).toBe(0);
+    });
+  });
 });

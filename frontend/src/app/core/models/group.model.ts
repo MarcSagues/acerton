@@ -20,6 +20,8 @@ export interface Group {
   groupCompetitions?: GroupCompetition[];
   /** Tu posicion en la clasificacion general (TOTAL) de este grupo, o null si todavia no hay ninguna calculada. Solo viene informado en /groups/mine. */
   myPosition?: { position: number; points: number } | null;
+  /** Te queda algun partido abierto sin pronosticar en este grupo. Solo viene informado en /groups/mine. */
+  hasPendingPicks?: boolean;
 }
 
 export type GroupRole = 'ADMIN' | 'MEMBER';

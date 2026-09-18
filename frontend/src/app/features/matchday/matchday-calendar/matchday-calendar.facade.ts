@@ -18,6 +18,8 @@ export class MatchdayCalendarFacade {
 
   readonly competitionId = this.route.snapshot.queryParamMap.get('competitionId')!;
   readonly competitionName = this.route.snapshot.queryParamMap.get('competitionName') ?? '';
+  /** Se llego aqui desde la pantalla de resultados (ver goToCalendar en MatchdayResultsFacade): la jornada abierta tambien debe llevar a resultados, no al formulario de pronosticos. */
+  private readonly fromResults = this.route.snapshot.queryParamMap.get('from') === 'results';
   readonly loading = signal(true);
   readonly matchdays = signal<MatchdaySummary[]>([]);
   readonly currentMatchdayId = computed(() => currentMatchdayId(this.matchdays()));
@@ -43,7 +45,7 @@ export class MatchdayCalendarFacade {
 
   open(matchday: MatchdaySummary): void {
     const state = this.state(matchday);
-    if (state === 'played') {
+    if (state === 'played' || (state === 'open' && this.fromResults)) {
       this.router.navigate(['/matchday', matchday.id, 'results']);
     } else if (state === 'open') {
       this.router.navigate(['/matchday']);

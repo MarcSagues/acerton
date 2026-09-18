@@ -8,6 +8,7 @@ export interface NotificationPreferences {
   matchdayFinishedResult: boolean;
   badgeEarned: boolean;
   seasonFinishedTrophies: boolean;
+  reengagement: boolean;
   groups: { groupId: string; name: string; muted: boolean }[];
 }
 

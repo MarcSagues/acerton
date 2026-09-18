@@ -333,6 +333,11 @@ export class AuthService {
   }
 
   private async issueTokens(userId: string, email: string, name: string): Promise<AuthTokens> {
+    // Unico punto de paso de login/verify-email/Google/refresh: marca
+    // "actividad" en cualquier apertura de la app, para el aviso de
+    // reenganche tras dias sin entrar (ver JobsService.sendReengagementNotifications).
+    void this.prisma.user.update({ where: { id: userId }, data: { lastActiveAt: new Date() } }).catch(() => undefined);
+
     const accessPayload: JwtAccessPayload = { sub: userId, email, name };
     const accessToken = await this.jwtService.signAsync(accessPayload, {
       secret: this.configService.get('jwt.accessSecret', { infer: true }),

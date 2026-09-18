@@ -62,6 +62,81 @@ const BADGES: Array<{ code: string; name: string; description: string }> = [
     name: 'Jornada perfecta',
     description: 'Quedaste primero en la clasificacion semanal de una jornada.',
   },
+  {
+    code: 'STREAK_25',
+    name: 'Incombustible',
+    description: 'Participaste 25 jornadas seguidas.',
+  },
+  {
+    code: 'PREDICTIONS_100',
+    name: 'Centenario',
+    description: 'Enviaste 100 pronosticos.',
+  },
+  {
+    code: 'ONE_X_TWO_HITS_25',
+    name: 'Buen ojo',
+    description: 'Acertaste 25 pronosticos 1X2.',
+  },
+  {
+    code: 'ONE_X_TWO_HITS_100',
+    name: 'Experto en 1X2',
+    description: 'Acertaste 100 pronosticos 1X2.',
+  },
+  {
+    code: 'EXACT_SCORE_HIT_1',
+    name: 'Al milímetro',
+    description: 'Acertaste un resultado exacto.',
+  },
+  {
+    code: 'EXACT_SCORE_HITS_10',
+    name: 'Francotirador',
+    description: 'Acertaste 10 resultados exactos.',
+  },
+  {
+    code: 'HOT_STREAK_10',
+    name: 'Racha de fuego',
+    description: 'Acertaste 10 predicciones seguidas.',
+  },
+  {
+    code: 'PREDICTIONS_500',
+    name: 'Leyenda',
+    description: 'Enviaste 500 pronosticos.',
+  },
+  {
+    code: 'PERFECT_MATCHDAY',
+    name: 'Pleno',
+    description: 'Acertaste todos los partidos de una jornada.',
+  },
+  {
+    code: 'WILDCARD_HITS_5',
+    name: 'Comodín de oro',
+    description: 'El comodín de remontada te dio puntos 5 veces.',
+  },
+  {
+    code: 'GROUPS_JOINED_3',
+    name: 'Sociable',
+    description: 'Formas parte de 3 grupos a la vez.',
+  },
+  {
+    code: 'DRAW_HITS_10',
+    name: 'Especialista en empates',
+    description: 'Acertaste 10 empates.',
+  },
+  {
+    code: 'COMPETITIONS_3',
+    name: 'Multiliga',
+    description: 'Pronosticaste en 3 ligas distintas.',
+  },
+  {
+    code: 'GROUP_FOUNDER',
+    name: 'Fundador',
+    description: 'Creaste un grupo.',
+  },
+  {
+    code: 'PODIUM_5',
+    name: 'En el podio',
+    description: 'Quedaste entre los 3 primeros de la semana, 5 veces.',
+  },
 ];
 
 async function main() {

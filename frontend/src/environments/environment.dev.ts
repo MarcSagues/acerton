@@ -6,10 +6,21 @@ export const environment = {
   // hace falta la URL completa).
   apiUrl: 'https://api-dev.piqo.es/api',
   appUrl: 'https://app-dev.piqo.es',
+  // Ver comentario en environment.ts: activo aqui para poder probarlo en
+  // TestFlight dev, desactivado en environment.prod.ts.
+  adRewardedWildcardsEnabled: true,
   googleWebClientId: '274153738044-0lnso05j0rpi3pvegl20r5rh8obias9n.apps.googleusercontent.com',
   admob: {
-    android: { appId: 'ca-app-pub-1185144357301303~6197649742', bannerAdUnitId: 'ca-app-pub-1185144357301303/4884568079' },
-    ios: { appId: 'ca-app-pub-1185144357301303~8853049890', bannerAdUnitId: 'ca-app-pub-1185144357301303/1167694667' },
+    android: {
+      appId: 'ca-app-pub-6403313027738561~6956033343',
+      bannerAdUnitId: 'ca-app-pub-6403313027738561/9390624995',
+      rewardedAdUnitId: 'ca-app-pub-6403313027738561/2423918080',
+    },
+    ios: {
+      appId: 'ca-app-pub-6403313027738561~1184831918',
+      bannerAdUnitId: 'ca-app-pub-6403313027738561/1242698356',
+      rewardedAdUnitId: 'ca-app-pub-6403313027738561/1954988105',
+    },
   },
   firebase: {
     apiKey: 'AIzaSyCbYMyNUeENK5PfohH_NX1CuxvKgG6k11Y',

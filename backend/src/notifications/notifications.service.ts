@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
+import { NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { DEFAULT_NOTIFICATION_PREFERENCES, NotificationPreferenceFields } from './notification-preferences.service';
@@ -55,6 +56,68 @@ export class NotificationsService implements OnModuleInit {
       tokens.map((t) => t.token),
       notification,
     );
+  }
+
+  /**
+   * Persiste el historial real de avisos (ver Notification en el schema,
+   * issue #21 "Terminar el feed de avisos") en el mismo momento en que se
+   * decide enviar el push equivalente — mismos destinatarios ya filtrados
+   * por preferencia/silencio que sendToUser(s), asi que la fila existe
+   * independientemente de si el push llega a entregarse de verdad (sin
+   * token, permiso denegado...). No lanza si falla: el feed en la app es
+   * secundario al push real, un fallo aqui no debe tumbar el envio.
+   */
+  private async record(
+    userId: string,
+    type: NotificationType,
+    title: string,
+    body: string,
+    extra: { groupId?: string; matchdayId?: string } = {},
+  ): Promise<void> {
+    try {
+      await this.prisma.notification.create({ data: { userId, type, title, body, ...extra } });
+    } catch (error) {
+      this.logger.warn(`No se pudo registrar el aviso en el feed (${type}) para ${userId}: ${error}`);
+    }
+  }
+
+  private async recordMany(
+    userIds: string[],
+    type: NotificationType,
+    title: string,
+    body: string,
+    extra: { groupId?: string; matchdayId?: string } = {},
+  ): Promise<void> {
+    if (userIds.length === 0) return;
+    try {
+      const data: Prisma.NotificationCreateManyInput[] = userIds.map((userId) => ({
+        userId,
+        type,
+        title,
+        body,
+        ...extra,
+      }));
+      await this.prisma.notification.createMany({ data });
+    } catch (error) {
+      this.logger.warn(`No se pudo registrar el aviso en el feed (${type}) para ${userIds.length} usuarios: ${error}`);
+    }
+  }
+
+  /** Lista los avisos del usuario para la pantalla "Avisos" (mas recientes primero). */
+  getFeedForUser(userId: string, limit = 50) {
+    return this.prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  /** "Leer todo": el feed no tiene interaccion aviso a aviso, solo este boton (ver NotificationsPageFacade). */
+  async markAllRead(userId: string): Promise<void> {
+    await this.prisma.notification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: new Date() },
+    });
   }
 
   private async sendToTokens(
@@ -163,42 +226,102 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
-   * Recordatorio de cierre a los miembros de un grupo que todavia no han
-   * completado su quiniela de esta jornada (ni la han empezado, ni la han
-   * enviado entera). `preferenceField` distingue la franja (24h/5h/1h/30min,
-   * ver JobsService.REMINDER_TIERS): cada una es una preferencia
-   * independiente, y `urgencyLabel` sube de tono el mensaje segun se acerca
-   * el cierre.
+   * Aviso de que uno o varios partidos concretos (no toda la jornada: ver
+   * JobsService.sendClosingReminders, que agrupa por jornada+franja los
+   * partidos que entran a la vez en esa ventana) estan a punto de empezar
+   * y el destinatario todavia no los ha pronosticado. Solo llega a quien
+   * de verdad le falta alguno de esos partidos en concreto — alguien que ya
+   * completo esos partidos pero le falta otro mas tarde en la misma jornada
+   * no recibe este aviso (ya le llegara el suyo propio cuando le toque).
+   *
+   * Ademas, como mucho un aviso de este tipo cada 24h por persona (User.
+   * lastClosingReminderPushAt), aunque varios grupos o competiciones tengan
+   * partidos por pronosticar a la vez — sin este limite, alguien en varios
+   * grupos activos podia recibir una notificacion practicamente por cada
+   * uno en la misma tarde ("se me mandan muchas de golpe").
    */
-  async notifyMatchdayClosingSoon(
+  async notifyMatchesClosingSoon(
     groupId: string,
     matchdayId: string,
     matchdayName: string,
+    matchIds: string[],
     urgencyLabel: string,
     preferenceField: keyof NotificationPreferenceFields,
   ): Promise<void> {
-    const [members, totalMatches, predictionCounts] = await Promise.all([
+    const [members, predictions] = await Promise.all([
       this.prisma.groupMembership.findMany({ where: { groupId }, select: { userId: true } }),
-      this.prisma.match.count({ where: { matchdayId } }),
-      this.prisma.prediction.groupBy({
-        by: ['userId'],
-        where: { groupId, match: { matchdayId } },
-        _count: { _all: true },
+      this.prisma.prediction.findMany({
+        where: { groupId, matchId: { in: matchIds } },
+        select: { userId: true, matchId: true },
       }),
     ]);
 
-    const submittedCountByUser = new Map(predictionCounts.map((p) => [p.userId, p._count._all]));
+    const predictedMatchIdsByUser = new Map<string, Set<string>>();
+    for (const prediction of predictions) {
+      const set = predictedMatchIdsByUser.get(prediction.userId) ?? new Set<string>();
+      set.add(prediction.matchId);
+      predictedMatchIdsByUser.set(prediction.userId, set);
+    }
+
     const pendingUserIds = members
       .map((m) => m.userId)
-      .filter((userId) => (submittedCountByUser.get(userId) ?? 0) < totalMatches);
+      .filter((userId) => (predictedMatchIdsByUser.get(userId)?.size ?? 0) < matchIds.length);
 
     const recipientIds = await this.filterByPreference(groupId, pendingUserIds, preferenceField);
+    const eligibleIds = await this.filterByReminderCooldown(recipientIds);
+    if (eligibleIds.length === 0) return;
 
-    await this.sendToUsers(recipientIds, {
-      title: 'Cierra la jornada',
-      body: `${matchdayName} cierra en ${urgencyLabel} y todavía no has completado tu quiniela.`,
+    const body = matchIds.length === 1
+      ? `Un partido de ${matchdayName} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
+      : `${matchIds.length} partidos de ${matchdayName} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
+
+    const title = 'Partidos por pronosticar';
+    await this.sendToUsers(eligibleIds, {
+      title,
+      body,
       data: { type: 'MATCHDAY_CLOSING_SOON', groupId, matchdayId },
     });
+    await this.recordMany(eligibleIds, NotificationType.MATCHDAY_CLOSING_SOON, title, body, { groupId, matchdayId });
+
+    const now = new Date();
+    await this.prisma.user.updateMany({
+      where: { id: { in: eligibleIds } },
+      data: { lastClosingReminderPushAt: now },
+    });
+  }
+
+  /** De una lista de destinatarios ya filtrados por preferencia/silencio, deja solo a quien no recibio otro recordatorio de cierre en las ultimas 24h. */
+  private async filterByReminderCooldown(userIds: string[]): Promise<string[]> {
+    if (userIds.length === 0) return [];
+    const cooldownMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, lastClosingReminderPushAt: true },
+    });
+    return users
+      .filter((u) => !u.lastClosingReminderPushAt || now - u.lastClosingReminderPushAt.getTime() >= cooldownMs)
+      .map((u) => u.id);
+  }
+
+  /**
+   * "Piqo te echa de menos": no depende de ningun grupo (a diferencia del
+   * resto de avisos), asi que solo se filtra por la preferencia `reengagement`
+   * de cada destinatario, sin comprobar silenciados de grupo. JobsService.
+   * sendReengagementNotifications ya decide quien lleva dias sin entrar y
+   * marca lastActiveAt/reengagementPushSentAt; aqui solo se manda y filtra
+   * por preferencia.
+   */
+  async notifyReengagement(userIds: string[]): Promise<void> {
+    if (userIds.length === 0) return;
+    const preferences = await this.prisma.notificationPreference.findMany({ where: { userId: { in: userIds } } });
+    const preferenceByUser = new Map(preferences.map((p) => [p.userId, p]));
+    const recipientIds = userIds.filter((userId) => (preferenceByUser.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES).reengagement);
+
+    const title = 'Piqo te echa de menos';
+    const body = 'Hace unos días que no entras — tu grupo sigue pronosticando sin ti.';
+    await this.sendToUsers(recipientIds, { title, body, data: { type: 'REENGAGEMENT' } });
+    await this.recordMany(recipientIds, NotificationType.REENGAGEMENT, title, body);
   }
 
   /**
@@ -261,11 +384,10 @@ export class NotificationsService implements OnModuleInit {
         .map(async ([userId, points]) => {
           const position = await this.getPositionForUser(groupId, userId);
           const positionText = position != null ? ` Vas ${position}º en la clasificación.` : '';
-          await this.sendToUser(userId, {
-            title: `${matchdayName} terminada`,
-            body: `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`,
-            data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId },
-          });
+          const title = `${matchdayName} terminada`;
+          const body = `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`;
+          await this.sendToUser(userId, { title, body, data: { type: 'MATCHDAY_FINISHED', groupId, matchdayId } });
+          await this.record(userId, NotificationType.MATCHDAY_FINISHED, title, body, { groupId, matchdayId });
         }),
     );
   }
@@ -281,10 +403,9 @@ export class NotificationsService implements OnModuleInit {
     const preference = (await this.prisma.notificationPreference.findUnique({ where: { userId } })) ?? DEFAULT_NOTIFICATION_PREFERENCES;
     if (!preference.badgeEarned) return;
 
-    await this.sendToUser(userId, {
-      title: 'Nueva insignia',
-      body: `Has conseguido "${badgeName}".`,
-      data: { type: 'BADGE_EARNED' },
-    });
+    const title = 'Nueva insignia';
+    const body = `Has conseguido "${badgeName}".`;
+    await this.sendToUser(userId, { title, body, data: { type: 'BADGE_EARNED' } });
+    await this.record(userId, NotificationType.BADGE_EARNED, title, body);
   }
 }

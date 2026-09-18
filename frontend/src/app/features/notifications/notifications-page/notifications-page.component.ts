@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NotificationsPageFacade } from './notifications-page.facade';
 
@@ -11,6 +11,10 @@ import { NotificationsPageFacade } from './notifications-page.facade';
   templateUrl: './notifications-page.component.html',
   styleUrl: './notifications-page.component.scss',
 })
-export class NotificationsPageComponent {
+export class NotificationsPageComponent implements OnInit {
   readonly page = inject(NotificationsPageFacade);
+
+  ngOnInit(): void {
+    this.page.init();
+  }
 }

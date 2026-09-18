@@ -21,6 +21,10 @@ export interface ComebackStatus {
   allowance: number;
   used: number;
   remaining: number;
+  /** Ya tiene el comodin extra de esta jornada conseguido viendo un video. Siempre false si no se consulto con matchdayId. */
+  adBonusClaimed: boolean;
+  /** Podria conseguir ese comodin extra ahora mismo viendo un video. Siempre false si no se consulto con matchdayId. */
+  adBonusAvailable: boolean;
 }
 
 export interface Streak {

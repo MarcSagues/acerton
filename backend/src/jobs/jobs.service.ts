@@ -8,7 +8,7 @@ import { StreaksService } from '../streaks/streaks.service';
 import { BadgesService } from '../badges/badges.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SeasonsService } from '../seasons/seasons.service';
-import { shouldSendReminder } from '../matchdays/matchday.util';
+import { shouldSendMatchReminder } from '../matchdays/matchday.util';
 import { NotificationPreferenceFields } from '../notifications/notification-preferences.service';
 
 type ReminderField = 'reminder24hSentAt' | 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
@@ -88,51 +88,104 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   /**
-   * Envia los recordatorios de cierre (5h / 1h / 30min antes) a quien
-   * todavia no ha completado su quiniela. Corre cada 5 minutos para que el
-   * aviso de "30 minutos" tenga margen suficiente de precision.
+   * Envia los recordatorios de cierre (24h / 5h / 1h / 30min antes) a quien
+   * todavia no ha pronosticado un partido concreto — anclados al kickoff de
+   * CADA partido, no al cierre global de la jornada (que solo refleja el
+   * primer partido): una jornada repartida en varios dias avisa de cada uno
+   * segun cuando empieza de verdad el, no solo del primero. Corre cada 5
+   * minutos para que el aviso de "30 minutos" tenga margen de precision.
+   *
+   * Los partidos que entran a la vez en una misma franja se agrupan por
+   * jornada para mandar un unico aviso consolidado por destinatario en vez
+   * de una notificacion suelta por partido (evita una rafaga cuando varios
+   * partidos de la misma jornada empiezan casi a la vez).
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async sendClosingReminders(): Promise<void> {
     const now = new Date();
+    // De la franja mas urgente (30min) a la menos (24h): un partido que ya
+    // esta a 20 minutos de empezar tambien cumple, tecnicamente, la ventana
+    // de 24h/5h/1h — sin esto, la primera vez que corre este cron para un
+    // partido concreto (p.ej. justo tras desplegar, con los 4 campos recien
+    // creados a null) le llegarian las 4 franjas seguidas de golpe en la
+    // misma pasada. Una vez una franja "reclama" un partido en esta pasada,
+    // las franjas menos urgentes lo ignoran (no tiene sentido avisar de un
+    // cierre "en 24h" a quien ya esta a 20 minutos del pitido inicial).
+    const claimedMatchIds = new Set<string>();
 
-    for (const tier of REMINDER_TIERS) {
-      const candidates = await this.prisma.matchday.findMany({
-        where: { status: 'OPEN', [tier.field]: null },
+    for (const tier of [...REMINDER_TIERS].reverse()) {
+      const candidates = await this.prisma.match.findMany({
+        where: { status: 'SCHEDULED', [tier.field]: null, matchday: { status: 'OPEN' } },
+        include: { matchday: true },
       });
-      const matchdays = candidates.filter((matchday) =>
-        shouldSendReminder(
-          {
-            status: matchday.status,
-            closesAt: matchday.closesAt,
-            reminderSentAt: matchday[tier.field],
-          },
-          tier.windowMs,
-          now,
-        ),
+      const dueMatches = candidates.filter(
+        (match) =>
+          !claimedMatchIds.has(match.id) &&
+          shouldSendMatchReminder(
+            { status: match.status, kickoff: match.kickoff, reminderSentAt: match[tier.field] },
+            tier.windowMs,
+            now,
+          ),
       );
+      if (dueMatches.length === 0) continue;
+      for (const match of dueMatches) claimedMatchIds.add(match.id);
 
-      for (const matchday of matchdays) {
+      const matchdayIds = [...new Set(dueMatches.map((match) => match.matchdayId))];
+      for (const matchdayId of matchdayIds) {
+        const matchesForMatchday = dueMatches.filter((match) => match.matchdayId === matchdayId);
+        const { competitionId, name: matchdayName } = matchesForMatchday[0].matchday;
+        const matchIds = matchesForMatchday.map((match) => match.id);
+
         const groupCompetitions = await this.prisma.groupCompetition.findMany({
-          where: { competitionId: matchday.competitionId, isActive: true },
+          where: { competitionId, isActive: true },
         });
 
         for (const gc of groupCompetitions) {
-          await this.notificationsService.notifyMatchdayClosingSoon(
+          await this.notificationsService.notifyMatchesClosingSoon(
             gc.groupId,
-            matchday.id,
-            matchday.name,
+            matchdayId,
+            matchdayName,
+            matchIds,
             tier.urgencyLabel,
             tier.preferenceField,
           );
         }
-
-        await this.prisma.matchday.update({
-          where: { id: matchday.id },
-          data: { [tier.field]: now },
-        });
       }
+
+      await this.prisma.match.updateMany({
+        where: { id: { in: dueMatches.map((match) => match.id) } },
+        data: { [tier.field]: now },
+      });
     }
+  }
+
+  /**
+   * "Piqo te echa de menos": avisa a quien lleva 4 dias sin abrir la app
+   * (User.lastActiveAt, actualizado en cualquier login/refresh — ver
+   * AuthService.issueTokens) y a quien no se le haya avisado ya de esta
+   * misma racha de inactividad (reengagementPushSentAt mas reciente que
+   * lastActiveAt significa que ya se le aviso desde la ultima vez que entro,
+   * asi que no hay que repetirselo cada dia mientras siga sin volver).
+   * Se excluye a quien nunca tiene lastActiveAt registrado (cuentas de antes
+   * de este campo, sin una fecha real de la que partir) y a quien no
+   * pertenece a ningun grupo (el aviso asume que hay un grupo esperandole).
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async sendReengagementNotifications(): Promise<void> {
+    const now = new Date();
+    const threshold = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
+
+    const candidates = await this.prisma.user.findMany({
+      where: { lastActiveAt: { not: null, lte: threshold }, memberships: { some: {} } },
+      select: { id: true, lastActiveAt: true, reengagementPushSentAt: true },
+    });
+    const dueUserIds = candidates
+      .filter((user) => !user.reengagementPushSentAt || user.reengagementPushSentAt <= user.lastActiveAt!)
+      .map((user) => user.id);
+    if (dueUserIds.length === 0) return;
+
+    await this.notificationsService.notifyReengagement(dueUserIds);
+    await this.prisma.user.updateMany({ where: { id: { in: dueUserIds } }, data: { reengagementPushSentAt: now } });
   }
 
   /**

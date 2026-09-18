@@ -19,6 +19,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferenceFields = {
   matchdayFinishedResult: true,
   badgeEarned: true,
   seasonFinishedTrophies: true,
+  reengagement: true,
 };
 
 /**

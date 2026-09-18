@@ -716,6 +716,15 @@ button {
   animation: piqoFade 120ms ease;
 }
 
+/* Diálogo de "Compartir imagen" (MatchdayShareCardComponent): más ancho que
+   un diálogo normal para dejar sitio a la vista previa del canvas, y con
+   scroll propio para no desbordar en pantallas bajas. */
+.piqo-dialog-panel.share-card-panel {
+  max-width: 480px;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+
 .piqo-sheet-panel {
   width: 100%;
   max-width: 430px;

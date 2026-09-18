@@ -38,13 +38,17 @@ export function calculatePoints(
 export interface ScorableExactScorePrediction {
   predictedHomeScore: number | null;
   predictedAwayScore: number | null;
+  /** Comodin de remontada en modo EXACT_SCORE: duplica los puntos de este partido (ver doblePointsWildcard en el schema). */
+  doublePointsWildcard?: boolean;
 }
 
 /**
  * Puntuacion en modo "Resultado exacto": 5 puntos por marcador exacto, 2 por
  * acertar solo el resultado (1X2 — el empate cuenta como acierto de
  * resultado aunque el marcador no coincida), 0 en cualquier otro caso o si
- * falta algun dato (partido sin terminar o prediccion incompleta).
+ * falta algun dato (partido sin terminar o prediccion incompleta). Con el
+ * comodin de remontada activo en el partido (doublePointsWildcard) esos
+ * valores se duplican: 10 y 4 respectivamente.
  */
 export function calculateExactScorePoints(
   prediction: ScorableExactScorePrediction,
@@ -60,11 +64,13 @@ export function calculateExactScorePoints(
     return 0;
   }
 
+  const multiplier = prediction.doublePointsWildcard ? 2 : 1;
+
   if (prediction.predictedHomeScore === actualHomeScore && prediction.predictedAwayScore === actualAwayScore) {
-    return 5;
+    return 5 * multiplier;
   }
 
   const predictedOutcome = computeMatchResult(prediction.predictedHomeScore, prediction.predictedAwayScore);
   const actualOutcome = computeMatchResult(actualHomeScore, actualAwayScore);
-  return predictedOutcome === actualOutcome ? 2 : 0;
+  return predictedOutcome === actualOutcome ? 2 * multiplier : 0;
 }
