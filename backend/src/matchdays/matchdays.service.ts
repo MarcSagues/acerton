@@ -307,17 +307,24 @@ export class MatchdaysService {
 
   /**
    * Jornada relevante "actual" de una competicion para mostrar por defecto:
-   * la de numero de ronda mas bajo entre las no finalizadas, o si no hay
-   * ninguna, la ultima finalizada. Se ordena por `order` y no por
-   * `closesAt` porque un partido aplazado puede hacer que una jornada
-   * anterior (ej. la 5) cierre despues que la siguiente (la 6) — closesAt
-   * marcaria la 6 como "actual" aunque la 5 todavia no se haya jugado, que
-   * es justo lo contrario de lo que se espera ver al abrir la app.
+   * la de cierre (kickoff del primer partido) mas proximo entre las no
+   * finalizadas, o si no hay ninguna, la ultima finalizada. Decision
+   * explicita del usuario (sustituye la anterior, que ordenaba por `order`
+   * ascendente): si un partido de una jornada se aplaza mucho, esa jornada
+   * deja de ser "la actual" a mostrar/puntuar y pasa a serlo la siguiente
+   * cuyo partido este mas cerca en el tiempo — la aplazada no desaparece,
+   * sigue aceptando pronosticos (ver canAcceptPredictions), solo deja de
+   * ser la que se ve por defecto al abrir la app. Cuando se acerque de
+   * nuevo su fecha real, puede volver a ser "la actual" si vuelve a ser la
+   * de cierre mas proximo entre las pendientes. Mismo criterio que ya usaba
+   * `getEarliestPendingOrder` para decidir que se puede predecir — antes
+   * estaban deliberadamente desalineados (ver attachCanPredict), ahora usan
+   * el mismo orden.
    */
   async getCurrentMatchdayForCompetition(competitionId: string) {
     const open = await this.prisma.matchday.findFirst({
       where: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
-      orderBy: { order: 'asc' },
+      orderBy: { closesAt: 'asc' },
       include: { matches: { orderBy: { kickoff: 'asc' } } },
     });
     if (open) {
@@ -348,14 +355,12 @@ export class MatchdaysService {
    * Añade `canPredict` y `opensAt` a una jornada ya cargada, para que el
    * frontend sepa si sus partidos todavia no bloqueados por horario se
    * pueden predecir sin tener que replicar la regla de canAcceptPredictions
-   * comparando ordenes el mismo (eso fue justo lo que causo que la jornada
-   * "actual" para mostrar por defecto — la de numero mas bajo — y la jornada
-   * limite para predecir — la de cierre mas proximo — se confundieran entre
-   * si). `canPredict` aqui solo refleja la regla de orden (jornada actual o
-   * anterior en el orden de rondas): el propio frontend cruza `opensAt` con
-   * la hora actual para decidir si ademas ya toca mostrar "Cierra en" en vez
-   * de "Se abre en" — ver canAcceptPredictions para la regla combinada que
-   * de verdad manda en el backend a la hora de aceptar un envio.
+   * el mismo. `canPredict` aqui solo refleja la regla de orden (jornada
+   * actual — la de cierre mas proximo, ver getCurrentMatchdayForCompetition
+   * — o anterior en el orden de rondas): el propio frontend cruza `opensAt`
+   * con la hora actual para decidir si ademas ya toca mostrar "Cierra en" en
+   * vez de "Se abre en" — ver canAcceptPredictions para la regla combinada
+   * que de verdad manda en el backend a la hora de aceptar un envio.
    */
   private async attachCanPredict<
     T extends { order: number; status: string; competitionId: string; closesAt: Date },

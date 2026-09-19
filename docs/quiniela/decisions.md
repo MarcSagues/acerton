@@ -4,6 +4,62 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-19 — Sprint 5, "orden estable de jornadas por cierre de pronósticos" — resuelto, sustituye la decisión implícita anterior
+
+El usuario resolvió con reglas y ejemplos concretos la pregunta que
+`backlog.md`/`roadmap.md` tenían pendiente desde el 2026-09-10 ("necesita
+datos reales de qué casos simultáneos aparecen"):
+
+> Si aplazan un partido de la jornada 6 para dentro de 30 días, esa
+> jornada se debe esconder y debe aparecer la jornada 7 (si su partido es
+> el más próximo) como la jornada "actual" a mostrar/puntuar. La jornada 6
+> no desaparece: se queda abierta para pronosticar/editar cuando se
+> quiera. No hace falta que una jornada se cierre para que se abra otra —
+> pueden quedar varias jornadas abiertas a la vez si sus ventanas se
+> solapan en el tiempo. Cuando se acerque de nuevo la fecha real de la
+> jornada 6, puede volver a ser "la actual" si vuelve a ser la de cierre
+> más próximo entre las pendientes.
+
+**Sustituye una decisión de diseño explícita ya implementada y testeada**:
+`MatchdaysService.getCurrentMatchdayForCompetition` elegía la jornada "actual"
+a mostrar por defecto por **número de orden más bajo** entre las no
+finalizadas, deliberadamente distinto del criterio de **cierre más
+próximo** (`closesAt`) que ya usaba `canAcceptPredictions`/
+`attachCanPredict` para decidir qué se puede predecir — el comentario del
+código explicaba explícitamente que confundir ambos criterios había sido
+un bug anterior. Un test (`matchdays.service.spec.ts`) codificaba
+literalmente el escenario contrario al que pide ahora el usuario (jornada
+aplazada con número más bajo debía seguir siendo "la actual" aunque
+cerrara más tarde que la siguiente). Confirmado explícitamente con el
+usuario antes de tocar el test (ver pregunta con dos escenarios
+equivalentes e invertidos) — no es una ambigüedad menor, es una reversión
+de una regla de producto ya decidida.
+
+**Implementado**: `getCurrentMatchdayForCompetition` pasa a ordenar por
+`closesAt` ascendente en vez de `order` ascendente — mismo criterio que ya
+usaba `getEarliestPendingOrder`, así que ambos conceptos ("jornada a
+mostrar por defecto" y "jornada límite para aceptar pronósticos") quedan
+unificados en vez de deliberadamente separados. No hizo falta tocar
+`canAcceptPredictions`/`attachCanPredict`: su regla ya existente
+(`matchday.order <= earliestPendingOrder`, con `earliestPendingOrder`
+calculado por cierre más próximo) ya cubre exactamente el ejemplo
+numérico del usuario sin cambios — una jornada aplazada con número más
+bajo que la actual (por cierre) sigue pudiendo aceptar pronósticos, y una
+jornada muy por delante (ej. la 12 en el ejemplo) sigue bloqueada hasta
+que le toque. El caso general de "varias jornadas abiertas a la vez sin
+que una tenga que cerrar" ya estaba cubierto por ese mismo mecanismo
+(orden relativo al de cierre más próximo, más el margen individual de
+`PREDICTIONS_OPEN_BEFORE_MS` de cada jornada) para el ejemplo dado — no se
+ha tocado ni relajado ese mecanismo más allá de lo verificado con el
+ejemplo concreto.
+
+Test que codificaba la regla anterior reescrito con el ejemplo nuevo
+(jornada 6 aplazada 30 días / jornada 7 más próxima). 281 tests del
+backend en verde, `tsc --noEmit` limpio. **Sin verificar en navegador
+todavía** (cambio de backend puro; requeriría datos de prueba con un
+aplazamiento real simulado) — pendiente antes de mergear a `dev`. Rama
+`feature/current-matchday-by-closest-close`, sin subir todavía.
+
 ## 2026-09-12 — Sprint 11 (Piqo Premium, monetización)
 
 Precio decidido con el usuario tras analizar comparables directos
