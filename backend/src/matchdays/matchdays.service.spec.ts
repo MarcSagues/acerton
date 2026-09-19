@@ -267,23 +267,26 @@ describe('MatchdaysService.getAdjacentMatchday', () => {
 });
 
 describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
-  it('elige la jornada de numero mas bajo entre las no finalizadas, no la de cierre mas proximo', async () => {
-    // Escenario real: un partido aplazado hace que la jornada 6 (order 6)
-    // cierre antes que la 5 (order 5), pero la 5 todavia no se ha jugado —
-    // debe seguir siendo "la actual" a mostrar, no la 6.
+  it('elige la jornada de cierre mas proximo entre las no finalizadas, no la de numero mas bajo', async () => {
+    // Escenario real (decision explicita del usuario, sustituye la regla
+    // anterior): un partido de la jornada 6 (order 6) se aplaza 30 dias,
+    // asi que su cierre queda mucho mas lejos que el de la jornada 7 (order
+    // 7, cierra en 3 dias) — debe mostrarse la 7 como "actual", no la 6. La
+    // 6 no desaparece: sigue pudiendo aceptar pronosticos (ver
+    // canAcceptPredictions), solo deja de ser la que se ve por defecto.
     const prisma = buildPrismaMock();
     prisma.matchday.findFirst.mockResolvedValue({
-      id: 'jornada-5',
-      order: 5,
+      id: 'jornada-7',
+      order: 7,
       closesAt: new Date(),
     });
 
     const service = new MatchdaysService(prisma as never, {} as never);
     const result = await service.getCurrentMatchdayForCompetition('c1');
 
-    expect(result).toMatchObject({ id: 'jornada-5' });
+    expect(result).toMatchObject({ id: 'jornada-7' });
     expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { order: 'asc' } }),
+      expect.objectContaining({ orderBy: { closesAt: 'asc' } }),
     );
   });
 

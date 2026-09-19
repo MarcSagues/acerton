@@ -1,5 +1,35 @@
 # Estado actual
 
+## 2026-09-19 — Orden estable de jornadas por cierre de pronósticos (Sprint 5)
+
+A petición explícita del usuario, con reglas y ejemplos concretos que
+resolvían la pregunta pendiente desde el 2026-09-10 (ver `decisions.md`
+para el detalle completo y la comparación con la decisión anterior que
+sustituye). Resumen: la jornada "actual" que se muestra por defecto para
+puntuar/pronosticar en una competición pasa a ser la de **cierre más
+próximo** (`closesAt`, kickoff del primer partido), no la de número de
+orden más bajo — si un partido se aplaza mucho, esa jornada deja de
+mostrarse como actual y pasa a serlo la siguiente cuyo partido esté más
+cerca en el tiempo, sin dejar de aceptar pronósticos mientras tanto.
+
+Cambio de una línea en `MatchdaysService.getCurrentMatchdayForCompetition`
+(`orderBy: { order: 'asc' }` → `{ closesAt: 'asc' }`, backend/src/matchdays/
+matchdays.service.ts), más comentarios actualizados. `canAcceptPredictions`/
+`attachCanPredict` no necesitaron cambios: su regla ya existente (orden
+relativo a la jornada de cierre más próximo) ya cubría el ejemplo numérico
+dado por el usuario (jornada aplazada sigue abierta; jornadas muy por
+delante siguen bloqueadas) sin tocar nada. Un test que codificaba
+literalmente la regla anterior (con el escenario invertido) se reescribió
+con el ejemplo nuevo, tras **confirmar explícitamente con el usuario**
+que era una reversión deliberada de una decisión ya implementada, no una
+ambigüedad menor.
+
+281 tests del backend en verde, `tsc --noEmit` limpio. **Sin verificar en
+navegador** (backend puro; no hay datos de prueba con un aplazamiento real
+simulado) — pendiente antes de mergear a `dev`. Rama
+`feature/current-matchday-by-closest-close` (a partir de `dev`), sin
+commit todavía.
+
 ## 2026-09-17 — Compartir imagen de un partido individual (fuera de sprint, sin issue)
 
 A petición explícita del usuario ("añade una opcion de compartir con un
@@ -784,10 +814,12 @@ global) completos en `dev`. Ver `roadmap.md` Sprint 5 para el detalle
 exacto. Issue #10 actualizado con las casillas hechas, **sigue en Status
 "New features"** (el sprint no está completo).
 
-Pendiente del mismo sprint, en incrementos siguientes: orden estable de
-jornadas por cierre de pronósticos (necesita investigación con datos
-reales antes de implementar, ver `backlog.md`), estadísticas agregadas
-por temporada. Ninguno de los dos se ha tocado desde el 2026-09-10.
+**Orden estable de jornadas por cierre de pronósticos**: implementado en
+backend 2026-09-19 (ver entrada de arriba y `decisions.md`), sin
+verificar en navegador todavía y sin subir a `dev` — rama
+`feature/current-matchday-by-closest-close`. Pendiente del mismo sprint,
+en incrementos siguientes: estadísticas agregadas por temporada (sin
+tocar desde el 2026-09-10).
 
 Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
@@ -977,3 +1009,8 @@ empujado a `origin/dev`. El incremento 1 de avatares del Sprint 7 está
 commiteado y empujado a `origin/feature/sprint-7-avatares`, una rama
 aparte que **todavía no se ha fusionado a `dev`** (pendiente de
 autorización explícita).
+
+Rama `feature/current-matchday-by-closest-close` (Sprint 5, "orden estable
+de jornadas por cierre de pronósticos", 2026-09-19): cambios en el árbol
+de trabajo hechos, **sin commit todavía** — pendiente de autorización
+explícita del usuario para commitear/subir.

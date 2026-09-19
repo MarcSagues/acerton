@@ -6,14 +6,6 @@ marcarla resuelta) de aquí.
 
 ## Preguntas que hay que resolver con el usuario antes de cada sprint afectado
 
-- **Sprint 5 (temporadas)**: el encargo pide "orden estable de jornadas
-  por cierre de pronósticos, independiente de la llegada de resultados" y
-  explícitamente pide **explicar y resolver antes de implementar** los
-  casos donde eso cambie resultados. Sin datos reales de qué casos
-  simultáneos aparecen (dos jornadas de competiciones distintas cerrando
-  en el mismo instante, por ejemplo), no se puede completar este análisis
-  desde una sesión de preparación — queda como primer paso técnico real
-  del Sprint 5, no como algo ya resuelto.
 - **Sprint 6 (empates para trofeos)**: `product-rules.md` da ejemplos
   concretos (2 primeros → 2 platas + 1 bronce siguiente; 3 primeros → 3
   bronces; 4 primeros → nadie; 1 primero + 2 segundos → 1 oro + 2 bronces).
