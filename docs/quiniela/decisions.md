@@ -57,8 +57,14 @@ Test que codificaba la regla anterior reescrito con el ejemplo nuevo
 (jornada 6 aplazada 30 días / jornada 7 más próxima). 281 tests del
 backend en verde, `tsc --noEmit` limpio. **Sin verificar en navegador
 todavía** (cambio de backend puro; requeriría datos de prueba con un
-aplazamiento real simulado) — pendiente antes de mergear a `dev`. Rama
-`feature/current-matchday-by-closest-close`, sin subir todavía.
+aplazamiento real simulado). Mergeado a `dev` vía PR
+(github.com/MarcSagues/acerton/pull/33, checks requeridos `backend (tests
++ tsc)`/`frontend (build + tsc + karma)` en verde) — rama
+`feature/current-matchday-by-closest-close` ya borrada tras el merge.
+Issue #10 (Sprint 5) actualizado con la casilla marcada; el sprint sigue
+en Status "New features" porque quedan tareas pendientes (estadísticas
+por temporada, separar 1X2/resultado exacto, competiciones sin
+retroactividad).
 
 ## 2026-09-12 — Sprint 11 (Piqo Premium, monetización)
 
