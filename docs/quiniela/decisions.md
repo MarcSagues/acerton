@@ -55,10 +55,59 @@ ejemplo concreto.
 
 Test que codificaba la regla anterior reescrito con el ejemplo nuevo
 (jornada 6 aplazada 30 días / jornada 7 más próxima). 281 tests del
-backend en verde, `tsc --noEmit` limpio. **Sin verificar en navegador
-todavía** (cambio de backend puro; requeriría datos de prueba con un
-aplazamiento real simulado) — pendiente antes de mergear a `dev`. Rama
-`feature/current-matchday-by-closest-close`, sin subir todavía.
+backend en verde, `tsc --noEmit` limpio. Mergeado a `dev` vía PR
+(github.com/MarcSagues/acerton/pull/33, checks requeridos `backend (tests
++ tsc)`/`frontend (build + tsc + karma)` en verde) — rama
+`feature/current-matchday-by-closest-close` ya borrada tras el merge.
+Issue #10 (Sprint 5) actualizado con la casilla marcada; el sprint sigue
+en Status "New features" porque quedan tareas pendientes (estadísticas
+por temporada, separar 1X2/resultado exacto, competiciones sin
+retroactividad).
+
+### 2026-09-19 (mismo día, tras probar en `dev`) — el fix anterior no bastaba: `closesAt` se queda "congelado" en el pasado
+
+El usuario probó en `dev` y reportó "sigo viendo la jornada 6 en vez de la
+7". Investigado contra la base de datos real de `dev` (rama de Neon
+`br-misty-pond-za5lnxwp`, proyecto `soft-heart-48763185`): en La Liga, la
+jornada 6 tiene 9 de sus 10 partidos `FINISHED` y el último (Levante–
+Athletic) aplazado al **21 de octubre**; la jornada 7 tiene sus partidos
+literalmente el 19-20 de septiembre (hoy/mañana en la fecha de esta
+sesión). Cero pronósticos registrados en ningún grupo de prueba para los
+partidos de la jornada 7.
+
+**Causa raíz real**: `Matchday.closesAt` se fija al CREAR la jornada como
+el kickoff de su PRIMER partido (3 de septiembre para la jornada 6) y
+nunca se recalcula — aplazar un partido que no es el primero de la ronda
+no lo mueve. El fix de la entrada anterior (ordenar por `closesAt`
+ascendente) seguía comparando ese campo congelado: la jornada 6 "ganaba"
+por tener un `closesAt` más antiguo (3 sept.) que el de la 7 (18 sept.),
+aunque su único partido pendiente estuviera un mes por delante. Y como
+`canAcceptPredictions` usaba el mismo campo para decidir el umbral de
+jornadas que aceptan pronósticos, esto además **bloqueaba pronósticos
+reales** de la jornada 7 (que sí estaba en curso) — no solo afectaba a qué
+se mostraba por defecto.
+
+**Confirmado con el usuario antes de ampliar el fix** (tocaba
+`canAcceptPredictions`, no solo el display — más alcance del inicialmente
+previsto): sustituir el criterio de `closesAt` fijo por el **kickoff del
+próximo partido sin terminar (`status != FINISHED`) de cada jornada**,
+recalculado sobre los partidos reales en cada consulta en vez de un campo
+guardado. Nuevo método privado `MatchdaysService.getReferenceOrder`
+(sustituye a `getEarliestPendingOrder`), usado tanto por
+`getCurrentMatchdayForCompetition` como por `attachCanPredict`. Una
+jornada deja de "competir" por esta posición en cuanto pasa a `FINISHED`
+(todos sus partidos con resultado), así que ya no puede quedarse congelada
+en el pasado.
+
+Verificado con SQL directo contra los datos reales de `dev` antes de dar
+el fix por bueno: con el nuevo criterio, la jornada 7 gana (próximo
+partido hoy a las 12:00 UTC) y la 6 pasa al puesto que le corresponde por
+urgencia real (21 de octubre, incluso por detrás de las jornadas 8 y 9).
+Tests reescritos para mockear `findMany` en vez de `findFirst` (la nueva
+consulta trae varias jornadas con sus partidos, no una sola por
+`closesAt`), más un test nuevo que reproduce exactamente este escenario
+real. 282 tests del backend en verde, `tsc --noEmit` limpio. Rama
+`fix/matchday-reference-order-by-next-kickoff`.
 
 ## 2026-09-12 — Sprint 11 (Piqo Premium, monetización)
 

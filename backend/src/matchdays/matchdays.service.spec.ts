@@ -3,7 +3,10 @@ import { MatchdaysService } from './matchdays.service';
 function buildPrismaMock(overrides: Record<string, unknown> = {}) {
   return {
     matchday: {
-      findMany: jest.fn(),
+      // Por defecto sin jornadas pendientes (getReferenceOrder las necesita
+      // en forma de array): los tests que sí les interesa el resultado de
+      // getReferenceOrder/attachCanPredict lo sobrescriben explícitamente.
+      findMany: jest.fn().mockResolvedValue([]),
       findFirst: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -267,14 +270,22 @@ describe('MatchdaysService.getAdjacentMatchday', () => {
 });
 
 describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
-  it('elige la jornada de cierre mas proximo entre las no finalizadas, no la de numero mas bajo', async () => {
+  it('elige la jornada del proximo partido sin terminar mas cercano, no la de numero mas bajo', async () => {
     // Escenario real (decision explicita del usuario, sustituye la regla
     // anterior): un partido de la jornada 6 (order 6) se aplaza 30 dias,
-    // asi que su cierre queda mucho mas lejos que el de la jornada 7 (order
-    // 7, cierra en 3 dias) — debe mostrarse la 7 como "actual", no la 6. La
-    // 6 no desaparece: sigue pudiendo aceptar pronosticos (ver
-    // canAcceptPredictions), solo deja de ser la que se ve por defecto.
+    // asi que su unico partido pendiente cae mucho mas lejos que el de la
+    // jornada 7 (order 7, partido pendiente en 3 dias) — debe mostrarse la 7
+    // como "actual", no la 6. La 6 no desaparece: sigue pudiendo aceptar
+    // pronosticos (ver canAcceptPredictions), solo deja de ser la que se ve
+    // por defecto.
+    const now = Date.now();
+    const in3Days = new Date(now + 3 * 24 * 60 * 60 * 1000);
+    const in30Days = new Date(now + 30 * 24 * 60 * 60 * 1000);
     const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 6, matches: [{ kickoff: in30Days }] },
+      { order: 7, matches: [{ kickoff: in3Days }] },
+    ]);
     prisma.matchday.findFirst.mockResolvedValue({
       id: 'jornada-7',
       order: 7,
@@ -286,15 +297,14 @@ describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
 
     expect(result).toMatchObject({ id: 'jornada-7' });
     expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { closesAt: 'asc' } }),
+      expect.objectContaining({ where: { competitionId: 'c1', order: 7 } }),
     );
   });
 
   it('si todas estan finalizadas, devuelve la ultima jugada', async () => {
     const prisma = buildPrismaMock();
-    prisma.matchday.findFirst
-      .mockResolvedValueOnce(null) // no hay ninguna pendiente
-      .mockResolvedValueOnce({ id: 'jornada-4', closesAt: new Date() });
+    prisma.matchday.findMany.mockResolvedValue([]); // no hay ninguna pendiente
+    prisma.matchday.findFirst.mockResolvedValue({ id: 'jornada-4', closesAt: new Date() });
 
     const service = new MatchdaysService(prisma as never, {} as never);
     const result = await service.getCurrentMatchdayForCompetition('c1');
@@ -326,7 +336,9 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 7,
       closesAt: new Date(),
     });
-    prisma.matchday.findFirst.mockResolvedValue({ id: 'md-current', order: 6 }); // la jornada 6 sigue siendo la actual
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 6, matches: [{ kickoff: new Date() }] }, // la jornada 6 sigue siendo la actual
+    ]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
@@ -342,8 +354,9 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 5,
       closesAt: new Date(),
     });
-    // La jornada 6 cierra antes (closesAt mas proximo) porque la 5 se aplazo, pero eso no la hace "futura".
-    prisma.matchday.findFirst.mockResolvedValue({ id: 'md-current', order: 6 });
+    // El proximo partido sin terminar de la jornada 6 es mas cercano que el
+    // de la 5 (que se aplazo), pero eso no hace "futura" a la 5.
+    prisma.matchday.findMany.mockResolvedValue([{ order: 6, matches: [{ kickoff: new Date() }] }]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
@@ -359,7 +372,7 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 6,
       closesAt: new Date(),
     });
-    prisma.matchday.findFirst.mockResolvedValue({ id: 'md-current', order: 6 });
+    prisma.matchday.findMany.mockResolvedValue([{ order: 6, matches: [{ kickoff: new Date() }] }]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
@@ -375,11 +388,36 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 6,
       closesAt: new Date(),
     });
-    prisma.matchday.findFirst.mockResolvedValue(null);
+    prisma.matchday.findMany.mockResolvedValue([]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
     expect(await service.canAcceptPredictions('md-current')).toBe(true);
+  });
+
+  it('true si su unico partido pendiente esta muy lejos pero los demas de la competicion ya terminaron (no se queda "congelada" en el pasado)', async () => {
+    // Escenario real de dev (2026-09-19): la jornada 6 de La Liga tiene 9 de
+    // 10 partidos ya jugados y el ultimo aplazado un mes — su `closesAt`
+    // (kickoff del primer partido, ya muy pasado) no debe hacerla "ganar"
+    // frente a la jornada 7, cuyos partidos son inminentes.
+    const prisma = buildPrismaMock();
+    const in3Days = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+    const in30Days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'jornada-7',
+      competitionId: 'c1',
+      status: 'CLOSED',
+      order: 7,
+      closesAt: new Date('2026-09-18T19:00:00Z'), // pasado, pero mas reciente que el de la 6
+    });
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 6, matches: [{ kickoff: in30Days }] }, // unico partido pendiente: el aplazado
+      { order: 7, matches: [{ kickoff: in3Days }] },
+    ]);
+    const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    expect(await service.canAcceptPredictions('jornada-7')).toBe(true);
   });
 
   it('false si su primer partido esta a mas de 4 dias, aunque le toque por orden', async () => {
@@ -392,7 +430,7 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 6,
       closesAt: inSixDays,
     });
-    prisma.matchday.findFirst.mockResolvedValue({ id: 'md-current', order: 6 });
+    prisma.matchday.findMany.mockResolvedValue([{ order: 6, matches: [{ kickoff: inSixDays }] }]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
@@ -409,7 +447,7 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 6,
       closesAt: inTwoDays,
     });
-    prisma.matchday.findFirst.mockResolvedValue({ id: 'md-current', order: 6 });
+    prisma.matchday.findMany.mockResolvedValue([{ order: 6, matches: [{ kickoff: inTwoDays }] }]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
