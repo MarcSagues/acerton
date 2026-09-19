@@ -26,9 +26,9 @@ ambigüedad menor.
 
 281 tests del backend en verde, `tsc --noEmit` limpio. **Sin verificar en
 navegador** (backend puro; no hay datos de prueba con un aplazamiento real
-simulado) — pendiente antes de mergear a `dev`. Rama
-`feature/current-matchday-by-closest-close` (a partir de `dev`), sin
-commit todavía.
+simulado). Mergeado a `dev` vía PR #33 (checks de CI requeridos en
+verde); issue #10 (Sprint 5) actualizado con la casilla marcada, sigue en
+"New features" porque el sprint no está completo.
 
 ## 2026-09-17 — Compartir imagen de un partido individual (fuera de sprint, sin issue)
 
@@ -815,11 +815,10 @@ exacto. Issue #10 actualizado con las casillas hechas, **sigue en Status
 "New features"** (el sprint no está completo).
 
 **Orden estable de jornadas por cierre de pronósticos**: implementado en
-backend 2026-09-19 (ver entrada de arriba y `decisions.md`), sin
-verificar en navegador todavía y sin subir a `dev` — rama
-`feature/current-matchday-by-closest-close`. Pendiente del mismo sprint,
-en incrementos siguientes: estadísticas agregadas por temporada (sin
-tocar desde el 2026-09-10).
+backend y mergeado a `dev` 2026-09-19 vía PR #33 (ver entrada de arriba y
+`decisions.md`), sin verificar en navegador todavía. Pendiente del mismo
+sprint, en incrementos siguientes: estadísticas agregadas por temporada
+(sin tocar desde el 2026-09-10).
 
 Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
@@ -1002,15 +1001,9 @@ bloquea nada más — el resto del sprint sigue avanzando).
 
 ## Cambios sin commit
 
-No en `dev`: todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3
-del Sprint 5, el Sprint 9 (incremento 1), y la sesión de rediseño visual
-completa (incluida la reconciliación de este documento) está commiteado y
-empujado a `origin/dev`. El incremento 1 de avatares del Sprint 7 está
-commiteado y empujado a `origin/feature/sprint-7-avatares`, una rama
-aparte que **todavía no se ha fusionado a `dev`** (pendiente de
-autorización explícita).
-
-Rama `feature/current-matchday-by-closest-close` (Sprint 5, "orden estable
-de jornadas por cierre de pronósticos", 2026-09-19): cambios en el árbol
-de trabajo hechos, **sin commit todavía** — pendiente de autorización
-explícita del usuario para commitear/subir.
+No en `dev`: el incremento 1 de avatares del Sprint 7 está commiteado y
+empujado a `origin/feature/sprint-7-avatares`, una rama aparte que
+**todavía no se ha fusionado a `dev`** (pendiente de autorización
+explícita). Todo lo demás, incluido el incremento 4 del Sprint 5 ("orden
+estable de jornadas por cierre de pronósticos", 2026-09-19, PR #33), ya
+está en `dev` y empujado a `origin/dev`.
