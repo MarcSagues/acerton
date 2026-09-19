@@ -306,22 +306,74 @@ export class MatchdaysService {
   }
 
   /**
+   * Orden de la jornada de referencia entre las no finalizadas de una
+   * competicion: la que tiene el proximo partido SIN TERMINAR mas cercano
+   * en el tiempo. Null si no queda ninguna pendiente. Decision explicita
+   * del usuario (2026-09-19, ver decisions.md): sustituye un calculo
+   * anterior basado en `matchday.closesAt` (el kickoff del PRIMER partido
+   * de la ronda, fijado al crearla) — ese campo no se mueve cuando se
+   * aplaza un partido que NO es el primero de la jornada, así que una
+   * jornada con 9 de 10 partidos ya jugados y el ultimo aplazado un mes
+   * seguia "ganando" por tener el closesAt mas antiguo, aunque su unico
+   * partido pendiente estuviera mucho mas lejos que el de la siguiente
+   * jornada (caso real visto en datos de desarrollo). Aqui se recalcula
+   * sobre los partidos de verdad: cada jornada pendiente aporta el kickoff
+   * de su proximo partido no FINISHED, y gana la de kickoff mas proximo —
+   * esto ya no se congela nunca en el pasado, porque en cuanto todos sus
+   * partidos tienen resultado la jornada pasa a FINISHED y deja de
+   * competir por esta posicion.
+   */
+  private async getReferenceOrder(competitionId: string): Promise<number | null> {
+    const pending = await this.prisma.matchday.findMany({
+      where: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
+      select: {
+        order: true,
+        matches: {
+          where: { status: { not: 'FINISHED' } },
+          select: { kickoff: true },
+          orderBy: { kickoff: 'asc' },
+          take: 1,
+        },
+      },
+    });
+
+    let best: { order: number; kickoff: Date } | null = null;
+    for (const matchday of pending) {
+      const nextKickoff = matchday.matches[0]?.kickoff;
+      if (!nextKickoff) {
+        continue;
+      }
+      if (!best || nextKickoff.getTime() < best.kickoff.getTime()) {
+        best = { order: matchday.order, kickoff: nextKickoff };
+      }
+    }
+    return best?.order ?? null;
+  }
+
+  /**
    * Jornada relevante "actual" de una competicion para mostrar por defecto:
-   * la de numero de ronda mas bajo entre las no finalizadas, o si no hay
-   * ninguna, la ultima finalizada. Se ordena por `order` y no por
-   * `closesAt` porque un partido aplazado puede hacer que una jornada
-   * anterior (ej. la 5) cierre despues que la siguiente (la 6) — closesAt
-   * marcaria la 6 como "actual" aunque la 5 todavia no se haya jugado, que
-   * es justo lo contrario de lo que se espera ver al abrir la app.
+   * la de la orden de referencia (ver getReferenceOrder, el proximo partido
+   * sin terminar mas cercano), o si no hay ninguna pendiente, la ultima
+   * finalizada. Si un partido de una jornada se aplaza mucho, esa jornada
+   * deja de ser "la actual" a mostrar/puntuar y pasa a serlo la siguiente
+   * cuyo partido este mas cerca en el tiempo — la aplazada no desaparece,
+   * sigue aceptando pronosticos (ver canAcceptPredictions), solo deja de
+   * ser la que se ve por defecto al abrir la app. Cuando se acerque de
+   * nuevo su fecha real, puede volver a ser "la actual". Mismo criterio que
+   * usa canAcceptPredictions para decidir que se puede predecir — antes
+   * estaban deliberadamente desalineados (ver attachCanPredict), ahora usan
+   * el mismo orden.
    */
   async getCurrentMatchdayForCompetition(competitionId: string) {
-    const open = await this.prisma.matchday.findFirst({
-      where: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
-      orderBy: { order: 'asc' },
-      include: { matches: { orderBy: { kickoff: 'asc' } } },
-    });
-    if (open) {
-      return this.attachCanPredict(open);
+    const referenceOrder = await this.getReferenceOrder(competitionId);
+    if (referenceOrder !== null) {
+      const open = await this.prisma.matchday.findFirst({
+        where: { competitionId, order: referenceOrder },
+        include: { matches: { orderBy: { kickoff: 'asc' } } },
+      });
+      if (open) {
+        return this.attachCanPredict(open);
+      }
     }
 
     const finished = await this.prisma.matchday.findFirst({
@@ -333,49 +385,38 @@ export class MatchdaysService {
   }
 
   /**
-   * Orden de la jornada "actual" por cierre mas proximo (ver
-   * canAcceptPredictions) — null si no queda ninguna pendiente.
-   */
-  private async getEarliestPendingOrder(competitionId: string): Promise<number | null> {
-    const current = await this.prisma.matchday.findFirst({
-      where: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
-      orderBy: { closesAt: 'asc' },
-    });
-    return current?.order ?? null;
-  }
-
-  /**
    * Añade `canPredict` y `opensAt` a una jornada ya cargada, para que el
    * frontend sepa si sus partidos todavia no bloqueados por horario se
    * pueden predecir sin tener que replicar la regla de canAcceptPredictions
-   * comparando ordenes el mismo (eso fue justo lo que causo que la jornada
-   * "actual" para mostrar por defecto — la de numero mas bajo — y la jornada
-   * limite para predecir — la de cierre mas proximo — se confundieran entre
-   * si). `canPredict` aqui solo refleja la regla de orden (jornada actual o
+   * el mismo. `canPredict` aqui solo refleja la regla de orden (jornada
+   * actual — ver getReferenceOrder/getCurrentMatchdayForCompetition — o
    * anterior en el orden de rondas): el propio frontend cruza `opensAt` con
    * la hora actual para decidir si ademas ya toca mostrar "Cierra en" en vez
    * de "Se abre en" — ver canAcceptPredictions para la regla combinada que
    * de verdad manda en el backend a la hora de aceptar un envio.
    */
-  private async attachCanPredict<T extends { order: number; status: string; competitionId: string; closesAt: Date }>(
-    matchday: T,
-  ): Promise<T & { canPredict: boolean; opensAt: string }> {
-    const opensAt = new Date(matchday.closesAt.getTime() - PREDICTIONS_OPEN_BEFORE_MS).toISOString();
+  private async attachCanPredict<
+    T extends { order: number; status: string; competitionId: string; closesAt: Date },
+  >(matchday: T): Promise<T & { canPredict: boolean; opensAt: string }> {
+    const opensAt = new Date(
+      matchday.closesAt.getTime() - PREDICTIONS_OPEN_BEFORE_MS,
+    ).toISOString();
     if (matchday.status === 'FINISHED') {
       return { ...matchday, canPredict: false, opensAt };
     }
-    const earliestPendingOrder = await this.getEarliestPendingOrder(matchday.competitionId);
+    const referenceOrder = await this.getReferenceOrder(matchday.competitionId);
     return {
       ...matchday,
-      canPredict: earliestPendingOrder === null || matchday.order <= earliestPendingOrder,
+      canPredict: referenceOrder === null || matchday.order <= referenceOrder,
       opensAt,
     };
   }
 
   /**
    * true si esta jornada ya deberia poder recibir pronosticos: es la jornada
-   * "actual" de su competicion (ver getCurrentMatchdayForCompetition, la de
-   * cierre mas proximo) o una anterior en el orden de rondas. Esto ultimo
+   * "actual" de su competicion (ver getReferenceOrder, la del proximo
+   * partido sin terminar mas cercano) o una anterior en el orden de rondas.
+   * Esto ultimo
    * cubre el caso de una jornada con numero mas bajo que la actual pero que
    * se juega mas tarde por un aplazamiento — no es una jornada "futura" que
    * se este intentando rellenar antes de tiempo, sino una que se quedo
@@ -421,7 +462,10 @@ export class MatchdaysService {
     const pointsByMatchday = new Map<string, number>();
     for (const prediction of predictions) {
       const matchdayId = prediction.match.matchdayId;
-      pointsByMatchday.set(matchdayId, (pointsByMatchday.get(matchdayId) ?? 0) + (prediction.pointsEarned ?? 0));
+      pointsByMatchday.set(
+        matchdayId,
+        (pointsByMatchday.get(matchdayId) ?? 0) + (prediction.pointsEarned ?? 0),
+      );
     }
 
     return matchdays.map((matchday) => ({
