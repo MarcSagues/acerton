@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import configuration from './config/configuration';
+import configuration, { AppConfig } from './config/configuration';
 import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -28,6 +29,18 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate }),
     ScheduleModule.forRoot(),
+    // Limite global por IP; los endpoints sensibles de auth lo ajustan mas
+    // abajo con @Throttle() (ver AuthController). Desactivado fuera de
+    // produccion para no romper el login repetido de los tests e2e y el
+    // uso normal en desarrollo (mismo criterio que la cookie `secure` de
+    // AuthController.setRefreshCookie).
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<AppConfig, true>) => ({
+        throttlers: [{ ttl: 60_000, limit: 60 }],
+        skipIf: () => configService.get('nodeEnv', { infer: true }) !== 'production',
+      }),
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -47,6 +60,9 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     NotificationsModule,
     JobsModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+  ],
 })
 export class AppModule {}
