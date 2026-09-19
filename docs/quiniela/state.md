@@ -1,34 +1,42 @@
 # Estado actual
 
-## 2026-09-19 — Orden estable de jornadas por cierre de pronósticos (Sprint 5)
+## 2026-09-19 — Orden estable de jornadas por cierre de pronósticos (Sprint 5) — dos vueltas
 
-A petición explícita del usuario, con reglas y ejemplos concretos que
-resolvían la pregunta pendiente desde el 2026-09-10 (ver `decisions.md`
-para el detalle completo y la comparación con la decisión anterior que
-sustituye). Resumen: la jornada "actual" que se muestra por defecto para
-puntuar/pronosticar en una competición pasa a ser la de **cierre más
-próximo** (`closesAt`, kickoff del primer partido), no la de número de
-orden más bajo — si un partido se aplaza mucho, esa jornada deja de
-mostrarse como actual y pasa a serlo la siguiente cuyo partido esté más
-cerca en el tiempo, sin dejar de aceptar pronósticos mientras tanto.
+**Primera vuelta**: a petición explícita del usuario, con reglas y
+ejemplos concretos que resolvían la pregunta pendiente desde el
+2026-09-10, `getCurrentMatchdayForCompetition` pasó a ordenar por
+`closesAt` ascendente en vez de `order` ascendente. Mergeado a `dev` vía
+PR #33.
 
-Cambio de una línea en `MatchdaysService.getCurrentMatchdayForCompetition`
-(`orderBy: { order: 'asc' }` → `{ closesAt: 'asc' }`, backend/src/matchdays/
-matchdays.service.ts), más comentarios actualizados. `canAcceptPredictions`/
-`attachCanPredict` no necesitaron cambios: su regla ya existente (orden
-relativo a la jornada de cierre más próximo) ya cubría el ejemplo numérico
-dado por el usuario (jornada aplazada sigue abierta; jornadas muy por
-delante siguen bloqueadas) sin tocar nada. Un test que codificaba
-literalmente la regla anterior (con el escenario invertido) se reescribió
-con el ejemplo nuevo, tras **confirmar explícitamente con el usuario**
-que era una reversión deliberada de una decisión ya implementada, no una
-ambigüedad menor.
+**Segunda vuelta (mismo día, tras probar en `dev`)**: el usuario reportó
+"sigo viendo la jornada 6 en vez de la 7". La primera vuelta no bastaba:
+`closesAt` se fija al crear la jornada como el kickoff de su PRIMER
+partido y no se mueve cuando se aplaza uno posterior — verificado contra
+la base de datos real de `dev` (La Liga: jornada 6 con 9/10 partidos
+jugados y el último aplazado al 21 de octubre, jornada 7 jugándose hoy/
+mañana; cero pronósticos registrados para la jornada 7 en ningún grupo de
+prueba, confirmando que además bloqueaba pronósticos reales, no solo el
+display). Ver `decisions.md` para el detalle completo de la causa raíz y
+la verificación por SQL directo.
 
-281 tests del backend en verde, `tsc --noEmit` limpio. **Sin verificar en
-navegador** (backend puro; no hay datos de prueba con un aplazamiento real
-simulado) — pendiente antes de mergear a `dev`. Rama
-`feature/current-matchday-by-closest-close` (a partir de `dev`), sin
-commit todavía.
+**Fix real**: nuevo criterio basado en el kickoff del próximo partido SIN
+TERMINAR de cada jornada (recalculado sobre partidos reales, no un campo
+guardado) — `MatchdaysService.getReferenceOrder` sustituye a
+`getEarliestPendingOrder`, usado tanto por `getCurrentMatchdayForCompetition`
+como por `attachCanPredict`/`canAcceptPredictions`. Confirmado con el
+usuario antes de ampliar el alcance (esto sí toca la aceptación real de
+pronósticos, no solo qué se muestra). Verificado con SQL contra los datos
+reales de `dev` antes de dar el fix por bueno: la jornada 7 pasa a ganar.
+282 tests del backend en verde, `tsc --noEmit` limpio. **Sin verificar en
+navegador todavía** (verificado por SQL/tests, no hay sesión de navegador
+en esta vuelta). Rama `fix/matchday-reference-order-by-next-kickoff`, PR
+pendiente de abrir tras esta entrada.
+
+Además, un PR de solo documentación (#34, refleja el merge de la primera
+vuelta) sigue **abierto sin mergear** — un intento de merge fue bloqueado
+por el clasificador de modo automático de Claude Code ("Merge Without
+Review"); pendiente de que el usuario lo fusione él mismo o lo autorice
+explícitamente en una futura sesión.
 
 ## 2026-09-17 — Compartir imagen de un partido individual (fuera de sprint, sin issue)
 
@@ -815,11 +823,12 @@ exacto. Issue #10 actualizado con las casillas hechas, **sigue en Status
 "New features"** (el sprint no está completo).
 
 **Orden estable de jornadas por cierre de pronósticos**: implementado en
-backend 2026-09-19 (ver entrada de arriba y `decisions.md`), sin
-verificar en navegador todavía y sin subir a `dev` — rama
-`feature/current-matchday-by-closest-close`. Pendiente del mismo sprint,
-en incrementos siguientes: estadísticas agregadas por temporada (sin
-tocar desde el 2026-09-10).
+dos vueltas 2026-09-19 (ver entrada de arriba y `decisions.md`) — la
+primera (PR #33) ya en `dev`, la segunda (fix real basado en el próximo
+partido sin terminar, rama `fix/matchday-reference-order-by-next-kickoff`)
+con PR pendiente de abrir. Sin verificar en navegador todavía. Pendiente
+del mismo sprint, en incrementos siguientes: estadísticas agregadas por
+temporada (sin tocar desde el 2026-09-10).
 
 Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
@@ -1002,15 +1011,18 @@ bloquea nada más — el resto del sprint sigue avanzando).
 
 ## Cambios sin commit
 
-No en `dev`: todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3
-del Sprint 5, el Sprint 9 (incremento 1), y la sesión de rediseño visual
-completa (incluida la reconciliación de este documento) está commiteado y
-empujado a `origin/dev`. El incremento 1 de avatares del Sprint 7 está
-commiteado y empujado a `origin/feature/sprint-7-avatares`, una rama
-aparte que **todavía no se ha fusionado a `dev`** (pendiente de
-autorización explícita).
+No en `dev`: el incremento 1 de avatares del Sprint 7 está commiteado y
+empujado a `origin/feature/sprint-7-avatares`, una rama aparte que
+**todavía no se ha fusionado a `dev`** (pendiente de autorización
+explícita). El incremento 4 del Sprint 5 ("orden estable de jornadas",
+primera vuelta, PR #33) ya está en `dev`.
 
-Rama `feature/current-matchday-by-closest-close` (Sprint 5, "orden estable
-de jornadas por cierre de pronósticos", 2026-09-19): cambios en el árbol
-de trabajo hechos, **sin commit todavía** — pendiente de autorización
-explícita del usuario para commitear/subir.
+Dos ramas pendientes de subir, ambas del mismo tema (Sprint 5, orden
+estable de jornadas):
+- `docs/quiniela-matchday-order-followup` (PR #34, solo documentación):
+  **abierta sin mergear** — un intento de merge fue bloqueado por el
+  clasificador de modo automático ("Merge Without Review"); pendiente de
+  que el usuario la fusione él mismo.
+- `fix/matchday-reference-order-by-next-kickoff` (el fix real, segunda
+  vuelta, 2026-09-19): cambios commiteados en el árbol de trabajo, PR
+  pendiente de abrir en la próxima acción de esta sesión.
