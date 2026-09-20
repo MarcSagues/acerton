@@ -26,6 +26,18 @@ export interface AppConfig {
      */
     nativeClientId?: string;
   };
+  apple: {
+    /**
+     * Bundle id de la app iOS (`app.piqo.es`, ver capacitor.config.ts) — es la
+     * audiencia (`aud`) que trae el identity token que devuelve
+     * ASAuthorizationAppleIDProvider en el flujo NATIVO de Sign in with Apple
+     * (login desde el propio dispositivo, sin pasar por un Services ID ni
+     * redireccion web). Si algun dia se anade el flujo web (Services ID
+     * propio, dominio verificado), esa audiencia seria distinta y habria que
+     * aceptar ambas, igual que google.nativeClientId.
+     */
+    bundleId: string;
+  };
   footballData: {
     baseUrl: string;
     apiKey: string;
@@ -65,6 +77,9 @@ export default (): AppConfig => ({
     callbackUrl:
       process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback',
     nativeClientId: process.env.GOOGLE_NATIVE_CLIENT_ID || undefined,
+  },
+  apple: {
+    bundleId: process.env.APPLE_BUNDLE_ID || 'app.piqo.es',
   },
   footballData: {
     baseUrl: process.env.FOOTBALL_DATA_BASE_URL ?? 'https://api.football-data.org/v4',

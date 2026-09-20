@@ -260,3 +260,14 @@
     font-size: 14px;
   }
 }
+
+/* Boton negro estandar de "Sign in with Apple" (Apple Human Interface Guidelines). */
+.apple-cta {
+  background: #000;
+  color: #fff;
+  border: 0;
+}
+
+.apple-logo {
+  flex: none;
+}

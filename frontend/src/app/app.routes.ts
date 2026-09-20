@@ -261,6 +261,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'profile/delete-account',
+        canActivate: [hasGroupGuard],
+        loadComponent: () =>
+          import('./features/profile/profile-delete-account/profile-delete-account.component').then(
+            (m) => m.ProfileDeleteAccountComponent,
+          ),
+      },
+      {
         path: 'profile/badges',
         canActivate: [hasGroupGuard],
         loadComponent: () =>

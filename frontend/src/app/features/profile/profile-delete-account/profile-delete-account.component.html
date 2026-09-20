@@ -1,0 +1,54 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-btn" aria-label="Volver" (click)="page.goBack()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+    </button>
+    <h1>Eliminar cuenta</h1>
+  </div>
+
+  <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
+    <p class="explainer">
+      Al eliminar tu cuenta se borran tu perfil, tus pronósticos, insignias, rachas y avisos. Si eres el
+      creador de algún grupo, la propiedad pasa automáticamente a otro miembro, o el grupo se elimina si
+      eres el único. Esta acción no se puede deshacer.
+    </p>
+
+    @if (page.hasPassword()) {
+      <label class="field">
+        <span class="field-label">Contraseña</span>
+        <div class="field-input password-input">
+          <input
+            [type]="page.passwordVisible() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            [attr.aria-label]="page.passwordVisible() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            (click)="page.togglePasswordVisibility()"
+          >
+            <piqo-svg [attr.icon]="page.passwordVisible() ? 'ojo-cerrado' : 'ojo'" size="18"></piqo-svg>
+          </button>
+        </div>
+      </label>
+    }
+
+    <label class="ack-row">
+      <input type="checkbox" [checked]="page.acknowledged()" (change)="page.toggleAcknowledged()" />
+      <span>Entiendo que esta acción no se puede deshacer</span>
+    </label>
+
+    @if (page.errorMessage()) {
+      <p class="error">{{ page.errorMessage() }}</p>
+    }
+
+    <button type="submit" class="delete-btn mono" [disabled]="page.loading()">
+      @if (page.loading()) {
+        <app-spinner [size]="20"></app-spinner>
+      } @else {
+        Eliminar mi cuenta
+      }
+    </button>
+  </form>
+</div>

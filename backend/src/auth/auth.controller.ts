@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -12,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { AppConfig } from '../config/configuration';
 import { Public } from '../common/decorators/public.decorator';
@@ -20,11 +22,13 @@ import { AuthService, GENERIC_EMAIL_ACTION_MESSAGE, GoogleProfileInput } from '.
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { GoogleTokenDto } from './dto/google-token.dto';
+import { AppleTokenDto } from './dto/apple-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { PublicUser } from './auth.types';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 
@@ -39,6 +43,7 @@ export class AuthController {
 
   /** No inicia sesion: la cuenta queda sin verificar hasta confirmar el correo (ver login y verify-email). */
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto): Promise<{ email: string }> {
     return this.authService.register(dto);
@@ -59,6 +64,7 @@ export class AuthController {
 
   /** Respuesta identica exista o no la cuenta, o ya este verificada: no se puede usar para comprobar si un email esta registrado. */
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('resend-verification')
   async resendVerification(@Body() dto: ResendVerificationDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
@@ -68,6 +74,7 @@ export class AuthController {
 
   /** Respuesta identica exista o no la cuenta, o sea solo-Google: no se puede usar para comprobar si un email esta registrado. */
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
@@ -76,6 +83,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ success: true }> {
@@ -95,6 +103,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
@@ -106,6 +115,19 @@ export class AuthController {
     return { user, accessToken: tokens.accessToken };
   }
 
+  /** Borrado de cuenta autoservicio (Guideline 5.1.1(v) de App Store) — ver AuthService.deleteAccount. */
+  @HttpCode(HttpStatus.OK)
+  @Delete('me')
+  async deleteAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ success: true }> {
+    await this.authService.deleteAccount(user.id, dto.password);
+    res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+    return { success: true };
+  }
+
   @Public()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
@@ -115,6 +137,7 @@ export class AuthController {
 
   /** Login con Google desde la app nativa (Capacitor) — ver AuthService.loginWithGoogleIdToken. */
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('google/token')
   async googleToken(
@@ -122,6 +145,20 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser; accessToken: string }> {
     const { user, tokens } = await this.authService.loginWithGoogleIdToken(dto.idToken);
+    this.setRefreshCookie(res, tokens.refreshToken);
+    return { user, accessToken: tokens.accessToken };
+  }
+
+  /** Login con Sign in with Apple desde la app nativa iOS — ver AuthService.loginWithAppleIdToken. */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('apple/token')
+  async appleToken(
+    @Body() dto: AppleTokenDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: PublicUser; accessToken: string }> {
+    const { user, tokens } = await this.authService.loginWithAppleIdToken(dto.identityToken, dto.fullName);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { user, accessToken: tokens.accessToken };
   }

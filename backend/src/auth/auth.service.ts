@@ -8,6 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
+import appleSignin from 'apple-signin-auth';
+import { GroupRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,6 +33,13 @@ export interface GoogleProfileInput {
   email: string;
   name: string;
   avatarUrl?: string;
+}
+
+export interface AppleProfileInput {
+  appleSub: string;
+  email: string;
+  /** Solo presente si Apple lo compartio (primera autorizacion, ver AuthController.appleToken). */
+  name?: string;
 }
 
 @Injectable()
@@ -185,6 +194,66 @@ export class AuthService {
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
   }
 
+  /**
+   * Borrado de cuenta autoservicio (Guideline 5.1.1(v) de App Store): borra
+   * al usuario y todo lo que cuelga de el via onDelete: Cascade en el schema
+   * (predicciones, membresias, insignias, rachas, tokens, avisos...). Si la
+   * cuenta tiene contrasena, la exige para confirmar (mismo criterio que
+   * changePassword) — evita un borrado accidental con solo un access token
+   * robado; las cuentas solo-Google no tienen nada que comprobar aqui, la
+   * confirmacion la hace el dialogo del frontend.
+   *
+   * Los grupos de los que es propietario no se pueden borrar en cascada sin
+   * mas: `Group.ownerId` es ON DELETE RESTRICT a proposito (no se puede
+   * dejar un grupo sin dueno) y borrarlo entero se llevaria por delante el
+   * historial de sus otros miembros. Asi que primero se resuelve cada uno:
+   * si tiene mas miembros, se transfiere la propiedad al mas antiguo (mismo
+   * mecanismo que GroupsService.transferOwnership); si esta solo, se borra
+   * en logico igual que GroupsService.deleteGroup.
+   */
+  async deleteAccount(userId: string, password?: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    if (user.passwordHash) {
+      if (!password) {
+        throw new UnauthorizedException('Introduce tu contraseña para confirmar');
+      }
+      const matches = await bcrypt.compare(password, user.passwordHash);
+      if (!matches) {
+        throw new UnauthorizedException('La contraseña no es correcta');
+      }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const ownedGroups = await tx.group.findMany({
+        where: { ownerId: userId, deletedAt: null },
+        select: { id: true },
+      });
+
+      for (const { id: groupId } of ownedGroups) {
+        const nextOwner = await tx.groupMembership.findFirst({
+          where: { groupId, userId: { not: userId } },
+          orderBy: { joinedAt: 'asc' },
+        });
+
+        if (nextOwner) {
+          await tx.groupMembership.update({
+            where: { id: nextOwner.id },
+            data: { role: GroupRole.ADMIN },
+          });
+          await tx.group.update({ where: { id: groupId }, data: { ownerId: nextOwner.userId } });
+        } else {
+          await tx.group.update({ where: { id: groupId }, data: { deletedAt: new Date() } });
+        }
+      }
+
+      await tx.user.delete({ where: { id: userId } });
+    });
+  }
+
   private async sendVerificationEmail(userId: string, email: string): Promise<void> {
     const token = randomBytes(32).toString('hex');
     await this.prisma.authToken.create({
@@ -279,6 +348,91 @@ export class AuthService {
       email: payload.email,
       name: payload.name ?? payload.email,
       avatarUrl: payload.picture,
+    });
+  }
+
+  async validateOrCreateAppleUser(
+    profile: AppleProfileInput,
+  ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+    let user = await this.prisma.user.findUnique({ where: { appleSub: profile.appleSub } });
+
+    if (!user) {
+      const existingByEmail = await this.prisma.user.findUnique({
+        where: { email: profile.email },
+      });
+
+      if (existingByEmail) {
+        user = await this.prisma.user.update({
+          where: { id: existingByEmail.id },
+          data: {
+            appleSub: profile.appleSub,
+            // Enlazar con Apple prueba que el email es suyo, igual que con Google.
+            emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+          },
+        });
+      } else {
+        const { mascotId, background } = defaultCatalogAvatar();
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            name: profile.name ?? profile.email,
+            appleSub: profile.appleSub,
+            avatarUrl: mascotAssetPath(mascotId),
+            avatarBackground: background,
+            // Igual que Google: si Apple no compartio el nombre (lo mas
+            // habitual salvo la primera autorizacion), se pide confirmarlo en
+            // el onboarding antes de entrar a la app.
+            usernameConfirmed: !!profile.name,
+            // Apple ya verifico este email: no hace falta el paso de confirmacion.
+            emailVerifiedAt: new Date(),
+          },
+        });
+      }
+    }
+
+    const tokens = await this.issueTokens(user.id, user.email, user.name);
+    return { user: toPublicUser(user), tokens };
+  }
+
+  /**
+   * Login con Sign in with Apple desde la app nativa iOS (Capacitor):
+   * ASAuthorizationAppleIDProvider entrega un identityToken (JWT) firmado por
+   * Apple directamente en el dispositivo, igual de espiritu que el idToken de
+   * Google Sign-In nativo. Se verifica su firma contra las claves publicas de
+   * Apple (JWKS, via `apple-signin-auth`, que las cachea) y su audiencia
+   * contra el bundle id de la app (`apple.bundleId` — a diferencia de Google,
+   * NO hace falta un Services ID ni client secret: eso solo se necesita para
+   * el flujo web con redireccion, que esta app no usa).
+   *
+   * `fullName` solo llega en la primera autorizacion (ver AppleTokenDto) — el
+   * nombre no es un claim del identity token, Apple solo lo entrega una vez
+   * en la respuesta nativa, asi que el frontend debe guardarlo y mandarlo esa
+   * primera vez si quiere que la cuenta nazca con el nombre real en vez del
+   * email.
+   */
+  async loginWithAppleIdToken(
+    identityToken: string,
+    fullName?: string,
+  ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+    const bundleId = this.configService.get('apple.bundleId', { infer: true });
+    let payload;
+    try {
+      payload = await appleSignin.verifyIdToken(identityToken, {
+        audience: bundleId,
+        ignoreExpiration: false,
+      });
+    } catch {
+      throw new UnauthorizedException('Token de Apple inválido');
+    }
+
+    if (!payload.sub || !payload.email) {
+      throw new UnauthorizedException('El token de Apple no incluye un email');
+    }
+
+    return this.validateOrCreateAppleUser({
+      appleSub: payload.sub,
+      email: payload.email,
+      name: fullName,
     });
   }
 

@@ -14,7 +14,12 @@ const CONFIG_VALUES: Record<string, unknown> = {
 
 function buildDeps(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {
-    user: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn().mockResolvedValue({}) },
+    user: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+    },
     authToken: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
     refreshToken: {
       create: jest.fn().mockResolvedValue({ id: 'refresh1' }),
@@ -22,9 +27,16 @@ function buildDeps(prismaOverrides: Record<string, unknown> = {}) {
       updateMany: jest.fn().mockResolvedValue({}),
       findUnique: jest.fn(),
     },
+    group: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn().mockResolvedValue({}) },
+    groupMembership: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     ...prismaOverrides,
   };
+  // Soporta tanto la forma array (Promise.all) como la forma interactiva
+  // (callback con `tx`, usada por deleteAccount) que acepta $transaction.
+  (prisma as { $transaction: jest.Mock }).$transaction = jest.fn((arg: unknown) =>
+    typeof arg === 'function' ? (arg as (tx: unknown) => Promise<unknown>)(prisma) : Promise.all(arg as Promise<unknown>[]),
+  );
   const jwtService = { signAsync: jest.fn().mockResolvedValue('signed-jwt') };
   const configService = { get: jest.fn((key: string) => CONFIG_VALUES[key]) };
   const mailService = {
@@ -245,5 +257,140 @@ describe('AuthService.changePassword', () => {
     await service.changePassword('u1', 'correct', 'newpassword123');
 
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { passwordHash: expect.any(String) } });
+  });
+});
+
+describe('AuthService.deleteAccount', () => {
+  it('rechaza si el usuario no existe', async () => {
+    const { service, prisma } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.deleteAccount('u1')).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rechaza si la cuenta tiene contrasena y no se envia ninguna', async () => {
+    const { service, prisma } = buildDeps();
+    const passwordHash = await bcrypt.hash('correct', 4);
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash }));
+
+    await expect(service.deleteAccount('u1')).rejects.toThrow(UnauthorizedException);
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('rechaza si la contrasena enviada no coincide', async () => {
+    const { service, prisma } = buildDeps();
+    const passwordHash = await bcrypt.hash('correct', 4);
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash }));
+
+    await expect(service.deleteAccount('u1', 'incorrect')).rejects.toThrow(UnauthorizedException);
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('borra la cuenta solo-Google sin pedir contrasena', async () => {
+    const { service, prisma } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash: null }));
+
+    await service.deleteAccount('u1');
+
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+
+  it('borra la cuenta con contrasena correcta', async () => {
+    const { service, prisma } = buildDeps();
+    const passwordHash = await bcrypt.hash('correct', 4);
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash }));
+
+    await service.deleteAccount('u1', 'correct');
+
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+
+  it('transfiere la propiedad de un grupo con mas miembros al mas antiguo antes de borrar', async () => {
+    const { service, prisma } = buildDeps({
+      group: { findMany: jest.fn().mockResolvedValue([{ id: 'g1' }]), update: jest.fn().mockResolvedValue({}) },
+      groupMembership: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'm1', userId: 'u2' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash: null }));
+
+    await service.deleteAccount('u1');
+
+    expect(prisma.groupMembership.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { role: 'ADMIN' } });
+    expect(prisma.group.update).toHaveBeenCalledWith({ where: { id: 'g1' }, data: { ownerId: 'u2' } });
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+
+  it('borra en logico un grupo sin mas miembros en vez de dejarlo sin dueno', async () => {
+    const { service, prisma } = buildDeps({
+      group: { findMany: jest.fn().mockResolvedValue([{ id: 'g1' }]), update: jest.fn().mockResolvedValue({}) },
+      groupMembership: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
+    });
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash: null }));
+
+    await service.deleteAccount('u1');
+
+    expect(prisma.group.update).toHaveBeenCalledWith({ where: { id: 'g1' }, data: { deletedAt: expect.any(Date) } });
+    expect(prisma.groupMembership.update).not.toHaveBeenCalled();
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+  });
+});
+
+describe('AuthService.validateOrCreateAppleUser', () => {
+  it('reutiliza la cuenta si ya existe por appleSub, sin crear ni actualizar nada', async () => {
+    const { service, prisma } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ appleSub: 'apple-sub-1' }));
+
+    await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'test@example.com' });
+
+    expect(prisma.user.create).not.toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ appleSub: expect.anything() }) }),
+    );
+  });
+
+  it('enlaza appleSub a una cuenta ya existente con ese email (ej. creada por email/contrasena)', async () => {
+    const { service, prisma } = buildDeps();
+    (prisma.user.findUnique as jest.Mock)
+      .mockResolvedValueOnce(null) // no existe por appleSub
+      .mockResolvedValueOnce(buildUser({ id: 'existing', email: 'test@example.com', emailVerifiedAt: null }));
+    (prisma.user.update as jest.Mock).mockResolvedValue(buildUser({ id: 'existing', appleSub: 'apple-sub-1' }));
+
+    await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'test@example.com' });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'existing' },
+      data: { appleSub: 'apple-sub-1', emailVerifiedAt: expect.any(Date) },
+    });
+  });
+
+  it('crea una cuenta nueva sin nombre confirmado si Apple no comparte el nombre', async () => {
+    const { service, prisma } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ id: 'new', appleSub: 'apple-sub-1' }));
+
+    await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'nuevo@example.com' });
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        email: 'nuevo@example.com',
+        name: 'nuevo@example.com',
+        appleSub: 'apple-sub-1',
+        usernameConfirmed: false,
+      }),
+    });
+  });
+
+  it('crea la cuenta con el nombre y confirmado si Apple lo comparte (primera autorizacion)', async () => {
+    const { service, prisma } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ id: 'new', appleSub: 'apple-sub-1' }));
+
+    await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'nuevo@example.com', name: 'Nuevo Usuario' });
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ name: 'Nuevo Usuario', usernameConfirmed: true }),
+    });
   });
 });

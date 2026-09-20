@@ -73,6 +73,19 @@ export class AdsService {
 
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
+
+    // App Tracking Transparency (Guideline 5.1.2(i) de App Store): en iOS 14+
+    // hay que pedir permiso con el dialogo nativo del sistema ANTES de que
+    // AdMob pueda usar el IDFA para anuncios personalizados. No hace nada en
+    // Android/web ni si el usuario ya respondio antes (trackingAuthorizationStatus
+    // devuelve 'authorized'/'denied' en vez de 'notDetermined').
+    if (Capacitor.getPlatform() === 'ios') {
+      const { status } = await AdMob.trackingAuthorizationStatus();
+      if (status === 'notDetermined') {
+        await AdMob.requestTrackingAuthorization();
+      }
+    }
+
     await AdMob.initialize();
     // UMP: solo pide consentimiento si hace falta (usuario en UE/Reino Unido);
     // sin consentimiento explicito en esos casos no se piden anuncios.
