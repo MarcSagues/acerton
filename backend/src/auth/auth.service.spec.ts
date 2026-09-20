@@ -27,7 +27,11 @@ function buildDeps(prismaOverrides: Record<string, unknown> = {}) {
       updateMany: jest.fn().mockResolvedValue({}),
       findUnique: jest.fn(),
     },
-    group: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn().mockResolvedValue({}) },
+    group: {
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+    },
     groupMembership: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     ...prismaOverrides,
@@ -322,16 +326,21 @@ describe('AuthService.deleteAccount', () => {
     expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
   });
 
-  it('borra en logico un grupo sin mas miembros en vez de dejarlo sin dueno', async () => {
+  it('borra del todo (no en logico) un grupo sin mas miembros, para no dejar el ownerId colgando', async () => {
     const { service, prisma } = buildDeps({
-      group: { findMany: jest.fn().mockResolvedValue([{ id: 'g1' }]), update: jest.fn().mockResolvedValue({}) },
+      group: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'g1' }]),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
+      },
       groupMembership: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
     });
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash: null }));
 
     await service.deleteAccount('u1');
 
-    expect(prisma.group.update).toHaveBeenCalledWith({ where: { id: 'g1' }, data: { deletedAt: expect.any(Date) } });
+    expect(prisma.group.delete).toHaveBeenCalledWith({ where: { id: 'g1' } });
+    expect(prisma.group.update).not.toHaveBeenCalled();
     expect(prisma.groupMembership.update).not.toHaveBeenCalled();
     expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
   });

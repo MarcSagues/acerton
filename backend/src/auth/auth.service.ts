@@ -208,8 +208,13 @@ export class AuthService {
    * dejar un grupo sin dueno) y borrarlo entero se llevaria por delante el
    * historial de sus otros miembros. Asi que primero se resuelve cada uno:
    * si tiene mas miembros, se transfiere la propiedad al mas antiguo (mismo
-   * mecanismo que GroupsService.transferOwnership); si esta solo, se borra
-   * en logico igual que GroupsService.deleteGroup.
+   * mecanismo que GroupsService.transferOwnership). Si esta solo, se borra
+   * DEL TODO (no en logico como GroupsService.deleteGroup): `ownerId` no
+   * admite null, asi que dejarlo en logico dejaria la fila del grupo
+   * apuntando todavia al usuario que se esta borrando y el propio
+   * `tx.user.delete` de mas abajo chocaria con esa misma restriccion
+   * RESTRICT. Al no quedar mas miembros no hay historial de nadie mas que
+   * preservar, asi que el borrado fisico es correcto aqui.
    */
   async deleteAccount(userId: string, password?: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -246,7 +251,7 @@ export class AuthService {
           });
           await tx.group.update({ where: { id: groupId }, data: { ownerId: nextOwner.userId } });
         } else {
-          await tx.group.update({ where: { id: groupId }, data: { deletedAt: new Date() } });
+          await tx.group.delete({ where: { id: groupId } });
         }
       }
 
