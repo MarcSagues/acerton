@@ -79,8 +79,12 @@ enum ScoringMode {
 model User {
   id                        String    @id @default(cuid())
   email                     String    @unique
-  passwordHash              String? // null cuando el usuario solo usa Google OAuth
+  passwordHash              String? // null cuando el usuario solo usa Google/Apple
   googleId                  String?   @unique
+  /// `sub` del identity token de Sign in with Apple (login nativo iOS, ver
+  /// AuthService.loginWithAppleIdToken). Distinto de googleId: mismo patron,
+  /// proveedor distinto.
+  appleSub                  String?   @unique
   name                      String
   /// false solo para cuentas de Google recien creadas, cuyo nombre viene
   /// del perfil de Google sin que el usuario lo haya elegido — se les pide

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -21,11 +22,13 @@ import { AuthService, GENERIC_EMAIL_ACTION_MESSAGE, GoogleProfileInput } from '.
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { GoogleTokenDto } from './dto/google-token.dto';
+import { AppleTokenDto } from './dto/apple-token.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { PublicUser } from './auth.types';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 
@@ -112,6 +115,19 @@ export class AuthController {
     return { user, accessToken: tokens.accessToken };
   }
 
+  /** Borrado de cuenta autoservicio (Guideline 5.1.1(v) de App Store) — ver AuthService.deleteAccount. */
+  @HttpCode(HttpStatus.OK)
+  @Delete('me')
+  async deleteAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ success: true }> {
+    await this.authService.deleteAccount(user.id, dto.password);
+    res.clearCookie(REFRESH_COOKIE_NAME, { path: '/api/auth' });
+    return { success: true };
+  }
+
   @Public()
   @Get('google')
   @UseGuards(GoogleAuthGuard)
@@ -129,6 +145,20 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser; accessToken: string }> {
     const { user, tokens } = await this.authService.loginWithGoogleIdToken(dto.idToken);
+    this.setRefreshCookie(res, tokens.refreshToken);
+    return { user, accessToken: tokens.accessToken };
+  }
+
+  /** Login con Sign in with Apple desde la app nativa iOS — ver AuthService.loginWithAppleIdToken. */
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  @Post('apple/token')
+  async appleToken(
+    @Body() dto: AppleTokenDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: PublicUser; accessToken: string }> {
+    const { user, tokens } = await this.authService.loginWithAppleIdToken(dto.identityToken, dto.fullName);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { user, accessToken: tokens.accessToken };
   }

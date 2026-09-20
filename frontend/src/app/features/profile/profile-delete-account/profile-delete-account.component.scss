@@ -1,0 +1,144 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  color: var(--p4-text);
+  padding-bottom: 28px;
+}
+
+.head-row {
+  padding: 12px 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  width: var(--p4-touch);
+  height: var(--p4-touch);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: var(--p4-muted);
+  margin-left: -12px;
+}
+
+h1 {
+  margin: 0;
+  font: 700 22px/1 var(--p4-font-display);
+}
+
+.form {
+  padding: 22px 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.explainer {
+  margin: 0;
+  font: 400 13px/1.5 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field-label {
+  font: 600 12px/1 var(--p4-font-ui);
+}
+
+.field-input {
+  min-height: 48px;
+  border-radius: var(--p4-radius-sm);
+  background: var(--p4-surface);
+  border: 1px solid var(--p4-border);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font: 400 14px/1 var(--p4-font-ui);
+  color: var(--p4-text);
+
+  input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font: inherit;
+    color: inherit;
+    min-width: 0;
+  }
+
+  &:focus-within {
+    border-color: var(--p4-accent);
+  }
+}
+
+.password-input {
+  gap: 10px;
+}
+
+.password-toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--p4-muted);
+}
+
+.ack-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font: 500 13px/1.4 var(--p4-font-ui);
+
+  input[type='checkbox'] {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+  }
+}
+
+.error {
+  font: 500 12px/1.5 var(--p4-font-ui);
+  color: var(--p4-error);
+  margin: 0;
+}
+
+.delete-btn {
+  width: 100%;
+  min-height: var(--p4-touch);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-error);
+  color: var(--p4-error);
+  font: 600 15px/1 var(--p4-font-ui);
+  margin-top: 4px;
+
+  &:disabled {
+    opacity: 0.7;
+  }
+}

@@ -30,6 +30,7 @@ export class AuthPageFacade implements OnDestroy {
   readonly passwordVisible = signal(false);
   readonly googleLoginUrl = this.authService.googleLoginUrl;
   readonly isNativePlatform = this.authService.isNativePlatform;
+  readonly isIOSPlatform = this.authService.isIOSPlatform;
 
   /** Distinto de null tras un registro correcto: la cuenta existe pero no puede entrar hasta confirmar el correo. */
   readonly registeredEmail = signal<string | null>(null);
@@ -172,6 +173,27 @@ export class AuthPageFacade implements OnDestroy {
           this.errorMessage.set(
             `No se pudo iniciar sesión con Google (${error?.code ?? 'sin código'}): ${error?.message ?? JSON.stringify(error)}`,
           );
+        }
+      },
+    });
+  }
+
+  loginWithAppleNative(): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.authService.loginWithAppleNative().subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.navigateAfterLogin();
+      },
+      error: (error) => {
+        this.loading.set(false);
+        // El usuario cerro el dialogo de Apple sin elegir cuenta: no es un fallo que mostrar.
+        if (error?.message?.includes('1001') || error?.code === '1001') return;
+        if (error instanceof HttpErrorResponse) {
+          this.errorMessage.set(error.error?.message ?? 'No se pudo iniciar sesión con Apple');
+        } else {
+          this.errorMessage.set(error?.message ?? 'No se pudo iniciar sesión con Apple');
         }
       },
     });

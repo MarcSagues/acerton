@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, firstValueFrom, from, map, of, switchMap, tap, throwError } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
 import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
+import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -36,6 +37,8 @@ export class AuthService {
   readonly googleLoginUrl = `${environment.apiUrl}/auth/google`;
   /** En la app nativa (Capacitor) el login con Google usa el SDK del dispositivo en vez de la redireccion web — ver loginWithGoogleNative. */
   readonly isNativePlatform = Capacitor.isNativePlatform();
+  /** Sign in with Apple (Guideline 4.8) solo se ofrece en iOS nativo — ver loginWithAppleNative. */
+  readonly isIOSPlatform = Capacitor.getPlatform() === 'ios';
   private googleSignInInitialized = false;
 
   constructor(private readonly http: HttpClient) {}
@@ -82,6 +85,16 @@ export class AuthService {
       currentPassword,
       newPassword,
     });
+  }
+
+  /** Borrado de cuenta autoservicio (Ajustes de perfil) — ver AuthService.deleteAccount en el backend. */
+  deleteAccount(password?: string): Observable<{ success: true }> {
+    return this.http
+      .delete<{ success: true }>(`${environment.apiUrl}/auth/me`, {
+        body: { password },
+        withCredentials: true,
+      })
+      .pipe(tap(() => this.clearSession()));
   }
 
   /** Intenta recuperar sesion a partir de la cookie de refresh (arranque de la app o F5). */
@@ -146,6 +159,37 @@ export class AuthService {
       this.http.post<AuthResponse>(
         `${environment.apiUrl}/auth/google/token`,
         { idToken: result.idToken },
+        { withCredentials: true },
+      ),
+    );
+  }
+
+  /**
+   * Login con Sign in with Apple en iOS nativo (Guideline 4.8 de App Store —
+   * equivalente a Google que limita datos a nombre/email, permite email
+   * privado y no rastrea sin consentimiento). `clientId`/`redirectURI` los
+   * exige el tipado del plugin pero el flujo nativo en iOS no los usa (ver
+   * ASAuthorizationAppleIDProvider en Plugin.swift): solo importan `scopes`.
+   * `givenName`/`familyName` solo llegan la primera vez que el usuario
+   * autoriza esta app — ver AuthService.loginWithAppleIdToken en el backend.
+   */
+  loginWithAppleNative(): Observable<AuthResponse> {
+    return from(this.performAppleNativeSignIn()).pipe(tap((res) => this.setSession(res)));
+  }
+
+  private async performAppleNativeSignIn(): Promise<AuthResponse> {
+    const result = await SignInWithApple.authorize({
+      clientId: 'app.piqo.es',
+      redirectURI: `${environment.apiUrl}/auth/apple/callback`,
+      scopes: 'email name',
+    });
+    const { identityToken, givenName, familyName } = result.response;
+    const fullName = [givenName, familyName].filter(Boolean).join(' ').trim() || undefined;
+
+    return firstValueFrom(
+      this.http.post<AuthResponse>(
+        `${environment.apiUrl}/auth/apple/token`,
+        { identityToken, fullName },
         { withCredentials: true },
       ),
     );

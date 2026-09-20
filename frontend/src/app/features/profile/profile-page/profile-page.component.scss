@@ -363,3 +363,15 @@ h2 {
   border: 1px solid var(--p4-error);
   color: var(--p4-error);
 }
+
+.delete-account-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 40px);
+  margin: 14px 20px 0;
+  min-height: var(--p4-touch);
+  font: 500 12px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+  text-decoration: underline;
+}
