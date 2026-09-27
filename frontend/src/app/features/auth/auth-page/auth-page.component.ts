@@ -3,11 +3,12 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AuthPageFacade } from './auth-page.facade';
+import { NativeAppleButtonDirective } from './native-apple-button.directive';
 
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent],
+  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent, NativeAppleButtonDirective],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [AuthPageFacade],
   templateUrl: './auth-page.component.html',
