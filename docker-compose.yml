@@ -1,15 +1,17 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.0
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: acerton
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: acerton
+      MYSQL_USER: acerton
+      MYSQL_PASSWORD: acerton
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
-      - "5433:5432"
+      - "3307:3306"
     volumes:
-      - acerton_postgres_data:/var/lib/postgresql/data
+      - acerton_mysql_data:/var/lib/mysql
 
 volumes:
-  acerton_postgres_data:
+  acerton_mysql_data:
