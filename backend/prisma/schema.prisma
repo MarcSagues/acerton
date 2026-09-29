@@ -3,11 +3,11 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // url: conexion pooled (PgBouncer), la que usa la app en marcha.
-  // directUrl: conexion directa, la que usan `prisma migrate`/`db seed` (el
-  // pooler en modo transaccion de Neon no soporta bien los advisory locks de
-  // las migraciones). En local, sin pooler por delante, ambas apuntan a lo mismo.
+  provider  = "mysql"
+  // url: la conexion que usa la app en marcha.
+  // directUrl: la que usan `prisma migrate`/`db seed`. MySQL de Hostinger no
+  // tiene pooler por delante, asi que en todos los entornos ambas apuntan a
+  // lo mismo; se mantienen separadas por si algun dia se anade uno.
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -96,7 +96,7 @@ model User {
   /// frecuencia de cambio (ver UsersService.updateName) para que no se use
   /// como forma de troll en las clasificaciones del grupo.
   nameChangedAt             DateTime?
-  avatarUrl                 String?
+  avatarUrl                 String?   @db.VarChar(1024)
   /// Color de fondo detras del avatar (catalogo de mascota con fondo
   /// transparente, o cualquier avatar futuro). Null = sin color propio
   /// (fondo neutro por defecto en el render). Restringido a la paleta de
@@ -191,7 +191,7 @@ model RefreshToken {
 model NotificationToken {
   id        String   @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String   @unique @db.VarChar(512)
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -257,8 +257,8 @@ model Notification {
   id         String           @id @default(cuid())
   userId     String
   type       NotificationType
-  title      String
-  body       String
+  title      String           @db.VarChar(512)
+  body       String           @db.Text
   /// Contexto opcional segun el tipo (jornada terminada, recordatorio de cierre...); null para avisos sin grupo (reenganche).
   groupId    String?
   matchdayId String?
@@ -279,7 +279,7 @@ model Notification {
 model Group {
   id                     String      @id @default(cuid())
   name                   String
-  description            String?
+  description            String?     @db.Text
   isPublic               Boolean     @default(false)
   inviteCode             String      @unique
   /// Comodin de remontada (doble oportunidad): activable/desactivable por grupo.
@@ -368,7 +368,7 @@ model Competition {
   /// No es especifico de ningun proveedor concreto pese al nombre generico:
   /// cambiar de proveedor implica volver a poblar este campo via seed.
   externalId         Int             @unique
-  logoUrl            String?
+  logoUrl            String?         @db.VarChar(1024)
   currentSeason      Int
   /// Estimacion de cuando termina la temporada en curso: fecha del partido
   /// mas tardio conocido en el calendario completo (ver
@@ -458,8 +458,8 @@ model Match {
   externalId        Int               @unique
   homeTeam          String
   awayTeam          String
-  homeTeamLogo      String?
-  awayTeamLogo      String?
+  homeTeamLogo      String?           @db.VarChar(1024)
+  awayTeamLogo      String?           @db.VarChar(1024)
   kickoff           DateTime
   status            MatchStatus       @default(SCHEDULED)
   homeScore         Int?
@@ -579,8 +579,8 @@ model Badge {
   id          String   @id @default(cuid())
   code        String   @unique
   name        String
-  description String
-  iconUrl     String?
+  description String   @db.Text
+  iconUrl     String?  @db.VarChar(1024)
   createdAt   DateTime @default(now())
 
   userBadges UserBadge[]

@@ -1,11 +1,11 @@
 # Quiniela
 
-Quiniela de futbol semanal para grupos de amigos. Monorepo con npm workspaces: `backend` (NestJS + Prisma + PostgreSQL) y `frontend` (Angular 18 + Material + PWA).
+Quiniela de futbol semanal para grupos de amigos. Monorepo con npm workspaces: `backend` (NestJS + Prisma + MySQL) y `frontend` (Angular 18 + Material + PWA).
 
 ## Requisitos
 
 - Node 20+ (probado con Node 22)
-- Docker (para Postgres local) o una instancia Postgres propia
+- Docker (para MySQL local) o una instancia MySQL propia
 
 ## Arranque en local
 
@@ -27,7 +27,7 @@ npm run dev:frontend
 
 ## Variables de entorno relevantes (`backend/.env`)
 
-- `DATABASE_URL`: conexion a Postgres.
+- `DATABASE_URL` / `DIRECT_URL`: conexion a MySQL (en produccion y dev, MySQL de Hostinger; ver `backend/.env.example`).
 - `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET`: obligatorias, cualquier string en dev.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL`: login con Google (opcional en dev; sin configurar, ese boton simplemente fallara contra la API de Google).
 - `FOOTBALL_DATA_API_KEY`: clave de [football-data.org](https://www.football-data.org/) para sincronizar jornadas y resultados reales. Sin ella, las jornadas no se sincronizan (la app funciona igual, pero "jornada actual" quedara vacia hasta configurarla). `FOOTBALL_DATA_BASE_URL` tiene un valor por defecto (`https://api.football-data.org/v4`) y normalmente no hace falta tocarlo.

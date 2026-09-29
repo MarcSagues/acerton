@@ -249,7 +249,9 @@ export class GroupsService {
     const where: Prisma.GroupWhereInput = {
       ...NOT_DELETED,
       isPublic: true,
-      ...(filters.q ? { name: { contains: filters.q, mode: 'insensitive' } } : {}),
+      // Sin `mode: 'insensitive'` (solo existe en Postgres): en MySQL la
+      // collation utf8mb4_unicode_ci ya compara sin mayusculas ni acentos.
+      ...(filters.q ? { name: { contains: filters.q } } : {}),
       ...(filters.scoringMode ? { scoringMode: filters.scoringMode } : {}),
       // Un grupo debe cumplir TODAS las ligas seleccionadas, no solo alguna:
       // una condicion AND independiente por cada una en vez de un unico "in".
