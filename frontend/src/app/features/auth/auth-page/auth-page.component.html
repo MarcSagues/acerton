@@ -187,15 +187,14 @@
           </a>
         }
         @if (page.isIOSPlatform) {
-          <button type="button" class="apple-cta cta" [disabled]="page.loading()" (click)="page.loginWithAppleNative()">
-            <svg class="apple-logo" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path
-                fill="currentColor"
-                d="M16.365 1.43c0 1.14-.462 2.242-1.15 3.055-.769.902-2.033 1.604-3.07 1.604-.13 0-.26-.021-.35-.032-.015-.088-.043-.36-.043-.647 0-1.14.514-2.29 1.16-3.036.78-.902 2.121-1.583 3.24-1.63.011.11.213.319.213.686zM20.77 17.12c-.35.803-.517 1.164-.964 1.878-.625 1.004-1.508 2.256-2.6 2.267-.975.01-1.225-.633-2.549-.622-1.323.01-1.598.632-2.573.622-1.092-.01-1.928-1.132-2.553-2.136-1.75-2.792-1.935-6.075-.855-7.822.766-1.245 1.977-1.972 3.116-1.972 1.16 0 1.888.633 2.848.633.933 0 1.5-.633 2.845-.633 1.014 0 2.086.552 2.851 1.505-2.507 1.373-2.1 4.949.434 6.28z"
-              />
-            </svg>
-            Continuar con Apple
-          </button>
+          <!-- Hueco para el boton nativo de Apple (ASAuthorizationAppleIDButton), que se dibuja encima — ver NativeAppleButtonDirective. -->
+          <div
+            class="apple-cta-slot"
+            appNativeAppleButton
+            aria-hidden="true"
+            [disabled]="page.loading()"
+            (pressed)="page.loginWithAppleNative()"
+          ></div>
         }
         <button type="button" class="cta secondary" (click)="page.openEmailForm()">
           <piqo-svg icon="correo" size="20"></piqo-svg>
