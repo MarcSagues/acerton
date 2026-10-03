@@ -1,7 +1,11 @@
 import { WildcardsService } from './wildcards.service';
 
 function buildDeps(
-  group: { comebackEnabled: boolean; comebackPointsPerBonus: number; scoringMode?: 'ONE_X_TWO' | 'EXACT_SCORE' } | null,
+  group: {
+    comebackEnabled: boolean;
+    comebackPointsPerBonus: number;
+    scoringMode?: 'ONE_X_TWO' | 'EXACT_SCORE';
+  } | null,
   groupCompetitions: { competitionId: string }[],
   rankingRows: { userId: string; points: number }[],
   predictionCount = 0,
@@ -229,7 +233,11 @@ describe('WildcardsService.assertCanUseDoubleChance', () => {
 
 describe('WildcardsService.getComebackStatus — comodin extra por video', () => {
   it('sin AdRewardClaim, adBonusClaimed es false y adBonusAvailable true si el grupo tiene el comodin activado y la jornada no ha terminado', async () => {
-    const { service } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
 
     const status = await service.getComebackStatus('u1', 'g1', 'md1');
 
@@ -238,7 +246,11 @@ describe('WildcardsService.getComebackStatus — comodin extra por video', () =>
   });
 
   it('con AdRewardClaim ya existente, suma +1 al allowance y adBonusAvailable pasa a false', async () => {
-    const { service, prisma } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service, prisma } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
     prisma.adRewardClaim.findUnique.mockResolvedValue({ id: 'claim1' });
 
     const status = await service.getComebackStatus('u1', 'g1', 'md1');
@@ -247,7 +259,11 @@ describe('WildcardsService.getComebackStatus — comodin extra por video', () =>
   });
 
   it('adBonusAvailable es false si la jornada ya ha terminado', async () => {
-    const { service, prisma } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service, prisma } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
     prisma.matchday.findUnique.mockResolvedValue({ status: 'FINISHED', competitionId: 'c1' });
 
     const status = await service.getComebackStatus('u1', 'g1', 'md1');
@@ -256,7 +272,11 @@ describe('WildcardsService.getComebackStatus — comodin extra por video', () =>
   });
 
   it('adBonusAvailable es false si el grupo tiene el comodin desactivado', async () => {
-    const { service } = buildDeps({ comebackEnabled: false, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service } = buildDeps(
+      { comebackEnabled: false, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
 
     const status = await service.getComebackStatus('u1', 'g1', 'md1');
 
@@ -264,7 +284,11 @@ describe('WildcardsService.getComebackStatus — comodin extra por video', () =>
   });
 
   it('sin matchdayId, adBonusClaimed y adBonusAvailable son siempre false', async () => {
-    const { service } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
 
     const status = await service.getComebackStatus('u1', 'g1');
 
@@ -274,7 +298,11 @@ describe('WildcardsService.getComebackStatus — comodin extra por video', () =>
 
 describe('WildcardsService.claimAdReward', () => {
   it('crea la fila de AdRewardClaim y devuelve el estado actualizado con el bonus aplicado', async () => {
-    const { service, prisma } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service, prisma } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
     // Tras el create(), la siguiente lectura de getComebackStatus ya debe encontrar la fila.
     prisma.adRewardClaim.findUnique.mockResolvedValue({ id: 'claim1' });
 
@@ -287,23 +315,38 @@ describe('WildcardsService.claimAdReward', () => {
   });
 
   it('rechaza si el grupo tiene el comodin de remontada desactivado', async () => {
-    const { service } = buildDeps({ comebackEnabled: false, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service } = buildDeps(
+      { comebackEnabled: false, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
 
     await expect(service.claimAdReward('u1', 'g1', 'md1')).rejects.toThrow();
   });
 
   it('rechaza si la jornada ya ha terminado', async () => {
-    const { service, prisma } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service, prisma } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
     prisma.matchday.findUnique.mockResolvedValue({ status: 'FINISHED', competitionId: 'c1' });
 
     await expect(service.claimAdReward('u1', 'g1', 'md1')).rejects.toThrow();
   });
 
   it('es idempotente: si ya estaba reclamado (choque de unicidad), no lanza y devuelve el estado igualmente', async () => {
-    const { service, prisma } = buildDeps({ comebackEnabled: true, comebackPointsPerBonus: 6 }, [{ competitionId: 'c1' }], []);
+    const { service, prisma } = buildDeps(
+      { comebackEnabled: true, comebackPointsPerBonus: 6 },
+      [{ competitionId: 'c1' }],
+      [],
+    );
     const { Prisma } = jest.requireActual('@prisma/client');
     prisma.adRewardClaim.create.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError('duplicate', { code: 'P2002', clientVersion: '5.0.0' }),
+      new Prisma.PrismaClientKnownRequestError('duplicate', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      }),
     );
     prisma.adRewardClaim.findUnique.mockResolvedValue({ id: 'claim1' });
 

@@ -88,7 +88,10 @@ export class BadgesService {
   async getEarnStats(): Promise<Record<string, number>> {
     const [totalUsers, distinctPairs, badges] = await Promise.all([
       this.prisma.user.count(),
-      this.prisma.userBadge.findMany({ distinct: ['badgeId', 'userId'], select: { badgeId: true } }),
+      this.prisma.userBadge.findMany({
+        distinct: ['badgeId', 'userId'],
+        select: { badgeId: true },
+      }),
       this.prisma.badge.findMany({ select: { id: true, code: true } }),
     ]);
 
@@ -137,7 +140,9 @@ export class BadgesService {
       if (scoringMode === 'ONE_X_TWO') {
         newlyAwarded.push(...(await this.checkOneXTwoHitMilestones(userId, groupId, matchdayId)));
       } else {
-        newlyAwarded.push(...(await this.checkExactScoreHitMilestones(userId, groupId, matchdayId)));
+        newlyAwarded.push(
+          ...(await this.checkExactScoreHitMilestones(userId, groupId, matchdayId)),
+        );
       }
     }
 
@@ -152,7 +157,10 @@ export class BadgesService {
    * despues de crear el grupo. No lanza si falla: crear el grupo no debe
    * romperse por un fallo del sistema de insignias.
    */
-  async checkGroupFounder(userId: string, groupId: string): Promise<{ userId: string; badgeName: string }[]> {
+  async checkGroupFounder(
+    userId: string,
+    groupId: string,
+  ): Promise<{ userId: string; badgeName: string }[]> {
     try {
       return await this.award(userId, BADGE_CODES.GROUP_FOUNDER, groupId);
     } catch (error) {
@@ -236,7 +244,8 @@ export class BadgesService {
       select: { pointsEarned: true },
     });
     const perfect =
-      predictions.length === matchday.matches.length && predictions.every((p) => (p.pointsEarned ?? 0) > 0);
+      predictions.length === matchday.matches.length &&
+      predictions.every((p) => (p.pointsEarned ?? 0) > 0);
     if (perfect) {
       return this.award(userId, BADGE_CODES.PERFECT_MATCHDAY, groupId, matchdayId);
     }
@@ -349,10 +358,14 @@ export class BadgesService {
     });
     const awarded: { userId: string; badgeName: string }[] = [];
     if (hits === BADGE_TARGETS.ONE_X_TWO_HITS_25) {
-      awarded.push(...(await this.award(userId, BADGE_CODES.ONE_X_TWO_HITS_25, groupId, matchdayId)));
+      awarded.push(
+        ...(await this.award(userId, BADGE_CODES.ONE_X_TWO_HITS_25, groupId, matchdayId)),
+      );
     }
     if (hits === BADGE_TARGETS.ONE_X_TWO_HITS_100) {
-      awarded.push(...(await this.award(userId, BADGE_CODES.ONE_X_TWO_HITS_100, groupId, matchdayId)));
+      awarded.push(
+        ...(await this.award(userId, BADGE_CODES.ONE_X_TWO_HITS_100, groupId, matchdayId)),
+      );
     }
     return awarded;
   }
@@ -370,10 +383,14 @@ export class BadgesService {
     const hits = await this.countExactScoreHits(userId, groupId);
     const awarded: { userId: string; badgeName: string }[] = [];
     if (hits >= 1) {
-      awarded.push(...(await this.award(userId, BADGE_CODES.EXACT_SCORE_HIT_1, groupId, matchdayId)));
+      awarded.push(
+        ...(await this.award(userId, BADGE_CODES.EXACT_SCORE_HIT_1, groupId, matchdayId)),
+      );
     }
     if (hits === BADGE_TARGETS.EXACT_SCORE_HITS_10) {
-      awarded.push(...(await this.award(userId, BADGE_CODES.EXACT_SCORE_HITS_10, groupId, matchdayId)));
+      awarded.push(
+        ...(await this.award(userId, BADGE_CODES.EXACT_SCORE_HITS_10, groupId, matchdayId)),
+      );
     }
     return awarded;
   }
@@ -436,8 +453,12 @@ export class BadgesService {
       select: { groupId: true, group: { select: { scoringMode: true } } },
     });
     const groupIds = memberships.map((m) => m.groupId);
-    const oneXTwoGroupIds = memberships.filter((m) => m.group.scoringMode === 'ONE_X_TWO').map((m) => m.groupId);
-    const exactScoreGroupIds = memberships.filter((m) => m.group.scoringMode === 'EXACT_SCORE').map((m) => m.groupId);
+    const oneXTwoGroupIds = memberships
+      .filter((m) => m.group.scoringMode === 'ONE_X_TWO')
+      .map((m) => m.groupId);
+    const exactScoreGroupIds = memberships
+      .filter((m) => m.group.scoringMode === 'EXACT_SCORE')
+      .map((m) => m.groupId);
 
     const streaks = groupIds.length
       ? await this.prisma.streak.findMany({ where: { userId, groupId: { in: groupIds } } })
@@ -456,7 +477,9 @@ export class BadgesService {
       distinctCompetitions,
     ] = await Promise.all([
       Promise.all(groupIds.map((groupId) => this.currentHotStreakForGroup(userId, groupId))),
-      Promise.all(groupIds.map((groupId) => this.prisma.prediction.count({ where: { userId, groupId } }))),
+      Promise.all(
+        groupIds.map((groupId) => this.prisma.prediction.count({ where: { userId, groupId } })),
+      ),
       Promise.all(
         oneXTwoGroupIds.map((groupId) =>
           this.prisma.prediction.count({ where: { userId, groupId, pointsEarned: { gt: 0 } } }),
@@ -477,18 +500,27 @@ export class BadgesService {
       ),
       Promise.all(
         groupIds.map((groupId) =>
-          this.prisma.prediction.count({ where: { userId, groupId, pointsEarned: { gt: 0 }, match: { result: 'DRAW' } } }),
+          this.prisma.prediction.count({
+            where: { userId, groupId, pointsEarned: { gt: 0 }, match: { result: 'DRAW' } },
+          }),
         ),
       ),
       Promise.all(
         groupIds.map((groupId) =>
-          this.prisma.rankingSnapshot.count({ where: { userId, groupId, period: 'WEEKLY', position: { lte: 3 } } }),
+          this.prisma.rankingSnapshot.count({
+            where: { userId, groupId, period: 'WEEKLY', position: { lte: 3 } },
+          }),
         ),
       ),
       Promise.resolve(groupIds.length),
       this.prisma.prediction
-        .findMany({ where: { userId }, select: { match: { select: { matchday: { select: { competitionId: true } } } } } })
-        .then((predictions) => new Set(predictions.map((p) => p.match.matchday.competitionId)).size),
+        .findMany({
+          where: { userId },
+          select: { match: { select: { matchday: { select: { competitionId: true } } } } },
+        })
+        .then(
+          (predictions) => new Set(predictions.map((p) => p.match.matchday.competitionId)).size,
+        ),
     ]);
     const bestHotStreak = hotStreaks.reduce((max, value) => Math.max(max, value), 0);
     const bestPredictions = predictionTotals.reduce((max, value) => Math.max(max, value), 0);
@@ -498,7 +530,10 @@ export class BadgesService {
     const bestDrawHits = drawHitTotals.reduce((max, value) => Math.max(max, value), 0);
     const bestPodiums = podiumTotals.reduce((max, value) => Math.max(max, value), 0);
 
-    const capped = (current: number, target: number): BadgeProgress => ({ current: Math.min(current, target), target });
+    const capped = (current: number, target: number): BadgeProgress => ({
+      current: Math.min(current, target),
+      target,
+    });
 
     return {
       [BADGE_CODES.STREAK_5]: capped(bestStreak, BADGE_TARGETS.STREAK_5!),
@@ -510,7 +545,10 @@ export class BadgesService {
       [BADGE_CODES.PREDICTIONS_500]: capped(bestPredictions, BADGE_TARGETS.PREDICTIONS_500!),
       [BADGE_CODES.ONE_X_TWO_HITS_25]: capped(bestOneXTwoHits, BADGE_TARGETS.ONE_X_TWO_HITS_25!),
       [BADGE_CODES.ONE_X_TWO_HITS_100]: capped(bestOneXTwoHits, BADGE_TARGETS.ONE_X_TWO_HITS_100!),
-      [BADGE_CODES.EXACT_SCORE_HITS_10]: capped(bestExactScoreHits, BADGE_TARGETS.EXACT_SCORE_HITS_10!),
+      [BADGE_CODES.EXACT_SCORE_HITS_10]: capped(
+        bestExactScoreHits,
+        BADGE_TARGETS.EXACT_SCORE_HITS_10!,
+      ),
       [BADGE_CODES.WILDCARD_HITS_5]: capped(bestWildcardHits, BADGE_TARGETS.WILDCARD_HITS_5!),
       [BADGE_CODES.DRAW_HITS_10]: capped(bestDrawHits, BADGE_TARGETS.DRAW_HITS_10!),
       [BADGE_CODES.PODIUM_5]: capped(bestPodiums, BADGE_TARGETS.PODIUM_5!),
@@ -567,7 +605,9 @@ export class BadgesService {
 
     const awarded: { userId: string; badgeName: string }[] = [];
     for (const winner of winners) {
-      awarded.push(...(await this.award(winner.userId, BADGE_CODES.MATCHDAY_TOP_1, groupId, matchdayId)));
+      awarded.push(
+        ...(await this.award(winner.userId, BADGE_CODES.MATCHDAY_TOP_1, groupId, matchdayId)),
+      );
     }
     return awarded;
   }
@@ -592,7 +632,9 @@ export class BadgesService {
       return [];
     }
 
-    await this.prisma.userBadge.create({ data: { userId, badgeId: badge.id, groupId, matchdayId } });
+    await this.prisma.userBadge.create({
+      data: { userId, badgeId: badge.id, groupId, matchdayId },
+    });
     return [{ userId, badgeName: badge.name }];
   }
 }

@@ -96,10 +96,15 @@
 .notice-card {
   display: flex;
   gap: 12px;
+  width: 100%;
   padding: 14px;
   border-radius: 14px;
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-border);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 
   &.unread {
     border-color: var(--p4-accent);

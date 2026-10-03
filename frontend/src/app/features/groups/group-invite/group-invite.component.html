@@ -47,7 +47,7 @@
           <div class="members-row">
             @for (member of page.members(); track member.id) {
               <span class="member-avatar-wrap" #avatarWrap (click)="page.toggleMemberTooltip(member.id, member.user.name, avatarWrap)">
-                <app-avatar [url]="member.user.avatarUrl" [background]="member.user.avatarBackground" [name]="member.user.name" [size]="38"></app-avatar>
+                <app-avatar [url]="member.user.avatarUrl" [background]="member.user.avatarBackground" [name]="member.user.name" [level]="member.user.level" [size]="38"></app-avatar>
               </span>
             }
           </div>

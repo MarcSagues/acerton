@@ -176,7 +176,7 @@ elegibilidad, racha global y estadísticas.
 | Añadir competiciones durante la temporada sin retroactividad | 🟡 | El toggle de competiciones activas ya existe (`GroupCompetition.isActive`), pero no hay noción de "desde qué jornada cuenta" ligada a temporada. |
 | Elegibilidad de participación (50 %, jornadas ya cerradas al incorporarse) | ✅ | `EligibilityService.computeMemberEligibility`: jornadas disponibles = cerradas/finalizadas de las competiciones activas del grupo con `closesAt > joinedAt` (excluye las que ya habían cerrado al incorporarse); un pronóstico en cualquier partido de una jornada basta para contarla como participada (deduplicado); elegible con ≥ 50 % inclusive. `GET /groups/:id/eligibility` para toda la lista de miembros — base para "candidatos válidos" (mínimo 3) del reparto de premios en el Sprint 6. 8 tests unitarios (límite exacto del 50 %, exclusión por fecha de incorporación, deduplicación de jornada con varios partidos pronosticados). Verificado también en vivo contra el backend real (grupo recién creado → 0 disponibles, no elegible). |
 | Racha global (todas las competiciones, deduplicando jornadas repetidas entre grupos) | ✅ | Modelo nuevo `GlobalStreak` (uno por usuario, no por grupo). `StreaksService.updateGlobalStreaks` se dispara tras el cierre de cada jornada (mismo evento que ya dispara las rachas por grupo), calcula la unión de grupos afectados y deduplica por `userId` con `distinct` tanto en la pertenencia a grupos como en las predicciones — así una misma jornada compartida por varios grupos del usuario no se cuenta dos veces. Mismo patrón de idempotencia (`lastMatchdayId`) y mismo cálculo de racha (`streak-calculator.ts`) que las rachas por grupo. `getGlobalForUser` expuesto en `GET /users/me/profile`; sustituye en Perfil la aproximación anterior (`Math.max` de las rachas por grupo, que podía sobreestimar si un grupo llevaba más jornadas que otro). 4 tests unitarios (forma exacta de las queries deduplicadas, participar en cualquier grupo cuenta, faltar una jornada la rompe, idempotencia) + verificado en vivo en el navegador. |
-| Orden estable de jornadas por cierre de pronósticos | ⬜ | Pendiente de analizar casos simultáneos antes de implementar, como pide `product-rules.md`. |
+| Orden estable de jornadas por cierre de pronósticos | ✅ backend | Resuelto con el usuario 2026-09-19 en dos vueltas (ver `decisions.md`). Primera vuelta: `getCurrentMatchdayForCompetition` pasó a ordenar por `closesAt` en vez de `order` — insuficiente en la práctica, porque `closesAt` se fija al kickoff del PRIMER partido de la ronda y no se mueve si se aplaza uno posterior (confirmado con datos reales de `dev`: La Liga jornada 6, 9/10 jugados y el último aplazado un mes, seguía "ganando" a la jornada 7 que se jugaba ese mismo fin de semana — y además bloqueaba pronósticos reales de la 7 vía `canAcceptPredictions`). Fix real (segunda vuelta): nuevo `getReferenceOrder`, basado en el kickoff del próximo partido SIN TERMINAR de cada jornada (recalculado sobre partidos reales, no un campo fijo), usado tanto para elegir la jornada a mostrar como para el umbral de `canAcceptPredictions`. Verificado con SQL directo contra `dev`. Sin verificar en navegador todavía. |
 | Estadísticas por temporada, globales y por grupo | ⬜ | No existe agregación de estadísticas más allá de `RankingSnapshot` (puntos/posición por jornada). |
 | Separar estadísticas 1X2 / resultado exacto | 🟡 | El dato existe a nivel de grupo (`scoringMode` es fijo por grupo), pero no hay una vista agregada que las separe explícitamente. |
 
@@ -338,6 +338,100 @@ Pendiente de validar en dispositivo real (iOS) tras la build: el
 comportamiento de Web Share y Clipboard dentro de WKWebView puede diferir
 del navegador de escritorio usado para la verificación en `ng serve`.
 
+## Sprint 13 — Chat de grupo ⬜ (añadido 2026-09-15, a petición del usuario)
+
+Deliberadamente aparcado lejos en el roadmap, **después** del Sprint 11
+(Premium): a diferencia del resto de sprints pendientes, aquí el riesgo
+no es solo de esfuerzo sino de bloqueo de publicación y de cumplimiento
+legal, así que no tiene sentido priorizarlo mientras haya sprints con
+mejor ratio valor/riesgo por delante.
+
+Idea de diseño ya barajada con el usuario: mensajes efímeros con TTL de
+7 días (se borran solos, vía un job de limpieza igual que los ya
+existentes en `@nestjs/schedule`). Ayuda con retención de datos
+(RGPD/DSA) y con que el almacenamiento no crezca sin límite, pero **no
+sustituye** la moderación exigida por Apple — reportar/bloquear hace
+falta igual, independientemente de cuánto dure un mensaje (y un mensaje
+reportado probablemente deba conservarse más allá del TTL hasta
+resolverse).
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| Decidir alcance: chat privado (dentro de grupo) vs también en grupos públicos | ⬜ | En público el riesgo de abuso/spam es mucho mayor — si se hace, probablemente solo grupos privados. |
+| Moderación (guideline 1.2 de Apple para contenido generado por usuarios) | 🔒 | Imprescindible para pasar App Store: reportar mensajes, bloquear usuarios, canal de contacto para abusos, y filtro de contenido. Sin esto la app puede ser rechazada o retirada — no es opcional si hay texto libre entre usuarios, ni aunque los mensajes caduquen solos. |
+| Mensajes efímeros (TTL 7 días) vía job de limpieza | ⬜ | Reduce huella de datos (RGPD/DSA) y acota el almacenamiento; excepción a decidir para mensajes con un reporte abierto (conservarlos hasta resolver, no borrarlos a los 7 días). |
+| Cumplimiento RGPD/DSA de los mensajes | ⬜ | Más datos personales que retener/borrar; bajo la DSA, obligaciones de transparencia de moderación además de la propia declaración de comerciante. |
+| Infraestructura en tiempo real | ⬜ | Hoy la app es REST + cron (`@nestjs/schedule`), sin nada de tiempo real — haría falta WebSockets o Firebase Realtime/Firestore (ya hay proyecto Firebase para push, podría reutilizarse). Pieza de arquitectura nueva, no una extensión de lo existente. |
+| Preferencia de silenciar chat por grupo | ⬜ | Mismo patrón que `GroupMembership.mutedNotifications` (Sprint 9) — evitar que compita con avisos de jornada/insignias sin control. |
+| Alternativa más barata a evaluar antes de construir chat completo | ⬜ | Reacciones/emoji sobre pronósticos o un feed de actividad del grupo dan parte de la interacción social sin la carga de moderar texto libre — valorar si cubre la necesidad antes de meterse en todo lo anterior. |
+
+## Sprint 14 — Sistema de nivel y experiencia 🟡 en curso (añadido 2026-09-15, a petición del usuario)
+
+Gamificación transversal (no depende de grupos ni de temporadas): cada
+cuenta gana experiencia (XP) al participar y acertar, sube de nivel, y
+desbloquea colores/avatares (y en el futuro marcos de foto) según el
+nivel alcanzado. Mismo patrón de enganche que insignias/racha global:
+se calcula tras el mismo evento de cierre/puntuación de jornada
+(`evaluateAfterMatchdayClose`), no una arquitectura nueva.
+
+**Fuentes de XP, de más a menos valor (orden dado por el usuario)**:
+1. Pleno de jornada en modo resultado exacto (sube mucho) — misma
+   condición que la insignia `PERFECT_MATCHDAY` (Sprint 8), reutilizable.
+2. Pleno de quiniela — **pendiente de definir exactamente qué cuenta
+   como esto** (¿pleno de una jornada en 1X2, equivalente al anterior
+   pero en el otro modo de puntuación? ¿otra cosa?).
+3. Invitar a un amigo (sistema de referral por link, nuevo) — con caída
+   permanente de XP por cada referido adicional de la misma cuenta
+   (nunca llega a 0, pero el suelo debe ser insignificante frente al
+   XP de un nivel) para que farmear cuentas falsas no compense. El
+   contador de referidos no se resetea nunca (ni por temporada ni por
+   mes).
+4. Aciertos de resultado exacto.
+5. Acierto 1X2 / acierto ganador en modo resultado exacto (mismo valor
+   entre sí).
+6. Acierto con comodín en el 1X2.
+7. Participar (flat, por el mero hecho de pronosticar).
+
+Progresión dentro de una misma jornada: más aciertos da
+proporcionalmente más XP por acierto adicional — **no implementado
+así**: se optó por un valor fijo por tipo de acierto (ver tabla), más
+simple y ya ordenado igual que pidió el usuario; revisar si hace falta
+más adelante una escala progresiva de verdad.
+
+**Valores implementados** (`backend/src/xp/xp.util.ts`, `XP_VALUES`):
+participar 5 XP, acierto con comodín en 1X2 15 XP, acierto 1X2 normal
+25 XP, acierto ganador en resultado exacto 25 XP, acierto de resultado
+exacto (marcador clavado) 60 XP, pleno de jornada en 1X2 130 XP, pleno
+de jornada en resultado exacto 150 XP — mismo orden pedido por el
+usuario. Curva de nivel: 200 XP el nivel 1, +150 XP cada nivel
+siguiente, tope en nivel 18 (`xpProgressForLevel`).
+
+| Tarea | Estado | Notas |
+|---|---|---|
+| Modelo de XP total + log de eventos por usuario | ✅ | `User.experience` (total acumulado, nunca baja) + `XpEvent` (una fila por racion concedida, mismo criterio que `Notification`). |
+| Curva de nivel (XP necesario por nivel) | ✅ | `xp.util.ts`: `xpForLevel`/`xpProgressForLevel`, tope en nivel 18. Mismos valores en el frontend (`level-progress.domain.ts`, todavía sin unificar en un paquete compartido — duplicado a propósito, igual que `scoring.util.ts` no se comparte con el frontend). |
+| Cálculo de XP enganchado al cierre de jornada | ✅ | `XpService.evaluateAfterMatchdayClose`, mismo punto que `BadgesService` en `JobsService.finalizeMatchday`. Cubre acierto 1X2 (normal y con comodín), acierto de resultado exacto (marcador exacto vs solo ganador) y pleno de jornada (ambos modos) — todo lo que depende del resultado real del partido. Sin cubrir todavía: XP por invitar a un amigo y por entrar cada día (ver filas de abajo). |
+| XP de participar en tiempo real (no solo al cerrar jornada) | ✅ | Cambiado 2026-09-15 a petición del usuario ("en dev aunque ponga predicciones no sube nada la barra de nivel"): `XpService.awardParticipation` concede +5 XP al momento en `PredictionsService.submit`, la primera vez que se pronostica cada partido (no en ediciones posteriores del mismo pronóstico) — antes era un flat +5 por jornada, solo al cerrarla de verdad (mismo punto que insignias, necesitaba resultados reales). Si eso cruza de nivel, dispara `notifyLevelUp` igual que el resto de fuentes. |
+| Sistema de referidos (link único, registro invitado↔invitador) | ✅ web | **Implementado el 2026-09-16** a petición explícita del usuario, sobre los requisitos fijados el mismo día (ver `decisions.md`). `User.referralCode` (único, mismo formato que `Group.inviteCode` — compartido vía `common/short-code.util.ts`) y `User.referredById` (relación permanente, pensada para que Sprint 11 la consulte sin rediseño). `ReferralsService.redeem` es el único punto de enlace: mismo resultado por link (`/r/:code`, `referralLinkGuard`) o por el campo manual de Ajustes (deliberadamente sin card ni icono). Enlazado al registro (email y Google, solo cuentas nuevas) de forma best-effort. XP del referidor revisada por el usuario en esta misma sesión: 500 en el primero, cae a la mitad en cada uno siguiente hasta un suelo de 10 (`xpForReferral`), sin límite de redenciones por código. De paso, a la misma petición, revisados también `PERFECT_MATCHDAY_1X2`/`PERFECT_MATCHDAY_EXACT` (130/150 → 600, unificados como "pleno de ganadores") y añadido `PERFECT_MATCHDAY_ALL_EXACT` (1000, nuevo — pleno con el marcador exacto de *todos* los partidos, no solo el ganador). Verificado en navegador de extremo a extremo con dos cuentas reales (código copiado de una, aplicado desde Ajustes en la otra: relación y XP confirmadas en Postgres, bloqueo de "ya tienes un referidor" probado). 281 tests del backend y 17 del frontend en verde. Sin decidir/implementar todavía: mecanismo de descuento de Premium en sí (Sprint 11), y sin verificar en iOS/Android (solo web/local). **Actualización el mismo día**: a petición explícita del usuario ("debajo de normas y permisos salga Invitar y ahí dentro esté todo esto del link visible"), el link/código propio pasó de solo compartirse (sin verse en pantalla) a tener su propia pantalla `/profile/invite` (código grande, link visible con copiar, contador de referidos, y el campo de aplicar código de un amigo, que se traslada aquí desde el sitio poco visible del perfil). Nueva entrada "Invitar" en Ajustes, justo debajo de "Normas y premios". La tarjeta "Invita a un amigo" de `/profile/level` no cambia (sigue compartiendo directo). |
+| XP por entrar cada día | ⬜ | Sin empezar — no estaba en la lista de prioridad que dio el usuario, era solo un ejemplo del diseño de Claude Design; decidir si se implementa de verdad. |
+| Desbloqueables: colores/avatares por nivel | ✅ | `LEVEL_REWARDS` (`level-progress.domain.ts`) ya no es un catálogo inventado: son 18 entradas reales (7 colores de `AVATAR_BACKGROUNDS` + 11 mascotas de `DEFAULT_MASCOT_IDS`, excluyendo el champán/`reposo` "de fábrica"), alternando color/mascota, ordenadas de más sobrio a más vistoso a criterio de Claude Code (a petición explícita del usuario, "según tu criterio"), con la miniatura PNG real de cada mascota. Gating real ya implementado (2026-09-15): `UsersService.updateAvatar` rechaza en servidor (403) un color/mascota de un nivel todavía no alcanzado (`avatar-level-rewards.ts`, mismo mapeo duplicado del frontend), y `/profile/avatar` ya no deja seleccionarlo (candado + atenuado, mismo patrón que las mascotas de trofeo). |
+| Aviso de subida de nivel (push + in-app) | ✅ web | Nuevo `NotificationType.LEVEL_UP` (preferencia `levelUp`, activada por defecto), disparado desde `JobsService` justo después de `XpService.evaluateAfterMatchdayClose` (que ahora devuelve qué usuarios cruzaron de nivel en esa pasada). Si la app está abierta en ese momento, un `setInterval` de 2 min en `ShellFacade` detecta el aviso sin leer y abre un pop-up de "¡Subiste de nivel!" una sola vez por sesión (`NotificationsFeedService.pendingLevelUpPopup`); si no, queda como notificación push normal, configurable desde Ajustes de notificaciones. |
+| Puntito rojo de nivel sin reclamar (mismo patrón que Jornada) | ✅ web | Mismo estilo `.pending-dot` que ya usan Jornada/Grupos en la barra inferior, reutilizado en 4 sitios: pestaña Perfil de la barra inferior, el nodo concreto del recorrido de nivel, el icono de la tarjeta de detalle, y (2026-09-15, a petición explícita del usuario) el propio color/mascota dentro de `/profile/avatar` (`ProfileAvatarFacade.isMascotNew`/`isBackgroundNew`) — los cuatro leen `NotificationsFeedService.unreadLevelUps()`. La campanita de arriba usa su contador de avisos sin leer ya existente (sin campo nuevo). |
+| Marcar un aviso como leído individualmente (no solo "Leer todo") | ✅ | Primera vez en el código que existe esto: `NotificationsService.markOneRead` + `POST /notifications/me/:id/read`. Pulsar el aviso de subida de nivel (desde el pop-up, la campanita o el propio recorrido) navega a `/profile/avatar` y marca leído ese aviso concreto, lo que apaga su puntito rojo en todos los sitios de la fila anterior a la vez (misma señal derivada). |
+| Marcos de foto por nivel | 🔒 | El concepto de "marco" no existe todavía en absoluto (mismo hueco pendiente que Sprint 11 Premium) — diseñar desde cero cuando toque. |
+| Barra de progreso de nivel en Perfil | ✅ web | Tarjeta con nivel y XP real (`ProfileController` → `xp: xpProgressForLevel(...)`), pulsable a `/profile/level`. |
+| Pantalla de progreso de nivel (scroll horizontal) | ✅ web | Track tipo pase de temporada: NIVEL+RECOMPENSA — barra — NIVEL+RECOMPENSA — barra... (`scroll-snap` CSS, sin librería), centrado en el nivel real al abrir. Diseñada visualmente en Claude Design (ver nota de abajo) e implementada en Angular a partir de ese diseño, con los tokens de color reales de Piqo. **2026-09-16, a petición explícita del usuario ("completarlo al 100% con datos reales")**: quitado el aviso "vista de demostración parcial" (ya no aplicaba, las recompensas llevaban un día siendo reales) y sustituidas las 3 últimas piezas fijas de la pantalla por datos reales — `ProfileController` (`GET /users/me/profile`) devuelve ahora también `xpLast7Days` (suma de `XpEvent.amount` de los últimos 7 días), `accuracy` (aciertos/predicciones puntuadas del usuario en todos sus grupos) y `badgesUnlocked` (insignias distintas conseguidas sobre el total del catálogo). La tarjeta "Tu jornada" pasa de Aciertos/Racha/Ranking de muestra a Aciertos/Racha (racha global ya real, existía en la respuesta y no se usaba)/Insignias, todas reales; el "+340 Últimos 7 días" del héroe pasa a `xpLast7Days` real. La tarjeta "Invita a un amigo" (funcionalidad todavía sin construir, ver fila "Sistema de referidos" arriba) dejó de prometer "+100 XP con su primer pronóstico" — ahora muestra un chip "PRONTO" sin comprometer una cifra que no está decidida. Verificado en navegador con una cuenta real de desarrollo con historial (`demo-tu@piqo.test`: 9/21 aciertos, racha x3, 3/20 insignias, +20 XP últimos 7 días — coincide exactamente con lo consultado directamente en Postgres). 261 tests del backend y 17 del frontend en verde. |
+| Botón de info (qué XP da cada acción) | ✅ web | Bottom sheet "Cómo ganar XP" (`LevelInfoSheetComponent`) — ya usa los valores/fuentes reales de XP (tabla de arriba) y marca "Invitar a un amigo" como grupo aparte "PRÓXIMAMENTE" sin cifra concreta (`level-progress.domain.ts`, `XP_GROUPS`). Esta fila seguía marcada como pendiente en el roadmap por un despiste de documentación — el contenido real ya estaba así antes de esta sesión (2026-09-16); corregido aquí solo el registro, no el código. |
+| Insignia de nivel sobre el avatar en todos los sitios | ✅ web | `AvatarComponent` con `[level]` opcional (insignia circular abajo-derecha, para no chocar con el punto rojo de pendientes). Conectado en los 9 sitios que ya usaban `app-avatar`: top-bar, Perfil, Tabla, miembros de grupo, invitar, resultados de jornada (propios y ajenos), detalle de miembro — para "otros" usuarios el nivel viaja en la misma respuesta que ya traía su avatar (`GroupsService.listMembers`, `RankingsService`, `PredictionsService.getGroupPredictionsForMatchday`, `MemberProfileService`), sin round-trips nuevos. |
+
+**Diseño de la pantalla de nivel encargado a Claude Design** (2026-09-15):
+proyecto "Pantalla de progreso Piqo" (`DesignSync`, tras autorizar con
+`/design-login`). Alcance acotado explícitamente a esa vista concreta,
+no al resto de la app — el resto de la implementación (backend, lógica,
+resto de UI) la hizo Claude Code a partir del `.dc.html` exportado,
+traduciendo los estilos a los tokens reales de Piqo (`--p4-*`) en vez
+de los hex fijos del diseño, para que respete claro/oscuro.
+
 ---
 
 ## Infraestructura — entorno dev/pre (fuera de la numeración de sprints)
@@ -376,11 +470,14 @@ probarse antes de tocar prod).
   y dev se queda en el plan free, no hay riesgo de que se compartan
   horas entre ambos.
 - **Dominio/DNS**: gratis, es un subdominio del dominio que ya tienen.
-- **Limitar el acceso**: **Cloudflare Access** (parte de Cloudflare Zero
-  Trust) tiene un plan free hasta 50 usuarios — de sobra para "mi
-  compañero y yo". Deja poner una pantalla de verificación (código por
-  email, o login de Google) delante de `dev.acerton.app` antes de que la
-  petición llegue siquiera a la aplicación, sin tocar código. Gratis.
+- **Limitar el acceso**: ✅ **hecho el 2026-09-16** — **Cloudflare
+  Access** (parte de Cloudflare Zero Trust, plan Free activado, hasta 50
+  usuarios, $0/mes) configurado delante de **`app-dev.piqo.es`** (nombre
+  real tras la migración de dominio a piqo.es — este documento decía
+  `dev.acerton.app`, desactualizado). Política "Equipo Piqo dev" (Allow)
+  con los emails del usuario y su compañero, login por código de un solo
+  uso. Verificado en vivo: la pantalla de login de Cloudflare Access sale
+  antes de servir nada de la app. Ver `state.md` para el detalle completo.
 
 **Decisión (aprobada por el usuario el 2026-09-10, ver `decisions.md`)**:
 producción pasa a Render Starter (~7 $/mes, dentro del tope de 10 €/mes
@@ -408,8 +505,10 @@ coste). **Coste total esperado: ~7 $/mes** (solo producción), dev a 0€.
    **Connection string entregada al usuario directamente en el chat**, no
    guardada en este repo (contiene una contraseña) — la necesitará para
    el paso 3 (variables de entorno del backend de dev en Render).
-2. **Render — producción**: subir el Web Service existente de producción
-   del plan free a **Starter** (7 $/mes).
+2. ✅ **Render — producción**: subida del Web Service de producción del
+   plan free a **Starter** (7 $/mes) — confirmado por el usuario el
+   2026-09-16 ("en pro ya estamos pagando los 7e"). Este documento seguía
+   marcándolo "pendiente" por un despiste de registro; ya está hecho.
 3. **Render — dev**: nuevo Web Service (plan free, se duerme — aceptado)
    desplegado desde la rama `dev` del repo, con `DATABASE_URL`/`DIRECT_URL`
    apuntando a la rama Neon `dev`, `CORS_ORIGIN=https://dev.acerton.app`, y

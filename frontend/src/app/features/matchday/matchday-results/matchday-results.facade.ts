@@ -65,6 +65,7 @@ export class MatchdayResultsFacade {
   readonly targetUserName = signal<string | null>(null);
   readonly targetUserAvatarUrl = signal<string | null>(null);
   readonly targetUserAvatarBackground = signal<string | null>(null);
+  readonly targetUserLevel = signal<number | null>(null);
   /** Nombre del grupo, para el rotulo "Histórico en {grupo}" al ver el resultado de otro miembro. */
   readonly groupName = signal<string | null>(null);
   readonly position = signal<{ pos: number; total: number } | null>(null);
@@ -98,13 +99,17 @@ export class MatchdayResultsFacade {
 
   /** Un miembro por columna en la comparativa de todos, ordenados por nombre; "tu" fila destacada aparte en la plantilla. */
   readonly comparisonMembers = computed(() => {
-    const seen = new Map<string, { name: string; avatarUrl: string | null; avatarBackground: string | null }>();
+    const seen = new Map<
+      string,
+      { name: string; avatarUrl: string | null; avatarBackground: string | null; level?: number }
+    >();
     for (const prediction of this.allPredictions()) {
       if (prediction.user?.name) {
         seen.set(prediction.userId, {
           name: prediction.user.name,
           avatarUrl: prediction.user.avatarUrl,
           avatarBackground: prediction.user.avatarBackground,
+          level: prediction.user.level,
         });
       }
     }
@@ -277,6 +282,7 @@ export class MatchdayResultsFacade {
         this.targetUserName.set(targetPredictions[0]?.user?.name ?? null);
         this.targetUserAvatarUrl.set(targetPredictions[0]?.user?.avatarUrl ?? null);
         this.targetUserAvatarBackground.set(targetPredictions[0]?.user?.avatarBackground ?? null);
+        this.targetUserLevel.set(targetPredictions[0]?.user?.level ?? null);
 
         const targetRow = ranking.find((r) => r.userId === targetUserId);
         this.position.set(targetRow ? { pos: targetRow.position, total: ranking.length } : null);

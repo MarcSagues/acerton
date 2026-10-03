@@ -9,6 +9,7 @@ export interface NotificationPreferences {
   badgeEarned: boolean;
   seasonFinishedTrophies: boolean;
   reengagement: boolean;
+  levelUp: boolean;
   groups: { groupId: string; name: string; muted: boolean }[];
 }
 

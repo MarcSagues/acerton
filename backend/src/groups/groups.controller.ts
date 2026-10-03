@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -7,6 +18,7 @@ import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { SetGroupMutedDto } from './dto/set-group-muted.dto';
+import { SetGroupFavoriteDto } from './dto/set-group-favorite.dto';
 import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
 
 @Controller('groups')
@@ -82,6 +94,16 @@ export class GroupsController {
     @Body() dto: SetGroupMutedDto,
   ) {
     await this.groupsService.setMuted(id, user.id, dto.muted);
+  }
+
+  @Patch(':id/favorite')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setFavorite(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SetGroupFavoriteDto,
+  ) {
+    await this.groupsService.setFavorite(id, user.id, dto.favorite);
   }
 
   @Post(':id/leave')

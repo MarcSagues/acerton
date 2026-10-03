@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GroupsService, PublicGroupRecord, PublicGroupSummary, toPublicGroupSummary } from '../groups.service';
+import {
+  GroupsService,
+  PublicGroupRecord,
+  PublicGroupSummary,
+  toPublicGroupSummary,
+} from '../groups.service';
 import { RankingsService } from '../../rankings/rankings.service';
 
 export interface PublicGroupPreview extends PublicGroupSummary {
@@ -52,7 +57,10 @@ export class PublicGroupPreviewService {
     return this.buildPreview(group, userId);
   }
 
-  private async buildPreview(group: PublicGroupRecord, userId: string): Promise<PublicGroupPreview> {
+  private async buildPreview(
+    group: PublicGroupRecord,
+    userId: string,
+  ): Promise<PublicGroupPreview> {
     const isMember = await this.groupsService.isGroupMember(group.id, userId);
 
     const activeCompetitionIds = group.groupCompetitions.map((gc) => gc.competitionId);
@@ -62,18 +70,26 @@ export class PublicGroupPreviewService {
     // se deja el top vacio (estado vacio en el frontend) en vez de mostrar a
     // todo el mundo empatado a 0, que no aporta nada a quien no es miembro.
     const hasRanking =
-      activeCompetitionIds.length > 0 && (await this.rankingsService.hasRanking(group.id, 'TOTAL', competitionId));
+      activeCompetitionIds.length > 0 &&
+      (await this.rankingsService.hasRanking(group.id, 'TOTAL', competitionId));
 
     const topRanking = hasRanking
       ? (await this.rankingsService.getLatestRanking(group.id, 'TOTAL', competitionId))
           .slice(0, 5)
-          .map((row) => ({ userId: row.userId, name: row.user.name, position: row.position, points: row.points }))
+          .map((row) => ({
+            userId: row.userId,
+            name: row.user.name,
+            position: row.position,
+            points: row.points,
+          }))
       : [];
 
     return {
       ...toPublicGroupSummary(group, isMember),
       comebackPointsPerBonus:
-        group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled ? group.comebackPointsPerBonus : null,
+        group.scoringMode === 'ONE_X_TWO' && group.comebackEnabled
+          ? group.comebackPointsPerBonus
+          : null,
       topRanking,
     };
   }

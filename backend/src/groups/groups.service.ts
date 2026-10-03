@@ -15,10 +15,11 @@ import { AppConfig } from '../config/configuration';
 import { CompetitionsService } from '../competitions/competitions.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { BadgesService } from '../badges/badges.service';
+import { xpProgressForLevel } from '../xp/xp.util';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupRulesDto } from './dto/update-group-rules.dto';
 import { SearchPublicGroupsDto } from './dto/search-public-groups.dto';
-import { generateInviteCode } from './invite-code.util';
+import { generateShortCode } from '../common/short-code.util';
 
 /** Todo lo publicado por debajo debe excluir grupos eliminados (borrado logico). */
 const NOT_DELETED = { deletedAt: null } as const;
@@ -51,7 +52,10 @@ export interface PublicGroupSummary {
 }
 
 /** Fuera de la clase para poder reutilizarse sin instanciar GroupsService (ver PublicGroupPreviewService). */
-export function toPublicGroupSummary(group: PublicGroupRecord, isMember: boolean): PublicGroupSummary {
+export function toPublicGroupSummary(
+  group: PublicGroupRecord,
+  isMember: boolean,
+): PublicGroupSummary {
   return {
     id: group.id,
     name: group.name,
@@ -164,18 +168,21 @@ export class GroupsService {
       include: {
         _count: { select: { memberships: true } },
         groupCompetitions: { include: { competition: true } },
+        memberships: { where: { userId }, select: { isFavorite: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
     const now = new Date();
-    return Promise.all(
+    const results = await Promise.all(
       groups.map(async (group) => {
+        const { memberships, ...groupData } = group;
+        const isFavorite = memberships[0]?.isFavorite ?? false;
         const activeCompetitionIds = group.groupCompetitions
           .filter((gc) => gc.isActive)
           .map((gc) => gc.competitionId);
         if (activeCompetitionIds.length === 0) {
-          return { ...group, myPosition: null, hasPendingPicks: false };
+          return { ...groupData, myPosition: null, hasPendingPicks: false, isFavorite };
         }
         const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;
         const [snapshot, hasPendingPicks] = await Promise.all([
@@ -183,15 +190,27 @@ export class GroupsService {
             where: { groupId: group.id, userId, period: 'TOTAL', competitionId },
             orderBy: { createdAt: 'desc' },
           }),
-          this.hasPendingPicksForGroup(group.id, activeCompetitionIds, group.scoringMode, userId, now),
+          this.hasPendingPicksForGroup(
+            group.id,
+            activeCompetitionIds,
+            group.scoringMode,
+            userId,
+            now,
+          ),
         ]);
         return {
-          ...group,
+          ...groupData,
           myPosition: snapshot ? { position: snapshot.position, points: snapshot.points } : null,
           hasPendingPicks,
+          isFavorite,
         };
       }),
     );
+
+    // Favoritos siempre arriba (boton "favoritos" en Grupos), manteniendo el
+    // orden por fecha de creacion dentro de cada bloque — Array.sort es
+    // estable en Node, asi que basta comparar el flag.
+    return results.sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
   }
 
   /**
@@ -222,7 +241,8 @@ export class GroupsService {
       const byMatchId = new Map(predictions.map((p) => [p.matchId, p]));
 
       const pending = matchday.matches.some((match) => {
-        const isPredictable = match.status === 'SCHEDULED' && match.kickoff.getTime() > now.getTime();
+        const isPredictable =
+          match.status === 'SCHEDULED' && match.kickoff.getTime() > now.getTime();
         if (!isPredictable) return false;
         const prediction = byMatchId.get(match.id);
         if (scoringMode === 'EXACT_SCORE') {
@@ -375,12 +395,26 @@ export class GroupsService {
     return group;
   }
 
-  listMembers(groupId: string) {
-    return this.prisma.groupMembership.findMany({
+  async listMembers(groupId: string) {
+    const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, avatarBackground: true } } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            avatarBackground: true,
+            experience: true,
+          },
+        },
+      },
       orderBy: { joinedAt: 'asc' },
     });
+    return members.map((m) => ({
+      ...m,
+      user: { ...m.user, level: xpProgressForLevel(m.user.experience).level },
+    }));
   }
 
   async assertIsMember(groupId: string, userId: string): Promise<void> {
@@ -411,6 +445,26 @@ export class GroupsService {
     });
   }
 
+  /**
+   * Marca/desmarca un grupo como favorito solo para quien lo pide (boton
+   * "favoritos" en Grupos). Al igual que silenciar, es por membresia
+   * propia, no requiere ser admin. Se usa para fijar el grupo arriba del
+   * todo tanto en la lista de "Mis grupos" como en el selector — ver
+   * findMineForUser.
+   */
+  async setFavorite(groupId: string, userId: string, favorite: boolean): Promise<void> {
+    const membership = await this.prisma.groupMembership.findUnique({
+      where: { userId_groupId: { userId, groupId } },
+    });
+    if (!membership) {
+      throw new ForbiddenException('No perteneces a este grupo');
+    }
+    await this.prisma.groupMembership.update({
+      where: { userId_groupId: { userId, groupId } },
+      data: { isFavorite: favorite },
+    });
+  }
+
   async assertIsAdmin(groupId: string, userId: string): Promise<void> {
     const membership = await this.prisma.groupMembership.findUnique({
       where: { userId_groupId: { userId, groupId } },
@@ -422,7 +476,10 @@ export class GroupsService {
 
   /** El creador tiene control total: nombrar/quitar admins, transferir propiedad, eliminar el grupo. */
   async assertIsOwner(groupId: string, userId: string): Promise<void> {
-    const group = await this.prisma.group.findUnique({ where: { id: groupId }, select: { ownerId: true } });
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { ownerId: true },
+    });
     if (!group) {
       throw new NotFoundException('Grupo no encontrado');
     }
@@ -468,7 +525,9 @@ export class GroupsService {
       throw new NotFoundException('Ese usuario no es miembro del grupo');
     }
     if (membership.role === GroupRole.ADMIN) {
-      throw new ForbiddenException('No se puede expulsar a un administrador ni al creador del grupo');
+      throw new ForbiddenException(
+        'No se puede expulsar a un administrador ni al creador del grupo',
+      );
     }
     await this.prisma.groupMembership.delete({ where: { id: membership.id } });
   }
@@ -497,7 +556,11 @@ export class GroupsService {
   }
 
   /** El nuevo propietario debe ser ya miembro del grupo; queda como admin. */
-  async transferOwnership(groupId: string, requesterId: string, newOwnerUserId: string): Promise<Group> {
+  async transferOwnership(
+    groupId: string,
+    requesterId: string,
+    newOwnerUserId: string,
+  ): Promise<Group> {
     await this.assertIsOwner(groupId, requesterId);
     if (newOwnerUserId === requesterId) {
       throw new BadRequestException('Ya eres el propietario de este grupo');
@@ -543,9 +606,7 @@ export class GroupsService {
     }
 
     const currentlyActive = await this.competitionsService.findActiveByGroup(groupId);
-    const missing = currentlyActive.filter(
-      (gc) => !competitionIds.includes(gc.competitionId),
-    );
+    const missing = currentlyActive.filter((gc) => !competitionIds.includes(gc.competitionId));
     if (missing.length > 0) {
       throw new BadRequestException(
         'No se pueden desactivar competiciones ya activadas en el grupo, solo anadir nuevas',
@@ -577,7 +638,7 @@ export class GroupsService {
 
   private async generateUniqueInviteCode(): Promise<string> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      const code = generateInviteCode();
+      const code = generateShortCode();
       const existing = await this.prisma.group.findUnique({ where: { inviteCode: code } });
       if (!existing) {
         return code;

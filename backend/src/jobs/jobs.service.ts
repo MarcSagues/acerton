@@ -8,10 +8,12 @@ import { StreaksService } from '../streaks/streaks.service';
 import { BadgesService } from '../badges/badges.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SeasonsService } from '../seasons/seasons.service';
+import { XpService } from '../xp/xp.service';
 import { shouldSendMatchReminder } from '../matchdays/matchday.util';
 import { NotificationPreferenceFields } from '../notifications/notification-preferences.service';
 
-type ReminderField = 'reminder24hSentAt' | 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
+type ReminderField =
+  'reminder24hSentAt' | 'reminder5hSentAt' | 'reminder1hSentAt' | 'reminder30mSentAt';
 
 interface ReminderTier {
   field: ReminderField;
@@ -30,10 +32,30 @@ interface ReminderTier {
  * momento y tiene esa franja concreta activada.
  */
 const REMINDER_TIERS: ReminderTier[] = [
-  { field: 'reminder24hSentAt', windowMs: 24 * 60 * 60 * 1000, urgencyLabel: '24 horas', preferenceField: 'reminder24h' },
-  { field: 'reminder5hSentAt', windowMs: 5 * 60 * 60 * 1000, urgencyLabel: '5 horas', preferenceField: 'reminder5h' },
-  { field: 'reminder1hSentAt', windowMs: 60 * 60 * 1000, urgencyLabel: '1 hora', preferenceField: 'reminder1h' },
-  { field: 'reminder30mSentAt', windowMs: 30 * 60 * 1000, urgencyLabel: '30 minutos', preferenceField: 'reminder30m' },
+  {
+    field: 'reminder24hSentAt',
+    windowMs: 24 * 60 * 60 * 1000,
+    urgencyLabel: '24 horas',
+    preferenceField: 'reminder24h',
+  },
+  {
+    field: 'reminder5hSentAt',
+    windowMs: 5 * 60 * 60 * 1000,
+    urgencyLabel: '5 horas',
+    preferenceField: 'reminder5h',
+  },
+  {
+    field: 'reminder1hSentAt',
+    windowMs: 60 * 60 * 1000,
+    urgencyLabel: '1 hora',
+    preferenceField: 'reminder1h',
+  },
+  {
+    field: 'reminder30mSentAt',
+    windowMs: 30 * 60 * 1000,
+    urgencyLabel: '30 minutos',
+    preferenceField: 'reminder30m',
+  },
 ];
 
 @Injectable()
@@ -49,6 +71,7 @@ export class JobsService implements OnApplicationBootstrap {
     private readonly badgesService: BadgesService,
     private readonly notificationsService: NotificationsService,
     private readonly seasonsService: SeasonsService,
+    private readonly xpService: XpService,
   ) {}
 
   /**
@@ -180,12 +203,17 @@ export class JobsService implements OnApplicationBootstrap {
       select: { id: true, lastActiveAt: true, reengagementPushSentAt: true },
     });
     const dueUserIds = candidates
-      .filter((user) => !user.reengagementPushSentAt || user.reengagementPushSentAt <= user.lastActiveAt!)
+      .filter(
+        (user) => !user.reengagementPushSentAt || user.reengagementPushSentAt <= user.lastActiveAt!,
+      )
       .map((user) => user.id);
     if (dueUserIds.length === 0) return;
 
     await this.notificationsService.notifyReengagement(dueUserIds);
-    await this.prisma.user.updateMany({ where: { id: { in: dueUserIds } }, data: { reengagementPushSentAt: now } });
+    await this.prisma.user.updateMany({
+      where: { id: { in: dueUserIds } },
+      data: { reengagementPushSentAt: now },
+    });
   }
 
   /**
@@ -258,7 +286,10 @@ export class JobsService implements OnApplicationBootstrap {
         matchday.closesAt,
       );
     } catch (error) {
-      this.logger.error(`Error comprobando cierre de temporada para ${matchday.competitionId}`, error as Error);
+      this.logger.error(
+        `Error comprobando cierre de temporada para ${matchday.competitionId}`,
+        error as Error,
+      );
     }
 
     this.logger.log(`Jornada ${matchdayId} finalizada y procesada por completo`);
@@ -274,9 +305,16 @@ export class JobsService implements OnApplicationBootstrap {
     });
 
     for (const gc of groupCompetitions) {
-      const newlyAwarded = await this.badgesService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
+      const newlyAwarded = await this.badgesService.evaluateAfterMatchdayClose(
+        gc.groupId,
+        matchdayId,
+      );
       for (const { userId, badgeName } of newlyAwarded) {
         await this.notificationsService.notifyBadgeEarned(userId, badgeName);
+      }
+      const levelUps = await this.xpService.evaluateAfterMatchdayClose(gc.groupId, matchdayId);
+      for (const { userId, level } of levelUps) {
+        await this.notificationsService.notifyLevelUp(userId, level);
       }
       await this.notificationsService.notifyMatchdayFinished(gc.groupId, matchdayId, matchdayName);
     }

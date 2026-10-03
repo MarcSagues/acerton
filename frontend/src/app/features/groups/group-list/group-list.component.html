@@ -47,6 +47,16 @@
             @if (page.streakFor(group.id); as streak) {
               <span class="streak-chip"><piqo-svg icon="racha" size="14"></piqo-svg>{{ streak }}</span>
             }
+            <button
+              type="button"
+              class="favorite-btn"
+              [class.active]="group.isFavorite"
+              [attr.aria-pressed]="!!group.isFavorite"
+              [attr.aria-label]="group.isFavorite ? 'Quitar de favoritos' : 'Marcar como favorito'"
+              (click)="page.toggleFavorite(group)"
+            >
+              <piqo-svg [attr.icon]="group.isFavorite ? 'estrella-llena' : 'estrella'" size="20"></piqo-svg>
+            </button>
             <button type="button" class="settings-btn" aria-label="Ajustes del grupo" (click)="page.goToSettings(group.id)">
               <piqo-svg icon="ajustes" size="22"></piqo-svg>
             </button>

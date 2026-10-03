@@ -21,18 +21,23 @@ import { AuthTokens, JwtAccessPayload, JwtRefreshPayload, PublicUser } from './a
 import { hashToken } from './token-hash.util';
 import { toPublicUser } from './public-user.util';
 import { mascotAssetPath, defaultCatalogAvatar } from '../users/avatar-catalog';
+import { ReferralsService } from '../users/referrals.service';
 
 const SALT_ROUNDS = 12;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 /** Mensaje generico e identico exista o no la cuenta, para no confirmar por temporizacion ni por contenido si un email esta registrado. */
-export const GENERIC_EMAIL_ACTION_MESSAGE = { message: 'Si la cuenta existe, te hemos enviado un correo.' };
+export const GENERIC_EMAIL_ACTION_MESSAGE = {
+  message: 'Si la cuenta existe, te hemos enviado un correo.',
+};
 
 export interface GoogleProfileInput {
   googleId: string;
   email: string;
   name: string;
   avatarUrl?: string;
+  /** Codigo de referido capturado del link de invitacion — solo se aplica si la cuenta se crea de nuevo, ver validateOrCreateGoogleUser. */
+  referralCode?: string;
 }
 
 export interface AppleProfileInput {
@@ -40,6 +45,8 @@ export interface AppleProfileInput {
   email: string;
   /** Solo presente si Apple lo compartio (primera autorizacion, ver AuthController.appleToken). */
   name?: string;
+  /** Codigo de referido del link de invitacion (solo aplica si la cuenta es nueva). */
+  referralCode?: string;
 }
 
 @Injectable()
@@ -51,8 +58,11 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly mailService: MailService,
+    private readonly referralsService: ReferralsService,
   ) {
-    this.googleOAuthClient = new OAuth2Client(this.configService.get('google.clientId', { infer: true }));
+    this.googleOAuthClient = new OAuth2Client(
+      this.configService.get('google.clientId', { infer: true }),
+    );
   }
 
   /**
@@ -75,9 +85,11 @@ export class AuthService {
         name: dto.name,
         avatarUrl: mascotAssetPath(mascotId),
         avatarBackground: background,
+        referralCode: await this.referralsService.generateUniqueReferralCode(),
       },
     });
 
+    await this.referralsService.redeemBestEffort(user.id, dto.referralCode);
     await this.sendVerificationEmail(user.id, user.email);
     return { email: user.email };
   }
@@ -94,7 +106,9 @@ export class AuthService {
     }
 
     if (!user.emailVerifiedAt) {
-      throw new ForbiddenException('Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.');
+      throw new ForbiddenException(
+        'Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.',
+      );
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
@@ -105,14 +119,22 @@ export class AuthService {
   async verifyEmail(token: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const tokenHash = hashToken(token);
     const record = await this.prisma.authToken.findFirst({
-      where: { tokenHash, purpose: 'EMAIL_VERIFICATION', usedAt: null, expiresAt: { gt: new Date() } },
+      where: {
+        tokenHash,
+        purpose: 'EMAIL_VERIFICATION',
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
     });
     if (!record) {
       throw new BadRequestException('El enlace de confirmación no es válido o ha caducado');
     }
 
     const [user] = await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } }),
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
       this.prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     ]);
 
@@ -161,7 +183,9 @@ export class AuthService {
       where: { tokenHash, purpose: 'PASSWORD_RESET', usedAt: null, expiresAt: { gt: new Date() } },
     });
     if (!record) {
-      throw new BadRequestException('El enlace para restablecer la contraseña no es válido o ha caducado');
+      throw new BadRequestException(
+        'El enlace para restablecer la contraseña no es válido o ha caducado',
+      );
     }
 
     const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
@@ -176,13 +200,19 @@ export class AuthService {
   }
 
   /** Cambio de contrasena estando ya conectado (Ajustes de Perfil), distinto del flujo de "olvide mi contrasena". */
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado');
     }
     if (!user.passwordHash) {
-      throw new BadRequestException('Esta cuenta usa Google para iniciar sesión y no tiene contraseña que cambiar');
+      throw new BadRequestException(
+        'Esta cuenta usa Google para iniciar sesión y no tiene contraseña que cambiar',
+      );
     }
 
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
@@ -282,35 +312,46 @@ export class AuthService {
     profile: GoogleProfileInput,
   ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     let user = await this.prisma.user.findUnique({ where: { googleId: profile.googleId } });
+    let isNewUser = false;
 
     if (!user) {
       const existingByEmail = await this.prisma.user.findUnique({
         where: { email: profile.email },
       });
 
-      user = existingByEmail
-        ? await this.prisma.user.update({
-            where: { id: existingByEmail.id },
-            data: {
-              googleId: profile.googleId,
-              // Enlazar con Google prueba que el email es suyo, aunque la
-              // cuenta se creara antes por email/contrasena sin confirmar.
-              emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
-            },
-          })
-        : await this.prisma.user.create({
-            data: {
-              email: profile.email,
-              name: profile.name,
-              googleId: profile.googleId,
-              avatarUrl: profile.avatarUrl,
-              // El nombre viene del perfil de Google, no lo eligio el usuario:
-              // se le pide confirmarlo/cambiarlo en el onboarding.
-              usernameConfirmed: false,
-              // Google ya verifico este email: no hace falta el paso de confirmacion.
-              emailVerifiedAt: new Date(),
-            },
-          });
+      if (existingByEmail) {
+        user = await this.prisma.user.update({
+          where: { id: existingByEmail.id },
+          data: {
+            googleId: profile.googleId,
+            // Enlazar con Google prueba que el email es suyo, aunque la
+            // cuenta se creara antes por email/contrasena sin confirmar.
+            emailVerifiedAt: existingByEmail.emailVerifiedAt ?? new Date(),
+          },
+        });
+      } else {
+        isNewUser = true;
+        user = await this.prisma.user.create({
+          data: {
+            email: profile.email,
+            name: profile.name,
+            googleId: profile.googleId,
+            avatarUrl: profile.avatarUrl,
+            // El nombre viene del perfil de Google, no lo eligio el usuario:
+            // se le pide confirmarlo/cambiarlo en el onboarding.
+            usernameConfirmed: false,
+            // Google ya verifico este email: no hace falta el paso de confirmacion.
+            emailVerifiedAt: new Date(),
+            referralCode: await this.referralsService.generateUniqueReferralCode(),
+          },
+        });
+      }
+    }
+
+    // Solo se enlaza un referidor si la cuenta se acaba de crear — enlazar
+    // Google a una cuenta ya existente no es un "nuevo referido".
+    if (isNewUser) {
+      await this.referralsService.redeemBestEffort(user.id, profile.referralCode);
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
@@ -332,7 +373,10 @@ export class AuthService {
    * asi un backend de pre/dev con un client id "web" distinto tambien puede
    * verificar tokens nativos.
    */
-  async loginWithGoogleIdToken(idToken: string): Promise<{ user: PublicUser; tokens: AuthTokens }> {
+  async loginWithGoogleIdToken(
+    idToken: string,
+    referralCode?: string,
+  ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const clientId = this.configService.get('google.clientId', { infer: true });
     const nativeClientId = this.configService.get('google.nativeClientId', { infer: true });
     const audience = [...new Set([clientId, nativeClientId].filter((id): id is string => !!id))];
@@ -353,6 +397,7 @@ export class AuthService {
       email: payload.email,
       name: payload.name ?? payload.email,
       avatarUrl: payload.picture,
+      referralCode,
     });
   }
 
@@ -360,6 +405,7 @@ export class AuthService {
     profile: AppleProfileInput,
   ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     let user = await this.prisma.user.findUnique({ where: { appleSub: profile.appleSub } });
+    let isNewUser = false;
 
     if (!user) {
       const existingByEmail = await this.prisma.user.findUnique({
@@ -376,6 +422,7 @@ export class AuthService {
           },
         });
       } else {
+        isNewUser = true;
         const { mascotId, background } = defaultCatalogAvatar();
         user = await this.prisma.user.create({
           data: {
@@ -390,9 +437,15 @@ export class AuthService {
             usernameConfirmed: !!profile.name,
             // Apple ya verifico este email: no hace falta el paso de confirmacion.
             emailVerifiedAt: new Date(),
+            referralCode: await this.referralsService.generateUniqueReferralCode(),
           },
         });
       }
+    }
+
+    // Igual que Google: solo una cuenta recien creada cuenta como referido.
+    if (isNewUser) {
+      await this.referralsService.redeemBestEffort(user.id, profile.referralCode);
     }
 
     const tokens = await this.issueTokens(user.id, user.email, user.name);
@@ -418,6 +471,7 @@ export class AuthService {
   async loginWithAppleIdToken(
     identityToken: string,
     fullName?: string,
+    referralCode?: string,
   ): Promise<{ user: PublicUser; tokens: AuthTokens }> {
     const bundleId = this.configService.get('apple.bundleId', { infer: true });
     let payload;
@@ -438,6 +492,7 @@ export class AuthService {
       appleSub: payload.sub,
       email: payload.email,
       name: fullName,
+      referralCode,
     });
   }
 
@@ -495,7 +550,9 @@ export class AuthService {
     // Unico punto de paso de login/verify-email/Google/refresh: marca
     // "actividad" en cualquier apertura de la app, para el aviso de
     // reenganche tras dias sin entrar (ver JobsService.sendReengagementNotifications).
-    void this.prisma.user.update({ where: { id: userId }, data: { lastActiveAt: new Date() } }).catch(() => undefined);
+    void this.prisma.user
+      .update({ where: { id: userId }, data: { lastActiveAt: new Date() } })
+      .catch(() => undefined);
 
     const accessPayload: JwtAccessPayload = { sub: userId, email, name };
     const accessToken = await this.jwtService.signAsync(accessPayload, {

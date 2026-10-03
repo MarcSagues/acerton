@@ -29,4 +29,6 @@ export interface PublicUser {
   emailVerified: boolean;
   /** false en cuentas solo-Google: no tienen contrasena que cambiar (ver AuthController "me/password"). */
   hasPassword: boolean;
+  /** Nivel derivado de la XP acumulada (Sprint 14, roadmap) — ver xp.util.ts. */
+  level: number;
 }

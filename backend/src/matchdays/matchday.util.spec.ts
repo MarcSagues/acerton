@@ -164,8 +164,14 @@ describe('parseRoundOrder', () => {
 describe('sortCurrentMatchdayEntries', () => {
   it('pone primero la jornada pendiente que cierra antes, sin importar el orden de entrada', () => {
     const entries = [
-      { competitionId: 'far', matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-10T20:00:00Z') } },
-      { competitionId: 'near', matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-05T20:00:00Z') } },
+      {
+        competitionId: 'far',
+        matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-10T20:00:00Z') },
+      },
+      {
+        competitionId: 'near',
+        matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-05T20:00:00Z') },
+      },
     ];
     const sorted = sortCurrentMatchdayEntries(entries);
     expect(sorted.map((e) => e.competitionId)).toEqual(['near', 'far']);
@@ -173,8 +179,14 @@ describe('sortCurrentMatchdayEntries', () => {
 
   it('deja las competiciones ya terminadas del todo al final, sin importar el orden de entrada', () => {
     const entries = [
-      { competitionId: 'finished', matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-01-01T20:00:00Z') } },
-      { competitionId: 'pending', matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-05T20:00:00Z') } },
+      {
+        competitionId: 'finished',
+        matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-01-01T20:00:00Z') },
+      },
+      {
+        competitionId: 'pending',
+        matchday: { status: 'OPEN' as const, closesAt: new Date('2026-03-05T20:00:00Z') },
+      },
     ];
     const sorted = sortCurrentMatchdayEntries(entries);
     expect(sorted.map((e) => e.competitionId)).toEqual(['pending', 'finished']);
@@ -182,8 +194,14 @@ describe('sortCurrentMatchdayEntries', () => {
 
   it('entre dos competiciones ya terminadas, muestra primero la que termino mas recientemente', () => {
     const entries = [
-      { competitionId: 'old', matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-01-01T20:00:00Z') } },
-      { competitionId: 'recent', matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-03-01T20:00:00Z') } },
+      {
+        competitionId: 'old',
+        matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-01-01T20:00:00Z') },
+      },
+      {
+        competitionId: 'recent',
+        matchday: { status: 'FINISHED' as const, closesAt: new Date('2026-03-01T20:00:00Z') },
+      },
     ];
     const sorted = sortCurrentMatchdayEntries(entries);
     expect(sorted.map((e) => e.competitionId)).toEqual(['recent', 'old']);

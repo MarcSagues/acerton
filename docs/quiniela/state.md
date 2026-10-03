@@ -1,5 +1,594 @@
 # Estado actual
 
+## 2026-09-19 — Orden estable de jornadas por cierre de pronósticos (Sprint 5) — dos vueltas
+
+**Primera vuelta**: a petición explícita del usuario, con reglas y
+ejemplos concretos que resolvían la pregunta pendiente desde el
+2026-09-10, `getCurrentMatchdayForCompetition` pasó a ordenar por
+`closesAt` ascendente en vez de `order` ascendente. Mergeado a `dev` vía
+PR #33.
+
+**Segunda vuelta (mismo día, tras probar en `dev`)**: el usuario reportó
+"sigo viendo la jornada 6 en vez de la 7". La primera vuelta no bastaba:
+`closesAt` se fija al crear la jornada como el kickoff de su PRIMER
+partido y no se mueve cuando se aplaza uno posterior — verificado contra
+la base de datos real de `dev` (La Liga: jornada 6 con 9/10 partidos
+jugados y el último aplazado al 21 de octubre, jornada 7 jugándose hoy/
+mañana; cero pronósticos registrados para la jornada 7 en ningún grupo de
+prueba, confirmando que además bloqueaba pronósticos reales, no solo el
+display). Ver `decisions.md` para el detalle completo de la causa raíz y
+la verificación por SQL directo.
+
+**Fix real**: nuevo criterio basado en el kickoff del próximo partido SIN
+TERMINAR de cada jornada (recalculado sobre partidos reales, no un campo
+guardado) — `MatchdaysService.getReferenceOrder` sustituye a
+`getEarliestPendingOrder`, usado tanto por `getCurrentMatchdayForCompetition`
+como por `attachCanPredict`/`canAcceptPredictions`. Confirmado con el
+usuario antes de ampliar el alcance (esto sí toca la aceptación real de
+pronósticos, no solo qué se muestra). Verificado con SQL contra los datos
+reales de `dev` antes de dar el fix por bueno: la jornada 7 pasa a ganar.
+282 tests del backend en verde, `tsc --noEmit` limpio. **Sin verificar en
+navegador todavía** (verificado por SQL/tests, no hay sesión de navegador
+en esta vuelta). Rama `fix/matchday-reference-order-by-next-kickoff`, PR
+pendiente de abrir tras esta entrada.
+
+Además, un PR de solo documentación (#34, refleja el merge de la primera
+vuelta) sigue **abierto sin mergear** — un intento de merge fue bloqueado
+por el clasificador de modo automático de Claude Code ("Merge Without
+Review"); pendiente de que el usuario lo fusione él mismo o lo autorice
+explícitamente en una futura sesión.
+
+## 2026-09-17 — Compartir imagen de un partido individual (fuera de sprint, sin issue)
+
+A petición explícita del usuario ("añade una opcion de compartir con un
+boton... en cada partido... tanto en los partidos 1x2 y resultados
+exactos"), sobre la pantalla `/matchday` ("Tu jornada"): cada fila de
+partido tiene ahora un botón circular pequeño y discreto (icono
+"compartir", teñido levemente en acento/dorado a petición del usuario tras
+verlo demasiado apagado, a la izquierda de los nombres de los equipos) que
+abre `MatchShareCardComponent`, un canvas nuevo en formato **vertical
+1080×1920** (a diferencia del cuadrado 1080×1080 de "Compartir imagen" de
+la jornada completa, del 2026-09-14) pensado para Instagram Stories/Reels/
+TikTok.
+
+**Diseño, tras dos vueltas de feedback explícito del usuario** ("quita los
+circulos con los numeros y pon el resultado debajo del nombre... no me
+gusta esto de separar el partido en otro cuadro que ponga tu pronostico"):
+una única tarjeta (sin escudos ni "VS" grande en medio, que quedaba raro en
+resultado exacto y separaba el pronóstico del partido en otra caja aparte).
+Nombre de cada equipo con su marcador real justo al lado (si el partido ya
+acabó) en su propia fila, igual que ya se lee en la lista real de "Tu
+jornada"; debajo, sin caja aparte, "Tu pronóstico": en modo 1X2 siempre se
+ven las 3 casillas 1/X/2, con la(s) elegida(s) en acento/dorado — con doble
+oportunidad (p.ej. "1X") se pintan las dos casillas que cubre, no solo una,
+tal como pidió el usuario explícitamente; en resultado exacto, el marcador
+predicho en grande ("3-0"), con nota "COMODÍN x2" si aplica. Si el partido
+ya terminó, una sola línea de texto (no una caja) con acierto/fallo y
+puntos, reutilizando `matchAccentTone`/`pointsForPrediction` de
+`domain/prediction-rules.ts` — nada de lógica nueva de puntuación. Sin
+logos de equipo reales (`Match.homeTeamLogo`/`awayTeamLogo` no se usa en
+ningún sitio de la app todavía y son URLs externas — arriesgaba "manchar"
+el canvas por CORS e impedir exportar el PNG), y ya no hacían falta al
+quitar los escudos circulares. Sin el texto de ayuda "Formato vertical
+1080×1920..." bajo la vista previa (quitado a petición explícita).
+
+Tres retoques finales, todos a petición explícita: (1) el logo real de
+Piqo (`/piqo/logo-oscuro.svg`, mismo `drawImage` con fallback a texto que
+ya usaba `MatchdayShareCardComponent`) faltaba en la cabecera del canvas —
+`drawBrand`/`drawCard` se pasaron a async para cargarlo igual que la
+tarjeta de jornada completa. (2) Primer intento de "hay mucho espacio
+abajo": se agrandó tipografía/espaciado de toda la tarjeta (900→1080px de
+alto, nombres de equipo 52→58px, casillas 1/X/2 180→220px, etc.). (3) El
+usuario aclaró que solo quería el logo más grande, no el resto — se
+revirtió (2) a sus medidas originales y en su lugar se agrandó solo el
+logo (174×55 → 262×83px, mismo sitio en la cabecera).
+
+**Rediseño del cuerpo de la tarjeta siguiendo una referencia visual del
+usuario** (un mock HTML exportado desde un artifact de Claude —
+`C:\Users\34655\Downloads\Design.html`, un bundle offline; renderizado en
+un servidor estático local temporal para poder inspeccionar sus estilos
+computados vía DevTools, ya que el archivo no se puede leer como texto
+plano y `file://` no es navegable desde la extensión de automatización).
+Petición explícita: "mantén el fondo que ya tenemos y el logo pero por lo
+otro, sigue el estilo que te pasaré" — no aplicar el mock al 100%, solo su
+lenguaje visual. Fondo/bloom/líneas diagonales y el logo real no se
+tocaron. El resto vuelve a traer círculos de equipo (revirtiendo la
+petición anterior de quitarlos, ahora superada por esta referencia más
+reciente): local relleno en acento con sombreado diagonal sutil,
+visitante oscuro con aro en acento y el mismo sombreado en tinte acento;
+iniciales cortas dentro, nombre completo debajo, "VS" centrado entre
+ambos (sustituido por el marcador real si el partido ya terminó, mismo
+sitio). Debajo, un único divisor y luego el pronóstico: en 1X2, las 3
+casillas 1/X/2 llevan ahora el nombre del equipo (o "Empate") debajo del
+número/letra, tal como en la referencia; en resultado exacto, dos casillas
+cuadradas con el marcador predicho (local relleno, visitante con aro) y un
+guión entre medias, en vez del texto plano "3-0" de antes. Colores propios
+de Piqo mantenidos (no se copiaron los tonos exactos del mock, que son
+casi idénticos de todas formas) para no romper consistencia con el resto
+de la app. `drawRoundRect` (`canvas-draw.util.ts`, compartido con
+`MatchdayShareCardComponent`) ganó un parámetro `strokeWidth` opcional
+(por defecto 1, sin cambiar el comportamiento existente) para poder pintar
+bordes más gruesos en los círculos/casillas nuevas.
+
+`tsc --noEmit`, `ng build` y los 17 tests del frontend en verde. Verificado
+en navegador con `demo-tu@piqo.test` (la sesión expiró a media prueba tras
+un recompilado de `ng serve`, había que reautenticar — nada relacionado
+con este cambio): grupo 1X2 con pick sencillo pendiente y con partido ya
+finalizado en fallo (marcador real "0 - 2" en el sitio del VS, "Fallo · 0
+pts" en rojo debajo de las casillas, nombre largo "Ipswich Town FC" con
+elipsis en la casilla como es esperable), y grupo `EXACT_SCORE` con
+comodín de remontada activo ("3" relleno / "0" con aro + "COMODÍN x2").
+Doble oportunidad con las dos casillas en acento no verificada en vivo en
+esta vuelta tampoco (mismo motivo que antes: ningún grupo de prueba
+disponible tenía el comodín listo) — lógica sin tocar respecto a la
+verificación de código ya hecha anteriormente. Sin verificar iOS/Android
+(solo web). Rama `feature/match-share-card`, sin commit todavía.
+
+**Refactor de paso**: las funciones de dibujado de canvas (texto con
+letter-spacing, `roundRect` a mano por el bug conocido de iOS <16.4,
+círculos, elipsis, carga de imagen) y la lógica de compartir/copiar/
+descargar (Web Share con fallback a descarga, portapapeles con timeout de
+4s por promesas que se quedan colgadas en algunos navegadores) se
+extrajeron a `frontend/src/app/shared/canvas-share/` (`canvas-draw.util.ts`,
+`share-image.util.ts`) y `MatchdayShareCardComponent` (jornada completa) se
+reescribió para usarlas en vez de tener su propia copia — mismo
+comportamiento, solo para no duplicar ese código ya afinado en dos sitios.
+
+`tsc --noEmit`, `ng build` (con el aviso preexistente de presupuesto de
+`current-matchday.component.scss`, ya superado antes de este cambio) y los
+17 tests del frontend en verde tras cada vuelta. Verificado en navegador
+(`ng serve` + `nest start:dev`, Postgres de Docker) con la cuenta real
+`demo-tu@piqo.test`, ya con el diseño final: grupo 1X2 con pick sencillo
+"1" sin acabar, el mismo partido ya finalizado con fallo real ("Fallo · 0
+pts" en rojo, marcador real 0-2 junto a cada equipo), y grupo `EXACT_SCORE`
+con comodín de remontada activo ("3-0" + "COMODÍN x2") — comodín activado y
+retirado de nuevo con el mismo flujo real de la app (`Quitar comodín`) para
+no dejar sucio ese grupo de pruebas. La doble oportunidad 1X2 con las dos
+casillas en amarillo no se pudo forzar en vivo (ninguno de los grupos de
+prueba 1X2 tenía comodín de doble oportunidad disponible en esta sesión) —
+confiado por revisión de código: la tabla de parejas usada es una copia
+literal de `DOUBLE_CHANCE_COVERAGE` (`prediction-rules.ts`, ya cubierta por
+`prediction-rules.spec.ts`) y reutiliza el mismo bucle de casillas ya
+verificado en vivo para una sola selección. Botón "Copiar" ejecuta el flujo
+completo de portapapeles (incluido el timeout de seguridad de 4s, mismo
+comportamiento ya conocido del botón equivalente de la jornada completa).
+"Compartir imagen" no se disparó de verdad (abriría el panel nativo del
+SO) pero usa la misma rutina ya verificada del canvas de jornada completa.
+Sin verificar iOS/Android (solo web). Rama `feature/match-share-card`, sin
+commit todavía — pendiente de que el usuario lo pruebe y autorice mergear a
+`dev`.
+
+## 2026-09-16 — Recordatorios de cierre poco fiables: causa confirmada, producción ya arreglada
+
+El usuario reportó que los recordatorios de cierre ("faltan X horas")
+casi nunca llegan, y una vez le llegaron 6 de golpe pese a tener todo
+activado en preferencias. Investigado leyendo el código (sin tocar
+nada): `JobsService.sendClosingReminders` no corre mientras Render está
+dormido (plan free) y no tiene recuperación — una ventana de aviso que
+pasa dormido se pierde para siempre, así que cuando el servidor por fin
+despierta solo llegan los avisos que caen justo en ese instante. Ver
+`decisions.md` para el detalle técnico completo.
+
+**Resuelto sin tocar código**: el usuario confirmó que producción ya
+está en Render Starter (siempre activo) desde antes de esta sesión —
+`roadmap.md` seguía marcándolo "pendiente" por un despiste de registro,
+ya corregido. El síntoma que vio es del entorno de dev (plan free a
+propósito), y confirmó que ahí no hace falta arreglar nada.
+
+## 2026-09-16 — Pantalla dedicada "Invitar" con el link visible (Sprint 14)
+
+Ajuste sobre el sistema de referidos de la misma sesión, a petición
+explícita del usuario ("me gustaria que debajo de normas y premios
+salga Invitar y ahi dentro este todo esto del link visible etc"): el
+código/link propio solo se podía compartir (share directo desde la
+tarjeta de `/profile/level`), sin verse nunca como texto en pantalla.
+
+Nueva pantalla `/profile/invite` (`ProfileInviteComponent`, mismo
+patrón visual que `GroupInviteComponent`: tarjeta con el código en
+grande, botones "Copiar enlace"/"Compartir", fila con el link completo
+y su propio botón de copiar, contador "Has invitado a N amigos" si
+`referralCount > 0`) enlazada desde una nueva entrada "Invitar" en
+Ajustes del perfil, justo debajo de "Normas y premios". El campo
+"¿Alguien te invitó a ti?" (aplicar el código de un amigo) se trasladó
+aquí desde el sitio poco visible que tenía antes en la página principal
+de Perfil — sigue sin ser un flujo destacado (va después del propio
+código, no antes), pero ya no hace falta desplegar nada para verlo.
+
+La tarjeta "Invita a un amigo" de `/profile/level` no cambia: sigue
+compartiendo directo al pulsarla (comportamiento ya verificado antes en
+esta misma sesión).
+
+Verificado en navegador con las mismas dos cuentas reales de siempre:
+código y link visibles correctamente, aplicar el código de otra cuenta
+funciona igual que desde el sitio anterior (relación y XP confirmadas
+en Postgres, datos de prueba revertidos después). `tsc`/`ng build`
+limpios, 17 tests del frontend en verde (sin tests nuevos — cambio de
+UI puro, misma lógica ya cubierta en `referrals.service.spec.ts`).
+
+## 2026-09-16 — Sistema de referidos implementado (Sprint 14)
+
+A petición explícita del usuario ("empieza a implementar el tema de la
+invitación"), sobre los requisitos que él mismo fijó unas horas antes en
+la misma sesión (ver `decisions.md`). Antes de tocar código se cerró con
+el usuario el único número que quedaba abierto — cuánta XP da el primer
+referido y cómo decae — y de paso el usuario pidió revisar también los
+valores de "pleno de jornada", que veía flojos.
+
+**Backend**: `User.referralCode` (único, mismo formato/alfabeto que
+`Group.inviteCode`, movido a `common/short-code.util.ts` para
+compartirlo) + `User.referredById` (relación permanente, un solo
+enlace posible). `ReferralsService` (`GET /users/me/referral`,
+`POST /users/me/referral/redeem`) es el único punto de enlace, usado
+tanto desde el registro (email y Google — solo cuando la cuenta es
+nueva de verdad, no al vincular Google a una ya existente) como desde
+el campo manual — mismo resultado por los dos caminos, tal como pidió
+el usuario. Bloquea auto-referirse y reasignar un referidor ya fijado.
+Migración con backfill (`referralCode` no podía quedar nulo en cuentas
+ya existentes) y `XpEvent.groupId` pasa a opcional (REFERRAL no
+pertenece a ningún grupo).
+
+**Valores de XP** (`xp.util.ts`, revisados a petición explícita del
+usuario en esta misma sesión): primer referido 500 XP, cae a la mitad
+en cada uno siguiente hasta un suelo de 10 (`xpForReferral`), sin
+límite de cuántas veces se puede usar un código. De paso: pleno de
+ganadores (antes `PERFECT_MATCHDAY_1X2`/`PERFECT_MATCHDAY_EXACT`,
+130/150) sube a 600 unificado entre modos; nuevo
+`PERFECT_MATCHDAY_ALL_EXACT` (1000) para el pleno con el marcador
+exacto de *todos* los partidos, no solo el ganador — antes no existía
+esta distinción, "pleno" en modo resultado exacto solo exigía acertar
+el ganador en todos.
+
+**Frontend**: ruta pública `/r/:code` (`referralLinkGuard`) — sin
+sesión guarda el código y manda a `/register`; con sesión lo enlaza al
+momento y muestra un toast. La tarjeta "Invita a un amigo" de
+`/profile/level` deja de ser un placeholder "Próximamente": comparte
+el link real (Web Share/portapapeles, mismo patrón que
+`GroupInviteFacade`). Campo "¿Tienes un código de invitación?" en
+Ajustes de Perfil, deliberadamente sin card ni icono (a petición
+explícita: "debe estar siempre en ajustes o un sitio poco visible").
+Botón de info actualizado con los valores reales.
+
+**Verificado de extremo a extremo en navegador** con dos cuentas reales
+de desarrollo (`demo-tu@piqo.test`, `leveltest2@piqo.test`): código
+copiado de una cuenta, aplicado desde Ajustes en la otra — relación
+`referredById` y evento `XpEvent` de 500 XP confirmados directamente en
+Postgres; reintentar con un código (incluido el propio) muestra
+correctamente "Tu cuenta ya tiene un referidor asignado". Los datos de
+prueba se revirtieron después (relación borrada, XP y evento
+deshechos) para no dejar sucios los datos de desarrollo. 281 tests del
+backend y 17 del frontend en verde, `tsc`/`ng build` limpios en ambos.
+
+Sin implementar todavía (fuera de alcance de esta sesión): el
+mecanismo de descuento de Premium en sí (Sprint 11 — el modelo de
+datos ya está listo para que lo consulte cuando toque). Sin verificar
+en iOS/Android (solo web/local) — en particular, `/r/:code` como
+Universal Link depende de que `app-dev.piqo.es`/`app.piqo.es` sirvan el
+AASA actualizado (ya editado en el repo, con el nuevo componente
+`/r/*`) y de que el build sincronice `apple-app-site-association`.
+
+Rama `feature/referral-system`, no fusionada a `dev` todavía —
+pendiente de autorización explícita del usuario para subirla.
+
+## 2026-09-16 — Cloudflare Access delante de `app-dev.piqo.es` (Infraestructura)
+
+Pendiente desde el 2026-09-10 (ver `roadmap.md` § Infraestructura): a
+petición explícita del usuario ("pon el cloudflare access"), configurado
+usando la extensión de Chrome directamente sobre su cuenta real de
+Cloudflare (con permiso explícito para cada paso sensible — se confirmó
+antes de aceptar el cargo de $0 de activación del plan).
+
+**Corrección de nombre de dominio**: la documentación de este punto
+(`roadmap.md`, `decisions.md`) sigue hablando de `dev.acerton.app`, pero
+ese nombre quedó obsoleto tras la migración de dominio a `piqo.es`
+(rama `feature/piqo-es-domain-migration`) — el dominio real hoy, y sobre
+el que se ha configurado esto, es **`app-dev.piqo.es`** (coincide con
+`environment.dev.ts`). Confirmado con el usuario antes de tocar nada.
+
+Hecho:
+1. Activado **Cloudflare Zero Trust, plan Free** (hasta 50 usuarios,
+   $0/mes — confirmado en la pantalla de facturación antes de aceptar)
+   en la cuenta del usuario (`Marc10sagues@gm...`, team name
+   auto-generado `summer-mouse-3957`).
+2. Creada la aplicación self-hosted **"app-dev"** protegiendo el hostname
+   público `app-dev.piqo.es` (dominio `piqo.es`, ya gestionado en esta
+   misma cuenta de Cloudflare junto con `acerton.app`).
+3. Política de acceso **"Equipo Piqo dev"** (Allow, selector Emails):
+   `marc10sagues@gmail.com`, `oriol119@gmail.com`, `support@piqo.es`
+   (los tres emails los dio el usuario directamente en el chat, no se
+   han guardado en ningún documento del repo). Login por **One-time
+   PIN** (código por email, sin configurar un IdP externo). Sesión de
+   24 horas.
+4. **Verificado en vivo**: abrir `https://app-dev.piqo.es` en una pestaña
+   nueva redirige a la pantalla de login de Cloudflare Access
+   ("Log in to app-dev") antes de servir nada de la aplicación —
+   confirma que el bloqueo funciona de extremo a extremo.
+
+No toca código, DNS, CORS ni el backend — es una capa delante del
+hostname, gestionada solo desde el dashboard de Cloudflare. Se puede
+desactivar borrando la aplicación en Access → Applications si hiciera
+falta.
+
+## 2026-09-16 — Limpieza de `/profile/level` (quitar notificar/tiers/botón duplicado) + planteamiento de referidos (Sprint 14)
+
+Segunda vuelta sobre `/profile/level` en la misma sesión que el punto
+anterior, a petición explícita del usuario tras ver la pantalla con datos
+reales:
+
+- **Quitado** el botón "Avisarme al desbloquear" de la tarjeta de
+  detalle del nivel actual — la preferencia real de "avisarme al subir de
+  nivel" ya existe donde debe estar: `/notifications/preferences`
+  ("Subida de nivel", `NotificationPreference.levelUp`), no aquí. La
+  tarjeta de detalle ya no muestra ningún botón para el nivel en curso
+  (solo para un nivel ya conseguido, "Ver en mi perfil"); `claimed`/
+  `toggleClaim` eliminados del facade por no tener ya ningún uso real.
+- **Quitados** los chips Bronce/Plata/Oro ("Pase de progreso") y la
+  palabra de tier en la píldora del héroe (ahora solo "NIVEL 2 DE 18", sin
+  "BRONCE ·") — `TIER_NAMES`/`tierIndexOfLevel`/`tierRangeLabel`/
+  `LevelTier`/`TierChipView` eliminados de `level-progress.domain.ts` y
+  `level-progress.facade.ts` por quedar sin ningún uso.
+- **Quitado** el botón duplicado "Cómo ganar XP" de la cabecera de "Tu
+  jornada" — ya existe el mismo botón de info arriba a la derecha de la
+  pantalla (icono de ayuda), que abre el mismo bottom sheet.
+
+`tsc --noEmit`, `ng build` y los 17 tests del frontend en verde.
+Verificado en navegador con la misma cuenta real de desarrollo
+(`demo-tu@piqo.test`): pantalla sin aviso de tiers, sin botón de
+notificar en el nivel en curso, sin botón de info duplicado; el nivel 1
+(ya conseguido) sigue mostrando su "Ver en mi perfil" con normalidad.
+
+**Planteamiento de producto para el sistema de referidos** (todavía sin
+implementar, sigue ⬜): a petición del usuario, registrados en
+`roadmap.md` (Sprint 14) y `decisions.md` los requisitos que debe cumplir
+cuando se construya — código único que sirve tanto de link como para
+teclear a mano, entrada por ambos caminos con el mismo resultado, campo
+de introducir código siempre en un sitio de baja visibilidad (Ajustes,
+no destacado), y modelo de datos pensado para que Sprint 11 (Premium)
+pueda aplicar descuentos según el referidor sin rediseñar el sistema.
+Sin decidir: formato del código, límites de uso, mecanismo de descuento
+(eso es alcance de Sprint 11). No se ha tocado código de esta
+funcionalidad todavía — es planteamiento, no implementación.
+
+Rama `feature/level-view-real-stats` (misma que el punto anterior, sin
+fusionar todavía) — pendiente de autorización explícita del usuario para
+subirla, junto con el resto de cambios de esta sesión sobre esta misma
+pantalla.
+
+## 2026-09-16 — Pantalla `/profile/level` al 100% con datos reales (Sprint 14)
+
+A petición explícita del usuario ("revisa la vista de lo del nivel y
+complétalo al 100% con datos reales"), sesión fuera de `/quiniela
+continuar` (surgió de una revisión de seguridad general) que sí tocaba
+este roadmap. Cerraba el hueco que quedaba abierto en la pantalla de
+nivel: el aviso "vista de demostración parcial" ya estaba desactualizado
+(las recompensas llevaban desde el 2026-09-15 siendo reales), y debajo de
+él quedaban tres piezas fijas sin conectar — tarjeta "Tu jornada"
+(Aciertos/Racha/Ranking de muestra), "+340 Últimos 7 días" y la tarjeta
+"Invita a un amigo" prometiendo "+100 XP" para una función que no existe
+todavía (Sistema de referidos, sigue ⬜ en este mismo roadmap).
+
+`ProfileController` (`GET /users/me/profile`) amplía su respuesta con
+`xpLast7Days` (suma real de `XpEvent.amount` de los últimos 7 días),
+`accuracy` (aciertos/predicciones puntuadas del usuario en todos sus
+grupos) y `badgesUnlocked` (insignias distintas conseguidas sobre el
+total del catálogo) — sin tocar `globalStreak`, que ya viajaba real en
+esta misma respuesta y simplemente no se estaba usando en esta pantalla.
+Quitado el aviso de demostración; "Tu jornada" pasa a Aciertos/Racha/
+Insignias reales; la tarjeta de invitar deja de prometer una cifra no
+decidida y muestra un chip "PRONTO". De paso, corregido en `roadmap.md`
+un registro desactualizado: el bottom sheet "Cómo ganar XP" ya tenía los
+valores reales de XP desde antes de esta sesión (el roadmap seguía
+diciendo "pendiente de actualizar" por un despiste de documentación, no
+por código sin hacer).
+
+Ver `roadmap.md` Sprint 14 (filas "Pantalla de progreso de nivel" y
+"Botón de info") para el detalle técnico completo.
+
+261 tests del backend en verde (sin tests nuevos — cambio aditivo sobre
+`ProfileController`, sin lógica de negocio propia que testear más allá de
+consultas Prisma directas), 17 tests del frontend en verde, `tsc --noEmit`
+limpio en ambos. Verificado de extremo a extremo en navegador (`ng
+serve` + `nest start --watch`, Postgres local) con una cuenta real de
+desarrollo con historial (`demo-tu@piqo.test`): 9/21 aciertos, racha x3,
+3/20 insignias y +20 XP en los últimos 7 días — los cuatro valores
+coinciden exactamente con lo consultado directamente en Postgres antes de
+la prueba. Sin verificar iOS/Android (solo web). Rama
+`feature/level-view-real-stats`, no fusionada a `dev` todavía — pendiente
+de autorización explícita del usuario para subirla.
+
+De paso (no relacionado con el roadmap): revisión de seguridad general
+del repo a petición del usuario (secretos en `.env`, SQL injection,
+exposición de la base de datos) — sin hallazgos graves; único cambio
+aplicado, ya en `dev`: `docker-compose.yml` publicaba Postgres local en
+`0.0.0.0:5433` en vez de `127.0.0.1:5433`, corregido y confirmado con el
+contenedor recreado.
+
+## 2026-09-15 — El nivel ya no se queda desfasado hasta reiniciar la app (Sprint 14)
+
+A petición del usuario, que probó en local ("hasta que no cierro la app
+y la vuelvo a abrir no se me desbloquea la mascota... el punto sigue sin
+salir"): séptimo incremento del Sprint 14 el mismo día, y causa raíz real
+de por qué el puntito del incremento anterior "no salía" en su prueba.
+
+`AuthService.currentUser()` (de donde sale el nivel del badge del avatar
+en top-bar/Perfil y el gating de `/profile/avatar`) solo se actualizaba
+en el arranque de la app o tras una acción explícita (login, guardar
+avatar) — nunca solo porque la XP subiera en el backend. Con la app
+abierta, pronosticar un partido que cruzaba de nivel dejaba el nivel
+real ya correcto en el servidor, pero el frontend seguía usando el nivel
+viejo hasta cerrar y reabrir la app: la recompensa nueva seguía
+apareciendo bloqueada, y al estarlo, su puntito rojo tampoco podía salir
+(depende de que ya esté desbloqueada).
+
+Nuevo `AuthService.refreshCurrentUser()` llamado desde `ShellFacade` en
+el mismo punto donde ya se detecta la subida de nivel en vivo (el
+`effect` que abre el pop-up) — el nivel se refresca exactamente cuando
+hace falta, sin tocar ningún otro flujo.
+
+tsc y 17 tests del frontend en verde. Verificado en navegador sin
+recargar la página en ningún momento: pop-up → badge del avatar pasa a
+mostrar "2" al instante → la mascota de esa recompensa aparece
+desbloqueada con su puntito rojo, todo en la misma sesión. Mergeado a
+`dev` y empujado a `origin/dev`; pendiente lanzar un build nuevo de
+TestFlight, ya que el que el usuario tenía instalado era anterior tanto
+a esto como al incremento del puntito rojo en sí.
+
+## 2026-09-15 — Puntito rojo en el propio color/mascota recién desbloqueado (Sprint 14)
+
+A petición del usuario ("solo falta que cuando tengas un elemento nuevo
+ese elemento se marque con el puntito rojo"): sexto incremento del
+Sprint 14 el mismo día. El puntito rojo de "recompensa sin reclamar" ya
+existía en 3 sitios (pestaña Perfil, nodo del recorrido, tarjeta de
+detalle) pero no en el elemento en sí dentro de `/profile/avatar` — al
+entrar ahí tras subir de nivel, el color/mascota nuevo se veía igual que
+cualquier otro ya desbloqueado antes.
+
+`ProfileAvatarFacade.isMascotNew`/`isBackgroundNew` comparan el nivel
+requerido de cada color/mascota (mismo mapeo que el gating de
+`avatar-level-rewards`) contra `NotificationsFeedService.
+unreadLevelUps()` — mismo dato que ya alimentaba los otros 3 puntitos,
+sin campo nuevo. El punto se apaga solo junto con el resto al marcar
+leído el aviso (pulsándolo desde Avisos o desde el recorrido), no antes
+— verlo en el picker sin haber pulsado la notificación no lo da por
+reclamado, mismo criterio que el resto de puntitos "pendiente" de la
+app (p.ej. Jornada, que tampoco se apaga solo con abrir la pestaña).
+
+tsc y 17 tests del frontend en verde. Verificado en navegador con una
+cuenta real (subida de nivel 1→2 forzada para la prueba): "Mascota
+saludo" aparece con el puntito nada más desbloquearse, y desaparece a
+la vez en los 4 sitios al pulsar la notificación de subida de nivel.
+Mergeado a `dev` y empujado a `origin/dev`.
+
+## 2026-09-15 — XP de participar en tiempo real al pronosticar, no solo al cerrar la jornada (Sprint 14)
+
+A petición del usuario, que probó en `dev` y vio que la barra de nivel
+no se movía al pronosticar ("en dev aunque ponga predicciones no sube
+nada la barra de nivel"), y tras aclarar el comportamiento esperado
+("solo al seleccionar un partido ya debe subir un poco, si cambias el
+valor no, pero si no has participado y participas a un partido debe
+funcionar"): quinto incremento del Sprint 14 el mismo día.
+
+Hasta ahora la XP de "participar" (+5) era un flat por jornada, y solo
+se concedía cuando la jornada cerraba de verdad (mismo punto que
+insignias/rachas — necesita resultados reales sincronizados del
+proveedor de partidos, `JobsService.finalizeMatchday`). En `dev`, sin
+partidos reales terminados todavía, eso significaba que nada de XP se
+veía nunca, aunque el usuario sí estuviera pronosticando. Se movió esta
+fuente concreta a tiempo real: `XpService.awardParticipation` concede
++5 XP al momento desde `PredictionsService.submit`, comprobando antes
+del `upsert` si ya existía pronóstico para ese partido/usuario/grupo —
+solo la primera vez cuenta, cambiar después el pronóstico no vuelve a
+dar XP. El resto de fuentes (aciertos, pleno de jornada) sigue
+dependiendo del cierre real, sin cambios.
+
+Si esa XP cruza de nivel, se dispara la misma notificación `LEVEL_UP`
+que ya existía (pop-up en vivo si estás en la app). `current-matchday.
+facade.ts` refresca el feed de avisos justo tras guardar un pronóstico
+para que el pop-up salte al instante en vez de esperar el polling de 2
+min de `ShellFacade`.
+
+11 tests nuevos/actualizados (261 tests del backend en verde), tsc y 17
+tests del frontend en verde. Verificado en navegador con una cuenta real
+de nivel 1: pronosticar un partido nuevo sube la barra de 0/200 a 5/200
+al instante; cambiar después ese mismo pronóstico (1 → X) no vuelve a
+sumar XP. Mergeado a `dev` y empujado a `origin/dev`.
+
+## 2026-09-15 — Gating real de colores/mascotas por nivel + recorrido muestra la recompensa atenuada (Sprint 14)
+
+A petición del usuario, que probó la pantalla en local con una cuenta de
+nivel 1 ("porque puedo usar los elementos" + "en el timeline... debería
+salir un círculo con la imagen o el color pero que se vea que no lo has
+desbloqueado"), cuarto incremento del Sprint 14 el mismo día. Cierra el
+hueco que quedó anotado explícitamente al terminar el incremento
+anterior (ver entrada de abajo y `roadmap.md`).
+
+Dos cambios: (1) `UsersService.updateAvatar` ahora valida en servidor
+que el nivel del usuario alcance el que pide `avatar-level-rewards.ts`
+(nuevo, mismo mapeo que `LEVEL_REWARDS` del frontend) antes de guardar
+un color/mascota de premio — 403 si no llega, igual de real que ya lo es
+el nivel (`User.experience`) desde el primer incremento; a diferencia de
+las mascotas de trofeo, que siguen sin comprobación real en servidor
+porque los trofeos todavía no son un dato real. `/profile/avatar` ya no
+deja pulsar un elemento bloqueado (mismo candado/atenuado que ya tenían
+las mascotas de trofeo, extendido también a los colores, que antes no
+tenían ningún bloqueo visual). (2) En `/profile/level`, los nodos
+bloqueados del recorrido ya no esconden la recompensa detrás de un
+candado genérico — muestran el color/mascota real en gris/atenuado con
+un candado pequeño superpuesto encima, para poder ver qué se gana en
+cada nivel sin haberlo desbloqueado todavía.
+
+7 tests nuevos/actualizados en `users.service.spec.ts` (253 tests del
+backend en verde), `tsc`/17 tests del frontend en verde. Verificado en
+navegador con una cuenta real de nivel 1: clic en mascota/color
+bloqueado no cambia nada, y el recorrido muestra "Mascota saludo ·
+BLOQUEADO · Faltan 1 niveles" con su miniatura atenuada. Mergeado a
+`dev` y empujado a `origin/dev`.
+
+## 2026-09-15 — Catálogo de recompensas real, aviso de subida de nivel y pop-up en vivo (Sprint 14)
+
+A petición explícita del usuario ("añade según tu criterio los elementos
+desbloqueables... y si estás conectado en la app cuando subes de nivel
+debe aparecer un pop up... si no estás en la app tendrás la opción desde
+notificaciones push..."), tercer incremento del Sprint 14 sobre el
+backend real de XP/nivel del mismo día. Ver `roadmap.md` Sprint 14 para
+el detalle técnico completo (tabla actualizada con 4 filas nuevas/
+cambiadas).
+
+Resumen: `LEVEL_REWARDS` pasó de catálogo de muestra a 18 recompensas
+reales (colores/mascotas del catálogo cerrado de avatares, diseño y
+orden a criterio de Claude Code, tal como pidió el usuario). Nuevo tipo
+de notificación `LEVEL_UP` (push + fila in-app), disparado justo después
+de que `XpService.evaluateAfterMatchdayClose` (ahora devuelve qué
+usuarios subieron de nivel en esa pasada) corre en el cierre de jornada.
+Con la app abierta, un polling de 2 min en `ShellFacade` detecta el
+aviso sin leer y abre un pop-up una sola vez por sesión; puntito rojo
+replicado (mismo patrón que Jornada) en la pestaña Perfil, el nodo del
+recorrido y la tarjeta de detalle. Primera vez que existe marcar un
+aviso como leído individualmente (`markOneRead`), usado al pulsar la
+notificación/recompensa para navegar a `/profile/avatar` y apagar su
+puntito rojo.
+
+**Sigue sin implementar** (no pedido en este incremento): el gating real
+en `/profile/avatar` que impida elegir un color/mascota de un nivel
+todavía no alcanzado — el catálogo de ahí sigue abierto para cualquier
+cuenta, ver fila "Desbloqueables" en `roadmap.md`.
+
+250 tests del backend en verde, `tsc --noEmit` limpio, 17 tests unitarios
+del frontend en verde. Verificado de extremo a extremo en navegador
+insertando una fila `Notification` de prueba directamente en Postgres
+(borrada después): pop-up en vivo, puntito rojo en los 4 sitios, y clic
+→ navegación + desaparición del puntito. Corregido en el camino un
+`NG0600` (escritura de señal dentro de un `effect` sin
+`allowSignalWrites: true`). Sin verificar iOS/Android ni la entrega real
+del push (requiere dispositivo). Mergeado a `dev` y empujado a
+`origin/dev`.
+
+## 2026-09-15 — Backend real de XP/nivel (Sprint 14) + insignia de nivel en avatares
+
+A petición del usuario ("añade el nivel en todos los sitios donde sale
+la foto de perfil de un usuario" → "implementamos back[end]"): el
+sistema de nivel/experiencia deja de ser una pantalla de muestra y pasa
+a tener backend real. Ver `roadmap.md` Sprint 14 para el detalle técnico
+completo (valores de XP por fuente, curva de nivel, qué falta —
+referidos, XP por entrar cada día, desbloqueables reales).
+
+Resumen: `User.experience` + `XpEvent` (log), `XpService` enganchado al
+mismo punto que `BadgesService` (`JobsService.finalizeMatchday`). El
+nivel se expone en `toPublicUser` (cubre login/registro/verify-email/
+Google/`users/me` de golpe) y en los endpoints que ya devolvían el
+avatar de otros usuarios (miembros de grupo, Tabla, resultados de
+jornada, detalle de miembro) — sin round-trips nuevos. 275 tests del
+backend en verde (15 nuevos).
+
+`AvatarComponent` gana un `[level]` opcional (insignia circular abajo-
+derecha) conectado en los 9 sitios que ya usaban `app-avatar`. La
+pantalla `/profile/level` (diseñada en Claude Design, ver Sprint 14) y
+la tarjeta mini de Perfil pasan de datos fijos a `/users/me/profile`
+real — las recompensas del pase (colores, mascotas) siguen siendo
+catálogo de muestra, aviso actualizado en la pantalla para reflejarlo.
+
+Verificado en navegador con una cuenta nueva (nivel 1, 0/200 XP) en
+top-bar, Perfil, Tabla y la pantalla de nivel completa.
+
 ## 2026-09-15 — Feed real de avisos (issue #21) + campanita restaurada
 
 A petición del usuario ("podemos crear ya la vista de notificaciones?"),
@@ -233,10 +822,13 @@ global) completos en `dev`. Ver `roadmap.md` Sprint 5 para el detalle
 exacto. Issue #10 actualizado con las casillas hechas, **sigue en Status
 "New features"** (el sprint no está completo).
 
-Pendiente del mismo sprint, en incrementos siguientes: orden estable de
-jornadas por cierre de pronósticos (necesita investigación con datos
-reales antes de implementar, ver `backlog.md`), estadísticas agregadas
-por temporada. Ninguno de los dos se ha tocado desde el 2026-09-10.
+**Orden estable de jornadas por cierre de pronósticos**: implementado en
+dos vueltas 2026-09-19 (ver entrada de arriba y `decisions.md`) — la
+primera (PR #33) ya en `dev`, la segunda (fix real basado en el próximo
+partido sin terminar, rama `fix/matchday-reference-order-by-next-kickoff`)
+con PR pendiente de abrir. Sin verificar en navegador todavía. Pendiente
+del mismo sprint, en incrementos siguientes: estadísticas agregadas por
+temporada (sin tocar desde el 2026-09-10).
 
 Sin verificar en Sprint 3/4/5: iOS/Android (solo web).
 
@@ -419,10 +1011,18 @@ bloquea nada más — el resto del sprint sigue avanzando).
 
 ## Cambios sin commit
 
-No en `dev`: todo el trabajo de Sprint 3, Sprint 4, los incrementos 1-3
-del Sprint 5, el Sprint 9 (incremento 1), y la sesión de rediseño visual
-completa (incluida la reconciliación de este documento) está commiteado y
-empujado a `origin/dev`. El incremento 1 de avatares del Sprint 7 está
-commiteado y empujado a `origin/feature/sprint-7-avatares`, una rama
-aparte que **todavía no se ha fusionado a `dev`** (pendiente de
-autorización explícita).
+No en `dev`: el incremento 1 de avatares del Sprint 7 está commiteado y
+empujado a `origin/feature/sprint-7-avatares`, una rama aparte que
+**todavía no se ha fusionado a `dev`** (pendiente de autorización
+explícita). El incremento 4 del Sprint 5 ("orden estable de jornadas",
+primera vuelta, PR #33) ya está en `dev`.
+
+Dos ramas pendientes de subir, ambas del mismo tema (Sprint 5, orden
+estable de jornadas):
+- `docs/quiniela-matchday-order-followup` (PR #34, solo documentación):
+  **abierta sin mergear** — un intento de merge fue bloqueado por el
+  clasificador de modo automático ("Merge Without Review"); pendiente de
+  que el usuario la fusione él mismo.
+- `fix/matchday-reference-order-by-next-kickoff` (el fix real, segunda
+  vuelta, 2026-09-19): cambios commiteados en el árbol de trabajo, PR
+  pendiente de abrir en la próxima acción de esta sesión.

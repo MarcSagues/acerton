@@ -7,8 +7,14 @@ function buildPrismaMock() {
     rankingSnapshot: { findFirst: jest.fn().mockResolvedValue(null) },
     prediction: { findMany: jest.fn() },
     notificationToken: { findMany: jest.fn() },
-    notificationPreference: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null) },
-    user: { findMany: jest.fn().mockResolvedValue([]), updateMany: jest.fn().mockResolvedValue({}) },
+    notificationPreference: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
+    user: {
+      findMany: jest.fn().mockResolvedValue([]),
+      updateMany: jest.fn().mockResolvedValue({}),
+    },
     notification: {
       create: jest.fn().mockResolvedValue({}),
       createMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -44,12 +50,20 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
     // El feed real (Notification) se persiste con el mismo cuerpo que el push, para cada destinatario.
     expect(prisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ userId: 'u1', type: 'MATCHDAY_FINISHED', body: expect.stringContaining('4 puntos') }),
+        data: expect.objectContaining({
+          userId: 'u1',
+          type: 'MATCHDAY_FINISHED',
+          body: expect.stringContaining('4 puntos'),
+        }),
       }),
     );
     expect(prisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ userId: 'u2', type: 'MATCHDAY_FINISHED', body: expect.stringContaining('0 puntos') }),
+        data: expect.objectContaining({
+          userId: 'u2',
+          type: 'MATCHDAY_FINISHED',
+          body: expect.stringContaining('0 puntos'),
+        }),
       }),
     );
   });
@@ -110,7 +124,9 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
 
   it('incluye la posicion cuando hay una foto de clasificacion reciente', async () => {
     const prisma = buildPrismaMock();
-    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', mutedNotifications: false }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', mutedNotifications: false },
+    ]);
     prisma.prediction.findMany.mockResolvedValue([]);
     prisma.rankingSnapshot.findFirst.mockResolvedValue({ position: 2 });
 
@@ -140,7 +156,11 @@ describe('NotificationsService.notifyBadgeEarned', () => {
     );
     expect(prisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ userId: 'u1', type: 'BADGE_EARNED', body: expect.stringContaining('Constante') }),
+        data: expect.objectContaining({
+          userId: 'u1',
+          type: 'BADGE_EARNED',
+          body: expect.stringContaining('Constante'),
+        }),
       }),
     );
   });
@@ -158,10 +178,58 @@ describe('NotificationsService.notifyBadgeEarned', () => {
   });
 });
 
+describe('NotificationsService.notifyLevelUp', () => {
+  it('avisa cuando la preferencia esta activada (por defecto) y guarda el nivel', async () => {
+    const prisma = buildPrismaMock();
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUser').mockResolvedValue(undefined);
+
+    await service.notifyLevelUp('u1', 8);
+
+    expect(sendSpy).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ body: expect.stringContaining('nivel 8') }),
+    );
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u1', type: 'LEVEL_UP', level: 8 }),
+      }),
+    );
+  });
+
+  it('no avisa cuando el usuario ha desactivado la preferencia', async () => {
+    const prisma = buildPrismaMock();
+    prisma.notificationPreference.findUnique.mockResolvedValue({ levelUp: false });
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUser').mockResolvedValue(undefined);
+
+    await service.notifyLevelUp('u1', 8);
+
+    expect(sendSpy).not.toHaveBeenCalled();
+    expect(prisma.notification.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('NotificationsService.markOneRead', () => {
+  it('marca leido solo el aviso pedido, filtrando tambien por dueño', async () => {
+    const prisma = buildPrismaMock();
+    const service = new NotificationsService(prisma as never, {} as never);
+
+    await service.markOneRead('u1', 'n1');
+
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { id: 'n1', userId: 'u1', readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
+  });
+});
+
 describe('NotificationsService.notifyMatchesClosingSoon', () => {
   it('avisa a quien le falta el partido y no recibio otro recordatorio en las ultimas 24h', async () => {
     const prisma = buildPrismaMock();
-    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', mutedNotifications: false }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', mutedNotifications: false },
+    ]);
     prisma.prediction.findMany.mockResolvedValue([]);
     prisma.notificationPreference.findMany.mockResolvedValue([{ userId: 'u1', reminder1h: true }]);
     prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastClosingReminderPushAt: null }]);
@@ -171,22 +239,36 @@ describe('NotificationsService.notifyMatchesClosingSoon', () => {
 
     await service.notifyMatchesClosingSoon('g1', 'md1', 'J6', ['m1'], '1 hora', 'reminder1h');
 
-    expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.objectContaining({ title: 'Partidos por pronosticar' }));
+    expect(sendSpy).toHaveBeenCalledWith(
+      ['u1'],
+      expect.objectContaining({ title: 'Partidos por pronosticar' }),
+    );
     expect(prisma.user.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ['u1'] } },
       data: { lastClosingReminderPushAt: expect.any(Date) },
     });
     expect(prisma.notification.createMany).toHaveBeenCalledWith({
-      data: [expect.objectContaining({ userId: 'u1', type: 'MATCHDAY_CLOSING_SOON', groupId: 'g1', matchdayId: 'md1' })],
+      data: [
+        expect.objectContaining({
+          userId: 'u1',
+          type: 'MATCHDAY_CLOSING_SOON',
+          groupId: 'g1',
+          matchdayId: 'md1',
+        }),
+      ],
     });
   });
 
   it('no avisa a quien ya recibio otro recordatorio de cierre hace menos de 24h', async () => {
     const prisma = buildPrismaMock();
-    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1', mutedNotifications: false }]);
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', mutedNotifications: false },
+    ]);
     prisma.prediction.findMany.mockResolvedValue([]);
     prisma.notificationPreference.findMany.mockResolvedValue([{ userId: 'u1', reminder1h: true }]);
-    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastClosingReminderPushAt: new Date(Date.now() - 60 * 60 * 1000) }]);
+    prisma.user.findMany.mockResolvedValue([
+      { id: 'u1', lastClosingReminderPushAt: new Date(Date.now() - 60 * 60 * 1000) },
+    ]);
 
     const service = new NotificationsService(prisma as never, {} as never);
     const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
@@ -212,7 +294,10 @@ describe('NotificationsService.notifyReengagement', () => {
 
     await service.notifyReengagement(['u1', 'u2']);
 
-    expect(sendSpy).toHaveBeenCalledWith(['u1'], expect.objectContaining({ title: 'Piqo te echa de menos' }));
+    expect(sendSpy).toHaveBeenCalledWith(
+      ['u1'],
+      expect.objectContaining({ title: 'Piqo te echa de menos' }),
+    );
     expect(prisma.notification.createMany).toHaveBeenCalledWith({
       data: [expect.objectContaining({ userId: 'u1', type: 'REENGAGEMENT' })],
     });

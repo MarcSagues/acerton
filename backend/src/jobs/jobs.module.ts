@@ -7,6 +7,7 @@ import { StreaksModule } from '../streaks/streaks.module';
 import { BadgesModule } from '../badges/badges.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { SeasonsModule } from '../seasons/seasons.module';
+import { XpModule } from '../xp/xp.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SeasonsModule } from '../seasons/seasons.module';
     BadgesModule,
     NotificationsModule,
     SeasonsModule,
+    XpModule,
   ],
   providers: [JobsService],
 })

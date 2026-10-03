@@ -351,6 +351,39 @@ textarea {
   user-select: text;
 }
 
+/* Seleccion desactivada en toda la app (no solo en html): se aplica a todos
+   los descendientes y se anula el color de resaltado por si algun
+   WebView lo pinta igualmente. Los campos de texto la recuperan justo
+   debajo. */
+*,
+*::before,
+*::after {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+::selection {
+  background: transparent;
+}
+
+input::selection,
+textarea::selection {
+  background: Highlight;
+}
+
+/* El "borde azul" de los dialogos/paneles: el contenedor de CDK recibe el
+   foco programaticamente al abrirse (tabindex=-1) y el navegador le pinta
+   su anillo de foco nativo. No es un elemento con el que se interactue, asi
+   que no hace falta anillo; los botones/campos dentro conservan el suyo. */
+.cdk-overlay-container *:focus:not(:focus-visible),
+.cdk-dialog-container,
+.cdk-dialog-container:focus,
+.cdk-overlay-pane:focus,
+.cdk-global-overlay-wrapper:focus,
+[tabindex='-1']:focus {
+  outline: none;
+}
+
 a {
   color: inherit;
   text-decoration: none;
