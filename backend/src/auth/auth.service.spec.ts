@@ -37,14 +37,19 @@ function buildDeps(prismaOverrides: Record<string, unknown> = {}) {
       update: jest.fn().mockResolvedValue({}),
       delete: jest.fn().mockResolvedValue({}),
     },
-    groupMembership: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
+    groupMembership: {
+      findFirst: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockResolvedValue({}),
+    },
     $transaction: jest.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     ...prismaOverrides,
   };
   // Soporta tanto la forma array (Promise.all) como la forma interactiva
   // (callback con `tx`, usada por deleteAccount) que acepta $transaction.
   (prisma as { $transaction: jest.Mock }).$transaction = jest.fn((arg: unknown) =>
-    typeof arg === 'function' ? (arg as (tx: unknown) => Promise<unknown>)(prisma) : Promise.all(arg as Promise<unknown>[]),
+    typeof arg === 'function'
+      ? (arg as (tx: unknown) => Promise<unknown>)(prisma)
+      : Promise.all(arg as Promise<unknown>[]),
   );
   const jwtService = { signAsync: jest.fn().mockResolvedValue('signed-jwt') };
   const configService = { get: jest.fn((key: string) => CONFIG_VALUES[key]) };
@@ -438,7 +443,10 @@ describe('AuthService.deleteAccount', () => {
 
   it('transfiere la propiedad de un grupo con mas miembros al mas antiguo antes de borrar', async () => {
     const { service, prisma } = buildDeps({
-      group: { findMany: jest.fn().mockResolvedValue([{ id: 'g1' }]), update: jest.fn().mockResolvedValue({}) },
+      group: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'g1' }]),
+        update: jest.fn().mockResolvedValue({}),
+      },
       groupMembership: {
         findFirst: jest.fn().mockResolvedValue({ id: 'm1', userId: 'u2' }),
         update: jest.fn().mockResolvedValue({}),
@@ -448,8 +456,14 @@ describe('AuthService.deleteAccount', () => {
 
     await service.deleteAccount('u1');
 
-    expect(prisma.groupMembership.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { role: 'ADMIN' } });
-    expect(prisma.group.update).toHaveBeenCalledWith({ where: { id: 'g1' }, data: { ownerId: 'u2' } });
+    expect(prisma.groupMembership.update).toHaveBeenCalledWith({
+      where: { id: 'm1' },
+      data: { role: 'ADMIN' },
+    });
+    expect(prisma.group.update).toHaveBeenCalledWith({
+      where: { id: 'g1' },
+      data: { ownerId: 'u2' },
+    });
     expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
   });
 
@@ -460,7 +474,10 @@ describe('AuthService.deleteAccount', () => {
         update: jest.fn().mockResolvedValue({}),
         delete: jest.fn().mockResolvedValue({}),
       },
-      groupMembership: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) },
+      groupMembership: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
+      },
     });
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser({ passwordHash: null }));
 
@@ -490,8 +507,12 @@ describe('AuthService.validateOrCreateAppleUser', () => {
     const { service, prisma } = buildDeps();
     (prisma.user.findUnique as jest.Mock)
       .mockResolvedValueOnce(null) // no existe por appleSub
-      .mockResolvedValueOnce(buildUser({ id: 'existing', email: 'test@example.com', emailVerifiedAt: null }));
-    (prisma.user.update as jest.Mock).mockResolvedValue(buildUser({ id: 'existing', appleSub: 'apple-sub-1' }));
+      .mockResolvedValueOnce(
+        buildUser({ id: 'existing', email: 'test@example.com', emailVerifiedAt: null }),
+      );
+    (prisma.user.update as jest.Mock).mockResolvedValue(
+      buildUser({ id: 'existing', appleSub: 'apple-sub-1' }),
+    );
 
     await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'test@example.com' });
 
@@ -504,9 +525,14 @@ describe('AuthService.validateOrCreateAppleUser', () => {
   it('crea una cuenta nueva sin nombre confirmado si Apple no comparte el nombre', async () => {
     const { service, prisma } = buildDeps();
     (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ id: 'new', appleSub: 'apple-sub-1' }));
+    (prisma.user.create as jest.Mock).mockResolvedValue(
+      buildUser({ id: 'new', appleSub: 'apple-sub-1' }),
+    );
 
-    await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'nuevo@example.com' });
+    await service.validateOrCreateAppleUser({
+      appleSub: 'apple-sub-1',
+      email: 'nuevo@example.com',
+    });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -521,9 +547,15 @@ describe('AuthService.validateOrCreateAppleUser', () => {
   it('crea la cuenta con el nombre y confirmado si Apple lo comparte (primera autorizacion)', async () => {
     const { service, prisma } = buildDeps();
     (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ id: 'new', appleSub: 'apple-sub-1' }));
+    (prisma.user.create as jest.Mock).mockResolvedValue(
+      buildUser({ id: 'new', appleSub: 'apple-sub-1' }),
+    );
 
-    await service.validateOrCreateAppleUser({ appleSub: 'apple-sub-1', email: 'nuevo@example.com', name: 'Nuevo Usuario' });
+    await service.validateOrCreateAppleUser({
+      appleSub: 'apple-sub-1',
+      email: 'nuevo@example.com',
+      name: 'Nuevo Usuario',
+    });
 
     expect(prisma.user.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ name: 'Nuevo Usuario', usernameConfirmed: true }),
