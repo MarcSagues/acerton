@@ -16,6 +16,8 @@ export interface RegisterPayload {
   email: string;
   password: string;
   name: string;
+  /** Codigo de referido capturado del link de invitacion (ver referralLinkGuard) — opcional. */
+  referralCode?: string;
 }
 
 export interface LoginPayload {
@@ -145,11 +147,11 @@ export class AuthService {
    * necesidad de redirigir a un navegador — se manda tal cual al backend
    * (ver AuthController.googleToken), que es quien de verdad lo verifica.
    */
-  loginWithGoogleNative(): Observable<AuthResponse> {
-    return from(this.performGoogleNativeSignIn()).pipe(tap((res) => this.setSession(res)));
+  loginWithGoogleNative(referralCode?: string): Observable<AuthResponse> {
+    return from(this.performGoogleNativeSignIn(referralCode)).pipe(tap((res) => this.setSession(res)));
   }
 
-  private async performGoogleNativeSignIn(): Promise<AuthResponse> {
+  private async performGoogleNativeSignIn(referralCode?: string): Promise<AuthResponse> {
     if (!this.googleSignInInitialized) {
       await GoogleSignIn.initialize({ clientId: environment.googleWebClientId });
       this.googleSignInInitialized = true;
@@ -158,7 +160,7 @@ export class AuthService {
     return firstValueFrom(
       this.http.post<AuthResponse>(
         `${environment.apiUrl}/auth/google/token`,
-        { idToken: result.idToken },
+        { idToken: result.idToken, referralCode },
         { withCredentials: true },
       ),
     );
@@ -173,11 +175,11 @@ export class AuthService {
    * `givenName`/`familyName` solo llegan la primera vez que el usuario
    * autoriza esta app — ver AuthService.loginWithAppleIdToken en el backend.
    */
-  loginWithAppleNative(): Observable<AuthResponse> {
-    return from(this.performAppleNativeSignIn()).pipe(tap((res) => this.setSession(res)));
+  loginWithAppleNative(referralCode?: string): Observable<AuthResponse> {
+    return from(this.performAppleNativeSignIn(referralCode)).pipe(tap((res) => this.setSession(res)));
   }
 
-  private async performAppleNativeSignIn(): Promise<AuthResponse> {
+  private async performAppleNativeSignIn(referralCode?: string): Promise<AuthResponse> {
     const result = await SignInWithApple.authorize({
       clientId: 'app.piqo.es',
       redirectURI: `${environment.apiUrl}/auth/apple/callback`,
@@ -189,7 +191,7 @@ export class AuthService {
     return firstValueFrom(
       this.http.post<AuthResponse>(
         `${environment.apiUrl}/auth/apple/token`,
-        { identityToken, fullName },
+        { identityToken, fullName, referralCode },
         { withCredentials: true },
       ),
     );
@@ -198,6 +200,20 @@ export class AuthService {
   /** Refleja en el signal local un usuario ya actualizado en el backend (ej. tras cambiar el nombre). */
   setCurrentUser(user: User): void {
     this.currentUserSignal.set(user);
+  }
+
+  /**
+   * Vuelve a pedir /users/me para refrescar el signal local (nivel,
+   * avatar...) sin pasar por login/bootstrap — necesario porque
+   * currentUser() solo se actualiza en el arranque de la app o tras una
+   * accion explicita (login, guardar avatar...), nunca solo porque la XP
+   * cambio en el backend. Ver ShellFacade: se llama justo al detectar en
+   * vivo una subida de nivel, para que el nivel usado en el badge del
+   * avatar y en el gating de /profile/avatar no se quede desfasado hasta
+   * cerrar y volver a abrir la app.
+   */
+  refreshCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${environment.apiUrl}/users/me`).pipe(tap((user) => this.currentUserSignal.set(user)));
   }
 
   logout(): Observable<unknown> {

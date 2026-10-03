@@ -16,7 +16,7 @@ export interface Prediction {
   doublePointsWildcard: boolean;
   pointsEarned: number | null;
   submittedAt: string;
-  user?: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null };
+  user?: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null; level?: number };
 }
 
 export interface SubmitPredictionPayload {

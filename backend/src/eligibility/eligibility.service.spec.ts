@@ -27,7 +27,12 @@ describe('EligibilityService.computeMemberEligibility', () => {
     const service = new EligibilityService(prisma as never);
     const result = await service.computeMemberEligibility('g1', 'u1');
 
-    expect(result).toEqual({ userId: 'u1', availableMatchdays: 0, participatedMatchdays: 0, eligible: false });
+    expect(result).toEqual({
+      userId: 'u1',
+      availableMatchdays: 0,
+      participatedMatchdays: 0,
+      eligible: false,
+    });
   });
 
   it('no es elegible si el grupo no tiene ninguna competicion activa', async () => {
@@ -51,7 +56,12 @@ describe('EligibilityService.computeMemberEligibility', () => {
     const service = new EligibilityService(prisma as never);
     const result = await service.computeMemberEligibility('g1', 'u1');
 
-    expect(result).toEqual({ userId: 'u1', availableMatchdays: 0, participatedMatchdays: 0, eligible: false });
+    expect(result).toEqual({
+      userId: 'u1',
+      availableMatchdays: 0,
+      participatedMatchdays: 0,
+      eligible: false,
+    });
     expect(prisma.prediction.findMany).not.toHaveBeenCalled();
   });
 
@@ -80,7 +90,12 @@ describe('EligibilityService.computeMemberEligibility', () => {
     const prisma = buildPrismaMock();
     prisma.groupMembership.findUnique.mockResolvedValue({ joinedAt: new Date('2026-01-01') });
     prisma.groupCompetition.findMany.mockResolvedValue([{ competitionId: 'c1' }]);
-    prisma.matchday.findMany.mockResolvedValue([{ id: 'md-1' }, { id: 'md-2' }, { id: 'md-3' }, { id: 'md-4' }]);
+    prisma.matchday.findMany.mockResolvedValue([
+      { id: 'md-1' },
+      { id: 'md-2' },
+      { id: 'md-3' },
+      { id: 'md-4' },
+    ]);
     prisma.prediction.findMany.mockResolvedValue([
       { match: { matchdayId: 'md-1' } },
       { match: { matchdayId: 'md-2' } },
@@ -89,7 +104,12 @@ describe('EligibilityService.computeMemberEligibility', () => {
     const service = new EligibilityService(prisma as never);
     const result = await service.computeMemberEligibility('g1', 'u1');
 
-    expect(result).toEqual({ userId: 'u1', availableMatchdays: 4, participatedMatchdays: 2, eligible: true });
+    expect(result).toEqual({
+      userId: 'u1',
+      availableMatchdays: 4,
+      participatedMatchdays: 2,
+      eligible: true,
+    });
   });
 
   it('no es elegible por debajo del 50%', async () => {
@@ -122,7 +142,12 @@ describe('EligibilityService.computeMemberEligibility', () => {
     const service = new EligibilityService(prisma as never);
     const result = await service.computeMemberEligibility('g1', 'u1');
 
-    expect(result).toEqual({ userId: 'u1', availableMatchdays: 3, participatedMatchdays: 1, eligible: false });
+    expect(result).toEqual({
+      userId: 'u1',
+      availableMatchdays: 3,
+      participatedMatchdays: 1,
+      eligible: false,
+    });
   });
 });
 

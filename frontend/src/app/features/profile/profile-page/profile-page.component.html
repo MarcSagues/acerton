@@ -13,9 +13,10 @@
           [url]="page.authService.currentUser()?.avatarUrl ?? null"
           [background]="page.authService.currentUser()?.avatarBackground ?? null"
           [name]="page.authService.currentUser()?.name ?? ''"
+          [level]="page.authService.currentUser()?.level ?? null"
           [size]="64"
         ></app-avatar>
-        <span class="avatar-edit-badge"><piqo-svg icon="camara" size="14"></piqo-svg></span>
+        <span class="avatar-edit-badge"><piqo-svg icon="pincel" size="13"></piqo-svg></span>
       </a>
       <span class="meta">
         <span class="name-row">
@@ -36,6 +37,18 @@
         <p class="stat-value mono">{{ page.globalLongestStreak() }}</p>
         <p class="stat-hint">en cualquiera de tus grupos</p>
       </div>
+    </div>
+
+    <div class="section">
+      <a class="card level-card" routerLink="/profile/level">
+        <div class="level-card-top">
+          <span class="level-badge mono">Nv. {{ p.xp.level }}</span>
+          <span class="level-hint">{{ p.xp.currentLevelXp }} / {{ p.xp.neededForLevel }} XP</span>
+        </div>
+        <div class="level-bar-track">
+          <div class="level-bar-fill" [style.width.%]="(p.xp.currentLevelXp / p.xp.neededForLevel) * 100"></div>
+        </div>
+      </a>
     </div>
 
     <div class="section-head">
@@ -172,6 +185,15 @@
         <div>
           <p class="card-title">Normas y premios</p>
           <p class="hint mono">Puntuación real y acuerdos del grupo</p>
+        </div>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
+    </div>
+    <div class="section">
+      <a class="card settings-link" routerLink="/profile/invite">
+        <div>
+          <p class="card-title">Invitar</p>
+          <p class="hint mono">Tu enlace, y aplicar el código de un amigo</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>

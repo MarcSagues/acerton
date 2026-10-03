@@ -29,6 +29,34 @@ export class GroupsService {
   }
 
   /**
+   * Favoritos siempre arriba (boton "favoritos" en Grupos): el backend ya
+   * ordena asi /groups/mine, pero las actualizaciones locales (crear,
+   * unirse, marcar/desmarcar favorito) tocan el signal directamente sin
+   * volver a pedir la lista, asi que hace falta reordenar aqui tambien
+   * para no romper la fijacion hasta el siguiente reload.
+   */
+  private sortFavoritesFirst(groups: Group[]): Group[] {
+    return [...groups].sort((a, b) => Number(!!b.isFavorite) - Number(!!a.isFavorite));
+  }
+
+  /**
+   * Solo actualiza el flag (la estrella cambia al momento); NO reordena la
+   * lista visible — moverla en caliente mientras la estas mirando queda
+   * raro (la fila salta bajo el dedo). El orden con favoritos arriba se
+   * aplica en el siguiente load real (backend, ver findMineForUser), la
+   * proxima vez que se entra en Grupos.
+   */
+  setFavorite(groupId: string, favorite: boolean) {
+    return this.http.patch<void>(`${environment.apiUrl}/groups/${groupId}/favorite`, { favorite }).pipe(
+      tap(() =>
+        this.myGroupsSignal.update((groups) =>
+          groups.map((g) => (g.id === groupId ? { ...g, isFavorite: favorite } : g)),
+        ),
+      ),
+    );
+  }
+
+  /**
    * A donde navegar justo despues de iniciar sesion: sin grupos da igual
    * (hasGroupGuard te manda a /welcome de todas formas), con uno vas
    * directo a Jornada, con varios entras en Grupos a elegir cual ver.
@@ -48,19 +76,19 @@ export class GroupsService {
   create(payload: CreateGroupPayload) {
     return this.http
       .post<Group>(`${environment.apiUrl}/groups`, payload)
-      .pipe(tap((group) => this.myGroupsSignal.update((groups) => [group, ...groups])));
+      .pipe(tap((group) => this.myGroupsSignal.update((groups) => this.sortFavoritesFirst([group, ...groups]))));
   }
 
   joinByInviteCode(inviteCode: string) {
     return this.http
       .post<Group>(`${environment.apiUrl}/groups/join/${inviteCode}`, {})
-      .pipe(tap((group) => this.myGroupsSignal.update((groups) => [group, ...groups])));
+      .pipe(tap((group) => this.myGroupsSignal.update((groups) => this.sortFavoritesFirst([group, ...groups]))));
   }
 
   joinPublic(groupId: string) {
     return this.http
       .post<Group>(`${environment.apiUrl}/groups/${groupId}/join`, {})
-      .pipe(tap((group) => this.myGroupsSignal.update((groups) => [group, ...groups])));
+      .pipe(tap((group) => this.myGroupsSignal.update((groups) => this.sortFavoritesFirst([group, ...groups]))));
   }
 
   updateCompetitions(groupId: string, competitionIds: string[]) {

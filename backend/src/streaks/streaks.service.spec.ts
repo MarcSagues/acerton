@@ -59,7 +59,12 @@ describe('StreaksService.updateAfterMatchdayClose (racha global)', () => {
       .mockResolvedValueOnce([{ userId: 'u1' }]) // gB: si participo aqui
       .mockResolvedValueOnce([{ userId: 'u1' }]); // global: participo en gB, cuenta
     prisma.streak.findUnique.mockResolvedValue(null);
-    prisma.globalStreak.findUnique.mockResolvedValue({ userId: 'u1', currentStreak: 2, longestStreak: 3, lastMatchdayId: 'md-0' });
+    prisma.globalStreak.findUnique.mockResolvedValue({
+      userId: 'u1',
+      currentStreak: 2,
+      longestStreak: 3,
+      lastMatchdayId: 'md-0',
+    });
 
     const service = new StreaksService(prisma as never);
     await service.updateAfterMatchdayClose('md-1');
@@ -77,7 +82,12 @@ describe('StreaksService.updateAfterMatchdayClose (racha global)', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.prediction.findMany.mockResolvedValue([]); // nadie participo
     prisma.streak.findUnique.mockResolvedValue(null);
-    prisma.globalStreak.findUnique.mockResolvedValue({ userId: 'u1', currentStreak: 5, longestStreak: 5, lastMatchdayId: 'md-0' });
+    prisma.globalStreak.findUnique.mockResolvedValue({
+      userId: 'u1',
+      currentStreak: 5,
+      longestStreak: 5,
+      lastMatchdayId: 'md-0',
+    });
 
     const service = new StreaksService(prisma as never);
     await service.updateAfterMatchdayClose('md-1');
@@ -95,7 +105,12 @@ describe('StreaksService.updateAfterMatchdayClose (racha global)', () => {
     prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.prediction.findMany.mockResolvedValue([{ userId: 'u1' }]);
     prisma.streak.findUnique.mockResolvedValue(null);
-    prisma.globalStreak.findUnique.mockResolvedValue({ userId: 'u1', currentStreak: 3, longestStreak: 3, lastMatchdayId: 'md-1' });
+    prisma.globalStreak.findUnique.mockResolvedValue({
+      userId: 'u1',
+      currentStreak: 3,
+      longestStreak: 3,
+      lastMatchdayId: 'md-1',
+    });
 
     const service = new StreaksService(prisma as never);
     await service.updateAfterMatchdayClose('md-1');

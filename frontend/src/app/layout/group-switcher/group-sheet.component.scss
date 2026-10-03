@@ -108,6 +108,13 @@
   white-space: nowrap;
 }
 
+.favorite-mark {
+  position: relative;
+  top: 2px;
+  margin-right: 3px;
+  color: var(--p4-warning);
+}
+
 .sub {
   font: 400 11px/1 var(--p4-font-ui);
   color: var(--p4-muted);

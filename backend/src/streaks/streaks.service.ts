@@ -141,6 +141,8 @@ export class StreaksService {
       });
     }
 
-    this.logger.log(`Racha global actualizada para jornada ${matchdayId} (${memberships.length} usuarios afectados)`);
+    this.logger.log(
+      `Racha global actualizada para jornada ${matchdayId} (${memberships.length} usuarios afectados)`,
+    );
   }
 }

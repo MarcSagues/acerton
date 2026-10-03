@@ -9,7 +9,10 @@ services:
       MYSQL_PASSWORD: acerton
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
-      - "3307:3306"
+      # Solo accesible desde el propio host: sin bind explicito, Docker
+      # publica en 0.0.0.0 y el puerto queda alcanzable desde cualquier
+      # interfaz de red.
+      - "127.0.0.1:3307:3306"
     volumes:
       - acerton_mysql_data:/var/lib/mysql
 

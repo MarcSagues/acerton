@@ -67,7 +67,9 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('resend-verification')
-  async resendVerification(@Body() dto: ResendVerificationDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
+  async resendVerification(
+    @Body() dto: ResendVerificationDto,
+  ): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
     await this.authService.resendVerification(dto.email);
     return GENERIC_EMAIL_ACTION_MESSAGE;
   }
@@ -77,7 +79,9 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @Post('forgot-password')
-  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
     await this.authService.requestPasswordReset(dto.email);
     return GENERIC_EMAIL_ACTION_MESSAGE;
   }
@@ -144,7 +148,10 @@ export class AuthController {
     @Body() dto: GoogleTokenDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser; accessToken: string }> {
-    const { user, tokens } = await this.authService.loginWithGoogleIdToken(dto.idToken);
+    const { user, tokens } = await this.authService.loginWithGoogleIdToken(
+      dto.idToken,
+      dto.referralCode,
+    );
     this.setRefreshCookie(res, tokens.refreshToken);
     return { user, accessToken: tokens.accessToken };
   }
@@ -158,7 +165,11 @@ export class AuthController {
     @Body() dto: AppleTokenDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser; accessToken: string }> {
-    const { user, tokens } = await this.authService.loginWithAppleIdToken(dto.identityToken, dto.fullName);
+    const { user, tokens } = await this.authService.loginWithAppleIdToken(
+      dto.identityToken,
+      dto.fullName,
+      dto.referralCode,
+    );
     this.setRefreshCookie(res, tokens.refreshToken);
     return { user, accessToken: tokens.accessToken };
   }

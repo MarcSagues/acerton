@@ -4,6 +4,111 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-09-19 — Sprint 5, "orden estable de jornadas por cierre de pronósticos" — resuelto, sustituye la decisión implícita anterior
+
+El usuario resolvió con reglas y ejemplos concretos la pregunta que
+`backlog.md`/`roadmap.md` tenían pendiente desde el 2026-09-10 ("necesita
+datos reales de qué casos simultáneos aparecen"):
+
+> Si aplazan un partido de la jornada 6 para dentro de 30 días, esa
+> jornada se debe esconder y debe aparecer la jornada 7 (si su partido es
+> el más próximo) como la jornada "actual" a mostrar/puntuar. La jornada 6
+> no desaparece: se queda abierta para pronosticar/editar cuando se
+> quiera. No hace falta que una jornada se cierre para que se abra otra —
+> pueden quedar varias jornadas abiertas a la vez si sus ventanas se
+> solapan en el tiempo. Cuando se acerque de nuevo la fecha real de la
+> jornada 6, puede volver a ser "la actual" si vuelve a ser la de cierre
+> más próximo entre las pendientes.
+
+**Sustituye una decisión de diseño explícita ya implementada y testeada**:
+`MatchdaysService.getCurrentMatchdayForCompetition` elegía la jornada "actual"
+a mostrar por defecto por **número de orden más bajo** entre las no
+finalizadas, deliberadamente distinto del criterio de **cierre más
+próximo** (`closesAt`) que ya usaba `canAcceptPredictions`/
+`attachCanPredict` para decidir qué se puede predecir — el comentario del
+código explicaba explícitamente que confundir ambos criterios había sido
+un bug anterior. Un test (`matchdays.service.spec.ts`) codificaba
+literalmente el escenario contrario al que pide ahora el usuario (jornada
+aplazada con número más bajo debía seguir siendo "la actual" aunque
+cerrara más tarde que la siguiente). Confirmado explícitamente con el
+usuario antes de tocar el test (ver pregunta con dos escenarios
+equivalentes e invertidos) — no es una ambigüedad menor, es una reversión
+de una regla de producto ya decidida.
+
+**Implementado**: `getCurrentMatchdayForCompetition` pasa a ordenar por
+`closesAt` ascendente en vez de `order` ascendente — mismo criterio que ya
+usaba `getEarliestPendingOrder`, así que ambos conceptos ("jornada a
+mostrar por defecto" y "jornada límite para aceptar pronósticos") quedan
+unificados en vez de deliberadamente separados. No hizo falta tocar
+`canAcceptPredictions`/`attachCanPredict`: su regla ya existente
+(`matchday.order <= earliestPendingOrder`, con `earliestPendingOrder`
+calculado por cierre más próximo) ya cubre exactamente el ejemplo
+numérico del usuario sin cambios — una jornada aplazada con número más
+bajo que la actual (por cierre) sigue pudiendo aceptar pronósticos, y una
+jornada muy por delante (ej. la 12 en el ejemplo) sigue bloqueada hasta
+que le toque. El caso general de "varias jornadas abiertas a la vez sin
+que una tenga que cerrar" ya estaba cubierto por ese mismo mecanismo
+(orden relativo al de cierre más próximo, más el margen individual de
+`PREDICTIONS_OPEN_BEFORE_MS` de cada jornada) para el ejemplo dado — no se
+ha tocado ni relajado ese mecanismo más allá de lo verificado con el
+ejemplo concreto.
+
+Test que codificaba la regla anterior reescrito con el ejemplo nuevo
+(jornada 6 aplazada 30 días / jornada 7 más próxima). 281 tests del
+backend en verde, `tsc --noEmit` limpio. Mergeado a `dev` vía PR
+(github.com/MarcSagues/acerton/pull/33, checks requeridos `backend (tests
++ tsc)`/`frontend (build + tsc + karma)` en verde) — rama
+`feature/current-matchday-by-closest-close` ya borrada tras el merge.
+Issue #10 (Sprint 5) actualizado con la casilla marcada; el sprint sigue
+en Status "New features" porque quedan tareas pendientes (estadísticas
+por temporada, separar 1X2/resultado exacto, competiciones sin
+retroactividad).
+
+### 2026-09-19 (mismo día, tras probar en `dev`) — el fix anterior no bastaba: `closesAt` se queda "congelado" en el pasado
+
+El usuario probó en `dev` y reportó "sigo viendo la jornada 6 en vez de la
+7". Investigado contra la base de datos real de `dev` (rama de Neon
+`br-misty-pond-za5lnxwp`, proyecto `soft-heart-48763185`): en La Liga, la
+jornada 6 tiene 9 de sus 10 partidos `FINISHED` y el último (Levante–
+Athletic) aplazado al **21 de octubre**; la jornada 7 tiene sus partidos
+literalmente el 19-20 de septiembre (hoy/mañana en la fecha de esta
+sesión). Cero pronósticos registrados en ningún grupo de prueba para los
+partidos de la jornada 7.
+
+**Causa raíz real**: `Matchday.closesAt` se fija al CREAR la jornada como
+el kickoff de su PRIMER partido (3 de septiembre para la jornada 6) y
+nunca se recalcula — aplazar un partido que no es el primero de la ronda
+no lo mueve. El fix de la entrada anterior (ordenar por `closesAt`
+ascendente) seguía comparando ese campo congelado: la jornada 6 "ganaba"
+por tener un `closesAt` más antiguo (3 sept.) que el de la 7 (18 sept.),
+aunque su único partido pendiente estuviera un mes por delante. Y como
+`canAcceptPredictions` usaba el mismo campo para decidir el umbral de
+jornadas que aceptan pronósticos, esto además **bloqueaba pronósticos
+reales** de la jornada 7 (que sí estaba en curso) — no solo afectaba a qué
+se mostraba por defecto.
+
+**Confirmado con el usuario antes de ampliar el fix** (tocaba
+`canAcceptPredictions`, no solo el display — más alcance del inicialmente
+previsto): sustituir el criterio de `closesAt` fijo por el **kickoff del
+próximo partido sin terminar (`status != FINISHED`) de cada jornada**,
+recalculado sobre los partidos reales en cada consulta en vez de un campo
+guardado. Nuevo método privado `MatchdaysService.getReferenceOrder`
+(sustituye a `getEarliestPendingOrder`), usado tanto por
+`getCurrentMatchdayForCompetition` como por `attachCanPredict`. Una
+jornada deja de "competir" por esta posición en cuanto pasa a `FINISHED`
+(todos sus partidos con resultado), así que ya no puede quedarse congelada
+en el pasado.
+
+Verificado con SQL directo contra los datos reales de `dev` antes de dar
+el fix por bueno: con el nuevo criterio, la jornada 7 gana (próximo
+partido hoy a las 12:00 UTC) y la 6 pasa al puesto que le corresponde por
+urgencia real (21 de octubre, incluso por detrás de las jornadas 8 y 9).
+Tests reescritos para mockear `findMany` en vez de `findFirst` (la nueva
+consulta trae varias jornadas con sus partidos, no una sola por
+`closesAt`), más un test nuevo que reproduce exactamente este escenario
+real. 282 tests del backend en verde, `tsc --noEmit` limpio. Rama
+`fix/matchday-reference-order-by-next-kickoff`.
+
 ## 2026-09-12 — Sprint 11 (Piqo Premium, monetización)
 
 Precio decidido con el usuario tras analizar comparables directos
@@ -456,3 +561,66 @@ preguntas que abren están en `backlog.md`.
   desde el frontend) — es de los pocos puntos del encargo que ya cumple
   la regla de fondo, solo falta el detalle de UI (mostrar el nombre dentro
   del input bloqueado en vez de ocultarlo).
+
+## 2026-09-16 — Requisitos de producto para el sistema de referidos (Sprint 14)
+
+A petición explícita del usuario, planteamiento (sin implementar todavía
+— el sistema de referidos sigue ⬜ en `roadmap.md` Sprint 14) de cómo debe
+funcionar cuando se construya:
+
+- **Un único código por usuario, no dos sistemas paralelos**: el mismo
+  código sirve para compartir como link (parámetro tipo `?ref=CODIGO`) y
+  para teclear a mano — no un código de invitación y otro distinto para
+  link.
+- **Dos formas de entrada, un solo resultado**: el destinatario puede
+  vincularse al referidor tanto abriendo el link como introduciendo el
+  código manualmente; ambos caminos deben producir la misma relación
+  referido↔referidor.
+- **El campo para teclear el código va siempre en un sitio de baja
+  visibilidad** (Ajustes, no un flujo destacado ni la pantalla de
+  bienvenida) — decisión explícita de diseño, no un olvido.
+- **Pensado para enganchar con Premium (Sprint 11) más adelante**: la
+  idea es poder aplicar descuentos de Premium según de qué usuario
+  concreto venga el referido. Esto no es una tarea de Sprint 14, pero
+  condiciona el modelo de datos: la relación referido↔referidor debe
+  quedar guardada de una forma que Sprint 11 pueda consultarla sin
+  rediseñar el sistema de referidos desde cero.
+
+Sin decidir todavía (no bloquea nada mientras el sprint no llegue a esta
+tarea, ver `backlog.md` si hiciera falta registrar una pregunta abierta
+más adelante): formato exacto del código, límites de uso por cuenta, y el
+mecanismo de descuento en sí, que es alcance de Sprint 11 cuando toque.
+
+## 2026-09-16 — Resuelta la duda de Sprint 9 sobre precisión de recordatorios en Render free
+
+Pregunta que quedó abierta en `backlog.md` desde el Sprint 9 ("confirmar
+si el plan gratuito de Render, que se duerme sin tráfico, afecta a la
+precisión de los recordatorios de cierre — 24h/5h/1h/30min — antes de
+prometer puntualidad"). El usuario reportó el síntoma real: "las
+notificaciones siguen sin llegar cuando faltan X horas... solo las
+recibí un día y 6 de golpe".
+
+**Causa confirmada leyendo el código**: `JobsService.sendClosingReminders`
+corre cada 5 minutos (`@Cron(CronExpression.EVERY_5_MINUTES)`), pero a
+diferencia de `closeDueMatchdays`/`syncResultsAndFinalize` no se relanza
+en `onApplicationBootstrap` — mientras Render duerme, este cron
+simplemente no corre. Además, `shouldSendMatchReminder`
+(`matchday.util.ts`) exige que el partido siga siendo futuro
+(`msUntilKickoff >= 0`): si la ventana de un aviso pasa con el servidor
+dormido, ese aviso se pierde para siempre, no se manda "tarde" después.
+Cuando el servidor por fin despierta y el cron consigue correr, coge de
+golpe todos los avisos que en ese instante caen dentro de su ventana —
+de ahí los "6 de golpe" de un solo tirón y nada el resto del tiempo.
+
+**Resuelto, sin cambios de código**: el usuario confirmó que producción
+ya está en el plan **Render Starter** (siempre activo, ~7$/mes) desde
+antes de esta sesión — el documento de infraestructura seguía marcándolo
+"pendiente" por un despiste de registro (corregido en `roadmap.md`). En
+Starter este problema no puede ocurrir (el proceso nunca duerme). El
+comportamiento irregular que vio el usuario es del entorno de **dev**
+(`api-dev.piqo.es`, plan free a propósito, sin coste) — confirmado con
+él que ahí no hace falta arreglar nada, ya que es solo para pruebas.
+Si en el futuro hiciera falta mantener dev despierto sin pasar a un plan
+de pago, la opción barata es un ping externo periódico (GitHub Actions
+programado, o un servicio gratuito tipo cron-job.org) — no implementado,
+descartado por el usuario por innecesario ahora mismo.

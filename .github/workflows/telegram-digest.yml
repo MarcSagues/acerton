@@ -1,0 +1,64 @@
+name: Telegram Weekly Digest
+
+# Resumen semanal por Telegram en vez de aviso en vivo por cada cosa: PRs
+# abiertas, alertas de Dependabot pendientes y ramas sin tocar en 30+ dias.
+on:
+  schedule:
+    # Lunes 08:00 UTC (09:00/10:00 en España segun horario de verano).
+    - cron: '0 8 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Construir el resumen
+        id: build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          PR_LINES=$(gh pr list --repo "$REPO" --state open --json number,title,author \
+            --jq '.[] | "#\(.number) \(.title) (@\(.author.login))"')
+          PR_COUNT=$(gh pr list --repo "$REPO" --state open --json number --jq 'length')
+
+          ALERTS=$(gh api "repos/$REPO/dependabot/alerts" --paginate \
+            --jq '.[] | select(.state=="open") | .security_vulnerability.severity' 2>/dev/null | sort | uniq -c | sort -rn || true)
+
+          # Ramas remotas (menos dev/main) sin commits nuevos en 30+ dias.
+          CUTOFF=$(date -d '30 days ago' +%s)
+          STALE=""
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin | grep -v -E '/(dev|main|HEAD)$'); do
+            ts=$(git log -1 --format=%ct "$ref")
+            if [ "$ts" -lt "$CUTOFF" ]; then
+              days=$(( ( $(date +%s) - ts ) / 86400 ))
+              STALE="${STALE}${ref#origin/} (${days}d)
+          "
+            fi
+          done
+
+          { echo "PR_COUNT<<EOF"; echo "$PR_COUNT"; echo "EOF"; } >> "$GITHUB_ENV"
+          { echo "PR_LINES<<EOF"; echo "${PR_LINES:-(ninguna)}"; echo "EOF"; } >> "$GITHUB_ENV"
+          { echo "ALERTS<<EOF"; echo "${ALERTS:-(ninguna)}"; echo "EOF"; } >> "$GITHUB_ENV"
+          { echo "STALE<<EOF"; echo "${STALE:-(ninguna)}"; echo "EOF"; } >> "$GITHUB_ENV"
+
+      - name: Enviar a Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO: ${{ github.repository }}
+        run: |
+          printf -v TEXT '🗓️ Resumen semanal de %s\n\n🔀 PRs abiertas (%s):\n%s\n\n🛡️ Alertas de Dependabot abiertas:\n%s\n\n🧹 Ramas sin tocar 30+ dias:\n%s' \
+            "$REPO" "$PR_COUNT" "$PR_LINES" "$ALERTS" "$STALE"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${TELEGRAM_CHAT_ID}" \
+            --data-urlencode text="${TEXT}"

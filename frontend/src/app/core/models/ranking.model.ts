@@ -11,7 +11,7 @@ export interface RankingRow {
   position: number;
   /** Diferencia de posicion respecto a la foto anterior: positivo = ha subido, negativo = ha bajado, 0 = igual. */
   positionDelta: number;
-  user: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null };
+  user: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null; level: number };
 }
 
 export interface MatchdayHistoryEntry {

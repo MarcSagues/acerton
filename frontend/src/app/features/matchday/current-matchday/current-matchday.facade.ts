@@ -10,6 +10,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { WildcardsService } from '../../../core/services/wildcards.service';
 import { AdsService } from '../../../core/services/ads.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
+import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
@@ -17,6 +18,7 @@ import { DoubleChanceOption, Prediction } from '../../../core/models/prediction.
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { ComebackSheetComponent, ComebackSheetData, ComebackSheetResult } from './comeback-sheet.component';
 import { MatchdayShareCardComponent, ShareCardData } from '../matchday-results/matchday-share-card.component';
+import { MatchShareCardComponent, MatchShareCardData } from './match-share-card.component';
 import { formatCountdown } from '../../../shared/countdown.util';
 import {
   MatchAccentTone,
@@ -72,6 +74,7 @@ export class CurrentMatchdayFacade {
   private readonly toast = inject(ToastService);
   private readonly bottomNav = inject(BottomNavService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly notificationsFeed = inject(NotificationsFeedService);
 
   readonly loading = signal(true);
   readonly entries = signal<CurrentMatchdayEntry[]>([]);
@@ -856,6 +859,12 @@ export class CurrentMatchdayFacade {
             state.saved = true;
             this.refreshComeback(groupId);
           });
+          // El backend da XP de participar en tiempo real solo la primera
+          // vez que se pronostica cada partido (ver PredictionsService.
+          // submit) — refrescamos el feed de avisos ya mismo para que, si
+          // eso cruzo de nivel, el pop-up salte al momento en vez de
+          // esperar al polling de 2 min de ShellFacade.
+          this.notificationsFeed.refresh();
         },
         error: (error: HttpErrorResponse) => {
           if (state.requestSeq !== seq) return;
@@ -878,6 +887,15 @@ export class CurrentMatchdayFacade {
     return predictionSummary(entry, this.predictionState, this.isExactScore());
   }
 
+  /** true si el partido ya tiene un pronostico completo: los dos marcadores en resultado exacto, o una eleccion (simple o doble oportunidad) en 1X2. */
+  hasPick(matchId: string): boolean {
+    const state = this.predictionState.get(matchId);
+    if (!state) return false;
+    return this.isExactScore()
+      ? state.predictedHomeScore != null && state.predictedAwayScore != null
+      : !!(state.choice || state.doubleChanceOption);
+  }
+
   /** Adapta el estado optimista de la jornada al modelo que consume el canvas compartible. */
   sharePredictions(): Prediction[] {
     const entry = this.activeEntry();
@@ -887,11 +905,7 @@ export class CurrentMatchdayFacade {
 
     return entry.matchday.matches.flatMap((match) => {
       const state = this.predictionState.get(match.id);
-      if (!state) return [];
-      const completed = this.isExactScore()
-        ? state.predictedHomeScore != null && state.predictedAwayScore != null
-        : !!(state.choice || state.doubleChanceOption);
-      if (!completed) return [];
+      if (!state || !this.hasPick(match.id)) return [];
 
       return [{
         id: `share-${match.id}`,
@@ -906,6 +920,25 @@ export class CurrentMatchdayFacade {
         pointsEarned: null,
         submittedAt: new Date().toISOString(),
       } satisfies Prediction];
+    });
+  }
+
+  /** Boton de compartir de cada fila de partido: tarjeta vertical (Instagram Stories) con el pronostico/resultado de ese partido concreto. */
+  openMatchShareCard(match: Match): void {
+    const entry = this.activeEntry();
+    if (!entry || !this.hasPick(match.id)) return;
+    this.dialog.open<MatchShareCardComponent, void, MatchShareCardData>(MatchShareCardComponent, {
+      panelClass: ['piqo-dialog-panel', 'share-card-panel'],
+      data: {
+        match,
+        competitionName: entry.competition.name,
+        matchdayOrder: entry.matchday.order,
+        scoringMode: this.shareScoringMode(),
+        selection: this.stateFor(match.id),
+        playerName: this.sharePlayerName(),
+        avatarBackground: this.authService.currentUser()?.avatarBackground ?? null,
+        groupName: this.shareGroupName(),
+      },
     });
   }
 

@@ -3,7 +3,8 @@ import { Router } from '@angular/router';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { ProfileService } from '../../../core/services/profile.service';
-import { ScoringMode } from '../../../core/models/group.model';
+import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { Group, ScoringMode } from '../../../core/models/group.model';
 import { scoringModeIcon as scoringModeIconOf } from '../../../shared/utils/scoring-mode-badge';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class GroupListFacade {
   private readonly groupsService = inject(GroupsService);
   private readonly activeGroupService = inject(ActiveGroupService);
   private readonly profileService = inject(ProfileService);
+  private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly groups = this.groupsService.myGroups;
@@ -63,6 +65,19 @@ export class GroupListFacade {
 
   goToSettings(groupId: string): void {
     this.router.navigate(['/groups', groupId, 'settings']);
+  }
+
+  /**
+   * Fija/quita este grupo de favoritos, para ti. Actualiza tambien el
+   * selector de grupo (ActiveGroupService) para que quede pinchado arriba
+   * ahi tambien sin esperar a la proxima carga completa.
+   */
+  toggleFavorite(group: Group): void {
+    const next = !group.isFavorite;
+    this.groupsService.setFavorite(group.id, next).subscribe({
+      next: () => this.activeGroupService.setGroups(this.groupsService.myGroups()),
+      error: () => this.toast.show('No se pudo actualizar el favorito. Inténtalo de nuevo.'),
+    });
   }
 
   goToCreate(): void {

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { IsOptional, IsString, Length, MinLength } from 'class-validator';
 
 /**
  * fullName solo llega en la PRIMERA autorizacion (ver
@@ -14,4 +14,10 @@ export class AppleTokenDto {
   @IsOptional()
   @IsString()
   fullName?: string;
+
+  /** Codigo de referido capturado del link de invitacion (opcional, solo aplica si la cuenta es nueva) — ver ReferralsService.redeemBestEffort. */
+  @IsOptional()
+  @IsString()
+  @Length(4, 16)
+  referralCode?: string;
 }

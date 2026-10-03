@@ -22,6 +22,8 @@ export interface Group {
   myPosition?: { position: number; points: number } | null;
   /** Te queda algun partido abierto sin pronosticar en este grupo. Solo viene informado en /groups/mine. */
   hasPendingPicks?: boolean;
+  /** Marcado como favorito por ti (boton "favoritos" en Grupos): se fija arriba del todo en la lista y en el selector. Solo viene informado en /groups/mine. */
+  isFavorite?: boolean;
 }
 
 export type GroupRole = 'ADMIN' | 'MEMBER';
@@ -32,5 +34,5 @@ export interface GroupMember {
   groupId: string;
   role: GroupRole;
   joinedAt: string;
-  user: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null };
+  user: { id: string; name: string; avatarUrl: string | null; avatarBackground: string | null; level: number };
 }

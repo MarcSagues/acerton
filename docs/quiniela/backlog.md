@@ -6,14 +6,6 @@ marcarla resuelta) de aquí.
 
 ## Preguntas que hay que resolver con el usuario antes de cada sprint afectado
 
-- **Sprint 5 (temporadas)**: el encargo pide "orden estable de jornadas
-  por cierre de pronósticos, independiente de la llegada de resultados" y
-  explícitamente pide **explicar y resolver antes de implementar** los
-  casos donde eso cambie resultados. Sin datos reales de qué casos
-  simultáneos aparecen (dos jornadas de competiciones distintas cerrando
-  en el mismo instante, por ejemplo), no se puede completar este análisis
-  desde una sesión de preparación — queda como primer paso técnico real
-  del Sprint 5, no como algo ya resuelto.
 - **Sprint 6 (empates para trofeos)**: `product-rules.md` da ejemplos
   concretos (2 primeros → 2 platas + 1 bronce siguiente; 3 primeros → 3
   bronces; 4 primeros → nadie; 1 primero + 2 segundos → 1 oro + 2 bronces).
@@ -33,12 +25,6 @@ marcarla resuelta) de aquí.
   válidos según la nueva regla — hay que decidir si se conservan igualmente
   (regla "conservar desbloqueos existentes durante migraciones" del
   encargo) o se recalculan.
-- **Sprint 9 (notificaciones + hosting)**: Render (plan gratuito) se
-  "duerme" cuando no hay tráfico — confirmar si eso afecta a la precisión
-  de recordatorios en franjas nuevas (24h) antes de prometer puntualidad.
-  No se ha investigado a fondo en esta sesión; si hiciera falta
-  infraestructura de pago o un servicio adicional, requiere autorización
-  explícita del usuario antes de contratarlo.
 - **Sprint 7 (subida de foto propia)**: no existe ningún almacenamiento de
   imágenes hoy (sin S3/Cloudinary/similar, sin `multer`, Render sin disco
   persistente utilizable). El catálogo de avatares (mascota + color) no lo

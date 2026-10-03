@@ -11,11 +11,19 @@ function buildPrismaMock(predictions: unknown[]) {
 
 function buildSubmitDeps(
   match: { status: string; kickoff: Date; matchdayId?: string },
-  options: { canAcceptPredictions?: boolean; scoringMode?: 'ONE_X_TWO' | 'EXACT_SCORE' } = {},
+  options: {
+    canAcceptPredictions?: boolean;
+    scoringMode?: 'ONE_X_TWO' | 'EXACT_SCORE';
+    /** null (por defecto) = primer pronostico de este partido; un objeto = ya existia (solo se esta editando). */
+    existingPrediction?: unknown;
+  } = {},
 ) {
   const prisma = {
     match: { findUnique: jest.fn().mockResolvedValue({ id: 'm1', matchdayId: 'md1', ...match }) },
-    prediction: { upsert: jest.fn().mockResolvedValue({ id: 'p1' }) },
+    prediction: {
+      upsert: jest.fn().mockResolvedValue({ id: 'p1' }),
+      findUnique: jest.fn().mockResolvedValue(options.existingPrediction ?? null),
+    },
   };
   const wildcardsService = { assertCanUseDoubleChance: jest.fn().mockResolvedValue(undefined) };
   const groupsService = {
@@ -25,13 +33,25 @@ function buildSubmitDeps(
   const matchdaysService = {
     canAcceptPredictions: jest.fn().mockResolvedValue(options.canAcceptPredictions ?? true),
   };
+  const xpService = { awardParticipation: jest.fn().mockResolvedValue(null) };
+  const notificationsService = { notifyLevelUp: jest.fn().mockResolvedValue(undefined) };
   const service = new PredictionsService(
     prisma as never,
     wildcardsService as never,
     groupsService as never,
     matchdaysService as never,
+    xpService as never,
+    notificationsService as never,
   );
-  return { service, prisma, wildcardsService, groupsService, matchdaysService };
+  return {
+    service,
+    prisma,
+    wildcardsService,
+    groupsService,
+    matchdaysService,
+    xpService,
+    notificationsService,
+  };
 }
 
 describe('PredictionsService.scoreFinishedMatchday', () => {
@@ -67,7 +87,14 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       },
     ]);
 
-    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never);
+    const service = new PredictionsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     const scoredCount = await service.scoreFinishedMatchday('matchday-1');
 
     expect(scoredCount).toBe(3);
@@ -99,7 +126,14 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       },
     ]);
 
-    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never);
+    const service = new PredictionsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     await service.scoreFinishedMatchday('matchday-1');
     await service.scoreFinishedMatchday('matchday-1');
 
@@ -158,15 +192,40 @@ describe('PredictionsService.scoreFinishedMatchday', () => {
       },
     ]);
 
-    const service = new PredictionsService(prisma as never, {} as never, {} as never, {} as never);
+    const service = new PredictionsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
     await service.scoreFinishedMatchday('matchday-1');
 
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { pointsEarned: 1 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p2' }, data: { pointsEarned: 5 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p3' }, data: { pointsEarned: 2 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p4' }, data: { pointsEarned: 0 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p5' }, data: { pointsEarned: 10 } });
-    expect(prisma.prediction.update).toHaveBeenCalledWith({ where: { id: 'p6' }, data: { pointsEarned: 4 } });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p1' },
+      data: { pointsEarned: 1 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p2' },
+      data: { pointsEarned: 5 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p3' },
+      data: { pointsEarned: 2 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p4' },
+      data: { pointsEarned: 0 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p5' },
+      data: { pointsEarned: 10 },
+    });
+    expect(prisma.prediction.update).toHaveBeenCalledWith({
+      where: { id: 'p6' },
+      data: { pointsEarned: 4 },
+    });
   });
 });
 
@@ -242,7 +301,11 @@ describe('PredictionsService.submit', () => {
         { scoringMode: 'EXACT_SCORE' },
       );
 
-      await service.submit('u1', 'g1', { matchId: 'm1', predictedHomeScore: 2, predictedAwayScore: 1 });
+      await service.submit('u1', 'g1', {
+        matchId: 'm1',
+        predictedHomeScore: 2,
+        predictedAwayScore: 1,
+      });
 
       expect(prisma.prediction.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -253,7 +316,11 @@ describe('PredictionsService.submit', () => {
             choice: null,
             doubleChanceOption: null,
           },
-          create: expect.objectContaining({ predictedHomeScore: 2, predictedAwayScore: 1, doublePointsWildcard: false }),
+          create: expect.objectContaining({
+            predictedHomeScore: 2,
+            predictedAwayScore: 1,
+            doublePointsWildcard: false,
+          }),
         }),
       );
     });
@@ -279,7 +346,12 @@ describe('PredictionsService.submit', () => {
         doublePointsWildcard: true,
       });
 
-      expect(wildcardsService.assertCanUseDoubleChance).toHaveBeenCalledWith('u1', 'g1', 'md1', 'm1');
+      expect(wildcardsService.assertCanUseDoubleChance).toHaveBeenCalledWith(
+        'u1',
+        'g1',
+        'md1',
+        'm1',
+      );
       expect(prisma.prediction.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: expect.objectContaining({ doublePointsWildcard: true }),
@@ -303,6 +375,52 @@ describe('PredictionsService.submit', () => {
           doublePointsWildcard: true,
         }),
       ).rejects.toThrow('sin cupo');
+    });
+  });
+
+  describe('XP de participacion en tiempo real', () => {
+    it('concede XP al pronosticar un partido por primera vez', async () => {
+      const { service, xpService } = buildSubmitDeps({ status: 'SCHEDULED', kickoff: future });
+
+      await service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' });
+
+      expect(xpService.awardParticipation).toHaveBeenCalledWith('u1', 'g1', 'md1');
+    });
+
+    it('no vuelve a conceder XP si ya existia un pronostico para ese partido (solo se cambia el valor)', async () => {
+      const { service, xpService } = buildSubmitDeps(
+        { status: 'SCHEDULED', kickoff: future },
+        { existingPrediction: { id: 'p0' } },
+      );
+
+      await service.submit('u1', 'g1', { matchId: 'm1', choice: 'AWAY' });
+
+      expect(xpService.awardParticipation).not.toHaveBeenCalled();
+    });
+
+    it('si subir de nivel al participar, avisa por notificacion de subida de nivel', async () => {
+      const { service, xpService, notificationsService } = buildSubmitDeps({
+        status: 'SCHEDULED',
+        kickoff: future,
+      });
+      xpService.awardParticipation.mockResolvedValue({ userId: 'u1', level: 5 });
+
+      await service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' });
+
+      expect(notificationsService.notifyLevelUp).toHaveBeenCalledWith('u1', 5);
+    });
+
+    it('un fallo al conceder XP no impide guardar el pronostico', async () => {
+      const { service, prisma, xpService } = buildSubmitDeps({
+        status: 'SCHEDULED',
+        kickoff: future,
+      });
+      xpService.awardParticipation.mockRejectedValue(new Error('DB caida'));
+
+      await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).resolves.toEqual({
+        id: 'p1',
+      });
+      expect(prisma.prediction.upsert).toHaveBeenCalled();
     });
   });
 });

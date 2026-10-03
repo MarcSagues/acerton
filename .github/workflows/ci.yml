@@ -35,6 +35,12 @@ jobs:
         working-directory: backend
         run: npx tsc --noEmit
 
+      # Sin --fix (a diferencia del script "lint" para uso local): en CI un
+      # aviso debe fallar el check, nunca reescribir codigo en el runner.
+      - name: Lint (ESLint)
+        working-directory: backend
+        run: npm run lint:ci
+
       - name: Tests unitarios
         working-directory: backend
         run: npm test -- --ci
