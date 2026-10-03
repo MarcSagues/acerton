@@ -17,7 +17,7 @@ import { Prediction } from '../../../core/models/prediction.model';
 import { UserBadge } from '../../../core/models/profile.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ScoringMode } from '../../../core/models/group.model';
-import { badgeArtId } from '../../../shared/utils/badge-art';
+import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
 import { MatchdayShareCardComponent, ShareCardData } from './matchday-share-card.component';
 
 @Injectable()
@@ -363,6 +363,10 @@ export class MatchdayResultsFacade {
 
   artId(code: string): string | null {
     return badgeArtId(code);
+  }
+
+  artSrc(artId: string): string {
+    return badgeArtSrc(artId);
   }
 
   predictionFor(matchId: string, userId: string): Prediction | undefined {

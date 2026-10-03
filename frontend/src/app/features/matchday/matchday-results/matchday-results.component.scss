@@ -328,6 +328,13 @@
   padding: 16px 20px 0;
 }
 
+.badge-art {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .badge-card {
   border-radius: var(--p4-radius-lg);
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));

@@ -161,6 +161,12 @@ h2 {
   }
 }
 
+.badge-art {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 .lock-badge {
   position: absolute;
   bottom: -4px;
