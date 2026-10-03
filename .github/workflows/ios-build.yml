@@ -188,7 +188,7 @@ jobs:
           rm -f "$RUNNER_TEMP/AuthKey.p8"
 
       - name: Subir el .ipa como artefacto de este workflow
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Piqo-ios-${{ steps.vars.outputs.environment }}-${{ github.run_number }}
           path: ${{ runner.temp }}/export/*.ipa
