@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Badge } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { BADGE_CATALOG } from './badge-catalog';
 
 export const BADGE_CODES = {
   FIRST_MATCHDAY_PLAYED: 'FIRST_MATCHDAY_PLAYED',
@@ -62,10 +63,34 @@ export interface BadgeProgress {
 }
 
 @Injectable()
-export class BadgesService {
+export class BadgesService implements OnModuleInit {
   private readonly logger = new Logger(BadgesService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Asegura que el catalogo de insignias de la BD esta completo (upsert por
+   * code: crea las que faltan y actualiza nombre/descripcion, sin tocar las
+   * insignias ya conseguidas). Sin esto, una BD a la que nunca se le paso
+   * `prisma db seed` (p. ej. produccion tras la migracion a MySQL) solo
+   * devuelve las insignias que ya tuviera y las nuevas no aparecen en la app.
+   * Un fallo aqui nunca debe impedir arrancar el backend.
+   */
+  async onModuleInit(): Promise<void> {
+    try {
+      for (const badge of BADGE_CATALOG) {
+        await this.prisma.badge.upsert({
+          where: { code: badge.code },
+          update: { name: badge.name, description: badge.description },
+          create: badge,
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `No se pudo asegurar el catalogo de insignias: ${(error as Error).message}`,
+      );
+    }
+  }
 
   findCatalog(): Promise<Badge[]> {
     return this.prisma.badge.findMany({ orderBy: { name: 'asc' } });
