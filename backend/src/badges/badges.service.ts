@@ -57,6 +57,9 @@ export const BADGE_TARGETS: Partial<Record<keyof typeof BADGE_CODES, number>> = 
 /** Fetch maximo necesario para cubrir HOT_STREAK_5 y HOT_STREAK_10 con una sola consulta. */
 const MAX_HOT_STREAK_TARGET = 10;
 
+/** Cada cuanto se reintenta la reconciliacion de insignias de un mismo usuario (calcular el progreso es caro). */
+const RECONCILE_INTERVAL_MS = 10 * 60 * 1000;
+
 export interface BadgeProgress {
   current: number;
   target: number;
@@ -65,6 +68,7 @@ export interface BadgeProgress {
 @Injectable()
 export class BadgesService implements OnModuleInit {
   private readonly logger = new Logger(BadgesService.name);
+  private readonly lastReconcileAt = new Map<string, number>();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -635,6 +639,48 @@ export class BadgesService implements OnModuleInit {
       );
     }
     return awarded;
+  }
+
+  /**
+   * Concede las insignias medibles cuyo progreso ya esta completo y que el
+   * usuario todavia no tiene. Las concesiones normales (evaluateAfterMatchdayClose)
+   * solo comparan por igualdad en el instante de cerrar la jornada
+   * (`racha === 5`): si en ese momento la insignia no existia en la BD, o el
+   * contador paso de largo, nunca se concede y la app muestra "5/5" sin
+   * iluminar para siempre. Esto la concede a posteriori, sin avisos push
+   * (no es un logro "nuevo" de ahora). Se ancla al primer grupo del usuario,
+   * igual que las insignias de cuenta (Sociable, Multiliga...). Como
+   * calcular el progreso es caro, solo se repite cada RECONCILE_INTERVAL_MS
+   * por usuario. Nunca lanza.
+   */
+  async reconcileEarnedBadges(userId: string): Promise<void> {
+    const last = this.lastReconcileAt.get(userId) ?? 0;
+    if (Date.now() - last < RECONCILE_INTERVAL_MS) {
+      return;
+    }
+    this.lastReconcileAt.set(userId, Date.now());
+
+    try {
+      const [progress, owned, membership] = await Promise.all([
+        this.getProgressForUser(userId),
+        this.prisma.userBadge.findMany({
+          where: { userId },
+          select: { badge: { select: { code: true } } },
+        }),
+        this.prisma.groupMembership.findFirst({ where: { userId }, select: { groupId: true } }),
+      ]);
+      if (!membership) {
+        return;
+      }
+      const ownedCodes = new Set(owned.map((u) => u.badge.code));
+      for (const [code, { current, target }] of Object.entries(progress)) {
+        if (current >= target && !ownedCodes.has(code)) {
+          await this.award(userId, code, membership.groupId);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`No se pudieron reconciliar las insignias de ${userId}: ${error}`);
+    }
   }
 
   /** Devuelve un array con la insignia si se ha concedido de verdad ahora (vacio si ya se tenia). */
