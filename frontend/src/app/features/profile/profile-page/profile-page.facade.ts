@@ -37,7 +37,7 @@ export class ProfilePageFacade {
   private readonly badgeStats = signal<Record<string, number>>({});
   private readonly badgeProgress = signal<Record<string, BadgeProgress>>({});
 
-  /** Hasta 5 insignias: primero las conseguidas, y de faltar se completa con las pendientes en gris. */
+  /** Hasta 8 insignias (2 filas de 4, como la vitrina de trofeos): primero las conseguidas, y de faltar se completa con las pendientes en gris. */
   readonly badgePreview = computed<BadgePreviewItem[]>(() => {
     const profile = this.profile();
     if (!profile) return [];
@@ -45,7 +45,7 @@ export class ProfilePageFacade {
     const withEarned = this.badgeCatalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));
     const earned = withEarned.filter((b) => b.earned);
     const pending = withEarned.filter((b) => !b.earned);
-    return [...earned, ...pending].slice(0, 5);
+    return [...earned, ...pending].slice(0, 8);
   });
 
   artId(code: string): string | null {

@@ -123,16 +123,23 @@ h2 {
 .trophies-row,
 .badges-row {
   padding: 14px 20px 0;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  /* 4 columnas que se reparten el ancho del telefono (casillas cuadradas que
+     crecen/encogen con la pantalla): las dos vitrinas quedan alineadas entre
+     si y sin hueco a la derecha en cualquier movil, en vez de casillas fijas
+     de 68px que dejaban un margen distinto segun el ancho. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
 .trophy-btn,
 .badge-btn {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 100%;
+  max-width: 96px;
+  height: auto;
+  aspect-ratio: 1;
+  justify-self: center;
   border-radius: 14px;
   background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
   border: 1px solid var(--p4-border);
