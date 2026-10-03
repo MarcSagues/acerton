@@ -84,11 +84,7 @@
           (click)="page.openBadge(item)"
         >
           @if (page.artId(item.badge.code); as artId) {
-            @if (item.earned) {
-              <img class="badge-art" [src]="'/piqo/insignias/3d/' + artId + '.png'" [alt]="item.badge.name" />
-            } @else {
-              <piqo-svg [attr.badge]="artId" state="conseguida" variant="detalle" size="48"></piqo-svg>
-            }
+            <img class="badge-art" [class.locked]="!item.earned" [src]="page.artSrc(artId)" [alt]="item.badge.name" />
           } @else {
             <piqo-svg icon="medalla" size="26"></piqo-svg>
           }

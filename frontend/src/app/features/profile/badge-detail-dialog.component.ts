@@ -1,5 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { DIALOG_DATA } from '@angular/cdk/dialog';
+import { badgeAnimatedSrc, badgeArtSrc } from '../../shared/utils/badge-art';
 import { BadgeProgress } from '../../core/models/badge-progress.model';
 
 export interface BadgeDetailData {
@@ -20,8 +21,10 @@ export interface BadgeDetailData {
     <div class="badge-dialog">
       @if (data.artId) {
         <span class="art-wrap">
-          <img class="art-animated" [src]="'/piqo/insignias/animadas/' + data.artId + '.webp'" [alt]="data.name" />
-          <img class="art-static" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
+          @if (animatedSrc) {
+            <img class="art-animated" [src]="animatedSrc" [alt]="data.name" />
+          }
+          <img class="art-static" [src]="staticSrc" [alt]="data.name" />
         </span>
       } @else {
         <piqo-svg icon="medalla" size="64" [class.earned]="data.earned"></piqo-svg>
@@ -76,14 +79,14 @@ export interface BadgeDetailData {
       /* Por defecto se ve la version animada; solo la estatica (misma
          ilustracion, sin movimiento) si el usuario prefiere menos
          animaciones en el sistema. */
-      .art-wrap .art-static {
+      .art-wrap .art-animated + .art-static {
         display: none;
       }
       @media (prefers-reduced-motion: reduce) {
         .art-wrap .art-animated {
           display: none;
         }
-        .art-wrap .art-static {
+        .art-wrap .art-animated + .art-static {
           display: block;
         }
       }
@@ -144,4 +147,6 @@ export interface BadgeDetailData {
 })
 export class BadgeDetailDialogComponent {
   readonly data = inject<BadgeDetailData>(DIALOG_DATA);
+  readonly staticSrc = this.data.artId ? badgeArtSrc(this.data.artId) : '';
+  readonly animatedSrc = this.data.artId ? badgeAnimatedSrc(this.data.artId) : null;
 }

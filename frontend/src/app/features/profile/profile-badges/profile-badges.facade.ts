@@ -4,7 +4,7 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { BadgeProgress } from '../../../core/models/badge-progress.model';
-import { badgeArtId } from '../../../shared/utils/badge-art';
+import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
 
 export interface BadgeState {
   badge: Badge;
@@ -49,6 +49,10 @@ export class ProfileBadgesFacade {
 
   artId(code: string): string | null {
     return badgeArtId(code);
+  }
+
+  artSrc(artId: string): string {
+    return badgeArtSrc(artId);
   }
 
   init(): void {

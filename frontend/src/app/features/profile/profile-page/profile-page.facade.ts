@@ -10,7 +10,7 @@ import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { BadgeProgress } from '../../../core/models/badge-progress.model';
 import { usernameHint, validateUsername } from '../../../shared/username.util';
-import { badgeArtId } from '../../../shared/utils/badge-art';
+import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
 import { BadgeDetailDialogComponent, BadgeDetailData } from '../badge-detail-dialog.component';
@@ -50,6 +50,10 @@ export class ProfilePageFacade {
 
   artId(code: string): string | null {
     return badgeArtId(code);
+  }
+
+  artSrc(artId: string): string {
+    return badgeArtSrc(artId);
   }
 
   openBadge(item: BadgePreviewItem): void {

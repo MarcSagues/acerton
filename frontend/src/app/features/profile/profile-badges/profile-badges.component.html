@@ -20,7 +20,7 @@
             <img
               class="badge-art"
               [class.locked]="!item.earned"
-              [src]="'/piqo/insignias/3d/' + artId + '.png'"
+              [src]="page.artSrc(artId)"
               [alt]="item.badge.name"
             />
           } @else {

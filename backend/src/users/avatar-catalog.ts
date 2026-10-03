@@ -46,6 +46,7 @@ export const DEFAULT_MASCOT_IDS = [
  */
 export const TROPHY_MASCOT_IDS = [
   'trophy-champions',
+  'trophy-premier',
   'trophy-laliga',
   'trophy-bundesliga',
   'trophy-ligue1',
@@ -61,6 +62,7 @@ export type AvatarMascotId = (typeof AVATAR_MASCOT_IDS)[number];
 /** Id del trofeo (ver domain/trophies.ts en frontend) que hace falta tener para poder elegir esta mascota. */
 export const AVATAR_TROPHY_REQUIREMENT: Record<(typeof TROPHY_MASCOT_IDS)[number], string> = {
   'trophy-champions': 'champions',
+  'trophy-premier': 'premier',
   'trophy-laliga': 'laliga',
   'trophy-bundesliga': 'bundesliga',
   'trophy-ligue1': 'ligue1',
