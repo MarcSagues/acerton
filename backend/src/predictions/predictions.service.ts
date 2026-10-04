@@ -18,13 +18,23 @@ import { isMatchPredictable } from '../matchdays/matchday.util';
 import { xpProgressForLevel } from '../xp/xp.util';
 import { CopySkipReason, canCopyBetweenModes, planCopy } from './copy-predictions.util';
 
-/** Otro grupo del usuario del que se pueden copiar pronosticos (ver PredictionsService.getCopySources). */
+/** Por que no se puede copiar de un grupo en el que el usuario si ha marcado pronosticos de esa jornada. */
+export type CopyUnavailableReason = 'DIFFERENT_MODE' | 'ALL_STARTED';
+
+/** Otro grupo del usuario con pronosticos suyos de la jornada (ver PredictionsService.getCopySources). */
 export interface CopySource {
   groupId: string;
   name: string;
   scoringMode: ScoringMode;
   /** Cuantos de sus pronosticos de esa jornada siguen abiertos (los que ya empezaron no se copian). */
   copyableCount: number;
+  /**
+   * null = se puede copiar. Si no, el motivo: otro modo de puntuacion (no se
+   * copia entre 1X2 y resultado exacto) o todos sus pronosticos son de
+   * partidos que ya empezaron. Se lista igualmente para que el usuario vea
+   * por que un grupo en el que ha marcado algo no es seleccionable.
+   */
+  unavailable: CopyUnavailableReason | null;
 }
 
 export interface CopyResult {
@@ -171,11 +181,14 @@ export class PredictionsService {
   }
 
   /**
-   * Otros grupos del usuario con pronosticos suyos todavia abiertos en esa
-   * jornada, para ofrecer "copiar de otro grupo". Solo grupos del MISMO modo
-   * de puntuacion que el actual, de los que sigue siendo miembro y que no
-   * estan eliminados (salir conserva los resultados, pero no es "otro grupo"
-   * al que pertenezca).
+   * TODOS los otros grupos del usuario en los que ya ha marcado algo de esa
+   * jornada, para ofrecer "copiar de otro grupo". Solo los que se pueden
+   * copiar de verdad (mismo modo de puntuacion que el actual y algun
+   * pronostico aun abierto) vienen con `unavailable: null`; el resto se
+   * devuelve con el motivo para poder mostrarlo desactivado en vez de hacer
+   * que un grupo en el que se ha marcado desaparezca sin explicacion. Solo
+   * grupos de los que sigue siendo miembro y que no estan eliminados (salir
+   * conserva los resultados, pero no es "otro grupo" al que pertenezca).
    */
   async getCopySources(userId: string, groupId: string, matchdayId: string): Promise<CopySource[]> {
     await this.groupsService.assertIsMember(groupId, userId);
@@ -187,7 +200,7 @@ export class PredictionsService {
         userId,
         groupId: { not: groupId },
         match: { matchdayId: matchday.id },
-        group: { deletedAt: null, scoringMode: targetMode, memberships: { some: { userId } } },
+        group: { deletedAt: null, memberships: { some: { userId } } },
       },
       select: {
         groupId: true,
@@ -199,22 +212,34 @@ export class PredictionsService {
     const now = new Date();
     const sources = new Map<string, CopySource>();
     for (const prediction of predictions) {
-      if (!isMatchPredictable(prediction.match, now)) continue;
-      const existing = sources.get(prediction.groupId);
-      if (existing) {
-        existing.copyableCount += 1;
-      } else {
-        sources.set(prediction.groupId, {
+      let source = sources.get(prediction.groupId);
+      if (!source) {
+        source = {
           groupId: prediction.groupId,
           name: prediction.group.name,
           scoringMode: prediction.group.scoringMode,
-          copyableCount: 1,
-        });
+          copyableCount: 0,
+          unavailable: null,
+        };
+        sources.set(prediction.groupId, source);
+      }
+      if (isMatchPredictable(prediction.match, now)) source.copyableCount += 1;
+    }
+
+    for (const source of sources.values()) {
+      if (!canCopyBetweenModes(source.scoringMode, targetMode)) {
+        source.unavailable = 'DIFFERENT_MODE';
+      } else if (source.copyableCount === 0) {
+        source.unavailable = 'ALL_STARTED';
       }
     }
-    return [...sources.values()].sort(
-      (a, b) => b.copyableCount - a.copyableCount || a.name.localeCompare(b.name),
-    );
+
+    // Primero los copiables (con mas pronosticos abiertos arriba); despues el resto, por nombre.
+    return [...sources.values()].sort((a, b) => {
+      const aUnavailable = a.unavailable !== null;
+      if (aUnavailable !== (b.unavailable !== null)) return aUnavailable ? 1 : -1;
+      return (aUnavailable ? 0 : b.copyableCount - a.copyableCount) || a.name.localeCompare(b.name);
+    });
   }
 
   /**

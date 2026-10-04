@@ -381,12 +381,12 @@ export class CurrentMatchdayFacade {
       next: (sources) => {
         this.copyBusy.set(false);
         if (sources.length === 0) {
-          this.toast.show('No tienes pronósticos abiertos de esta jornada en otros grupos con el mismo modo de juego');
+          this.toast.show('No has marcado pronósticos de esta jornada en tus otros grupos');
           return;
         }
         const ref = this.sheet.open<CopyFromGroupSheetComponent, CopySource | undefined, CopyFromGroupSheetData>(
           CopyFromGroupSheetComponent,
-          { data: { sources } },
+          { data: { sources, targetMode: this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO' } },
         );
         ref.closed.subscribe((source) => {
           if (source) this.confirmCopy(groupId, entry.matchday.id, source);

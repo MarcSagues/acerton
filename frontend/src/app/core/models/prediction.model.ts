@@ -29,13 +29,18 @@ export interface SubmitPredictionPayload {
   doublePointsWildcard?: boolean;
 }
 
-/** Otro grupo DEL MISMO MODO de juego del que se pueden copiar los pronosticos de la jornada abierta (GET .../predictions/copy-sources/:matchdayId). */
+/** Por que no se puede copiar de un grupo en el que si has marcado pronosticos de esa jornada. */
+export type CopyUnavailableReason = 'DIFFERENT_MODE' | 'ALL_STARTED';
+
+/** Otro grupo tuyo con pronosticos de la jornada abierta (GET .../predictions/copy-sources/:matchdayId). */
 export interface CopySource {
   groupId: string;
   name: string;
   scoringMode: ScoringMode;
   /** Cuantos de sus pronosticos de esa jornada siguen abiertos (los de partidos ya empezados no se copian). */
   copyableCount: number;
+  /** null = se puede copiar. Si no, el motivo: otro modo de juego (1X2 / resultado exacto) o todos sus partidos ya han empezado. */
+  unavailable: CopyUnavailableReason | null;
 }
 
 export type CopySkipReason = 'LOCKED' | 'WILDCARD_UNAVAILABLE' | 'FAILED';

@@ -38,8 +38,13 @@ participar) y lo copiado se edita después con el autoguardado normal.
 4. **Solo entre grupos del MISMO modo de puntuación** (1X2 con 1X2, resultado
    exacto con resultado exacto), corregido por el usuario tras una primera versión
    que además convertía un marcador en 1/X/2: ni de exacto a 1X2 ni de 1X2 a
-   exacto. Desde un grupo, el selector solo lista grupos de su mismo modo (el
-   backend filtra, y rechaza con 400 un `copy-from` entre modos distintos).
+   exacto. El backend rechaza con 400 un `copy-from` entre modos distintos.
+   **El selector lista TODOS los otros grupos donde has marcado algo de esa
+   jornada**, no solo los copiables (cambio posterior, a raíz de "solo me sale
+   uno cuando tengo marcado en 3 grupos"): los que no se pueden copiar salen
+   desactivados con el motivo (`unavailable`: `DIFFERENT_MODE` — nombra los dos
+   modos — o `ALL_STARTED` — todos sus partidos ya empezaron). Antes esos grupos
+   desaparecían sin explicación y parecía que faltaban.
 5. **Solo grupos de los que sigue siendo miembro** y no eliminados, y solo si la
    jornada es de una competición activa del grupo de destino.
 6. **XP**: como se reutiliza `submit()`, copiar a un grupo nuevo da la XP de

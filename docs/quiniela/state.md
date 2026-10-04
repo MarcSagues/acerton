@@ -6,6 +6,13 @@ A petición explícita del usuario. Misma rama que el trabajo de comunicados pus
 (`claude/dashboard-push-notifications-yo0gk0`), commit aparte. Reglas y motivos
 en `decisions.md` y `product-rules.md` (misma fecha).
 
+**Actualización (mismo día)**: el selector ya no esconde los grupos que no se pueden
+copiar: lista todos los otros grupos con pronósticos de la jornada, y los no
+copiables salen desactivados con el motivo (otro modo / partidos ya empezados).
+Motivo del cambio: "solo me sale uno cuando tengo marcado en 3 grupos" — con tres grupos
+del mismo modo salían los tres (comprobado), así que lo que se veía como "faltan"
+eran grupos de otro modo o de partidos ya empezados, sin ninguna explicación.
+
 **Backend**: `PredictionsService.getCopySources` y `copyFromGroup`
 (`GET /groups/:id/predictions/copy-sources/:matchdayId`, `POST
 .../copy-from/:sourceGroupId` con `{ matchdayId }`), solo entre grupos del mismo
