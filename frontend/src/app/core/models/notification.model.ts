@@ -1,4 +1,4 @@
-export type NotificationType = 'MATCHDAY_CLOSING_SOON' | 'MATCHDAY_FINISHED' | 'BADGE_EARNED' | 'REENGAGEMENT' | 'LEVEL_UP';
+export type NotificationType = 'MATCHDAY_CLOSING_SOON' | 'MATCHDAY_FINISHED' | 'BADGE_EARNED' | 'REENGAGEMENT' | 'LEVEL_UP' | 'ANNOUNCEMENT';
 
 export interface AppNotification {
   id: string;

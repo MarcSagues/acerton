@@ -347,3 +347,182 @@ describe('NotificationsService.markAllRead', () => {
     });
   });
 });
+
+/** Firebase falso: cada llamada a sendEachForMulticast responde "ok" para todos sus tokens salvo los indicados como invalidos. */
+function buildMessagingMock(invalidTokens: string[] = []) {
+  return {
+    sendEachForMulticast: jest.fn(async ({ tokens }: { tokens: string[] }) => {
+      const responses = tokens.map((token) =>
+        invalidTokens.includes(token)
+          ? { success: false, error: { code: 'messaging/registration-token-not-registered' } }
+          : { success: true },
+      );
+      return {
+        responses,
+        successCount: responses.filter((r) => r.success).length,
+        failureCount: responses.filter((r) => !r.success).length,
+      };
+    }),
+  };
+}
+
+describe('NotificationsService.sendAnnouncement', () => {
+  function build(options: { withFirebase?: boolean; invalidTokens?: string[] } = {}) {
+    const prisma = buildPrismaMock() as ReturnType<typeof buildPrismaMock> & {
+      notificationToken: { findMany: jest.Mock; deleteMany: jest.Mock };
+    };
+    prisma.notificationToken.deleteMany = jest.fn().mockResolvedValue({ count: 0 });
+    const service = new NotificationsService(prisma as never, {} as never);
+    const messaging = buildMessagingMock(options.invalidTokens);
+    if (options.withFirebase ?? true) {
+      (service as unknown as { messaging: unknown }).messaging = messaging;
+    }
+    return { prisma, service, messaging };
+  }
+
+  it('sin userIds llega a todos los usuarios y a todos los dispositivos', async () => {
+    const { prisma, service, messaging } = build();
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }]);
+    prisma.notificationToken.findMany.mockResolvedValue([
+      { userId: 'u1', token: 't1a' },
+      { userId: 'u1', token: 't1b' },
+      { userId: 'u2', token: 't2' },
+    ]);
+
+    const result = await service.sendAnnouncement({ title: 'Hola', body: 'Novedades' });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({ where: {}, select: { id: true } });
+    expect(prisma.notificationToken.findMany).toHaveBeenCalledWith({
+      where: {},
+      select: { userId: true, token: true },
+    });
+    expect(messaging.sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(messaging.sendEachForMulticast).toHaveBeenCalledWith({
+      tokens: ['t1a', 't1b', 't2'],
+      notification: { title: 'Hola', body: 'Novedades' },
+      data: { type: 'ANNOUNCEMENT' },
+    });
+    expect(result).toEqual({
+      userCount: 3,
+      usersWithPush: 2,
+      tokenCount: 3,
+      sent: true,
+      successCount: 3,
+      failureCount: 0,
+      errors: [],
+    });
+  });
+
+  it('con userIds limita usuarios y dispositivos a esa lista', async () => {
+    const { prisma, service } = build();
+    prisma.user.findMany.mockResolvedValue([{ id: 'u2' }]);
+    prisma.notificationToken.findMany.mockResolvedValue([{ userId: 'u2', token: 't2' }]);
+
+    await service.sendAnnouncement({ title: 'Hola', body: 'Solo para ti', userIds: ['u2'] });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['u2'] } },
+      select: { id: true },
+    });
+    expect(prisma.notificationToken.findMany).toHaveBeenCalledWith({
+      where: { userId: { in: ['u2'] } },
+      select: { userId: true, token: true },
+    });
+  });
+
+  it('guarda el aviso en el feed de todos los destinatarios, tengan o no dispositivo', async () => {
+    const { prisma, service } = build();
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }]);
+    prisma.notificationToken.findMany.mockResolvedValue([{ userId: 'u1', token: 't1' }]);
+
+    await service.sendAnnouncement({ title: 'Hola', body: 'Novedades' });
+
+    expect(prisma.notification.createMany).toHaveBeenCalledWith({
+      data: [
+        { userId: 'u1', type: 'ANNOUNCEMENT', title: 'Hola', body: 'Novedades' },
+        { userId: 'u2', type: 'ANNOUNCEMENT', title: 'Hola', body: 'Novedades' },
+      ],
+    });
+  });
+
+  it('dryRun solo cuenta: no llama a Firebase ni escribe en el feed', async () => {
+    const { prisma, service, messaging } = build();
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }]);
+    prisma.notificationToken.findMany.mockResolvedValue([{ userId: 'u1', token: 't1' }]);
+
+    const result = await service.sendAnnouncement({ title: 'Hola', body: 'x', dryRun: true });
+
+    expect(result).toEqual({
+      userCount: 2,
+      usersWithPush: 1,
+      tokenCount: 1,
+      sent: false,
+      successCount: 0,
+      failureCount: 0,
+      errors: [],
+    });
+    expect(messaging.sendEachForMulticast).not.toHaveBeenCalled();
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+  });
+
+  it('dryRun funciona aunque Firebase no este configurado', async () => {
+    const { prisma, service } = build({ withFirebase: false });
+    prisma.user.findMany.mockResolvedValue([]);
+    prisma.notificationToken.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.sendAnnouncement({ title: 'Hola', body: 'x', dryRun: true }),
+    ).resolves.toMatchObject({ sent: false });
+  });
+
+  it('sin Firebase configurado falla con 503 en vez de parecer un envio con 0 entregas, y no escribe en el feed', async () => {
+    const { prisma, service } = build({ withFirebase: false });
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1' }]);
+    prisma.notificationToken.findMany.mockResolvedValue([{ userId: 'u1', token: 't1' }]);
+
+    await expect(service.sendAnnouncement({ title: 'Hola', body: 'x' })).rejects.toThrow(
+      /Firebase no esta configurado/,
+    );
+    expect(prisma.notification.createMany).not.toHaveBeenCalled();
+  });
+
+  it('cuenta los fallos y borra los tokens que Firebase da por invalidos', async () => {
+    const { prisma, service } = build({ invalidTokens: ['t2'] });
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1' }, { id: 'u2' }]);
+    prisma.notificationToken.findMany.mockResolvedValue([
+      { userId: 'u1', token: 't1' },
+      { userId: 'u2', token: 't2' },
+    ]);
+
+    const result = await service.sendAnnouncement({ title: 'Hola', body: 'x' });
+
+    expect(result).toMatchObject({
+      successCount: 1,
+      failureCount: 1,
+      errors: ['messaging/registration-token-not-registered'],
+    });
+    expect(prisma.notificationToken.deleteMany).toHaveBeenCalledWith({
+      where: { token: { in: ['t2'] } },
+    });
+  });
+
+  it('manda por tandas de 500 dispositivos (limite de FCM) y borra el token invalido correcto de cualquier tanda', async () => {
+    const tokens = Array.from({ length: 1203 }, (_, i) => `t${i}`);
+    const { prisma, service, messaging } = build({ invalidTokens: ['t700'] });
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1' }]);
+    prisma.notificationToken.findMany.mockResolvedValue(
+      tokens.map((token) => ({ userId: 'u1', token })),
+    );
+
+    const result = await service.sendAnnouncement({ title: 'Hola', body: 'x' });
+
+    const batchSizes = messaging.sendEachForMulticast.mock.calls.map(
+      ([arg]: [{ tokens: string[] }]) => arg.tokens.length,
+    );
+    expect(batchSizes).toEqual([500, 500, 203]);
+    expect(result).toMatchObject({ tokenCount: 1203, successCount: 1202, failureCount: 1 });
+    expect(prisma.notificationToken.deleteMany).toHaveBeenCalledWith({
+      where: { token: { in: ['t700'] } },
+    });
+  });
+});

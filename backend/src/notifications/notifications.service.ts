@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { NotificationType, Prisma } from '@prisma/client';
@@ -13,6 +13,23 @@ export interface PushNotification {
   title: string;
   body: string;
   data?: Record<string, string>;
+}
+
+/** FCM rechaza `sendEachForMulticast` con mas de 500 tokens por llamada. */
+const FCM_MULTICAST_LIMIT = 500;
+
+export interface AnnouncementResult {
+  /** Usuarios a los que va dirigido el comunicado (todos, o los de la lista que existen). */
+  userCount: number;
+  /** De ellos, cuantos tienen algun dispositivo registrado para recibir el push. */
+  usersWithPush: number;
+  /** Dispositivos (tokens) a los que se manda el push. */
+  tokenCount: number;
+  /** false = simulacro (`dryRun`): no se ha enviado ni guardado nada. */
+  sent: boolean;
+  successCount: number;
+  failureCount: number;
+  errors: string[];
 }
 
 @Injectable()
@@ -149,11 +166,24 @@ export class NotificationsService implements OnModuleInit {
       return { successCount: 0, failureCount: 0, errors: [] };
     }
 
-    const response = await this.messaging.sendEachForMulticast({
-      tokens,
-      notification: { title: notification.title, body: notification.body },
-      data: notification.data,
-    });
+    // Por tandas de 500 (limite de FCM): sin esto, a partir de 500 dispositivos
+    // registrados cualquier envio masivo fallaba entero. Las respuestas se
+    // concatenan en el mismo orden que `tokens`, asi que los indices de abajo
+    // siguen apuntando al token correcto.
+    const responses: admin.messaging.SendResponse[] = [];
+    for (let i = 0; i < tokens.length; i += FCM_MULTICAST_LIMIT) {
+      const batch = await this.messaging.sendEachForMulticast({
+        tokens: tokens.slice(i, i + FCM_MULTICAST_LIMIT),
+        notification: { title: notification.title, body: notification.body },
+        data: notification.data,
+      });
+      responses.push(...batch.responses);
+    }
+    const response = {
+      responses,
+      successCount: responses.filter((res) => res.success).length,
+      failureCount: responses.filter((res) => !res.success).length,
+    };
 
     // El codigo/mensaje real de FCM (p.ej. "messaging/registration-token-not-registered"
     // vs "messaging/mismatched-credential" vs "messaging/invalid-argument") es la unica
@@ -212,6 +242,71 @@ export class NotificationsService implements OnModuleInit {
     );
 
     return { userCount, tokenCount: tokens.length, successCount, failureCount, errors };
+  }
+
+  /**
+   * Comunicado manual desde el dashboard de administracion (ver
+   * AdminNotificationsController): push a todos los usuarios o a una lista
+   * concreta, y una fila `ANNOUNCEMENT` en el feed de cada destinatario.
+   *
+   * A diferencia del resto de avisos NO se filtra por preferencias ni por
+   * grupos silenciados: no hay un ajuste de "comunicados" y no depende de
+   * ningun grupo. El push solo llega a quien tenga dispositivo registrado
+   * (permiso concedido); el feed lo ve todo destinatario al abrir la app.
+   *
+   * Con `dryRun` solo devuelve los conteos, sin tocar Firebase ni la base de
+   * datos — es lo que el dashboard muestra antes de pedir confirmacion.
+   */
+  async sendAnnouncement(params: {
+    title: string;
+    body: string;
+    userIds?: string[];
+    dryRun?: boolean;
+  }): Promise<AnnouncementResult> {
+    const { title, body, userIds, dryRun = false } = params;
+
+    const [users, tokens] = await Promise.all([
+      this.prisma.user.findMany({
+        where: userIds ? { id: { in: userIds } } : {},
+        select: { id: true },
+      }),
+      this.prisma.notificationToken.findMany({
+        where: userIds ? { userId: { in: userIds } } : {},
+        select: { userId: true, token: true },
+      }),
+    ]);
+    const counts = {
+      userCount: users.length,
+      usersWithPush: new Set(tokens.map((t) => t.userId)).size,
+      tokenCount: tokens.length,
+    };
+
+    if (dryRun) {
+      return { ...counts, sent: false, successCount: 0, failureCount: 0, errors: [] };
+    }
+    // Desde el dashboard hay que saber que NO se envio: el silencio de
+    // sendToTokens (sin Firebase = 0 envios sin error) pareceria un exito.
+    if (!this.messaging) {
+      throw new ServiceUnavailableException(
+        'Firebase no esta configurado en el backend: no se puede enviar',
+      );
+    }
+
+    const { successCount, failureCount, errors } = await this.sendToTokens(
+      tokens.map((t) => t.token),
+      { title, body, data: { type: 'ANNOUNCEMENT' } },
+    );
+    await this.recordMany(
+      users.map((u) => u.id),
+      NotificationType.ANNOUNCEMENT,
+      title,
+      body,
+    );
+    this.logger.log(
+      `Comunicado enviado: ${counts.userCount} usuarios, ${counts.tokenCount} dispositivos, ${successCount} entregados, ${failureCount} fallidos`,
+    );
+
+    return { ...counts, sent: true, successCount, failureCount, errors };
   }
 
   /**

@@ -47,6 +47,15 @@ export interface AppConfig {
     clientEmail: string;
     privateKey: string;
   };
+  admin: {
+    /**
+     * Clave compartida con el dashboard de administracion (dashboard.piqo.es)
+     * para el endpoint de comunicados push (ver AdminApiKeyGuard). Vacia =
+     * ese endpoint no existe (404), asi un despliegue sin configurar nunca
+     * queda abierto.
+     */
+    apiKey: string;
+  };
   comeback: {
     enabled: boolean;
     pointsPerBonus: number;
@@ -89,6 +98,9 @@ export default (): AppConfig => ({
     projectId: process.env.FIREBASE_PROJECT_ID ?? '',
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
     privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+  },
+  admin: {
+    apiKey: process.env.ADMIN_API_KEY ?? '',
   },
   comeback: {
     // Valores por defecto al crear un grupo nuevo (editables despues por su admin).

@@ -4,6 +4,54 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — Comunicados push desde el dashboard: el backend envía, el dashboard solo decide a quién
+
+A petición explícita del usuario ("añadir en el dashboard una opción para
+mandar notificaciones push"). El dashboard (`piqo-dashboard`, servicio aparte
+en Render) nació como panel **de solo lectura** (usuario MySQL con `GRANT
+SELECT`, API solo `GET`, y la promesa en su README de no tocar nunca tokens de
+push), así que había que decidir dónde vive el envío:
+
+- **Elegido**: endpoint nuevo en este backend, `POST /api/admin/notifications/
+  broadcast`, protegido por una clave compartida (`ADMIN_API_KEY` aquí,
+  `ACERTON_ADMIN_KEY` en el dashboard), sin JWT de usuario. El dashboard
+  resuelve la audiencia con `SELECT id FROM users ...` (sigue siendo solo
+  lectura, nunca lee tokens) y le pasa la lista de ids al backend, que ya
+  tiene Firebase, los tokens y el borrado de tokens muertos.
+- **Descartado**: darle al dashboard las credenciales de Firebase y permiso de
+  lectura sobre `notification_tokens` (duplica el envío y rompe la promesa de
+  solo lectura), o un usuario MySQL con escritura (necesario para el feed).
+- Sin `ADMIN_API_KEY` (o de menos de 32 caracteres) el endpoint responde 404:
+  un despliegue olvidado no queda abierto. 10 peticiones/minuto.
+
+**Decisiones de producto tomadas por defecto (a confirmar por el usuario):**
+
+1. **Un comunicado ignora las preferencias de aviso** y el silencio de grupo:
+   no existe un ajuste de "comunicados" y no depende de ningún grupo. Si algún
+   día hace falta poder desactivarlos, habría que añadir una preferencia
+   nueva (esquema + pantalla de ajustes) y filtrar por ella en
+   `NotificationsService.sendAnnouncement`.
+2. **Queda en la pantalla "Avisos" de todos los destinatarios**, tengan o no
+   dispositivo registrado, con un tipo nuevo `ANNOUNCEMENT` (migración
+   `20261004000000_announcement_notification_type`, solo amplía el `ENUM`). El
+   push, en cambio, solo llega a quien tenga token.
+3. **No se puede deshacer ni editar** un comunicado ya enviado.
+
+**Efecto colateral**: `sendToTokens` (usado por todos los envíos) ahora manda
+por tandas de 500 tokens. Antes, a partir de 500 dispositivos registrados
+`sendEachForMulticast` rechazaba el envío entero (límite de FCM) — afectaba al
+botón "Probar notificaciones" y a `sendToUsers` en cuanto hubiese 500 tokens.
+
+**Limitaciones conocidas**: (a) el limitador por IP del backend usa `req.ip`
+sin `trust proxy`, así que detrás de Render las peticiones comparten IP y un
+tercero podría agotar las 10/min de este endpoint (no puede enviar nada sin la
+clave, solo bloquear un rato al dashboard); (b) esta rama es la línea MySQL de
+`main`: `dev` sigue en Postgres/Neon (ver decisión anterior), así que probar
+esto en la API de dev exige portarlo a mano; (c) **ya existía**
+`POST /notifications/test-broadcast` ("Probar notificaciones"), que cualquier
+usuario con sesión puede lanzar y manda "Notificación de prueba" a TODOS los
+dispositivos: no se ha tocado, pero conviene restringirlo o quitarlo.
+
 ## 2026-10-04 — La rama `dev` NO se actualiza desde `main`: los cambios de API para dev se portan a mano
 
 Descubierto al intentar arreglar un error del renombrado de grupo en dev

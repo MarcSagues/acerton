@@ -32,6 +32,7 @@ npm run dev:frontend
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL`: login con Google (opcional en dev; sin configurar, ese boton simplemente fallara contra la API de Google).
 - `FOOTBALL_DATA_API_KEY`: clave de [football-data.org](https://www.football-data.org/) para sincronizar jornadas y resultados reales. Sin ella, las jornadas no se sincronizan (la app funciona igual, pero "jornada actual" quedara vacia hasta configurarla). `FOOTBALL_DATA_BASE_URL` tiene un valor por defecto (`https://api.football-data.org/v4`) y normalmente no hace falta tocarlo.
 - `FIREBASE_PROJECT_ID` / `FIREBASE_CLIENT_EMAIL` / `FIREBASE_PRIVATE_KEY`: credenciales de servicio (Admin SDK) para que el backend pueda *enviar* notificaciones push. Sin configurar, el envio se desactiva silenciosamente (se loguea un aviso al arrancar). Se sacan de Firebase Console > Project settings > Service accounts > Generate new private key.
+- `ADMIN_API_KEY`: clave compartida con el dashboard de administracion (dashboard.piqo.es, repo `piqo-dashboard`) para enviar comunicados push desde ahi (`POST /api/admin/notifications/broadcast`, ver "Comunicados desde el dashboard" mas abajo). Minimo 32 caracteres aleatorios (`openssl rand -hex 32`); la misma va en el dashboard como `ACERTON_ADMIN_KEY`. Sin configurar (o mas corta), ese endpoint no existe (404).
 - `COMEBACK_ENABLED_DEFAULT` / `COMEBACK_POINTS_PER_BONUS_DEFAULT`: valores por defecto al crear un grupo para el comodin de remontada (doble oportunidad 1X/X2/12) — cada admin puede activarlo/desactivarlo y ajustar el segundo valor despues desde los ajustes del grupo. La cantidad de usos disponibles se recalcula cada semana segun la diferencia de puntos con el lider (ver `WildcardsService.getComebackStatus`), no es un cupo fijo de temporada.
 
 ## Notificaciones push (Firebase Cloud Messaging)
@@ -46,6 +47,14 @@ Backend y frontend usan el mismo proyecto de Firebase pero con credenciales dist
   Los valores salen de Firebase Console > Project settings > General > "Your apps" (crea una app Web si no existe) para todo menos `vapidKey`, que sale de Project settings > Cloud Messaging > Web Push certificates (genera un par de claves si no hay ninguna).
 
 Sin esta config (`vapidKey` vacio), el boton "Activar" de notificaciones en Perfil se oculta y se muestra "No configuradas en este entorno" — no rompe nada, simplemente no hay push. El service worker de FCM se registra en un scope propio (`/firebase-cloud-messaging-push-scope`) para no chocar con el service worker de la PWA (`ngsw-worker.js`, que sigue controlando el resto de la app para cache offline).
+
+### Comunicados desde el dashboard
+
+El dashboard de administracion (`piqo-dashboard`, dashboard.piqo.es) puede mandar un comunicado push a todos los usuarios, a un segmento (activos 7 dias / inactivos +14 dias) o a un usuario concreto (para probar). El dashboard solo lee la BD con un usuario `SELECT`; el envio lo hace este backend:
+
+- `POST /api/admin/notifications/broadcast` con `Authorization: Bearer <ADMIN_API_KEY>` y cuerpo `{ title, body, userIds?, dryRun? }` (`userIds` omitido = todos; `dryRun: true` solo cuenta a quien llegaria). Sin JWT de usuario: lo protege `AdminApiKeyGuard` (404 si `ADMIN_API_KEY` no esta configurada, 401 si la clave no coincide) y esta limitado a 10 peticiones por minuto.
+- Manda el push a todos los dispositivos registrados de los destinatarios y crea un aviso de tipo `ANNOUNCEMENT` en la pantalla "Avisos" de cada uno (tengan o no dispositivo). **No respeta las preferencias de aviso** (no hay un ajuste de "comunicados").
+- Sin Firebase configurado responde 503 en vez de simular un envio; los tokens que FCM da por invalidos se borran.
 
 ## Jobs programados
 

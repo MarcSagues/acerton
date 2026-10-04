@@ -1,5 +1,47 @@
 # Estado actual
 
+## 2026-10-04 — Comunicados push desde el dashboard (fuera de sprint)
+
+A petición explícita del usuario ("añadir en el dashboard una opción para
+mandar notificaciones push"). Dos repos, rama `claude/dashboard-push-
+notifications-yo0gk0` en ambos (sin PR). Decisiones y motivos en
+`decisions.md` (misma fecha).
+
+**Backend (este repo)**: `POST /api/admin/notifications/broadcast`
+(`AdminNotificationsController` + `AdminApiKeyGuard`, clave `ADMIN_API_KEY`,
+`@Public()` + `Authorization: Bearer`, 10/min). Cuerpo `{ title, body,
+userIds?, dryRun? }`: `NotificationsService.sendAnnouncement` manda el push a
+todos los dispositivos de los destinatarios y crea un aviso `ANNOUNCEMENT` en
+el feed de cada uno; `dryRun` solo cuenta. Migración
+`20261004000000_announcement_notification_type` (amplía el `ENUM`);
+frontend: `ANNOUNCEMENT` en `NotificationType` con el icono de campana.
+`sendToTokens` ahora envía por tandas de 500 (límite de FCM).
+
+**Dashboard (`piqo-dashboard`)**: sección "Enviar notificación push" con
+audiencia (todos / activos 7 d / inactivos +14 d / un usuario por email), título
+(65) y mensaje (240); "Calcular destinatarios" (dry-run) → confirmación nativa →
+"Enviar" (un envío a la vez, pausa de 5 s). Sigue sin escribir en la BD.
+
+**Verificado**: 342 tests del backend (26 nuevos entre servicio, guard, DTO y
+una prueba HTTP real del cableado con el `JwtAuthGuard` global) + lint + `tsc`;
+13 tests del dashboard. De punta a punta en local con MariaDB (migraciones
+reales aplicadas, sin deriva de esquema) + backend compilado + dashboard +
+Chromium: 401/404/400/200 correctos, el `dryRun` no escribe nada, el envío
+llega al FCM simulado con los tokens correctos, queda el aviso en el feed de
+todos (también de quien no tiene token), se borra el token inválido y el
+usuario `SELECT` del dashboard no puede escribir.
+
+**NO verificado**: entrega real por Firebase a un móvil (el FCM se simuló: no
+hay credenciales en el entorno), despliegue en Render/Vercel, `ng build` del
+frontend (solo se comprobó el tipo de los dos ficheros tocados).
+
+**Antes de usarlo en producción**: (1) generar `openssl rand -hex 32` y ponerlo
+como `ADMIN_API_KEY` en el backend y `ACERTON_ADMIN_KEY` en el dashboard;
+(2) `ACERTON_API_URL=https://api.piqo.es/api` en el dashboard; (3) aplicar la
+migración (`prisma migrate deploy`); (4) probar primero con "Un usuario
+concreto". Ver también las limitaciones conocidas de `decisions.md`
+(`test-broadcast` abierto a cualquier usuario con sesión).
+
 ## 2026-10-04 — Rendimiento: cambiar de pestaña al instante (fuera de sprint)
 
 A petición explícita del usuario ("cuando pulso para cambiar de vista, pulso

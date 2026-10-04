@@ -21,6 +21,7 @@ const ICON_BY_TYPE: Record<NotificationType, string> = {
   BADGE_EARNED: 'medalla',
   REENGAGEMENT: 'campana',
   LEVEL_UP: 'corona',
+  ANNOUNCEMENT: 'campana',
 };
 
 function isSameDay(a: Date, b: Date): boolean {
