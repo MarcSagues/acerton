@@ -4,6 +4,51 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — Copiar los pronósticos de la jornada de otro grupo
+
+A petición explícita del usuario ("copiar lo que has puesto en otros grupos
+para no ponerlo todo de nuevo; si luego quieres modificar algún resultado
+puedes; que la opción ponga todos los partidos de esa jornada"). Un mismo
+partido se pronostica por separado en cada grupo (`Prediction` es
+`userId + groupId + matchId`), así que antes había que repetirlo grupo a grupo.
+
+**Cómo funciona**: botón "Copiar pronósticos de otro grupo" en `/matchday`
+(solo con más de un grupo y la jornada abierta). Elige el grupo de origen y el
+backend (`POST /groups/:id/predictions/copy-from/:sourceId`, con
+`GET .../copy-sources/:matchdayId` para listar candidatos) copia **todos** los
+pronósticos que el origen tenga en esa jornada y sigan abiertos. Reutiliza
+`submit()` partido a partido, así que valen las mismas reglas que al pronosticar
+a mano (partido no empezado, jornada abierta, comodines del destino, XP de
+participar) y lo copiado se edita después con el autoguardado normal.
+
+**Decisiones tomadas por defecto (a confirmar por el usuario):**
+
+1. **Sustituye lo que el destino ya tuviera de esos partidos** (no solo rellena
+   huecos), porque el usuario pidió "que ponga todos los partidos". Si ya hay
+   algo elegido, la pantalla pide confirmación antes. No toca los partidos que
+   el origen no tiene pronosticados.
+2. **Partidos ya empezados**: no se copian (no se puede pronosticar un partido
+   que ha empezado) y se avisa.
+3. **Comodín de remontada** (es de cada grupo: depende de la diferencia con el
+   líder de ESE grupo): solo se copia si el destino tiene comodines disponibles.
+   Sin comodín, una doble oportunidad (1X/X2/12) no tiene equivalente simple, así
+   que ese partido **se omite y se avisa** (no se inventa una elección); un
+   marcador con "x2 puntos" se copia **sin** el duplicador y se avisa. Cada
+   comodín copiado gasta uno de los del destino, por orden de kickoff.
+4. **Solo entre grupos del MISMO modo de puntuación** (1X2 con 1X2, resultado
+   exacto con resultado exacto), corregido por el usuario tras una primera versión
+   que además convertía un marcador en 1/X/2: ni de exacto a 1X2 ni de 1X2 a
+   exacto. Desde un grupo, el selector solo lista grupos de su mismo modo (el
+   backend filtra, y rechaza con 400 un `copy-from` entre modos distintos).
+5. **Solo grupos de los que sigue siendo miembro** y no eliminados, y solo si la
+   jornada es de una competición activa del grupo de destino.
+6. **XP**: como se reutiliza `submit()`, copiar a un grupo nuevo da la XP de
+   participar de cada partido igual que pronosticarlo a mano allí (no abre un
+   atajo que no existiera ya).
+
+**No es atómico**: si un partido falla, los demás siguen y se informa en
+`skipped`. No hay "deshacer" (se cambia a mano, como cualquier pronóstico).
+
 ## 2026-10-04 — Los anuncios a todos los usuarios solo salen del dashboard, con clave compartida
 
 El botón "Probar notificaciones" (Sprint 9) ya no estaba en la app, pero su endpoint
@@ -49,6 +94,31 @@ puede pronosticar yendo a "siguiente".
 **Riesgo conocido**: `ensureUpcomingMatchday` pide la siguiente ronda por número
 (`order + 1`) al proveedor, igual que ya hacía la navegación "siguiente" bajo
 demanda; solo se usa en rondas numeradas (`Regular Season - N`).
+
+## 2026-10-04 — (Descartada) Mi versión del envío de comunicados desde el dashboard: sustituida por la de `main`
+
+En paralelo a la implementación de arriba ("Los anuncios a todos los usuarios solo salen
+del dashboard"), la sesión de la nube había construido otra versión del mismo envío
+(`POST /api/admin/notifications/broadcast` + clave `ADMIN_API_KEY` en `Authorization:
+Bearer`). Al fusionar con `main` se **descartó entera** (endpoint, guard, DTO, clave,
+migración y formulario del dashboard) y se dejó la de `main`: ya estaba revisada,
+fusionada y con las variables de entorno elegidas (`DASHBOARD_API_KEY`, `PIQO_API_URL`).
+El diseño era casi idéntico; esto es lo que aportaba la mía y **no está en `main`**, por si
+algún día interesa:
+
+- **Un usuario concreto o un segmento** (activos 7 días / inactivos +14 días) además de
+  "todos": el dashboard resolvía los ids con un `SELECT id FROM users ...` y los pasaba al
+  backend en `userIds`. Sobre todo sirve para **probar con una sola cuenta antes de enviar
+  a todo el mundo** (con la de `main` el primer envío real ya va a todos; lo único que
+  protege es el `dryRun` y el pop-up de confirmación).
+- **Aviso en la pantalla "Avisos"** de cada destinatario (tipo `ANNOUNCEMENT`, migración
+  que amplía el `ENUM` de `notifications.type`). Misma decisión de alcance que arriba:
+  exige migrar la BD de producción.
+- **Envío por lotes de 500 dentro de `sendToTokens`** (afecta a todos los envíos, no solo al
+  anuncio): en `main` solo `broadcastAnnouncement` lo hace, así que `sendToUsers` con más
+  de 500 dispositivos (p. ej. un grupo muy grande en un recordatorio de cierre) sigue
+  topando con el límite de FCM.
+
 
 ## 2026-10-04 — La rama `dev` NO se actualiza desde `main`: los cambios de API para dev se portan a mano
 

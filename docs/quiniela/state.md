@@ -1,5 +1,38 @@
 # Estado actual
 
+## 2026-10-04 — Copiar pronósticos de otro grupo (fuera de sprint)
+
+A petición explícita del usuario. Misma rama que el trabajo de comunicados push
+(`claude/dashboard-push-notifications-yo0gk0`), commit aparte. Reglas y motivos
+en `decisions.md` y `product-rules.md` (misma fecha).
+
+**Backend**: `PredictionsService.getCopySources` y `copyFromGroup`
+(`GET /groups/:id/predictions/copy-sources/:matchdayId`, `POST
+.../copy-from/:sourceGroupId` con `{ matchdayId }`), solo entre grupos del mismo
+modo de puntuación; el tratamiento de comodines es lógica pura en
+`predictions/copy-predictions.util.ts` (`planCopy`). Sin migraciones. **Frontend**: botón en `/matchday` (`CurrentMatchdayFacade.
+openCopySheet`), panel `CopyFromGroupSheetComponent`, confirmación si ya hay
+pronósticos, y mensajes en `domain/copy-predictions.rules.ts` (toast si todo
+bien; diálogo si algo no se copió o se copió sin comodín).
+
+**Verificado** (y repetido tras fusionar con `main`, incluido el PR #72 de jornadas
+siempre abiertas): 380 tests del backend, `tsc`, lint y prettier; 51 del frontend
+(karma) y `ng build` de producción. De punta a punta en Chromium con MariaDB real +
+backend + app Angular y login por la interfaz (usuario con 4 grupos, 1X2 y
+resultado exacto, una jornada con un partido ya empezado y clasificaciones
+sembradas para tener comodines): copiar a un grupo vacío, copiar sobre
+pronósticos existentes (confirmación y cancelar), editar tras copiar (no toca el
+origen), el selector solo lista grupos del mismo modo (y la API rechaza con 400
+copiar entre modos distintos, en los dos sentidos), partido empezado omitido,
+doble oportunidad sin comodín en el destino (omitida, avisada) y "x2" sin comodín
+(copiado sin duplicador, avisado), todo comprobado también en BD y sin errores de
+consola ni peticiones 4xx/5xx.
+
+**NO verificado**: iOS/Android (solo web/local) ni el aspecto con textos largos de
+nombre de grupo; el botón se pinta siempre que haya más de un grupo aunque
+ningún otro tenga pronósticos de esa jornada (entonces avisa al pulsarlo, para no
+pedir una consulta extra en cada navegación).
+
 ## 2026-10-04 — Enviar una notificación a todo el mundo desde piqo-dashboard; fuera el endpoint de prueba (Sprint 9)
 
 A petición explícita del usuario ("lo de probar notificaciones debería desaparecer,
@@ -98,6 +131,7 @@ se acepta (HTTP 201), y en la pantalla Jornada sale "Abierta · cierra en
 9d 23h", 20 campos de marcador habilitados, ningún "Aún no" y el punto rojo
 de pendientes. **No verificado en vivo**: el cron/proveedor (no hay clave de
 football-data en local; solo tests con el proveedor simulado) ni iOS/Android.
+
 
 ## 2026-10-04 — Rendimiento: cambiar de pestaña al instante (fuera de sprint)
 

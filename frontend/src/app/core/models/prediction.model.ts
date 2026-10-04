@@ -1,4 +1,5 @@
 import { PredictionChoice } from './matchday.model';
+import { ScoringMode } from './group.model';
 
 export type DoubleChanceOption = 'HOME_OR_DRAW' | 'DRAW_OR_AWAY' | 'HOME_OR_AWAY';
 
@@ -26,4 +27,23 @@ export interface SubmitPredictionPayload {
   predictedHomeScore?: number;
   predictedAwayScore?: number;
   doublePointsWildcard?: boolean;
+}
+
+/** Otro grupo DEL MISMO MODO de juego del que se pueden copiar los pronosticos de la jornada abierta (GET .../predictions/copy-sources/:matchdayId). */
+export interface CopySource {
+  groupId: string;
+  name: string;
+  scoringMode: ScoringMode;
+  /** Cuantos de sus pronosticos de esa jornada siguen abiertos (los de partidos ya empezados no se copian). */
+  copyableCount: number;
+}
+
+export type CopySkipReason = 'LOCKED' | 'WILDCARD_UNAVAILABLE' | 'FAILED';
+
+export interface CopyResult {
+  /** Pronosticos ya guardados en el grupo actual. */
+  copied: Prediction[];
+  skipped: { matchId: string; reason: CopySkipReason }[];
+  /** Partidos copiados SIN el comodin que tenian en el grupo de origen. */
+  wildcardsDropped: string[];
 }
