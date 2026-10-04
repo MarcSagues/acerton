@@ -525,42 +525,22 @@ describe('PredictionsService.copyFromGroup', () => {
     expect(result.skipped).toEqual([{ matchId: 'm1', reason: 'LOCKED' }]);
   });
 
-  it('de resultado exacto a un grupo 1X2 convierte el marcador en 1/X/2 y avisa del "x2" descartado', async () => {
-    const { service, submit } = buildCopyDeps({
-      sourceMode: 'EXACT_SCORE',
-      targetMode: 'ONE_X_TWO',
-      sourcePredictions: [
-        sourcePick('m1', {
-          predictedHomeScore: 3,
-          predictedAwayScore: 0,
-          doublePointsWildcard: true,
-        }),
-        sourcePick('m2', { predictedHomeScore: 1, predictedAwayScore: 1 }),
-        sourcePick('m3', { predictedHomeScore: 0, predictedAwayScore: 2 }),
-      ],
-    });
+  it('entre grupos de distinto modo se rechaza (en los dos sentidos) sin tocar nada', async () => {
+    for (const [sourceMode, targetMode] of [
+      ['ONE_X_TWO', 'EXACT_SCORE'],
+      ['EXACT_SCORE', 'ONE_X_TWO'],
+    ] as const) {
+      const { service, submit } = buildCopyDeps({
+        sourceMode,
+        targetMode,
+        sourcePredictions: [sourcePick('m1', { choice: 'HOME' })],
+      });
 
-    const result = await service.copyFromGroup('u1', 'target', 'source', 'md1');
-
-    expect(submit.mock.calls.map(([, , dto]) => dto)).toEqual([
-      { matchId: 'm1', choice: 'HOME' },
-      { matchId: 'm2', choice: 'DRAW' },
-      { matchId: 'm3', choice: 'AWAY' },
-    ]);
-    expect(result.wildcardsDropped).toEqual(['m1']);
-  });
-
-  it('de un grupo 1X2 a uno de resultado exacto se rechaza (no hay marcador) sin tocar nada', async () => {
-    const { service, submit } = buildCopyDeps({
-      sourceMode: 'ONE_X_TWO',
-      targetMode: 'EXACT_SCORE',
-      sourcePredictions: [sourcePick('m1', { choice: 'HOME' })],
-    });
-
-    await expect(service.copyFromGroup('u1', 'target', 'source', 'md1')).rejects.toThrow(
-      /1X2 a uno de resultado exacto/,
-    );
-    expect(submit).not.toHaveBeenCalled();
+      await expect(service.copyFromGroup('u1', 'target', 'source', 'md1')).rejects.toThrow(
+        /mismo modo de juego/,
+      );
+      expect(submit).not.toHaveBeenCalled();
+    }
   });
 
   it('doble oportunidad: se copia si el destino tiene comodin; si no, se omite como WILDCARD_UNAVAILABLE y el resto sigue', async () => {
@@ -735,37 +715,28 @@ describe('PredictionsService.getCopySources', () => {
         name: 'Amigos',
         scoringMode: 'ONE_X_TWO',
         copyableCount: 2,
-        compatible: true,
       },
       {
         groupId: 'gB',
         name: 'Trabajo',
         scoringMode: 'ONE_X_TWO',
         copyableCount: 1,
-        compatible: true,
       },
     ]);
   });
 
-  it('marca como no compatible un grupo 1X2 cuando el destino es de resultado exacto (y al reves si lo es)', async () => {
-    const toExact = build(
-      [row('gA', 'Uno', 'ONE_X_TWO'), row('gB', 'Exacto', 'EXACT_SCORE')],
-      'EXACT_SCORE',
-    );
-    expect(
-      (await toExact.service.getCopySources('u1', 'target', 'md1')).map((s) => [
-        s.name,
-        s.compatible,
-      ]),
-    ).toEqual(
-      expect.arrayContaining([
-        ['Uno', false],
-        ['Exacto', true],
-      ]),
-    );
-
-    const to1x2 = build([row('gB', 'Exacto', 'EXACT_SCORE')], 'ONE_X_TWO');
-    expect((await to1x2.service.getCopySources('u1', 'target', 'md1'))[0].compatible).toBe(true);
+  it('solo ofrece grupos del mismo modo que el actual: la consulta filtra por el modo del destino, sea cual sea', async () => {
+    for (const targetMode of ['ONE_X_TWO', 'EXACT_SCORE'] as const) {
+      const { service, prisma } = build([], targetMode);
+      await service.getCopySources('u1', 'target', 'md1');
+      expect(prisma.prediction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            group: expect.objectContaining({ scoringMode: targetMode }),
+          }),
+        }),
+      );
+    }
   });
 
   it('ordena por mas pronosticos copiables y luego por nombre', async () => {
@@ -791,7 +762,11 @@ describe('PredictionsService.getCopySources', () => {
           userId: 'u1',
           groupId: { not: 'target' },
           match: { matchdayId: 'md1' },
-          group: { deletedAt: null, memberships: { some: { userId: 'u1' } } },
+          group: {
+            deletedAt: null,
+            scoringMode: 'ONE_X_TWO',
+            memberships: { some: { userId: 'u1' } },
+          },
         },
       }),
     );

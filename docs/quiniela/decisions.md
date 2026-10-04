@@ -35,10 +35,11 @@ participar) y lo copiado se edita después con el autoguardado normal.
    que ese partido **se omite y se avisa** (no se inventa una elección); un
    marcador con "x2 puntos" se copia **sin** el duplicador y se avisa. Cada
    comodín copiado gasta uno de los del destino, por orden de kickoff.
-4. **Modos de puntuación distintos**: de resultado exacto a un grupo 1X2 se copia
-   el 1/X/2 que sale del marcador (el "x2" se descarta y se avisa); de un grupo
-   1X2 a uno de resultado exacto **no se puede** (no hay marcador): ese grupo sale
-   en el selector desactivado explicando por qué.
+4. **Solo entre grupos del MISMO modo de puntuación** (1X2 con 1X2, resultado
+   exacto con resultado exacto), corregido por el usuario tras una primera versión
+   que además convertía un marcador en 1/X/2: ni de exacto a 1X2 ni de 1X2 a
+   exacto. Desde un grupo, el selector solo lista grupos de su mismo modo (el
+   backend filtra, y rechaza con 400 un `copy-from` entre modos distintos).
 5. **Solo grupos de los que sigue siendo miembro** y no eliminados, y solo si la
    jornada es de una competición activa del grupo de destino.
 6. **XP**: como se reutiliza `submit()`, copiar a un grupo nuevo da la XP de

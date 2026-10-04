@@ -8,20 +8,21 @@ en `decisions.md` y `product-rules.md` (misma fecha).
 
 **Backend**: `PredictionsService.getCopySources` y `copyFromGroup`
 (`GET /groups/:id/predictions/copy-sources/:matchdayId`, `POST
-.../copy-from/:sourceGroupId` con `{ matchdayId }`); la conversión entre modos y
-comodines es lógica pura en `predictions/copy-predictions.util.ts` (`planCopy`).
-Sin migraciones. **Frontend**: botón en `/matchday` (`CurrentMatchdayFacade.
+.../copy-from/:sourceGroupId` con `{ matchdayId }`), solo entre grupos del mismo
+modo de puntuación; el tratamiento de comodines es lógica pura en
+`predictions/copy-predictions.util.ts` (`planCopy`). Sin migraciones. **Frontend**: botón en `/matchday` (`CurrentMatchdayFacade.
 openCopySheet`), panel `CopyFromGroupSheetComponent`, confirmación si ya hay
 pronósticos, y mensajes en `domain/copy-predictions.rules.ts` (toast si todo
 bien; diálogo si algo no se copió o se copió sin comodín).
 
-**Verificado**: 371 tests del backend (29 nuevos), `tsc`, lint y prettier; 49 del
-frontend (karma) y `ng build` de producción. De punta a punta en Chromium con
-MariaDB real + backend + app Angular y login por la interfaz (usuario con 4
-grupos, 1X2 y resultado exacto, una jornada con un partido ya empezado y
-clasificaciones sembradas para tener comodines): copiar a un grupo vacío, copiar
-sobre pronósticos existentes (confirmación y cancelar), editar tras copiar (no
-toca el origen), exacto→1X2, 1X2→exacto desactivado, partido empezado omitido,
+**Verificado**: 367 tests del backend, `tsc`, lint y prettier; 47 del frontend
+(karma) y `ng build` de producción. De punta a punta en Chromium con MariaDB real +
+backend + app Angular y login por la interfaz (usuario con 4 grupos, 1X2 y
+resultado exacto, una jornada con un partido ya empezado y clasificaciones
+sembradas para tener comodines): copiar a un grupo vacío, copiar sobre
+pronósticos existentes (confirmación y cancelar), editar tras copiar (no toca el
+origen), el selector solo lista grupos del mismo modo (y la API rechaza con 400
+copiar entre modos distintos, en los dos sentidos), partido empezado omitido,
 doble oportunidad sin comodín en el destino (omitida, avisada) y "x2" sin comodín
 (copiado sin duplicador, avisado), todo comprobado también en BD y sin errores de
 consola ni peticiones 4xx/5xx.

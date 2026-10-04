@@ -83,28 +83,15 @@ describe('copyResultMessage', () => {
 });
 
 describe('copySourceSubtitle', () => {
-  const source = (overrides: Partial<CopySource> = {}): CopySource => ({
+  const source = (copyableCount: number): CopySource => ({
     groupId: 'g2',
     name: 'Trabajo',
     scoringMode: 'ONE_X_TWO',
-    copyableCount: 3,
-    compatible: true,
-    ...overrides,
+    copyableCount,
   });
 
   it('cuenta los partidos copiables en singular/plural', () => {
-    expect(copySourceSubtitle(source({ copyableCount: 1 }), 'ONE_X_TWO')).toBe('1 partido');
-    expect(copySourceSubtitle(source(), 'ONE_X_TWO')).toBe('3 partidos');
-  });
-
-  it('avisa de la conversion de marcador a 1/X/2', () => {
-    expect(copySourceSubtitle(source({ scoringMode: 'EXACT_SCORE' }), 'ONE_X_TWO')).toBe(
-      '3 partidos · cada marcador pasa a 1/X/2',
-    );
-    expect(copySourceSubtitle(source({ scoringMode: 'EXACT_SCORE' }), 'EXACT_SCORE')).toBe('3 partidos');
-  });
-
-  it('explica por que no se puede cuando no es compatible', () => {
-    expect(copySourceSubtitle(source({ compatible: false }), 'EXACT_SCORE')).toMatch(/no hay marcador/);
+    expect(copySourceSubtitle(source(1))).toBe('1 partido');
+    expect(copySourceSubtitle(source(3))).toBe('3 partidos');
   });
 });

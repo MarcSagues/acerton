@@ -25,8 +25,6 @@ export interface CopySource {
   scoringMode: ScoringMode;
   /** Cuantos de sus pronosticos de esa jornada siguen abiertos (los que ya empezaron no se copian). */
   copyableCount: number;
-  /** false si no se puede convertir (de un grupo 1X2 a uno de resultado exacto, no hay marcador que copiar). */
-  compatible: boolean;
 }
 
 export interface CopyResult {
@@ -174,9 +172,10 @@ export class PredictionsService {
 
   /**
    * Otros grupos del usuario con pronosticos suyos todavia abiertos en esa
-   * jornada, para ofrecer "copiar de otro grupo". Solo grupos de los que
-   * sigue siendo miembro y que no estan eliminados (salir conserva los
-   * resultados, pero no es "otro grupo" al que pertenezca).
+   * jornada, para ofrecer "copiar de otro grupo". Solo grupos del MISMO modo
+   * de puntuacion que el actual, de los que sigue siendo miembro y que no
+   * estan eliminados (salir conserva los resultados, pero no es "otro grupo"
+   * al que pertenezca).
    */
   async getCopySources(userId: string, groupId: string, matchdayId: string): Promise<CopySource[]> {
     await this.groupsService.assertIsMember(groupId, userId);
@@ -188,7 +187,7 @@ export class PredictionsService {
         userId,
         groupId: { not: groupId },
         match: { matchdayId: matchday.id },
-        group: { deletedAt: null, memberships: { some: { userId } } },
+        group: { deletedAt: null, scoringMode: targetMode, memberships: { some: { userId } } },
       },
       select: {
         groupId: true,
@@ -210,7 +209,6 @@ export class PredictionsService {
           name: prediction.group.name,
           scoringMode: prediction.group.scoringMode,
           copyableCount: 1,
-          compatible: canCopyBetweenModes(prediction.group.scoringMode, targetMode),
         });
       }
     }
@@ -229,8 +227,8 @@ export class PredictionsService {
    *
    * Sobrescribe lo que el destino ya tuviera de esos partidos, pero no toca
    * los partidos que el origen no tiene pronosticados. No es atomico: si un
-   * partido falla, los demas siguen y se informa en `skipped`. Ver
-   * planCopy para como se tratan los comodines y los modos de puntuacion.
+   * partido falla, los demas siguen y se informa en `skipped`. Solo entre
+   * grupos del mismo modo de puntuacion; ver planCopy para los comodines.
    */
   async copyFromGroup(
     userId: string,
@@ -263,7 +261,7 @@ export class PredictionsService {
     const targetMode = await this.groupsService.getScoringMode(targetGroupId);
     if (!canCopyBetweenModes(sourceMode, targetMode)) {
       throw new BadRequestException(
-        'No se puede copiar de un grupo 1X2 a uno de resultado exacto: no hay marcador que copiar',
+        'Solo se puede copiar entre grupos con el mismo modo de juego (1X2 o resultado exacto)',
       );
     }
 
@@ -281,17 +279,15 @@ export class PredictionsService {
         continue;
       }
 
-      // Solo se mira el comodin del destino cuando de verdad se puede copiar
-      // (mismo modo): de exacto a 1X2 el "x2" no tiene equivalente. Se consulta
-      // partido a partido porque cada comodin que se copia gasta uno de los
-      // disponibles del destino.
+      // Solo se mira el comodin del destino si este pronostico usa uno; se
+      // consulta partido a partido porque cada comodin que se copia gasta uno
+      // de los disponibles del destino.
       const usesWildcard = source.doublePointsWildcard || source.doubleChanceOption !== null;
-      const wildcardAvailable =
-        usesWildcard && sourceMode === targetMode
-          ? await this.canUseWildcard(userId, targetGroupId, matchday.id, source.matchId)
-          : false;
+      const wildcardAvailable = usesWildcard
+        ? await this.canUseWildcard(userId, targetGroupId, matchday.id, source.matchId)
+        : false;
 
-      const plan = planCopy(source, sourceMode, targetMode, wildcardAvailable);
+      const plan = planCopy(source, targetMode, wildcardAvailable);
       if ('skip' in plan) {
         result.skipped.push({ matchId: source.matchId, reason: plan.skip });
         continue;

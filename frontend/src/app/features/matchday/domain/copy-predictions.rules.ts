@@ -1,5 +1,4 @@
 import { CopyResult, CopySource, CopySkipReason } from '../../../core/models/prediction.model';
-import { ScoringMode } from '../../../core/models/group.model';
 
 export interface CopyMessage {
   text: string;
@@ -49,14 +48,7 @@ export function copyResultMessage(sourceName: string, result: CopyResult): CopyM
   return { text: [head, ...notes].join(' '), needsAttention: notes.length > 0 };
 }
 
-/** Linea secundaria de cada grupo en el selector: cuantos partidos se copiarian y, si aplica, que pasa con el modo de juego. */
-export function copySourceSubtitle(source: CopySource, targetMode: ScoringMode): string {
-  if (!source.compatible) {
-    return 'Juega a 1X2 y este a resultado exacto: no hay marcador que copiar';
-  }
-  const count = plural(source.copyableCount, 'partido', 'partidos');
-  if (source.scoringMode === 'EXACT_SCORE' && targetMode === 'ONE_X_TWO') {
-    return `${count} · cada marcador pasa a 1/X/2`;
-  }
-  return count;
+/** Linea secundaria de cada grupo en el selector: cuantos partidos se copiarian. */
+export function copySourceSubtitle(source: CopySource): string {
+  return plural(source.copyableCount, 'partido', 'partidos');
 }

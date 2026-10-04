@@ -1,5 +1,4 @@
 import { DoubleChanceOption, PredictionChoice, ScoringMode } from '@prisma/client';
-import { computeMatchResult } from '../matchdays/matchday.util';
 
 /** Por que un pronostico del grupo de origen no se ha copiado al de destino. */
 export type CopySkipReason = 'LOCKED' | 'WILDCARD_UNAVAILABLE' | 'FAILED';
@@ -27,16 +26,18 @@ export type CopyPlan =
   | { skip: Exclude<CopySkipReason, 'LOCKED'> };
 
 /**
- * De un marcador (resultado exacto) a un 1X2 si, y solo si, el destino es un
- * grupo 1X2. Al reves no hay conversion posible: un "1" no dice cuantos goles.
+ * Solo se copia entre grupos del MISMO modo de puntuacion (a peticion del
+ * usuario): ni de 1X2 a resultado exacto (no hay marcador que copiar) ni de
+ * resultado exacto a 1X2 (no se convierte un marcador en un 1/X/2).
  */
 export function canCopyBetweenModes(source: ScoringMode, target: ScoringMode): boolean {
-  return source === target || (source === 'EXACT_SCORE' && target === 'ONE_X_TWO');
+  return source === target;
 }
 
 /**
  * Convierte un pronostico del grupo de origen en lo que se enviaria al de
- * destino, o dice por que no se puede. Logica pura (sin base de datos).
+ * destino (los dos del mismo `mode`), o dice por que no se puede. Logica pura
+ * (sin base de datos).
  *
  * El comodin de remontada es de cada grupo (depende de la diferencia con el
  * lider de ESE grupo, ver WildcardsService.getComebackStatus), asi que solo
@@ -45,25 +46,15 @@ export function canCopyBetweenModes(source: ScoringMode, target: ScoringMode): b
  *  - 1X2 con doble oportunidad (1X/X2/12): no hay un 1X2 simple equivalente,
  *    asi que se omite en vez de inventar una eleccion.
  *  - resultado exacto con "x2 puntos": se copia el marcador sin duplicador.
- * De un grupo de resultado exacto a uno 1X2 el 1X2 sale del marcador y el
- * "x2 puntos" no tiene equivalente (se descarta).
  */
 export function planCopy(
   prediction: CopyablePrediction,
-  sourceMode: ScoringMode,
-  targetMode: ScoringMode,
+  mode: ScoringMode,
   wildcardAvailable: boolean,
 ): CopyPlan {
-  const { predictedHomeScore: home, predictedAwayScore: away } = prediction;
-
-  if (sourceMode === 'EXACT_SCORE') {
+  if (mode === 'EXACT_SCORE') {
+    const { predictedHomeScore: home, predictedAwayScore: away } = prediction;
     if (home === null || away === null) return { skip: 'FAILED' };
-
-    if (targetMode === 'ONE_X_TWO') {
-      const choice = computeMatchResult(home, away);
-      if (!choice) return { skip: 'FAILED' };
-      return { submission: { choice }, wildcardDropped: prediction.doublePointsWildcard };
-    }
 
     const keepWildcard = prediction.doublePointsWildcard && wildcardAvailable;
     return {
@@ -76,8 +67,6 @@ export function planCopy(
     };
   }
 
-  // Origen 1X2: solo se puede copiar a otro grupo 1X2.
-  if (targetMode !== 'ONE_X_TWO') return { skip: 'FAILED' };
   if (prediction.doubleChanceOption) {
     return wildcardAvailable
       ? {

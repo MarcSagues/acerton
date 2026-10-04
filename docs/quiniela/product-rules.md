@@ -47,8 +47,9 @@ actuales.
   abierta copiándolos de otro de sus grupos, en vez de repetirlos uno a uno.
   Rellena todos los partidos de esa jornada que el otro grupo tenga
   pronosticados y siguen abiertos; después se puede cambiar cualquiera con el
-  autoguardado de siempre. Ver `decisions.md` (2026-10-04) para comodines y
-  modos de puntuación.
+  autoguardado de siempre. Solo entre grupos del mismo modo de puntuación
+  (1X2 con 1X2, resultado exacto con resultado exacto). Ver `decisions.md`
+  (2026-10-04) para los comodines.
 
 ## Grupos y navegación
 

@@ -29,15 +29,13 @@ export interface SubmitPredictionPayload {
   doublePointsWildcard?: boolean;
 }
 
-/** Otro grupo del que se pueden copiar los pronosticos de la jornada abierta (GET .../predictions/copy-sources/:matchdayId). */
+/** Otro grupo DEL MISMO MODO de juego del que se pueden copiar los pronosticos de la jornada abierta (GET .../predictions/copy-sources/:matchdayId). */
 export interface CopySource {
   groupId: string;
   name: string;
   scoringMode: ScoringMode;
   /** Cuantos de sus pronosticos de esa jornada siguen abiertos (los de partidos ya empezados no se copian). */
   copyableCount: number;
-  /** false si no se puede convertir: de un grupo 1X2 a uno de resultado exacto no hay marcador que copiar. */
-  compatible: boolean;
 }
 
 export type CopySkipReason = 'LOCKED' | 'WILDCARD_UNAVAILABLE' | 'FAILED';
