@@ -17,7 +17,13 @@ export class GroupListFacade {
 
   readonly groups = this.groupsService.myGroups;
   readonly activeGroupId = this.activeGroupService.activeId;
-  readonly loading = signal(true);
+  /**
+   * Con la lista ya en memoria (la dejo hasGroupGuard u otra visita anterior)
+   * se pinta al instante y se refresca por detras: el spinner solo hace falta
+   * la primera vez. Antes cada visita a Grupos esperaba un viaje completo a
+   * /groups/mine, el endpoint mas pesado de la app.
+   */
+  readonly loading = signal(this.groupsService.myGroups().length === 0);
   /**
    * /welcome vive fuera del shell (sin barra superior con logo): el estado
    * vacio reserva ahi ese hueco a mano. /groups (mismo componente, dentro

@@ -372,7 +372,9 @@ export class MatchdaysService {
         include: { matches: { orderBy: { kickoff: 'asc' } } },
       });
       if (open) {
-        return this.attachCanPredict(open);
+        // Ya lo tenemos calculado: sin esto attachCanPredict lo volveria a
+        // pedir (otras dos consultas en serie por cada llamada).
+        return this.attachCanPredict(open, referenceOrder);
       }
     }
 
@@ -397,14 +399,21 @@ export class MatchdaysService {
    */
   private async attachCanPredict<
     T extends { order: number; status: string; competitionId: string; closesAt: Date },
-  >(matchday: T): Promise<T & { canPredict: boolean; opensAt: string }> {
+  >(
+    matchday: T,
+    /** Si quien llama ya calculo getReferenceOrder para esta competicion, se evita repetirlo. */
+    knownReferenceOrder?: number | null,
+  ): Promise<T & { canPredict: boolean; opensAt: string }> {
     const opensAt = new Date(
       matchday.closesAt.getTime() - PREDICTIONS_OPEN_BEFORE_MS,
     ).toISOString();
     if (matchday.status === 'FINISHED') {
       return { ...matchday, canPredict: false, opensAt };
     }
-    const referenceOrder = await this.getReferenceOrder(matchday.competitionId);
+    const referenceOrder =
+      knownReferenceOrder !== undefined
+        ? knownReferenceOrder
+        : await this.getReferenceOrder(matchday.competitionId);
     return {
       ...matchday,
       canPredict: referenceOrder === null || matchday.order <= referenceOrder,

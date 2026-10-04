@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { GroupsService } from '../../../core/services/groups.service';
@@ -66,8 +66,11 @@ export class RankingsPageFacade {
     effect(
       () => {
         const groupId = this.activeGroupService.activeId();
+        // untracked: loadGroup lee otras señales (grupo activo, periodo,
+        // scope...) y no deben volver a lanzar la carga cuando cambian — solo
+        // un cambio de grupo activo.
         if (groupId) {
-          this.loadGroup(groupId);
+          untracked(() => this.loadGroup(groupId));
         }
       },
       { allowSignalWrites: true },
@@ -75,23 +78,36 @@ export class RankingsPageFacade {
   }
 
   private loadGroup(groupId: string): void {
+    // /groups/mine ya trae este grupo con todo lo que esta pantalla necesita
+    // (competiciones activas, modo de puntuacion) y hasGroupGuard lo deja en
+    // memoria antes de entrar: se pinta y se pide la clasificacion YA, sin
+    // esperar un viaje extra a /groups/:id (antes: grupo -> clasificacion en
+    // serie, el contenido tardaba dos viajes completos en aparecer).
+    const cached = this.activeGroupService.activeGroup();
+    if (cached && cached.id === groupId) {
+      this.applyGroup(cached);
+      return;
+    }
     this.loading.set(true);
-    this.groupsService.getById(groupId).subscribe((group) => {
-      this.groupDetail.set(group);
-      const active = (group.groupCompetitions ?? []).filter((gc) => gc.isActive);
-      this.scope.set(active.length > 1 ? 'general' : (active[0]?.competitionId ?? 'general'));
-      this.loading.set(false);
-      this.fetchRanking(groupId);
-      this.seasonsService.listSeasons(groupId).subscribe({
-        next: (seasons) => this.currentSeasonLabel.set(seasons.find((s) => !s.endedAt)?.label ?? null),
-        error: () => this.currentSeasonLabel.set(null),
-      });
+    this.groupsService.getById(groupId).subscribe((group) => this.applyGroup(group));
+  }
 
-      if (!this.tutorialHandledThisSession && !this.tutorialService.hasSeenTutorial()) {
-        this.tutorialHandledThisSession = true;
-        this.tutorialService.start(group.scoringMode);
-      }
+  private applyGroup(group: Group): void {
+    const groupId = group.id;
+    this.groupDetail.set(group);
+    const active = (group.groupCompetitions ?? []).filter((gc) => gc.isActive);
+    this.scope.set(active.length > 1 ? 'general' : (active[0]?.competitionId ?? 'general'));
+    this.loading.set(false);
+    this.fetchRanking(groupId);
+    this.seasonsService.listSeasons(groupId).subscribe({
+      next: (seasons) => this.currentSeasonLabel.set(seasons.find((s) => !s.endedAt)?.label ?? null),
+      error: () => this.currentSeasonLabel.set(null),
     });
+
+    if (!this.tutorialHandledThisSession && !this.tutorialService.hasSeenTutorial()) {
+      this.tutorialHandledThisSession = true;
+      this.tutorialService.start(group.scoringMode);
+    }
   }
 
   setPeriod(period: RankingPeriod): void {
