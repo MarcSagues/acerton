@@ -17,6 +17,31 @@
         </p>
       </div>
 
+      @if (page.isAdmin()) {
+        <h2 class="section-title">Nombre del grupo</h2>
+        <div class="section">
+          <div class="card name-card">
+            <input
+              class="name-input"
+              type="text"
+              maxlength="60"
+              autocomplete="off"
+              aria-label="Nombre del grupo"
+              [class.invalid]="page.hasNameChanges() && page.nameError()"
+              [value]="page.nameInput()"
+              [disabled]="page.saving()"
+              (input)="page.updateNameInput($any($event.target).value)"
+              (keydown.enter)="$any($event.target).blur()"
+            />
+            @if (page.hasNameChanges() && page.nameError(); as error) {
+              <p class="name-error">{{ error }}</p>
+            } @else {
+              <p class="hint">Lo verán todos los miembros. Entre 3 y 60 caracteres.</p>
+            }
+          </div>
+        </div>
+      }
+
       <h2 class="section-title">Invitación</h2>
       <div class="section">
         <div class="card invite-card">
