@@ -1,5 +1,34 @@
 # Estado actual
 
+## 2026-10-04 — Renombrar el grupo siendo admin (Sprint 3, fuera de sprint)
+
+A petición explícita del usuario ("que se pueda cambiar el nombre del grupo
+si eres admin"). Hasta ahora el nombre quedaba fijado al crear el grupo.
+
+**Backend**: `UpdateGroupRulesDto` (`PATCH /groups/:id/rules`) gana `name`
+opcional (3–60 caracteres, mismos límites que `CreateGroupDto`, recortado con
+`@Transform` antes de validar para que "  ab  " no cuele). Reutiliza el
+endpoint de ajustes en vez de uno nuevo porque ya exige `assertIsAdmin`
+(el creador también es admin) y es el que usa el único botón "Guardar
+cambios" de la pantalla. Un miembro normal recibe 403.
+
+**Frontend** (`/groups/:id/settings`): sección "Nombre del grupo" arriba del
+todo, **solo visible para admins** (los miembros ya ven el nombre en la
+cabecera). Entra en el mismo flujo de "Guardar cambios" que reglas y
+toggles; un nombre inválido (<3 o vacío) bloquea el guardado entero con un
+aviso, en vez de guardar a medias el resto de cambios pendientes. Al guardar
+se actualiza el nombre en el listado de grupos y en el selector de la barra
+superior sin esperar a la siguiente recarga.
+
+**No se toca**: los avisos ya generados (`Notification`) conservan el nombre
+que tenía el grupo al crearse, no se reescriben. No hay historial de nombres
+ni límite de frecuencia de cambio (no pedido).
+
+Tests: 12 nuevos en el backend (`updateRules`, `assertIsAdmin` y validación del
+DTO) y 8 en el frontend (fachada de ajustes del grupo). **Sin verificar en
+navegador ni en dispositivo** (no había backend local levantado en esta
+sesión). Rama `feature/group-rename`.
+
 ## 2026-09-19 — Orden estable de jornadas por cierre de pronósticos (Sprint 5) — dos vueltas
 
 **Primera vuelta**: a petición explícita del usuario, con reglas y

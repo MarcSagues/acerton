@@ -9,10 +9,15 @@ import { MemberActionsSheetComponent, MemberActionsSheetData } from './member-ac
 import { GroupsService } from '../../../core/services/groups.service';
 import { CompetitionsService } from '../../../core/services/competitions.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { Group, GroupMember } from '../../../core/models/group.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { competitionTrophyId } from '../../../shared/utils/competition-trophy';
+
+/** Mismos limites que CreateGroupDto/UpdateGroupRulesDto en backend. */
+const NAME_MIN_LENGTH = 3;
+const NAME_MAX_LENGTH = 60;
 
 @Injectable()
 export class GroupDetailFacade {
@@ -21,6 +26,7 @@ export class GroupDetailFacade {
   private readonly groupsService = inject(GroupsService);
   private readonly competitionsService = inject(CompetitionsService);
   private readonly authService = inject(AuthService);
+  private readonly activeGroupService = inject(ActiveGroupService);
   private readonly toast = inject(ToastService);
   private readonly dialog = inject(PiqoDialogService);
   private readonly sheet = inject(BottomSheetService);
@@ -42,6 +48,8 @@ export class GroupDetailFacade {
   readonly savingCompetitions = signal(false);
 
   readonly savingRules = signal(false);
+  /** Nombre en edicion (solo admins): se guarda con "Guardar cambios", igual que el resto de ajustes. */
+  readonly nameInput = signal('');
   readonly comebackPointsPerBonusInput = signal(10);
   /** Comodin y privacidad: el toque solo cambia el valor pendiente, se guardan con "Guardar cambios". */
   readonly selectedComebackEnabled = signal(false);
@@ -76,6 +84,19 @@ export class GroupDetailFacade {
     return [...this.selectedCompetitionIds()].filter((id) => !active.has(id)).length;
   });
 
+  readonly nameError = computed(() => {
+    const length = this.nameInput().trim().length;
+    if (length < NAME_MIN_LENGTH) return `El nombre debe tener al menos ${NAME_MIN_LENGTH} caracteres.`;
+    if (length > NAME_MAX_LENGTH) return `El nombre no puede pasar de ${NAME_MAX_LENGTH} caracteres.`;
+    return null;
+  });
+
+  /** "Cambiado" aunque sea invalido (p.ej. vacio): asi el boton de guardar aparece y explica por que no deja. */
+  readonly hasNameChanges = computed(() => {
+    const group = this.group();
+    return !!group && this.nameInput().trim() !== group.name;
+  });
+
   readonly hasRuleChanges = computed(() => {
     const value = this.comebackPointsPerBonusInput();
     const current = this.group()?.comebackPointsPerBonus;
@@ -90,9 +111,9 @@ export class GroupDetailFacade {
     return this.selectedComebackEnabled() !== group.comebackEnabled || this.selectedIsPublic() !== group.isPublic;
   });
 
-  /** Un unico botón "Guardar cambios" cubre competiciones, reglas y los toggles: no hay un botón por sección. */
+  /** Un unico botón "Guardar cambios" cubre nombre, competiciones, reglas y los toggles: no hay un botón por sección. */
   readonly hasAnyChanges = computed(
-    () => this.hasCompetitionChanges() || this.hasRuleChanges() || this.hasToggleChanges(),
+    () => this.hasNameChanges() || this.hasCompetitionChanges() || this.hasRuleChanges() || this.hasToggleChanges(),
   );
 
   readonly saving = computed(() => this.savingCompetitions() || this.savingRules());
@@ -107,6 +128,7 @@ export class GroupDetailFacade {
         this.group.set(group);
         this.members.set(members);
         this.catalog.set(this.competitionsService.catalog());
+        this.nameInput.set(group.name);
         this.comebackPointsPerBonusInput.set(group.comebackPointsPerBonus);
         this.selectedComebackEnabled.set(group.comebackEnabled);
         this.selectedIsPublic.set(group.isPublic);
@@ -176,11 +198,18 @@ export class GroupDetailFacade {
     });
   }
 
-  /** Un unico punto de guardado para todo lo editable en esta pantalla (competiciones + reglas + toggles). */
+  /** Un unico punto de guardado para todo lo editable en esta pantalla (nombre + competiciones + reglas + toggles). */
   saveChanges(): void {
     const competitionsChanged = this.hasCompetitionChanges();
-    const rulesChanged = this.hasRuleChanges() || this.hasToggleChanges();
+    const rulesChanged = this.hasRuleChanges() || this.hasToggleChanges() || this.hasNameChanges();
     if (!competitionsChanged && !rulesChanged) {
+      return;
+    }
+    // Antes de confirmar/guardar nada: un nombre invalido no debe dejar el
+    // resto de cambios pendientes guardados a medias.
+    const nameError = this.hasNameChanges() ? this.nameError() : null;
+    if (nameError) {
+      this.toast.show(nameError);
       return;
     }
     if (!competitionsChanged) {
@@ -230,7 +259,11 @@ export class GroupDetailFacade {
     if (!group) {
       return;
     }
-    const payload: { comebackPointsPerBonus?: number; comebackEnabled?: boolean; isPublic?: boolean } = {};
+    const payload: { name?: string; comebackPointsPerBonus?: number; comebackEnabled?: boolean; isPublic?: boolean } =
+      {};
+    if (this.hasNameChanges()) {
+      payload.name = this.nameInput().trim();
+    }
     if (this.hasRuleChanges()) {
       payload.comebackPointsPerBonus = this.comebackPointsPerBonusInput();
     }
@@ -248,6 +281,10 @@ export class GroupDetailFacade {
     this.groupsService.updateRules(this.groupId, payload).subscribe({
       next: (updated) => {
         this.group.set(updated);
+        this.nameInput.set(updated.name);
+        // El selector de grupo de la barra superior lee de ActiveGroupService,
+        // no del listado de GroupsService (que ya cambio el nombre en su tap).
+        this.activeGroupService.setGroups(this.groupsService.myGroups());
         this.comebackPointsPerBonusInput.set(updated.comebackPointsPerBonus);
         this.selectedComebackEnabled.set(updated.comebackEnabled);
         this.selectedIsPublic.set(updated.isPublic);
@@ -259,6 +296,13 @@ export class GroupDetailFacade {
         this.toast.show(error.error?.message ?? 'No se pudo guardar');
       },
     });
+  }
+
+  updateNameInput(value: string): void {
+    if (!this.isAdmin()) {
+      return;
+    }
+    this.nameInput.set(value);
   }
 
   updateComebackPointsPerBonusInput(value: string): void {

@@ -397,3 +397,70 @@ describe('GroupsService.setFavorite', () => {
     });
   });
 });
+
+describe('GroupsService.updateRules', () => {
+  function buildUpdateDeps() {
+    const update = jest.fn().mockImplementation(async ({ data }) => ({ id: 'g1', ...data }));
+    const { service } = buildDeps([], {
+      group: {
+        findUnique: jest.fn().mockResolvedValue({ scoringMode: 'ONE_X_TWO' }),
+        update,
+      },
+    });
+    return { service, update };
+  }
+
+  it('guarda el nuevo nombre del grupo', async () => {
+    const { service, update } = buildUpdateDeps();
+
+    await service.updateRules('g1', { name: 'Los del domingo' });
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'g1' },
+      data: expect.objectContaining({ name: 'Los del domingo' }),
+    });
+  });
+
+  it('sin nombre en la peticion no toca el nombre actual', async () => {
+    const { service, update } = buildUpdateDeps();
+
+    await service.updateRules('g1', { isPublic: true });
+
+    expect(update.mock.calls[0][0].data.name).toBeUndefined();
+  });
+
+  it('rechaza si el grupo no existe', async () => {
+    const { service } = buildDeps([], {
+      group: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
+    });
+
+    await expect(service.updateRules('nope', { name: 'Nuevo nombre' })).rejects.toThrow('Grupo no encontrado');
+  });
+});
+
+describe('GroupsService.assertIsAdmin', () => {
+  function serviceWithRole(role: 'ADMIN' | 'MEMBER' | null) {
+    return buildDeps([], {
+      groupMembership: {
+        findMany: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue(role ? { role } : null),
+      },
+    }).service;
+  }
+
+  it('deja pasar a un admin', async () => {
+    await expect(serviceWithRole('ADMIN').assertIsAdmin('g1', 'u1')).resolves.toBeUndefined();
+  });
+
+  it('rechaza a un miembro normal (no puede renombrar el grupo)', async () => {
+    await expect(serviceWithRole('MEMBER').assertIsAdmin('g1', 'u1')).rejects.toThrow(
+      'Solo un administrador del grupo puede hacer esto',
+    );
+  });
+
+  it('rechaza a quien ni siquiera pertenece al grupo', async () => {
+    await expect(serviceWithRole(null).assertIsAdmin('g1', 'u1')).rejects.toThrow(
+      'Solo un administrador del grupo puede hacer esto',
+    );
+  });
+});

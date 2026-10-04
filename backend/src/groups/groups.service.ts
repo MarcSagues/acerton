@@ -131,10 +131,11 @@ export class GroupsService {
   }
 
   /**
-   * Solo el admin puede tocar las reglas del grupo; se editan por separado
-   * de las competiciones. El comodin de remontada se admite en ambos modos
-   * de puntuacion (doble oportunidad en 1X2, duplicar puntos en resultado
-   * exacto — ver WildcardsService.getComebackStatus).
+   * Solo el admin puede tocar los ajustes del grupo (nombre, reglas,
+   * privacidad); se editan por separado de las competiciones. El comodin de
+   * remontada se admite en ambos modos de puntuacion (doble oportunidad en
+   * 1X2, duplicar puntos en resultado exacto — ver
+   * WildcardsService.getComebackStatus).
    */
   async updateRules(groupId: string, dto: UpdateGroupRulesDto): Promise<Group> {
     const group = await this.prisma.group.findUnique({
@@ -147,6 +148,7 @@ export class GroupsService {
     return this.prisma.group.update({
       where: { id: groupId },
       data: {
+        name: dto.name,
         comebackEnabled: dto.comebackEnabled,
         comebackPointsPerBonus: dto.comebackPointsPerBonus,
         isPublic: dto.isPublic,
