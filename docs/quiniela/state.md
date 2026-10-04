@@ -1,5 +1,50 @@
 # Estado actual
 
+## 2026-10-04 — La jornada más próxima siempre está abierta para pronosticar (fuera de sprint)
+
+A petición explícita del usuario ("haz que siempre haya la jornada más
+próxima abierta, tal y como funciona ahora la lógica pero siempre debe haber
+una jornada abierta para pronosticar"). Hasta ahora una jornada solo admitía
+pronósticos cuando le tocaba por orden **y además** faltaban menos de 4 días
+para su primer partido (`PREDICTIONS_OPEN_BEFORE_MS`): en un parón de
+selecciones, o justo tras acabar una ronda, no había ninguna jornada abierta
+y la pantalla decía "Próxima · abre en…" con los partidos en "Aún no".
+
+**Qué cambia** (la lógica de *cuál* es la jornada actual no se toca, ver
+`decisions.md` 2026-09-19):
+- **Sin ventana horaria**: `canAcceptPredictions` = `canPredict`. La jornada que
+  le toca está abierta desde el momento en que le toca, falten 2 días o 3
+  semanas. Frontend (`pickingAllowed`, punto rojo) y `/groups/mine`
+  (`hasPendingPicks`) igual.
+- **Hueco de las últimas horas** (nuevo `predictLimitOrder`): si a la jornada
+  actual ya no le queda ningún partido por empezar (los últimos están en
+  juego y la jornada aún no es FINISHED), también se admite la siguiente, la
+  del próximo partido que sí está por empezar. Dos jornadas por delante
+  siguen bloqueadas (no se rellenan semanas de golpe).
+- **Que exista una siguiente**: nuevo cron `JobsService.ensureUpcomingMatchdays`
+  (cada 10 min, conteo barato en BBDD) + `MatchdaysService.ensureUpcomingMatchday`:
+  si una competición usada por algún grupo no tiene nada por empezar, trae la
+  jornada en curso del proveedor y, si hace falta, pide ya la siguiente por
+  número (solo rondas numeradas de liga; no adivina eliminatorias).
+  Reintentos espaciados (3 h) si el proveedor no trae nada nuevo. Antes la
+  siguiente jornada solo se traía cuando no quedaba ninguna pendiente y con un
+  cron de 12 h.
+- **Compatibilidad**: el backend sigue enviando `opensAt`, pero nunca posterior
+  a "ahora" cuando la jornada admite pronósticos, para que las versiones de la
+  app ya instaladas (que bloquean en cliente por `opensAt`) también funcionen.
+  La app nueva ya no lo lee. Una jornada que aún no le toca (previsualizada con
+  "siguiente") muestra "Próxima · empieza en" en vez de "abre en".
+
+**Verificado**: 333 tests del backend (nuevos: sin ventana de 4 días, parón de
+3 semanas, hueco de las últimas horas, dos jornadas por delante, `opensAt`
+compatible, `ensureUpcomingMatchday` y su cron) y 45 del frontend. En local
+(backend + MySQL), con una jornada a 10 días: la API devuelve
+`canPredict: true` y `opensAt` = ahora, un pronóstico a un partido a 10 días
+se acepta (HTTP 201), y en la pantalla Jornada sale "Abierta · cierra en
+9d 23h", 20 campos de marcador habilitados, ningún "Aún no" y el punto rojo
+de pendientes. **No verificado en vivo**: el cron/proveedor (no hay clave de
+football-data en local; solo tests con el proveedor simulado) ni iOS/Android.
+
 ## 2026-10-04 — Rendimiento: cambiar de pestaña al instante (fuera de sprint)
 
 A petición explícita del usuario ("cuando pulso para cambiar de vista, pulso

@@ -17,6 +17,7 @@ function buildPrismaMock(overrides: Record<string, unknown> = {}) {
       findMany: jest.fn(),
       update: jest.fn(),
       upsert: jest.fn(),
+      count: jest.fn(),
     },
     competition: {
       findUnique: jest.fn(),
@@ -322,6 +323,29 @@ describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
     expect(prisma.matchday.findMany).toHaveBeenCalledTimes(1);
   });
 
+  it('opensAt nunca es posterior a ahora cuando la jornada admite pronosticos (compatibilidad con apps ya instaladas)', async () => {
+    // Las versiones antiguas de la app siguen bloqueando en cliente mientras
+    // opensAt este en el futuro; sin esto seguirian viendo "Próxima · abre en".
+    const prisma = buildPrismaMock();
+    const inTwoWeeks = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 8, matches: [{ kickoff: inTwoWeeks, status: 'SCHEDULED' }] },
+    ]);
+    prisma.matchday.findFirst.mockResolvedValue({
+      id: 'jornada-8',
+      order: 8,
+      status: 'OPEN',
+      competitionId: 'c1',
+      closesAt: inTwoWeeks,
+    });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    const result = await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(result?.canPredict).toBe(true);
+    expect(new Date(result!.opensAt).getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
   it('si todas estan finalizadas, devuelve la ultima jugada', async () => {
     const prisma = buildPrismaMock();
     prisma.matchday.findMany.mockResolvedValue([]); // no hay ninguna pendiente
@@ -441,7 +465,10 @@ describe('MatchdaysService.canAcceptPredictions', () => {
     expect(await service.canAcceptPredictions('jornada-7')).toBe(true);
   });
 
-  it('false si su primer partido esta a mas de 4 dias, aunque le toque por orden', async () => {
+  it('true aunque su primer partido este a mas de 4 dias: la jornada mas proxima siempre esta abierta', async () => {
+    // Decision explicita del usuario (2026-10-04): antes no se aceptaba nada
+    // hasta 4 dias antes del primer partido; ahora la jornada que le toca esta
+    // abierta desde el momento en que le toca (p.ej. durante un parón).
     const prisma = buildPrismaMock();
     const inSixDays = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
     prisma.matchday.findUnique.mockResolvedValue({
@@ -451,11 +478,93 @@ describe('MatchdaysService.canAcceptPredictions', () => {
       order: 6,
       closesAt: inSixDays,
     });
-    prisma.matchday.findMany.mockResolvedValue([{ order: 6, matches: [{ kickoff: inSixDays }] }]);
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 6, matches: [{ kickoff: inSixDays, status: 'SCHEDULED' }] },
+    ]);
     const footballProvider = { getCurrentRoundFixtures: jest.fn(), getFixturesForRound: jest.fn() };
 
     const service = new MatchdaysService(prisma as never, footballProvider as never);
-    expect(await service.canAcceptPredictions('md-current')).toBe(false);
+    expect(await service.canAcceptPredictions('md-current')).toBe(true);
+  });
+
+  it('true tambien con el primer partido a semanas vista (parón de selecciones)', async () => {
+    const prisma = buildPrismaMock();
+    const inThreeWeeks = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000);
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'md-next-round',
+      competitionId: 'c1',
+      status: 'OPEN',
+      order: 8,
+      closesAt: inThreeWeeks,
+    });
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 8, matches: [{ kickoff: inThreeWeeks, status: 'SCHEDULED' }] },
+    ]);
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    expect(await service.canAcceptPredictions('md-next-round')).toBe(true);
+  });
+
+  it('true para la siguiente jornada cuando a la actual ya no le queda ningun partido por empezar', async () => {
+    // El ultimo partido de la jornada 7 esta en juego (la jornada aun no esta
+    // FINISHED): sin esta regla no habria ninguna jornada abierta durante esas horas.
+    const prisma = buildPrismaMock();
+    const inFourDays = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'jornada-8',
+      competitionId: 'c1',
+      status: 'OPEN',
+      order: 8,
+      closesAt: inFourDays,
+    });
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 7, matches: [{ kickoff: new Date(Date.now() - 30 * 60 * 1000), status: 'LIVE' }] },
+      { order: 8, matches: [{ kickoff: inFourDays, status: 'SCHEDULED' }] },
+    ]);
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    expect(await service.canAcceptPredictions('jornada-8')).toBe(true);
+  });
+
+  it('false para la siguiente jornada mientras a la actual le quede algun partido por empezar', async () => {
+    const prisma = buildPrismaMock();
+    const inOneDay = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const inFourDays = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'jornada-8',
+      competitionId: 'c1',
+      status: 'OPEN',
+      order: 8,
+      closesAt: inFourDays,
+    });
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 7, matches: [{ kickoff: inOneDay, status: 'SCHEDULED' }] },
+      { order: 8, matches: [{ kickoff: inFourDays, status: 'SCHEDULED' }] },
+    ]);
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    expect(await service.canAcceptPredictions('jornada-8')).toBe(false);
+  });
+
+  it('false para dos jornadas por delante aunque la siguiente ya este abierta (no se rellenan semanas de golpe)', async () => {
+    const prisma = buildPrismaMock();
+    const inFourDays = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+    const inElevenDays = new Date(Date.now() + 11 * 24 * 60 * 60 * 1000);
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'jornada-9',
+      competitionId: 'c1',
+      status: 'OPEN',
+      order: 9,
+      closesAt: inElevenDays,
+    });
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 7, matches: [{ kickoff: new Date(Date.now() - 30 * 60 * 1000), status: 'LIVE' }] },
+      { order: 8, matches: [{ kickoff: inFourDays, status: 'SCHEDULED' }] },
+      { order: 9, matches: [{ kickoff: inElevenDays, status: 'SCHEDULED' }] },
+    ]);
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    expect(await service.canAcceptPredictions('jornada-9')).toBe(false);
   });
 
   it('true si su primer partido esta a menos de 4 dias', async () => {
@@ -655,5 +764,116 @@ describe('MatchdaysService.listForCompetitionWithUserPoints', () => {
 
     expect(result).toEqual([]);
     expect(prisma.prediction.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('MatchdaysService.ensureUpcomingMatchday (siempre una jornada con algo por pronosticar)', () => {
+  const competition = { id: 'c1', externalId: 140, currentSeason: 2026 };
+  const futureFixture = (round: string, id: number) => ({
+    fixtureId: id,
+    round,
+    kickoff: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    status: 'SCHEDULED',
+    homeTeam: { name: 'Local', logoUrl: null },
+    awayTeam: { name: 'Visitante', logoUrl: null },
+    homeGoals: null,
+    awayGoals: null,
+  });
+
+  function build(provider: Record<string, jest.Mock> = {}) {
+    const prisma = buildPrismaMock();
+    prisma.competition.findUnique.mockResolvedValue(competition);
+    prisma.matchday.upsert.mockResolvedValue({ id: 'md-new', order: 8 });
+    prisma.matchday.findUnique.mockResolvedValue({
+      id: 'md-new',
+      order: 8,
+      status: 'OPEN',
+      competitionId: 'c1',
+      closesAt: new Date(),
+    });
+    const footballProvider = {
+      getCurrentRoundFixtures: jest.fn().mockResolvedValue([]),
+      getFixturesForRound: jest.fn().mockResolvedValue([]),
+      ...provider,
+    };
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    return { service, prisma, footballProvider };
+  }
+
+  it('hasPredictableMatch cuenta solo partidos SCHEDULED por empezar de jornadas pendientes', async () => {
+    const { service, prisma } = build();
+    prisma.match.count.mockResolvedValue(3);
+
+    expect(await service.hasPredictableMatch('c1')).toBe(true);
+    expect(prisma.match.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        status: 'SCHEDULED',
+        kickoff: { gt: expect.any(Date) },
+        matchday: { competitionId: 'c1', status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
+      }),
+    });
+
+    prisma.match.count.mockResolvedValue(0);
+    expect(await service.hasPredictableMatch('c1')).toBe(false);
+  });
+
+  it('no consulta al proveedor si ya hay partidos por empezar', async () => {
+    const { service, prisma, footballProvider } = build();
+    prisma.match.count.mockResolvedValue(2);
+
+    expect(await service.ensureUpcomingMatchday('c1')).toBe(true);
+    expect(footballProvider.getCurrentRoundFixtures).not.toHaveBeenCalled();
+    expect(footballProvider.getFixturesForRound).not.toHaveBeenCalled();
+  });
+
+  it('con la ultima jornada solo con partidos empezados, pide ya la siguiente por numero', async () => {
+    const { service, prisma, footballProvider } = build({
+      getFixturesForRound: jest.fn().mockResolvedValue([futureFixture('Regular Season - 8', 801)]),
+    });
+    // 1a comprobacion: nada por empezar; tras traer la ronda 8: ya hay algo.
+    prisma.match.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+    prisma.matchday.findFirst
+      .mockResolvedValueOnce({ id: 'md-7' }) // hay una jornada pendiente (la 7, en juego)
+      .mockResolvedValueOnce({ id: 'md-7', order: 7, name: 'Regular Season - 7' }); // la ultima por orden
+
+    expect(await service.ensureUpcomingMatchday('c1')).toBe(true);
+    expect(footballProvider.getCurrentRoundFixtures).not.toHaveBeenCalled();
+    expect(footballProvider.getFixturesForRound).toHaveBeenCalledWith(140, 2026, 8);
+  });
+
+  it('sin ninguna jornada pendiente trae primero la jornada en curso del proveedor', async () => {
+    const { service, prisma, footballProvider } = build({
+      getCurrentRoundFixtures: jest
+        .fn()
+        .mockResolvedValue([futureFixture('Regular Season - 8', 801)]),
+    });
+    prisma.match.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1);
+    prisma.matchday.findFirst.mockResolvedValue(null); // ni pendiente ni activa
+    prisma.matchday.count.mockResolvedValue(7);
+
+    expect(await service.ensureUpcomingMatchday('c1')).toBe(true);
+    expect(footballProvider.getCurrentRoundFixtures).toHaveBeenCalledWith(140, 2026);
+    expect(footballProvider.getFixturesForRound).not.toHaveBeenCalled();
+  });
+
+  it('no adivina la siguiente ronda en eliminatorias (nombre de ronda sin numero)', async () => {
+    const { service, prisma, footballProvider } = build();
+    prisma.match.count.mockResolvedValue(0);
+    prisma.matchday.findFirst
+      .mockResolvedValueOnce({ id: 'md-ko' })
+      .mockResolvedValueOnce({ id: 'md-ko', order: 3, name: 'Round of 16' });
+
+    expect(await service.ensureUpcomingMatchday('c1')).toBe(false);
+    expect(footballProvider.getFixturesForRound).not.toHaveBeenCalled();
+  });
+
+  it('false (sin romper) si el proveedor aun no publica la siguiente ronda', async () => {
+    const { service, prisma } = build();
+    prisma.match.count.mockResolvedValue(0);
+    prisma.matchday.findFirst
+      .mockResolvedValueOnce({ id: 'md-38' })
+      .mockResolvedValueOnce({ id: 'md-38', order: 38, name: 'Regular Season - 38' });
+
+    expect(await service.ensureUpcomingMatchday('c1')).toBe(false);
   });
 });

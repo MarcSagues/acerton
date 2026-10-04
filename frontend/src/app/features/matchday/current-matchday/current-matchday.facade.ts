@@ -141,27 +141,17 @@ export class CurrentMatchdayFacade {
    * si, como paso cuando esto se calculaba comparando ordenes en el cliente.
    */
   readonly canPredictActiveMatchday = computed(() => this.activeEntry()?.matchday.canPredict ?? false);
-  /** false hasta 4 dias antes del primer partido (matchday.opensAt) — antes de eso no se admiten pronosticos aunque le toque por orden. */
-  readonly isMatchdayOpenByTime = computed(() => {
-    const entry = this.activeEntry();
-    if (!entry) return true;
-    return this.isMatchdayOpenByTimeFor(entry);
-  });
-  /** Se puede predecir solo cuando le toca por orden Y ya se ha abierto la ventana de 4 dias. */
-  readonly pickingAllowed = computed(() => this.canPredictActiveMatchday() && this.isMatchdayOpenByTime());
-
-  private isMatchdayOpenByTimeFor(entry: CurrentMatchdayEntry): boolean {
-    return new Date(entry.matchday.opensAt).getTime() <= this.now().getTime();
-  }
+  /**
+   * Se puede predecir cuando le toca (canPredict). Ya no hay ventana horaria
+   * de apertura (antes: 4 dias antes del primer partido): decision explicita
+   * del usuario (2026-10-04), la jornada mas proxima siempre esta abierta.
+   */
+  readonly pickingAllowed = computed(() => this.canPredictActiveMatchday());
 
   /** Version de pickingAllowed para una pestana cualquiera, no solo la activa — la usan los puntos rojos pendientes (ver hasPendingPicks). */
   private pickingAllowedFor(entry: CurrentMatchdayEntry): boolean {
-    return entry.matchday.canPredict && this.isMatchdayOpenByTimeFor(entry);
+    return entry.matchday.canPredict;
   }
-  readonly opensInLabel = computed(() => {
-    const entry = this.activeEntry();
-    return entry ? formatCountdown(new Date(entry.matchday.opensAt), this.now()) : '';
-  });
   /**
    * Metodo normal, no computed(): predictionState es un Map mutado a mano
    * (no un signal), asi que un computed() no detectaria sus cambios y se
@@ -239,7 +229,9 @@ export class CurrentMatchdayFacade {
   cicloTitulo(entry: CurrentMatchdayEntry): string {
     if (entry.matchday.status === 'FINISHED') return `Finalizada · ${entry.competition.name} J${entry.matchday.order}`;
     if (this.isLocked(entry)) return 'Cerrada · en juego';
-    if (!this.isMatchdayOpenByTime()) return 'Próxima · abre en';
+    // Solo una jornada que aun no le toca (previsualizada con "siguiente"):
+    // la que le toca siempre esta abierta, sea cual sea la fecha de su primer partido.
+    if (!entry.matchday.canPredict) return 'Próxima · empieza en';
     return 'Abierta · cierra en';
   }
 
@@ -248,7 +240,6 @@ export class CurrentMatchdayFacade {
       return `${this.totalPoints()} ${this.totalPoints() === 1 ? 'punto' : 'puntos'}`;
     }
     if (this.isLocked(entry)) return `${this.totalPoints()} pts en juego`;
-    if (!this.isMatchdayOpenByTime()) return this.opensInLabel();
     return this.countdownLabel();
   }
 

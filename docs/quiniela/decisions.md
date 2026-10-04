@@ -4,6 +4,33 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — Sin ventana de apertura de 4 días: la jornada más próxima siempre acepta pronósticos (sustituye una regla anterior)
+
+Petición explícita del usuario: "siempre debe haber una jornada abierta para
+pronosticar", manteniendo la lógica actual de cuál es la jornada más próxima.
+
+**Sustituye** la regla de `PREDICTIONS_OPEN_BEFORE_MS` (4 días antes del primer
+partido): su comentario decía expresamente que "cerrar una jornada no abre la
+siguiente de golpe". Ahora sí: la jornada de referencia (próximo partido sin
+terminar, decisión del 2026-09-19, **sin cambios**) está abierta siempre.
+`PREDICTIONS_OPEN_BEFORE_MS` se conserva solo para calcular el `opensAt` nominal
+de compatibilidad con apps ya instaladas.
+
+**Lo que se mantiene**: no se pueden rellenar jornadas "del futuro" — una
+jornada con número mayor que el límite sigue bloqueada ("Aún no"). El límite
+(`predictLimitOrder`) es la jornada de referencia, o la del próximo partido por
+empezar cuando a la de referencia solo le quedan partidos ya empezados (para
+no dejar horas sin ninguna jornada abierta mientras acaba el último partido).
+
+**Decisión de diseño**: se amplió el límite en vez de cambiar qué jornada se
+muestra como "actual" — el usuario pidió mantener esa lógica tal cual. Mientras
+el último partido de la jornada 7 está en juego se sigue viendo la 7 y la 8 se
+puede pronosticar yendo a "siguiente".
+
+**Riesgo conocido**: `ensureUpcomingMatchday` pide la siguiente ronda por número
+(`order + 1`) al proveedor, igual que ya hacía la navegación "siguiente" bajo
+demanda; solo se usa en rondas numeradas (`Regular Season - N`).
+
 ## 2026-10-04 — La rama `dev` NO se actualiza desde `main`: los cambios de API para dev se portan a mano
 
 Descubierto al intentar arreglar un error del renombrado de grupo en dev
