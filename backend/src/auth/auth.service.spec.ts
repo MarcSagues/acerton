@@ -120,6 +120,21 @@ describe('AuthService.register', () => {
     expect(result).not.toHaveProperty('tokens');
   });
 
+  it('manda el correo de confirmacion en el idioma de la peticion (espanol por defecto)', async () => {
+    const { service, prisma, mailService } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.user.create as jest.Mock).mockResolvedValue(buildUser({ emailVerifiedAt: null }));
+    const dto = { email: 'test@example.com', password: 'password123', name: 'Test' };
+
+    await service.register(dto, 'en');
+    await service.register(dto);
+
+    const locales = (mailService.sendVerificationEmail as jest.Mock).mock.calls.map(
+      (call) => call[2],
+    );
+    expect(locales).toEqual(['en', 'es']);
+  });
+
   it('no revierte la creacion si el envio del correo falla', async () => {
     const { service, prisma, mailService } = buildDeps();
     (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
@@ -329,6 +344,15 @@ describe('AuthService.requestPasswordReset', () => {
       purpose: 'PASSWORD_RESET',
     });
     expect(mailService.sendPasswordResetEmail).toHaveBeenCalled();
+  });
+
+  it('manda el correo de restablecer en el idioma de la peticion', async () => {
+    const { service, prisma, mailService } = buildDeps();
+    (prisma.user.findUnique as jest.Mock).mockResolvedValue(buildUser());
+
+    await service.requestPasswordReset('test@example.com', 'en');
+
+    expect((mailService.sendPasswordResetEmail as jest.Mock).mock.calls[0][2]).toBe('en');
   });
 });
 

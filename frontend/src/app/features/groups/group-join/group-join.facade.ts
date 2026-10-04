@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { PublicGroupsService } from '../../../core/services/public-groups.service';
 import { PublicGroupPreview } from '../../../core/models/public-group.model';
+import { t } from '../../../core/i18n/translate';
 
 /**
  * Vista previa antes de unirse por link o codigo de invitacion: en vez de
@@ -33,7 +34,7 @@ export class GroupJoinFacade {
     const inviteCode = this.route.snapshot.paramMap.get('inviteCode');
     if (!inviteCode) {
       this.loading.set(false);
-      this.errorMessage.set('Link de invitación inválido');
+      this.errorMessage.set(t('groupJoin.linkInvitacionInvalido'));
       return;
     }
     this.inviteCode = inviteCode;
@@ -43,7 +44,7 @@ export class GroupJoinFacade {
         this.loading.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la invitación');
+        this.errorMessage.set(error.error?.message ?? t('groupJoin.pudoProcesarInvitacion'));
         this.loading.set(false);
       },
     });
@@ -65,7 +66,7 @@ export class GroupJoinFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.joining.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo unir al grupo');
+        this.errorMessage.set(error.error?.message ?? t('groupJoin.pudoUnirGrupo'));
       },
     });
   }

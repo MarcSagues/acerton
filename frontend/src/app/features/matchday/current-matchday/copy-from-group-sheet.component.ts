@@ -2,11 +2,15 @@ import { Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { CopySource } from '../../../core/models/prediction.model';
+import { ScoringMode } from '../../../core/models/group.model';
 import { copySourceSubtitle } from '../domain/copy-predictions.rules';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 export interface CopyFromGroupSheetData {
-  /** Solo grupos del mismo modo de juego que el actual: el backend no devuelve otros. */
+  /** Todos tus otros grupos con pronosticos de la jornada; los que no se pueden copiar vienen con el motivo. */
   sources: CopySource[];
+  /** Modo de juego del grupo actual (el destino): para explicar por que un grupo de otro modo no se puede copiar. */
+  targetMode: ScoringMode;
 }
 
 /**
@@ -17,16 +21,17 @@ export interface CopyFromGroupSheetData {
 @Component({
   selector: 'app-copy-from-group-sheet',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
     <div class="sheet-handle"></div>
-    <p class="sheet-title">Copiar de otro grupo</p>
+    <p class="sheet-title">{{ 'copyFromGroupSheet.copiarOtroGrupo' | t }}</p>
     <p class="sheet-lead">
-      Rellena todos los partidos de esta jornada con tus pronósticos de ese grupo (solo grupos con el mismo modo de juego que este). Después puedes cambiar los que quieras.
+      {{ 'copyFromGroupSheet.rellenaTodosPartidosEsta' | t }}
     </p>
     <ul class="sources">
       @for (source of data.sources; track source.groupId) {
         <li>
-          <button type="button" class="source" (click)="pick(source)">
+          <button type="button" class="source" [disabled]="!!source.unavailable" (click)="pick(source)">
             <span class="source-name">{{ source.name }}</span>
             <span class="source-sub">{{ subtitle(source) }}</span>
           </button>
@@ -77,6 +82,10 @@ export interface CopyFromGroupSheetData {
         display: flex;
         flex-direction: column;
         gap: 3px;
+
+        &:disabled {
+          opacity: 0.55;
+        }
       }
       .source-name {
         font: 700 14px/1.2 var(--p4-font-ui);
@@ -94,7 +103,7 @@ export class CopyFromGroupSheetComponent {
   private readonly sheet = inject(BottomSheetService);
 
   subtitle(source: CopySource): string {
-    return copySourceSubtitle(source);
+    return copySourceSubtitle(source, this.data.targetMode);
   }
 
   pick(source: CopySource): void {

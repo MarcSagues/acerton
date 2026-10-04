@@ -6,12 +6,13 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
 import { AuthService } from '../../../core/services/auth.service';
 import { MemberProfile } from '../../../core/models/member-profile.model';
 import { MatchdayStatus } from '../../../core/models/matchday.model';
+import { t } from '../../../core/i18n/translate';
 
 const STATUS_LABEL: Record<MatchdayStatus, string> = {
-  SCHEDULED: 'Programada',
-  OPEN: 'Abierta',
-  CLOSED: 'Cerrada',
-  FINISHED: 'Finalizada',
+  SCHEDULED: t('profileHistory.programada'),
+  OPEN: t('profileHistory.abierta'),
+  CLOSED: t('profileHistory.cerrada'),
+  FINISHED: t('profileHistory.finalizada'),
 };
 
 /**

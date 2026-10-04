@@ -2,6 +2,7 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { DIALOG_DATA } from '@angular/cdk/dialog';
 import { badgeAnimatedSrc, badgeArtSrc } from '../../shared/utils/badge-art';
 import { BadgeProgress } from '../../core/models/badge-progress.model';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export interface BadgeDetailData {
   artId: string | null;
@@ -16,6 +17,7 @@ export interface BadgeDetailData {
 @Component({
   selector: 'app-badge-detail-dialog',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="badge-dialog">
@@ -30,7 +32,7 @@ export interface BadgeDetailData {
         <piqo-svg icon="medalla" size="64" [class.earned]="data.earned"></piqo-svg>
       }
       <p class="name">{{ data.name }}</p>
-      <p class="status" [class.earned]="data.earned">{{ data.earned ? 'Conseguida' : 'Todavía sin conseguir' }}</p>
+      <p class="status" [class.earned]="data.earned">{{ data.earned ? ('common.conseguida' | t) : ('common.todaviaSinConseguir' | t) }}</p>
       <p class="rule">{{ data.description }}</p>
       @if (data.progress; as progress) {
         <div class="progress-row">
@@ -41,7 +43,7 @@ export interface BadgeDetailData {
         </div>
       }
       @if (data.percentage != null) {
-        <p class="stat">La tienen el {{ data.percentage }}% de los jugadores.</p>
+        <p class="stat">{{ 'badgeDetailDialog.tienenJugadores' | t: { percentage: data.percentage } }}</p>
       }
     </div>
   `,

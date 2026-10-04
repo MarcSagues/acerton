@@ -1,8 +1,14 @@
 import { AppNotification, NotificationType } from '../../../core/models/notification.model';
+import { currentLocale, t } from '../../../core/i18n/translate';
 
-export type NoticePeriod = 'Hoy' | 'Esta semana' | 'Anterior';
+/** Identificadores internos (no texto): el rotulo que se ve sale de noticePeriodLabel. */
+export type NoticePeriod = 'today' | 'week' | 'older';
 
-export const NOTICE_PERIODS: NoticePeriod[] = ['Hoy', 'Esta semana', 'Anterior'];
+export const NOTICE_PERIODS: NoticePeriod[] = ['today', 'week', 'older'];
+
+export function noticePeriodLabel(period: NoticePeriod): string {
+  return t(period === 'today' ? 'currentMatchday.hoy' : period === 'week' ? 'notice.estaSemana' : 'notice.anterior');
+}
 
 export interface NoticeItem {
   id: string;
@@ -29,25 +35,25 @@ function isSameDay(a: Date, b: Date): boolean {
 
 /** "Hoy" el mismo día natural; "Esta semana" hasta 6 días atrás; el resto, "Anterior" (sin fecha límite: el backend ya limita a los últimos 50 avisos). */
 function periodFor(createdAt: Date, now: Date): NoticePeriod {
-  if (isSameDay(createdAt, now)) return 'Hoy';
+  if (isSameDay(createdAt, now)) return 'today';
   const diffDays = Math.floor((now.getTime() - createdAt.getTime()) / (24 * 60 * 60 * 1000));
-  return diffDays < 7 ? 'Esta semana' : 'Anterior';
+  return diffDays < 7 ? 'week' : 'older';
 }
 
 /** "Hace 12 min" / "Hace 2 h" el mismo día; nombre del día entre semana; fecha corta más allá. */
 function timeLabel(createdAt: Date, now: Date): string {
   const diffMinutes = Math.floor((now.getTime() - createdAt.getTime()) / 60_000);
   if (isSameDay(createdAt, now)) {
-    if (diffMinutes < 1) return 'Ahora mismo';
-    if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
-    return `Hace ${Math.floor(diffMinutes / 60)} h`;
+    if (diffMinutes < 1) return t('notice.ahoraMismo');
+    if (diffMinutes < 60) return t('notice.haceMin', { minutes: diffMinutes });
+    return t('notice.haceHoras', { hours: Math.floor(diffMinutes / 60) });
   }
   const diffDays = Math.floor(diffMinutes / (60 * 24));
   if (diffDays < 7) {
-    const weekday = createdAt.toLocaleDateString('es-ES', { weekday: 'long' });
+    const weekday = createdAt.toLocaleDateString(currentLocale(), { weekday: 'long' });
     return weekday.charAt(0).toUpperCase() + weekday.slice(1);
   }
-  return createdAt.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  return createdAt.toLocaleDateString(currentLocale(), { day: '2-digit', month: '2-digit' });
 }
 
 export function toNoticeItem(notification: AppNotification, now: Date): NoticeItem {

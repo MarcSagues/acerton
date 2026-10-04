@@ -697,59 +697,84 @@ describe('PredictionsService.getCopySources', () => {
     status = 'SCHEDULED',
   ) => ({ groupId, group: { name, scoringMode }, match: { status, kickoff } });
 
-  it('agrupa por grupo y cuenta solo los pronosticos que siguen abiertos; los grupos sin ninguno abierto no salen', async () => {
+  it('agrupa por grupo y cuenta solo los pronosticos que siguen abiertos', async () => {
     const { service } = build([
       row('gA', 'Amigos', 'ONE_X_TWO'),
       row('gA', 'Amigos', 'ONE_X_TWO'),
       row('gA', 'Amigos', 'ONE_X_TWO', PAST()),
       row('gB', 'Trabajo', 'ONE_X_TWO'),
-      row('gC', 'Empezados', 'ONE_X_TWO', PAST()),
-      row('gD', 'Terminados', 'ONE_X_TWO', FUTURE(), 'FINISHED'),
     ]);
 
-    const sources = await service.getCopySources('u1', 'target', 'md1');
-
-    expect(sources).toEqual([
+    expect(await service.getCopySources('u1', 'target', 'md1')).toEqual([
       {
         groupId: 'gA',
         name: 'Amigos',
         scoringMode: 'ONE_X_TWO',
         copyableCount: 2,
+        unavailable: null,
       },
       {
         groupId: 'gB',
         name: 'Trabajo',
         scoringMode: 'ONE_X_TWO',
         copyableCount: 1,
+        unavailable: null,
       },
     ]);
   });
 
-  it('solo ofrece grupos del mismo modo que el actual: la consulta filtra por el modo del destino, sea cual sea', async () => {
-    for (const targetMode of ['ONE_X_TWO', 'EXACT_SCORE'] as const) {
-      const { service, prisma } = build([], targetMode);
-      await service.getCopySources('u1', 'target', 'md1');
-      expect(prisma.prediction.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            group: expect.objectContaining({ scoringMode: targetMode }),
-          }),
-        }),
-      );
-    }
+  it('lista TAMBIEN los grupos con pronosticos que no se pueden copiar, con el motivo, en vez de esconderlos', async () => {
+    const { service } = build([
+      row('gA', 'Amigos', 'ONE_X_TWO'),
+      row('gC', 'Empezados', 'ONE_X_TWO', PAST()),
+      row('gD', 'Terminados', 'ONE_X_TWO', FUTURE(), 'FINISHED'),
+      row('gE', 'Exacto', 'EXACT_SCORE'),
+    ]);
+
+    const sources = await service.getCopySources('u1', 'target', 'md1');
+
+    expect(sources.map((s) => [s.name, s.unavailable, s.copyableCount])).toEqual([
+      ['Amigos', null, 1],
+      ['Empezados', 'ALL_STARTED', 0],
+      ['Exacto', 'DIFFERENT_MODE', 1],
+      ['Terminados', 'ALL_STARTED', 0],
+    ]);
   });
 
-  it('ordena por mas pronosticos copiables y luego por nombre', async () => {
+  it('un grupo de otro modo es DIFFERENT_MODE aunque tenga pronosticos abiertos, y viceversa', async () => {
+    const toExact = build(
+      [row('gA', 'Uno', 'ONE_X_TWO'), row('gB', 'Exacto', 'EXACT_SCORE')],
+      'EXACT_SCORE',
+    );
+    expect(
+      (await toExact.service.getCopySources('u1', 'target', 'md1')).map((s) => [
+        s.name,
+        s.unavailable,
+      ]),
+    ).toEqual([
+      ['Exacto', null],
+      ['Uno', 'DIFFERENT_MODE'],
+    ]);
+
+    const to1x2 = build([row('gB', 'Exacto', 'EXACT_SCORE')], 'ONE_X_TWO');
+    expect((await to1x2.service.getCopySources('u1', 'target', 'md1'))[0].unavailable).toBe(
+      'DIFFERENT_MODE',
+    );
+  });
+
+  it('ordena primero los copiables (mas pronosticos primero, luego nombre) y despues el resto por nombre', async () => {
     const { service } = build([
       row('gB', 'Beta', 'ONE_X_TWO'),
       row('gA', 'Alfa', 'ONE_X_TWO'),
       row('gC', 'Gamma', 'ONE_X_TWO'),
       row('gC', 'Gamma', 'ONE_X_TWO'),
+      row('gD', 'Aaa-otro-modo', 'EXACT_SCORE'),
     ]);
     expect((await service.getCopySources('u1', 'target', 'md1')).map((s) => s.name)).toEqual([
       'Gamma',
       'Alfa',
       'Beta',
+      'Aaa-otro-modo',
     ]);
   });
 
@@ -762,11 +787,7 @@ describe('PredictionsService.getCopySources', () => {
           userId: 'u1',
           groupId: { not: 'target' },
           match: { matchdayId: 'md1' },
-          group: {
-            deletedAt: null,
-            scoringMode: 'ONE_X_TWO',
-            memberships: { some: { userId: 'u1' } },
-          },
+          group: { deletedAt: null, memberships: { some: { userId: 'u1' } } },
         },
       }),
     );

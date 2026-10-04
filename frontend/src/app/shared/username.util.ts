@@ -1,4 +1,5 @@
 import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { t } from '../core/i18n/translate';
 
 /** Letras (con acentos), numeros, espacios, guiones y apostrofes — cubre nombres reales sin dejar pasar simbolos raros. */
 const USERNAME_PATTERN = /^[\p{L}\p{N} '-]+$/u;
@@ -23,11 +24,11 @@ export function usernameValidator(): ValidatorFn {
 /** Mensaje user-friendly para el primer error activo, o null si no hay ninguno. */
 export function usernameHint(errors: ValidationErrors | null): string | null {
   if (!errors) return null;
-  if (errors['required']) return 'Escribe un nombre de usuario';
-  if (errors['usernameTooShort']) return 'Mínimo 2 caracteres';
-  if (errors['usernameTooLong']) return 'Máximo 24 caracteres';
-  if (errors['usernameEdgeSpaces']) return 'No empieces ni termines con espacios';
-  if (errors['usernameDoubleSpace']) return 'Sin espacios dobles seguidos';
-  if (errors['usernameInvalidChars']) return 'Usa solo letras, números, espacios, guiones y apostrofes';
+  if (errors['required']) return t('username.escribeNombreUsuario');
+  if (errors['usernameTooShort']) return t('username.minimo2Caracteres');
+  if (errors['usernameTooLong']) return t('username.maximo24Caracteres');
+  if (errors['usernameEdgeSpaces']) return t('username.empiecesNiTerminesEspacios');
+  if (errors['usernameDoubleSpace']) return t('username.sinEspaciosDoblesSeguidos');
+  if (errors['usernameInvalidChars']) return t('username.usaSoloLetrasNumeros');
   return null;
 }

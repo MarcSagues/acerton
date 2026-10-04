@@ -4,6 +4,7 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { initials } from '../../../shared/utils/initials';
 import { GroupExploreFacade } from './group-explore.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 export interface GroupPreviewSheetData {
   page: GroupExploreFacade;
@@ -18,7 +19,7 @@ export interface GroupPreviewSheetData {
 @Component({
   selector: 'app-group-preview-sheet',
   standalone: true,
-  imports: [CommonModule, SpinnerComponent],
+  imports: [CommonModule, SpinnerComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './group-preview-sheet.component.html',
   styleUrl: './group-preview-sheet.component.scss',

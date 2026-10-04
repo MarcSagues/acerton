@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { NOTICE_PERIODS, NoticeItem, NoticePeriod } from '../domain/notice';
+import { NOTICE_PERIODS, NoticeItem, NoticePeriod, noticePeriodLabel } from '../domain/notice';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 
 @Injectable()
@@ -16,6 +16,10 @@ export class NotificationsPageFacade {
   }
 
   /** Solo los avisos de este periodo — evita pintar una cabecera de sección vacía cuando no hay ninguno. */
+  periodLabel(period: NoticePeriod): string {
+    return noticePeriodLabel(period);
+  }
+
   noticesForPeriod(period: NoticePeriod) {
     return this.notices().filter((notice) => notice.period === period);
   }

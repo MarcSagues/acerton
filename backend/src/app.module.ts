@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import configuration, { AppConfig } from './config/configuration';
 import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
@@ -24,6 +24,7 @@ import { BadgesModule } from './badges/badges.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { LocalizedExceptionFilter } from './common/i18n/localized-exception.filter';
 
 @Module({
   imports: [
@@ -63,6 +64,8 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Devuelve los mensajes de error en el idioma de la peticion (Accept-Language).
+    { provide: APP_FILTER, useClass: LocalizedExceptionFilter },
   ],
 })
 export class AppModule {}

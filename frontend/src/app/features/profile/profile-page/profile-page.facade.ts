@@ -15,6 +15,8 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confi
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
 import { BadgeDetailDialogComponent, BadgeDetailData } from '../badge-detail-dialog.component';
 import { TROPHIES } from '../domain/trophies';
+import { t } from '../../../core/i18n/translate';
+import { badgeName, badgeDescription } from '../../../shared/utils/badge-text';
 
 export interface BadgePreviewItem {
   badge: Badge;
@@ -60,8 +62,8 @@ export class ProfilePageFacade {
     this.dialog.open<BadgeDetailDialogComponent, void, BadgeDetailData>(BadgeDetailDialogComponent, {
       data: {
         artId: this.artId(item.badge.code),
-        name: item.badge.name,
-        description: item.badge.description,
+        name: badgeName(item.badge),
+        description: badgeDescription(item.badge),
         earned: item.earned,
         percentage: this.badgeStats()[item.badge.code] ?? null,
         progress: item.earned ? null : (this.badgeProgress()[item.badge.code] ?? null),
@@ -137,7 +139,7 @@ export class ProfilePageFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.nameSaving.set(false);
-        this.nameError.set(error.error?.message ?? 'No se pudo cambiar el nombre');
+        this.nameError.set(error.error?.message ?? t('profilePage.pudoCambiarNombre'));
       },
     });
   }
@@ -145,9 +147,9 @@ export class ProfilePageFacade {
   logout(): void {
     const dialogRef = this.dialog.open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, {
       data: {
-        title: 'Cerrar sesión',
-        message: 'Vas a cerrar sesión en este dispositivo. ¿Confirmas?',
-        confirmLabel: 'Cerrar sesión',
+        title: t('profilePage.cerrarSesion'),
+        message: t('profilePage.vasCerrarSesionEste'),
+        confirmLabel: t('profilePage.cerrarSesion'),
       },
     });
 

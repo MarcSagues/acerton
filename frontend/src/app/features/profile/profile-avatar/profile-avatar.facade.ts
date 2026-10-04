@@ -7,6 +7,7 @@ import { AvatarMascotOption } from '../../../core/models/avatar-catalog.model';
 import { mascotIdFromUrl } from '../domain/avatar-catalog.util';
 import { TROPHIES } from '../domain/trophies';
 import { levelRequiredForBackground, levelRequiredForMascot } from '../level-progress/level-progress.domain';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ProfileAvatarFacade {
@@ -125,7 +126,7 @@ export class ProfileAvatarFacade {
       },
       error: () => {
         this.saving.set(false);
-        this.error.set('No se pudo guardar el avatar. Inténtalo de nuevo.');
+        this.error.set(t('profileAvatar.pudoGuardarAvatarIntentalo'));
       },
     });
   }

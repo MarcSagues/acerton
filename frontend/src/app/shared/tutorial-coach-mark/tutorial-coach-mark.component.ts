@@ -1,5 +1,6 @@
 import { Component, ElementRef, effect, inject, viewChild } from '@angular/core';
 import { TutorialCoachMarkFacade } from './tutorial-coach-mark.facade';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 /**
  * Montado una vez a nivel global (ver app.component.html). Dibuja el hueco
@@ -12,6 +13,7 @@ import { TutorialCoachMarkFacade } from './tutorial-coach-mark.facade';
 @Component({
   selector: 'app-tutorial-coach-mark',
   standalone: true,
+  imports: [TranslatePipe],
   providers: [TutorialCoachMarkFacade],
   templateUrl: './tutorial-coach-mark.component.html',
   styleUrl: './tutorial-coach-mark.component.scss',

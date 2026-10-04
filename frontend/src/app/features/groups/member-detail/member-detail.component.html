@@ -2,15 +2,15 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else if (page.error()) {
   <div class="error-state">
-    <p class="error-msg">No se pudo cargar este perfil.</p>
-    <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">Reintentar</button>
+    <p class="error-msg">{{ 'memberDetail.pudoCargarEstePerfil' | t }}</p>
+    <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">{{ 'common.reintentar' | t }}</button>
   </div>
 } @else {
   @if (page.profile(); as p) {
     <div class="page">
       <div class="head-row">
         <button type="button" class="back" (click)="page.goBack()">
-          <piqo-svg icon="atras" size="18"></piqo-svg>Atrás
+          <piqo-svg icon="atras" size="18"></piqo-svg>{{ 'memberDetail.atras' | t }}
         </button>
       </div>
 
@@ -18,36 +18,36 @@
         <app-avatar [url]="p.avatarUrl" [background]="p.avatarBackground" [name]="p.name" [level]="p.level" [size]="56"></app-avatar>
         <div>
           <p class="name">{{ p.name }}</p>
-          <p class="sub mono">{{ page.roleLabel() }} de {{ p.group.name }} · desde {{ p.joinedAt | date: 'MMM yyyy' }}</p>
+          <p class="sub mono">{{ 'memberDetail.desde' | t: { roleLabel: page.roleLabel(), name: p.group.name, joinedAt: (p.joinedAt | date: 'MMM yyyy') } }}</p>
         </div>
       </div>
 
       <div class="stats">
         <div class="stat-tile">
           <p class="stat-value mono accent">{{ p.streak.currentStreak > 0 ? p.streak.currentStreak : '0' }}</p>
-          <p class="stat-label mono">RACHA ACTUAL</p>
+          <p class="stat-label mono">{{ 'common.rachaActual' | t }}</p>
         </div>
         <div class="stat-tile">
           <p class="stat-value mono">{{ p.streak.longestStreak > 0 ? p.streak.longestStreak : '0' }}</p>
-          <p class="stat-label mono">MEJOR RACHA</p>
+          <p class="stat-label mono">{{ 'memberDetail.mejorRacha' | t }}</p>
         </div>
         <div class="stat-tile">
-          <p class="stat-value mono">{{ page.hitRatePercent() !== null ? page.hitRatePercent() + '%' : 'Sin datos' }}</p>
-          <p class="stat-label mono">CON PUNTOS</p>
+          <p class="stat-value mono">{{ page.hitRatePercent() !== null ? page.hitRatePercent() + '%' : ('common.sinDatos' | t) }}</p>
+          <p class="stat-label mono">{{ 'common.puntos' | t }}</p>
         </div>
       </div>
 
       <div class="section-head">
-        <h2>Trofeos</h2>
+        <h2>{{ 'memberDetail.trofeos' | t }}</h2>
       </div>
-      <p class="section-hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
+      <p class="section-hint">{{ 'common.trofeoPiqoSignificaGanar' | t }}</p>
       <div class="trophies-row">
         @for (trophy of page.trophies; track trophy.id) {
           <button
             type="button"
             class="trophy-btn"
             [class.earned]="trophy.count > 0"
-            [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
+            [attr.aria-label]="trophy.name + (trophy.count > 0 ? ('common.conseguido' | t) : ('common.sinConseguir' | t))"
             (click)="page.openTrophy(trophy)"
           >
             <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
@@ -59,21 +59,21 @@
       </div>
 
       <div class="section-head">
-        <h2>Logros</h2>
+        <h2>{{ 'memberDetail.logros' | t }}</h2>
       </div>
       @if (p.badges.length === 0) {
-        <p class="section-hint">Todavía no ha conseguido ninguna insignia en este grupo.</p>
+        <p class="section-hint">{{ 'memberDetail.todaviaHaConseguidoNinguna' | t }}</p>
       } @else {
         <div class="badges-row">
           @for (userBadge of p.badges; track userBadge.id) {
             <button
               type="button"
               class="badge-btn"
-              [attr.aria-label]="userBadge.badge.name"
+              [attr.aria-label]="userBadge.badge | badgeName"
               (click)="page.openBadge(userBadge)"
             >
               @if (page.artId(userBadge.badge.code); as artId) {
-                <img class="badge-art" [src]="page.artSrc(artId)" [alt]="userBadge.badge.name" />
+                <img class="badge-art" [src]="page.artSrc(artId)" [alt]="userBadge.badge | badgeName" />
               } @else {
                 <piqo-svg icon="medalla" size="26"></piqo-svg>
               }
@@ -85,8 +85,8 @@
       <div class="section">
         <a class="card settings-link" [routerLink]="['/groups', page.groupId, 'members', page.userId, 'stats']">
           <div>
-            <p class="card-title">Estadísticas</p>
-            <p class="hint mono">Posición, puntos y racha en este grupo</p>
+            <p class="card-title">{{ 'common.estadisticas' | t }}</p>
+            <p class="hint mono">{{ 'memberDetail.posicionPuntosRachaEste' | t }}</p>
           </div>
           <piqo-svg icon="flecha" size="18"></piqo-svg>
         </a>
@@ -94,8 +94,8 @@
       <div class="section">
         <a class="card settings-link" [routerLink]="['/groups', page.groupId, 'members', page.userId, 'history']">
           <div>
-            <p class="card-title">Histórico</p>
-            <p class="hint mono">Sus últimas jornadas jugadas</p>
+            <p class="card-title">{{ 'common.historico' | t }}</p>
+            <p class="hint mono">{{ 'common.ultimasJornadasJugadas' | t }}</p>
           </div>
           <piqo-svg icon="flecha" size="18"></piqo-svg>
         </a>

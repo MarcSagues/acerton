@@ -1,5 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 export interface LevelUpDialogData {
   level: number;
@@ -17,6 +18,7 @@ export interface LevelUpDialogData {
 @Component({
   selector: 'app-level-up-dialog',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './level-up-dialog.component.html',
   styleUrl: './level-up-dialog.component.scss',

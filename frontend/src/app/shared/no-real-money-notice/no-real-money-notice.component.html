@@ -2,13 +2,11 @@
   <div class="overlay">
     <div class="dialog">
       <div class="icon">i</div>
-      <h2>Sin dinero real</h2>
+      <h2>{{ 'noRealMoneyNotice.sinDineroReal' | t }}</h2>
       <p>
-        Piqo es un juego social <strong>gratuito</strong> para grupos de amigos. No se paga por
-        participar, no hay apuestas ni loterías, y los puntos e insignias que consigues no tienen
-        valor monetario ni son canjeables por premios en metálico o de ningún otro tipo.
+        {{ 'noRealMoneyNotice.piqoJuegoSocial' | t }} <strong>{{ 'noRealMoneyNotice.gratuito' | t }}</strong> {{ 'noRealMoneyNotice.gruposAmigosPagaParticipar' | t }}
       </p>
-      <button class="btn" (click)="page.dismiss()">Entendido</button>
+      <button class="btn" (click)="page.dismiss()">{{ 'common.entendido' | t }}</button>
     </div>
   </div>
 }

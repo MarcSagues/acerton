@@ -21,10 +21,10 @@
         <h2>{{ step.title }}</h2>
         <p>{{ step.body }}</p>
         <div class="bubble-actions">
-          <button class="skip" (click)="page.tutorialService.skip()">Saltar tutorial</button>
+          <button class="skip" (click)="page.tutorialService.skip()">{{ 'tutorialCoachMark.saltarTutorial' | t }}</button>
           @if (step.advanceOn === 'manual') {
             <button class="piqo-primary next" (click)="page.tutorialService.next()">
-              {{ page.tutorialService.isLastStep() ? 'Empezar' : 'Siguiente' }}
+              {{ page.tutorialService.isLastStep() ? ('tutorialCoachMark.empezar' | t) : ('common.siguiente' | t) }}
             </button>
           }
         </div>

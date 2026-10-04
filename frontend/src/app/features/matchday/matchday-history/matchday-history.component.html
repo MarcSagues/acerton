@@ -4,13 +4,13 @@
   <div class="page">
     <div class="head-row">
       <a routerLink="/rankings" class="back-btn">
-        <piqo-svg icon="atras" size="20"></piqo-svg>Clasificación
+        <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.clasificacion' | t }}
       </a>
     </div>
     <div class="title-row">
-      <h1>Histórico de jornadas</h1>
+      <h1>{{ 'matchdayHistory.historicoJornadas' | t }}</h1>
       @if (page.history(); as h) {
-        <p class="sub mono">{{ page.competitionName }} · {{ h.matchdays.length }} jornadas jugadas</p>
+        <p class="sub mono">{{ 'matchdayHistory.jornadasJugadas' | t: { competitionName: page.competitionName, count: h.matchdays.length } }}</p>
       }
     </div>
 
@@ -18,8 +18,8 @@
       @if (h.matchdays.length === 0) {
         <app-empty-state
           icon="historial"
-          title="Todavía no hay jornadas"
-          text="Todavía no hay ninguna jornada finalizada de esta competición."
+          [title]="'matchdayHistory.todaviaHayJornadas' | t"
+          [text]="'matchdayHistory.todaviaHayNingunaJornada' | t"
         ></app-empty-state>
       } @else {
         <div class="section">
@@ -27,19 +27,19 @@
             @for (entry of h.matchdays; track entry.matchdayId) {
               <button type="button" class="row" (click)="page.openMatchday(entry.matchdayId)">
                 <span class="order-badge">
-                  <span class="order-n mono">J{{ entry.order }}</span>
+                  <span class="order-n mono">{{ 'common.jornadaAbrev' | t: { order: entry.order } }}</span>
                 </span>
                 <span class="meta">
                   @if (entry.winner) {
-                    <span class="title">Ganó {{ page.isMine(entry.winner.userId) ? 'tú' : entry.winner.name }}</span>
+                    <span class="title">{{ 'matchdayHistory.gano' | t: { name: (page.isMine(entry.winner.userId) ? ('matchdayHistory.tu' | t) : entry.winner.name) } }}</span>
                   } @else {
-                    <span class="title">Sin ganador registrado</span>
+                    <span class="title">{{ 'matchdayHistory.sinGanadorRegistrado' | t }}</span>
                   }
                   <span class="note mono">
                     @if (entry.myPoints === null) {
-                      No participaste
+                      {{ 'matchdayHistory.participaste' | t }}
                     } @else {
-                      Tu puntuación: {{ entry.myPoints }}
+                      {{ 'common.puntuacion' | t: { myPoints: entry.myPoints } }}
                     }
                   </span>
                 </span>
@@ -47,7 +47,7 @@
                   <span class="pts-value mono" [class.accent]="entry.winner && page.isMine(entry.winner.userId)">
                     {{ entry.myPoints ?? '-' }}
                   </span>
-                  <span class="pts-label mono">tus pts</span>
+                  <span class="pts-label mono">{{ 'matchdayHistory.pts' | t }}</span>
                 </span>
               </button>
             }
@@ -55,8 +55,7 @@
         </div>
 
         <p class="footnote">
-          Media del grupo: {{ h.groupAverage !== null ? (h.groupAverage | number: '1.1-1') : '-' }} puntos por
-          jornada. Tu media: {{ h.userAverage !== null ? (h.userAverage | number: '1.1-1') : '-' }}.
+          {{ 'matchdayHistory.mediaGrupoPuntosJornada' | t: { groupAverage: (h.groupAverage !== null ? (h.groupAverage | number: '1.1-1') : '-'), userAverage: (h.userAverage !== null ? (h.userAverage | number: '1.1-1') : '-') } }}
         </p>
       }
     }

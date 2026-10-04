@@ -6,6 +6,8 @@ import { ScoringMode } from '../../../core/models/group.model';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { drawCircleFill, drawRoundRect, drawText, ellipsizeText, loadCanvasImage } from '../../../shared/canvas-share/canvas-draw.util';
 import { canvasToPngBlob, copyImageBlobToClipboard, shareOrDownloadImageBlob } from '../../../shared/canvas-share/share-image.util';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { t } from '../../../core/i18n/translate';
 
 export interface ShareCardData {
   matchday: Matchday;
@@ -34,31 +36,32 @@ export interface ShareCardData {
 @Component({
   selector: 'app-matchday-share-card',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <header class="share-head">
       <div>
-        <p class="share-kicker">Lista para publicar</p>
-        <h2 id="share-title">Comparte tu jornada</h2>
+        <p class="share-kicker">{{ 'common.listaPublicar' | t }}</p>
+        <h2 id="share-title">{{ 'matchdayShareCard.comparteJornada' | t }}</h2>
       </div>
-      <button type="button" class="close-btn" aria-label="Cerrar" (click)="dialogRef.close()">
+      <button type="button" class="close-btn" [attr.aria-label]="'common.cerrar' | t" (click)="dialogRef.close()">
         <piqo-svg icon="cerrar" size="18"></piqo-svg>
       </button>
     </header>
 
     <div class="canvas-frame" [class.rendering]="rendering()">
-      <canvas #shareCanvas width="1080" height="1080" aria-label="Vista previa de los resultados"></canvas>
+      <canvas #shareCanvas width="1080" height="1080" [attr.aria-label]="'matchdayShareCard.vistaPreviaResultados' | t"></canvas>
     </div>
 
-    <p class="share-hint">Formato cuadrado 1080 × 1080, preparado para X, Instagram y mensajería.</p>
+    <p class="share-hint">{{ 'matchdayShareCard.formatoCuadrado10801080' | t }}</p>
     <div class="share-actions">
       <button type="button" class="piqo-primary" [disabled]="rendering()" (click)="shareImage()">
         <piqo-svg icon="compartir" size="18"></piqo-svg>
-        Compartir imagen
+        {{ 'common.compartirImagen' | t }}
       </button>
       <button type="button" class="piqo-secondary" [disabled]="rendering() || copying() || justCopied()" (click)="copyImage()">
         <piqo-svg [attr.icon]="justCopied() ? 'check' : 'copiar'" size="18"></piqo-svg>
-        {{ justCopied() ? 'Copiada' : copying() ? 'Copiando…' : 'Copiar' }}
+        {{ justCopied() ? ('common.copiada' | t) : copying() ? ('common.copiando' | t) : ('common.copiar' | t) }}
       </button>
     </div>
   `,
@@ -183,7 +186,7 @@ export class MatchdayShareCardComponent {
       // Sin esto, un fallo de dibujado (p.ej. una API de canvas que un
       // WebView concreto no soporte) dejaba el shimmer de "generando"
       // girando para siempre y los botones deshabilitados sin explicacion.
-      this.toast.show('No se pudo generar la imagen. Inténtalo de nuevo.');
+      this.toast.show(t('matchShareCard.pudoGenerarImagenIntentalo'));
     } finally {
       this.rendering.set(false);
     }
@@ -197,13 +200,13 @@ export class MatchdayShareCardComponent {
       blob,
       this.fileName(),
       {
-        title: `Mi jornada en Piqo · ${this.competitionLabel()}`,
+        title: t('matchdayShareCard.jornadaPiqo', { competitionLabel: this.competitionLabel() }),
         text: this.data.variant === 'picks'
-          ? `Estos son mis pronósticos para la jornada ${this.data.matchday.order} en Piqo.`
-          : `He sumado ${this.data.totalPoints} puntos en la jornada ${this.data.matchday.order} de Piqo.`,
+          ? t('matchdayShareCard.estosSonPronosticosJornada', { order: this.data.matchday.order })
+          : t('matchdayShareCard.heSumadoPuntosJornada', { totalPoints: this.data.totalPoints, order: this.data.matchday.order }),
       },
       this.toast,
-      'Imagen descargada: ya puedes subirla a X o compartirla donde quieras',
+      t('matchdayShareCard.imagenDescargadaYaPuedes'),
     );
   }
 
@@ -218,7 +221,7 @@ export class MatchdayShareCardComponent {
       this.justCopied.set(true);
       setTimeout(() => this.justCopied.set(false), 2000);
     } catch {
-      this.toast.show('No se pudo copiar la imagen. Usa "Compartir imagen" en su lugar.');
+      this.toast.show(t('matchShareCard.pudoCopiarImagenUsa'));
     } finally {
       this.copying.set(false);
     }
@@ -256,10 +259,10 @@ export class MatchdayShareCardComponent {
     ctx.restore();
 
     await this.drawBrand(ctx);
-    this.text(ctx, variant === 'picks' ? 'MI QUINIELA' : 'RESULTADOS DE LA JORNADA', 72, 176, 22, 700, '#d2be94', 'Inter', .12);
+    this.text(ctx, variant === 'picks' ? t('matchdayShareCard.quiniela') : t('matchdayShareCard.resultadosJornada'), 72, 176, 22, 700, '#d2be94', 'Inter', .12);
     this.text(
       ctx,
-      `${this.competitionLabel()} · J${matchday.order}`,
+      `${this.competitionLabel()} · ${t('common.jornadaAbrev', { order: matchday.order })}`,
       72,
       222,
       29,
@@ -270,27 +273,27 @@ export class MatchdayShareCardComponent {
 
     this.circle(ctx, 104, 292, 34, this.safeAvatarColor());
     this.text(ctx, this.initials(), 104, 301, 23, 800, '#121619', 'Inter', 0, 'center');
-    this.text(ctx, this.ellipsize(ctx, this.data.playerName || 'Jugador', 360, '700 28px Inter'), 154, 286, 28, 700, '#f1f0ea', 'Inter');
-    this.text(ctx, this.ellipsize(ctx, this.data.groupName || 'Mi grupo', 360, '500 20px Inter'), 154, 318, 20, 500, '#9aa0a3', 'Inter');
+    this.text(ctx, this.ellipsize(ctx, this.data.playerName || t('currentMatchday.jugador'), 360, '700 28px Inter'), 154, 286, 28, 700, '#f1f0ea', 'Inter');
+    this.text(ctx, this.ellipsize(ctx, this.data.groupName || t('common.miGrupo'), 360, '500 20px Inter'), 154, 318, 20, 500, '#9aa0a3', 'Inter');
 
     // Bloque de cifras arriba a la derecha, en el hueco que dejaba libre
     // el logo/avatar de la izquierda — así los partidos pueden empezar
     // mucho antes y caben jornadas de hasta 18 partidos (9 filas x 2
     // columnas) en vez de solo 10.
     if (variant === 'picks') {
-      this.statBox(ctx, 520, 66, 488, 118, 'JORNADA', String(matchday.order), 56);
-      this.statBox(ctx, 520, 200, 232, 118, 'PRONÓSTICOS', `${predictions.length}/${matchday.matches.length}`);
-      this.statBox(ctx, 776, 200, 232, 118, 'MODO', scoringMode === 'EXACT_SCORE' ? 'Marcador' : '1X2');
+      this.statBox(ctx, 520, 66, 488, 118, t('matchdayShareCard.statJornada'), String(matchday.order), 56);
+      this.statBox(ctx, 520, 200, 232, 118, t('matchdayShareCard.pronosticos'), `${predictions.length}/${matchday.matches.length}`);
+      this.statBox(ctx, 776, 200, 232, 118, t('matchdayShareCard.statModo'), scoringMode === 'EXACT_SCORE' ? t('matchdayShareCard.marcador') : '1X2');
     } else {
-      this.statBox(ctx, 520, 66, 488, 118, 'PUNTOS', String(totalPoints), 56);
-      this.statBox(ctx, 520, 200, 232, 118, scoringMode === 'EXACT_SCORE' ? 'ACIERTOS' : 'ACIERTOS 1X2', `${hits}/${predictions.length}`);
-      this.statBox(ctx, 776, 200, 232, 118, 'PUESTO', position ? `${position.pos}º de ${position.total}` : '—');
+      this.statBox(ctx, 520, 66, 488, 118, t('matchdayShareCard.statPuntos'), String(totalPoints), 56);
+      this.statBox(ctx, 520, 200, 232, 118, scoringMode === 'EXACT_SCORE' ? t('matchdayShareCard.statAciertos') : t('matchdayShareCard.aciertos1x2'), `${hits}/${predictions.length}`);
+      this.statBox(ctx, 776, 200, 232, 118, t('matchdayShareCard.statPuesto'), position ? t('matchdayShareCard.de', { pos: position.pos, total: position.total }) : '—');
     }
 
     const extra = variant === 'picks'
-      ? 'Pronósticos guardados'
-      : streak > 0 ? `${streak} jornadas seguidas` : 'Sigue sumando';
-    this.text(ctx, variant === 'picks' ? 'MIS PRONÓSTICOS' : 'MI DESGLOSE', 72, 360, 19, 700, '#d2be94', 'Inter', .13);
+      ? t('matchdayShareCard.pronosticosGuardados')
+      : streak > 0 ? t('matchdayShareCard.jornadasSeguidas', { count: streak }) : t('matchdayShareCard.sigueSumando');
+    this.text(ctx, variant === 'picks' ? t('matchdayShareCard.pronosticos2') : t('matchdayShareCard.desglose'), 72, 360, 19, 700, '#d2be94', 'Inter', .13);
     this.text(ctx, extra, 1008, 360, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
 
     const rowsPerColumn = 9;
@@ -312,7 +315,7 @@ export class MatchdayShareCardComponent {
     });
 
     if (shown.length === 0) {
-      this.text(ctx, 'Sin pronósticos registrados', 72, 420, 24, 600, '#9aa0a3', 'Inter');
+      this.text(ctx, t('matchdayShareCard.sinPronosticosRegistrados'), 72, 420, 24, 600, '#9aa0a3', 'Inter');
     }
 
     ctx.strokeStyle = 'rgba(241,240,234,.1)';
@@ -321,7 +324,7 @@ export class MatchdayShareCardComponent {
     ctx.lineTo(1008, 1002);
     ctx.stroke();
     this.text(ctx, 'piqo.es', 72, 1042, 22, 750, '#d2be94', 'Manrope');
-    this.text(ctx, 'Pronostica · Compite · Pica', 1008, 1042, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
+    this.text(ctx, t('matchShareCard.pronosticaCompitePica'), 1008, 1042, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
   }
 
   private async drawBrand(ctx: CanvasRenderingContext2D): Promise<void> {
@@ -458,6 +461,6 @@ export class MatchdayShareCardComponent {
   }
 
   private competitionLabel(): string {
-    return this.data.competitionName ?? this.data.matchday.competition?.name ?? 'Competición';
+    return this.data.competitionName ?? this.data.matchday.competition?.name ?? t('matchdayShareCard.competicion');
   }
 }

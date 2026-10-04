@@ -6,11 +6,12 @@ import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { CurrentMatchdayFacade } from './current-matchday.facade';
 import { PredictionChoice } from '../../../core/models/matchday.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-current-matchday',
   standalone: true,
-  imports: [CommonModule, RouterLink, GroupSwitcherComponent, SpinnerComponent, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, GroupSwitcherComponent, SpinnerComponent, EmptyStateComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [CurrentMatchdayFacade],
   templateUrl: './current-matchday.component.html',

@@ -4,6 +4,64 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — Inglés en toda la app (fuera de sprint)
+
+A petición explícita del usuario ("traducciones a inglés a toda la app").
+
+**Cómo está hecho**: i18n propio, sin librerías (`frontend/src/app/core/i18n`).
+`t(clave, params)` es TypeScript puro (lo usan también las reglas de dominio y las
+constantes de módulo, que se evalúan al importar), con un pipe `t` para las
+plantillas. `es.ts` define las claves y `en.ts` es un `Catalog` tipado: una clave
+que falte o sobre no compila. Plurales `{ one, other }` por `count`
+(`Intl.PluralRules`) y marcadores `{nombre}`. Las insignias se traducen en el
+cliente por código (`shared/utils/badge-text.ts`); el backend las sigue guardando en
+español y un código nuevo sin traducir cae a ese texto.
+
+**Idioma**: el guardado en `localStorage` (`acerton.lang`) y, si no hay, el del
+dispositivo. Cambiarlo guarda y **recarga** la app (así constantes, canvas de
+compartir y formatos de fecha se reevalúan; evita tener que reaccionar a cambios de
+idioma en caliente). `LOCALE_ID` y los datos de locale siguen el idioma (`es-ES` /
+`en-GB`: fecha día/mes en los dos). El frontend manda `Accept-Language` (idioma de la
+app, no el del navegador) solo a nuestra API (`language.interceptor.ts`).
+
+**Backend**: los errores se siguen lanzando en español en cada servicio y un filtro
+global (`common/i18n/localized-exception.filter.ts`) los devuelve en el idioma de la
+petición con un diccionario (`error-messages.ts`); un test escanea el código y falla
+si un mensaje nuevo no tiene traducción. Los dos correos transaccionales tienen
+plantilla en los dos idiomas (`mail.service.ts`). **Sin migraciones.**
+
+**Decisiones tomadas por defecto (a confirmar por el usuario):**
+
+1. **Detección**: inglés solo si el dispositivo está en inglés; catalán, gallego y
+   euskera se quedan en español (es el idioma principal de la app). Consecuencia:
+   un usuario existente con el móvil en inglés verá la app en inglés tras actualizar,
+   hasta que elija español.
+2. **"Quiniela 1X2" → "1X2 Pool"** y "resultado exacto" → "Exact score"; "jornada"
+   → "matchday" ("MD7" abreviado); "comodín" → "wildcard"; "pique" → "rivalry/banter";
+   "avisos" → "notifications"; el lema "Pronostica. Pica. Repite." → "Predict.
+   Banter. Repeat.".
+3. **El selector está en Perfil > Apariencia** (junto al tema), no en una pantalla
+   propia.
+4. **Textos legales** (política de privacidad) traducidos al pie de la letra, sin
+   revisión legal.
+5. Pequeñas mejoras en español de paso: "desde oct 2026" ya sale con el mes en
+   español (antes salía en inglés), tildes en las insignias y `aria-label` de
+   pronóstico.
+
+**Pendiente — avisos push y feed en inglés**: se generan en el servidor (cron y
+eventos) sin petición de por medio, así que no hay `Accept-Language` que mirar.
+Necesita guardar el idioma por usuario (propuesta: columna `users.locale`,
+`VARCHAR(5) NOT NULL DEFAULT 'es'`, que el backend actualiza cuando la petición
+autenticada llega con otro idioma) y generar el texto de cada aviso según el
+idioma del destinatario. Implica una **migración** en la base de datos, por eso no
+se ha hecho sin consultarlo. Los comunicados del dashboard los escribe una persona,
+así que seguirían en el idioma en que se escriban.
+
+**Peso**: los dos catálogos van dentro del bundle inicial (+~118 kB sin comprimir,
++~26 kB gzip; el bundle inicial pasa de 469 kB a 587 kB y supera el aviso de 512 kB
+de `angular.json`). Se puede cargar solo el catálogo activo de forma perezosa si
+molestara.
+
 ## 2026-10-04 — Copiar los pronósticos de la jornada de otro grupo
 
 A petición explícita del usuario ("copiar lo que has puesto en otros grupos
@@ -38,8 +96,13 @@ participar) y lo copiado se edita después con el autoguardado normal.
 4. **Solo entre grupos del MISMO modo de puntuación** (1X2 con 1X2, resultado
    exacto con resultado exacto), corregido por el usuario tras una primera versión
    que además convertía un marcador en 1/X/2: ni de exacto a 1X2 ni de 1X2 a
-   exacto. Desde un grupo, el selector solo lista grupos de su mismo modo (el
-   backend filtra, y rechaza con 400 un `copy-from` entre modos distintos).
+   exacto. El backend rechaza con 400 un `copy-from` entre modos distintos.
+   **El selector lista TODOS los otros grupos donde has marcado algo de esa
+   jornada**, no solo los copiables (cambio posterior, a raíz de "solo me sale
+   uno cuando tengo marcado en 3 grupos"): los que no se pueden copiar salen
+   desactivados con el motivo (`unavailable`: `DIFFERENT_MODE` — nombra los dos
+   modos — o `ALL_STARTED` — todos sus partidos ya empezaron). Antes esos grupos
+   desaparecían sin explicación y parecía que faltaban.
 5. **Solo grupos de los que sigue siendo miembro** y no eliminados, y solo si la
    jornada es de una competición activa del grupo de destino.
 6. **XP**: como se reutiliza `submit()`, copiar a un grupo nuevo da la XP de

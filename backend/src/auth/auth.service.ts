@@ -15,6 +15,7 @@ import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { MailService } from '../mail/mail.service';
+import { Locale } from '../common/i18n/locale';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthTokens, JwtAccessPayload, JwtRefreshPayload, PublicUser } from './auth.types';
@@ -70,7 +71,7 @@ export class AuthService {
    * (ver login) hasta confirmar el correo. Un fallo al enviar el email no
    * revierte la creacion — el usuario puede pedir que se reenvie.
    */
-  async register(dto: RegisterDto): Promise<{ email: string }> {
+  async register(dto: RegisterDto, locale: Locale = 'es'): Promise<{ email: string }> {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
       throw new ConflictException('Ya existe una cuenta con ese email');
@@ -90,7 +91,7 @@ export class AuthService {
     });
 
     await this.referralsService.redeemBestEffort(user.id, dto.referralCode);
-    await this.sendVerificationEmail(user.id, user.email);
+    await this.sendVerificationEmail(user.id, user.email, locale);
     return { email: user.email };
   }
 
@@ -143,16 +144,16 @@ export class AuthService {
   }
 
   /** No revela si la cuenta existe o ya esta verificada: siempre "hecho" desde fuera (ver AuthController). */
-  async resendVerification(email: string): Promise<void> {
+  async resendVerification(email: string, locale: Locale = 'es'): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || user.emailVerifiedAt) {
       return;
     }
-    await this.sendVerificationEmail(user.id, user.email);
+    await this.sendVerificationEmail(user.id, user.email, locale);
   }
 
   /** No revela si la cuenta existe, si es solo-Google o si el envio fallo: siempre "hecho" desde fuera. */
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(email: string, locale: Locale = 'es'): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user?.passwordHash) {
       return;
@@ -170,7 +171,7 @@ export class AuthService {
 
     const resetUrl = `${this.configService.get('corsOrigin', { infer: true })}/reset-password?token=${token}`;
     try {
-      await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
+      await this.mailService.sendPasswordResetEmail(user.email, resetUrl, locale);
     } catch {
       // No se relanza: la respuesta al frontend es siempre generica (ver AuthController).
     }
@@ -289,7 +290,11 @@ export class AuthService {
     });
   }
 
-  private async sendVerificationEmail(userId: string, email: string): Promise<void> {
+  private async sendVerificationEmail(
+    userId: string,
+    email: string,
+    locale: Locale,
+  ): Promise<void> {
     const token = randomBytes(32).toString('hex');
     await this.prisma.authToken.create({
       data: {
@@ -302,7 +307,7 @@ export class AuthService {
 
     const verifyUrl = `${this.configService.get('corsOrigin', { infer: true })}/verify-email?token=${token}`;
     try {
-      await this.mailService.sendVerificationEmail(email, verifyUrl);
+      await this.mailService.sendVerificationEmail(email, verifyUrl, locale);
     } catch {
       // No se bloquea el registro por un fallo de envio: el usuario puede pedir "reenviar".
     }

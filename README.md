@@ -71,6 +71,21 @@ Los partidos y resultados se guardan siempre en Postgres (`Matchday`/`Match`); e
 - El limite de football-data.org es por minuto (no diario), asi que el patron de gasto real importa menos aqui que con un plan de cupo diario: con los crons actuales (jornada en curso cada 12h, resultados cada 10 min agrupando en una sola tanda), el numero de peticiones por minuto se queda en 1-2 salvo picos raros con muchas jornadas cerradas simultaneas. Si un grupo activa muchas competiciones con jornadas cerrandose a la vez, vigila los logs (`FootballDataOrgProvider` loguea cada peticion que hace) para confirmar que no te acercas al limite por minuto (cabecera `x-requests-available-minute` en las respuestas).
 - Nota: football-data.org no cubre la UEFA Conference League en ningun plan (ver comentario en `prisma/seed.ts`); esa competicion queda con un `externalId` placeholder y su sincronizacion simplemente no devuelve partidos.
 
+## Idiomas (español e inglés)
+
+El idioma original es el español. Para añadir o cambiar un texto de la interfaz:
+
+1. Añade la clave en `frontend/src/app/core/i18n/es.ts` y su traducción en `en.ts`
+   (`en.ts` está tipado: si falta o sobra una clave, no compila).
+2. En plantillas: `{{ 'seccion.clave' | t }}` o `{{ 'seccion.clave' | t: { name } }}`;
+   en TypeScript: `t('seccion.clave', { name })`. Los marcadores son `{name}`, y un
+   mensaje con singular/plural es `{ one: '...', other: '...' }` con el parámetro `count`.
+3. Los errores del backend se lanzan en español (`throw new NotFoundException('...')`);
+   su traducción va en `backend/src/common/i18n/error-messages.ts` (un test falla si falta).
+
+El idioma lo elige el usuario en Perfil > Apariencia (o el del dispositivo si no ha
+elegido) y el frontend lo manda al backend en `Accept-Language`.
+
 ## Tests
 
 ```bash

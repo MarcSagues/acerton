@@ -5,11 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { ProfilePageFacade } from './profile-page.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { BadgeNamePipe } from '../../../shared/utils/badge-text';
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SpinnerComponent, AvatarComponent],
+  imports: [CommonModule, RouterLink, FormsModule, SpinnerComponent, AvatarComponent, TranslatePipe, BadgeNamePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [ProfilePageFacade],
   templateUrl: './profile-page.component.html',

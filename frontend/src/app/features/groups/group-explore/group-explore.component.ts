@@ -6,11 +6,12 @@ import { SegmentedControlComponent } from '../../../shared/ui/segmented-control/
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { GroupExploreFacade, SCORING_MODE_OPTIONS } from './group-explore.facade';
 import { GroupPreviewSheetComponent } from './group-preview-sheet.component';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-group-explore',
   standalone: true,
-  imports: [CommonModule, EmptyStateComponent, SegmentedControlComponent],
+  imports: [CommonModule, EmptyStateComponent, SegmentedControlComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupExploreFacade],
   templateUrl: './group-explore.component.html',

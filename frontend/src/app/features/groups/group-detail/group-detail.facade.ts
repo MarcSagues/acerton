@@ -14,6 +14,7 @@ import { Group, GroupMember } from '../../../core/models/group.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { competitionTrophyId } from '../../../shared/utils/competition-trophy';
+import { t } from '../../../core/i18n/translate';
 
 /** Mismos limites que CreateGroupDto/UpdateGroupRulesDto en backend. */
 const NAME_MIN_LENGTH = 3;
@@ -86,8 +87,8 @@ export class GroupDetailFacade {
 
   readonly nameError = computed(() => {
     const length = this.nameInput().trim().length;
-    if (length < NAME_MIN_LENGTH) return `El nombre debe tener al menos ${NAME_MIN_LENGTH} caracteres.`;
-    if (length > NAME_MAX_LENGTH) return `El nombre no puede pasar de ${NAME_MAX_LENGTH} caracteres.`;
+    if (length < NAME_MIN_LENGTH) return t('groupDetail.nombreDebeTenerMenos', { NAME_MIN_LENGTH });
+    if (length > NAME_MAX_LENGTH) return t('groupDetail.nombrePuedePasarCaracteres', { NAME_MAX_LENGTH });
     return null;
   });
 
@@ -153,17 +154,17 @@ export class GroupDetailFacade {
 
   competitionStatus(competition: Competition): { label: string; tone: 'success' | 'accent' | 'muted' } {
     if (this.isLocked(competition.id)) {
-      return { label: 'Activa', tone: 'success' };
+      return { label: t('groupDetail.activa'), tone: 'success' };
     }
     if (this.selectedCompetitionIds().has(competition.id)) {
-      return { label: 'Se añadirá', tone: 'accent' };
+      return { label: t('groupDetail.anadira'), tone: 'accent' };
     }
-    return this.isAdmin() ? { label: 'Disponible', tone: 'muted' } : { label: 'No disponible', tone: 'muted' };
+    return this.isAdmin() ? { label: t('groupDetail.disponible'), tone: 'muted' } : { label: t('groupDetail.disponible'), tone: 'muted' };
   }
 
   roleLabel(member: GroupMember): string {
-    if (this.isOwnerRow(member)) return 'Creador';
-    return member.role === 'ADMIN' ? 'Admin' : 'Miembro';
+    if (this.isOwnerRow(member)) return t('groupDetail.creador');
+    return member.role === 'ADMIN' ? t('groupDetail.admin') : t('groupDetail.miembro');
   }
 
   copyCode(): void {
@@ -222,14 +223,14 @@ export class GroupDetailFacade {
   private saveCompetitions(alsoSaveRules: boolean): void {
     const competitionIds = [...this.selectedCompetitionIds()];
     if (competitionIds.length === 0) {
-      this.toast.show('Selecciona al menos una competición');
+      this.toast.show(t('groupDetail.seleccionaMenosCompeticion'));
       return;
     }
 
     this.confirm({
-      title: 'Activar competiciones',
-      message: `Vas a activar ${this.newlySelectedCount()} competición(es) nueva(s). Una vez activada una liga no se podrá desactivar después, solo añadir más. ¿Confirmas?`,
-      confirmLabel: 'Activar',
+      title: t('groupDetail.activarCompeticiones'),
+      message: t('groupDetail.confirmActivate', { count: this.newlySelectedCount() }),
+      confirmLabel: t('notificationSettings.activar'),
     }).subscribe((confirmed) => {
       if (!confirmed) {
         return;
@@ -243,12 +244,12 @@ export class GroupDetailFacade {
           if (alsoSaveRules) {
             this.saveRules();
           } else {
-            this.toast.show('Cambios guardados');
+            this.toast.show(t('groupDetail.cambiosGuardados'));
           }
         },
         error: (error: HttpErrorResponse) => {
           this.savingCompetitions.set(false);
-          this.toast.show(error.error?.message ?? 'No se pudo guardar');
+          this.toast.show(error.error?.message ?? t('groupDetail.pudoGuardar'));
         },
       });
     });
@@ -289,11 +290,11 @@ export class GroupDetailFacade {
         this.selectedComebackEnabled.set(updated.comebackEnabled);
         this.selectedIsPublic.set(updated.isPublic);
         this.savingRules.set(false);
-        this.toast.show('Cambios guardados');
+        this.toast.show(t('groupDetail.cambiosGuardados'));
       },
       error: (error: HttpErrorResponse) => {
         this.savingRules.set(false);
-        this.toast.show(error.error?.message ?? 'No se pudo guardar');
+        this.toast.show(error.error?.message ?? t('groupDetail.pudoGuardar'));
       },
     });
   }
@@ -359,16 +360,16 @@ export class GroupDetailFacade {
   openMemberActions(member: GroupMember): void {
     const actions: MemberActionsSheetData['actions'] = [];
     if (this.canPromote(member)) {
-      actions.push({ label: 'Hacer administrador', run: () => this.promoteMember(member) });
+      actions.push({ label: t('groupDetail.hacerAdministrador'), run: () => this.promoteMember(member) });
     }
     if (this.canDemote(member)) {
-      actions.push({ label: 'Quitar administrador', run: () => this.demoteMember(member) });
+      actions.push({ label: t('groupDetail.quitarAdministrador'), run: () => this.demoteMember(member) });
     }
     if (this.canTransferTo(member)) {
-      actions.push({ label: 'Hacer propietario', run: () => this.transferOwnershipPrompt(member) });
+      actions.push({ label: t('groupDetail.hacerPropietario'), run: () => this.transferOwnershipPrompt(member) });
     }
     if (this.canKick(member)) {
-      actions.push({ label: 'Expulsar del grupo', danger: true, run: () => this.kickMemberPrompt(member) });
+      actions.push({ label: t('groupDetail.expulsarGrupo'), danger: true, run: () => this.kickMemberPrompt(member) });
     }
     if (actions.length === 0) return;
     this.sheet.open<MemberActionsSheetComponent, void, MemberActionsSheetData>(MemberActionsSheetComponent, {
@@ -394,7 +395,7 @@ export class GroupDetailFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.savingMembership.set(false);
-        this.toast.show(error.error?.message ?? 'No se pudo cambiar el rol');
+        this.toast.show(error.error?.message ?? t('groupDetail.pudoCambiarRol'));
       },
     });
   }
@@ -402,9 +403,9 @@ export class GroupDetailFacade {
   kickMemberPrompt(member: GroupMember): void {
     if (this.savingMembership()) return;
     this.confirm({
-      title: 'Expulsar del grupo',
-      message: `¿Seguro que quieres expulsar a ${member.user.name} de este grupo? Sus pronósticos y puntos ya conseguidos se conservan.`,
-      confirmLabel: 'Expulsar',
+      title: t('groupDetail.expulsarGrupo'),
+      message: t('groupDetail.seguroQuieresExpulsarEste', { name: member.user.name }),
+      confirmLabel: t('groupDetail.expulsar'),
     }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
@@ -415,7 +416,7 @@ export class GroupDetailFacade {
         },
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.toast.show(error.error?.message ?? 'No se pudo expulsar');
+          this.toast.show(error.error?.message ?? t('groupDetail.pudoExpulsar'));
         },
       });
     });
@@ -424,9 +425,9 @@ export class GroupDetailFacade {
   transferOwnershipPrompt(member: GroupMember): void {
     if (this.savingMembership()) return;
     this.confirm({
-      title: 'Transferir propiedad',
-      message: `¿Transferir la propiedad del grupo a ${member.user.name}? Pasarás a ser administrador y ya no podrás nombrar o quitar administradores, transferir la propiedad ni eliminar el grupo.`,
-      confirmLabel: 'Transferir',
+      title: t('groupDetail.transferirPropiedad'),
+      message: t('groupDetail.transferirPropiedadGrupoPasaras', { name: member.user.name }),
+      confirmLabel: t('groupDetail.transferir'),
     }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
@@ -437,11 +438,11 @@ export class GroupDetailFacade {
             members.map((m) => (m.userId === member.userId ? { ...m, role: 'ADMIN' } : m)),
           );
           this.savingMembership.set(false);
-          this.toast.show('Propiedad transferida');
+          this.toast.show(t('groupDetail.propiedadTransferida'));
         },
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.toast.show(error.error?.message ?? 'No se pudo transferir la propiedad');
+          this.toast.show(error.error?.message ?? t('groupDetail.pudoTransferirPropiedad'));
         },
       });
     });
@@ -450,13 +451,13 @@ export class GroupDetailFacade {
   leaveGroupPrompt(): void {
     if (this.savingMembership()) return;
     if (this.isOwner()) {
-      this.toast.show('Transfiere la propiedad o elimina el grupo antes de salir');
+      this.toast.show(t('groupDetail.transfierePropiedadEliminaGrupo2'));
       return;
     }
     this.confirm({
-      title: 'Salir del grupo',
-      message: '¿Seguro que quieres salir de este grupo? Podrás volver a entrar con el link de invitación.',
-      confirmLabel: 'Salir',
+      title: t('groupDetail.salirGrupo'),
+      message: t('groupDetail.seguroQuieresSalirEste'),
+      confirmLabel: t('groupDetail.salir'),
     }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
@@ -464,7 +465,7 @@ export class GroupDetailFacade {
         next: () => this.router.navigate(['/groups']),
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.toast.show(error.error?.message ?? 'No se pudo salir del grupo');
+          this.toast.show(error.error?.message ?? t('groupDetail.pudoSalirGrupo'));
         },
       });
     });
@@ -473,10 +474,10 @@ export class GroupDetailFacade {
   deleteGroupPrompt(): void {
     if (this.savingMembership()) return;
     this.confirm({
-      title: 'Eliminar grupo',
+      title: t('groupDetail.eliminarGrupo'),
       message:
-        'El grupo desaparecerá de todos los listados y nadie podrá seguir jugando en él. El historial y los trofeos ya conseguidos se conservan. Esta acción no se puede deshacer desde la app.',
-      confirmLabel: 'Eliminar',
+        t('groupDetail.grupoDesapareceraTodosListados'),
+      confirmLabel: t('groupDetail.eliminar'),
     }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.savingMembership.set(true);
@@ -484,7 +485,7 @@ export class GroupDetailFacade {
         next: () => this.router.navigate(['/groups']),
         error: (error: HttpErrorResponse) => {
           this.savingMembership.set(false);
-          this.toast.show(error.error?.message ?? 'No se pudo eliminar el grupo');
+          this.toast.show(error.error?.message ?? t('groupDetail.pudoEliminarGrupo'));
         },
       });
     });

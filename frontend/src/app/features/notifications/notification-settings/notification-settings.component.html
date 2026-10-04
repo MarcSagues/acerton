@@ -5,21 +5,21 @@
   <div class="page">
     <div class="head-row">
       <button type="button" class="back-btn" (click)="page.goBack()">
-        <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+        <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.perfil' | t }}
       </button>
     </div>
     <div class="title-row">
-      <h1>Preferencias de avisos</h1>
-      <p class="lead">Qué avisos quieres recibir y qué grupos prefieres silenciar.</p>
+      <h1>{{ 'common.preferenciasAvisos' | t }}</h1>
+      <p class="lead">{{ 'notificationSettings.avisosQuieresRecibirGrupos' | t }}</p>
     </div>
 
     <div class="section">
       <div class="card device-card">
-        <p class="card-title">Notificaciones push en este dispositivo</p>
+        <p class="card-title">{{ 'notificationSettings.notificacionesPushEsteDispositivo' | t }}</p>
         @if (!page.pushNotifications.supported) {
-          <p class="hint mono">Este navegador no las soporta.</p>
+          <p class="hint mono">{{ 'notificationSettings.esteNavegadorSoporta' | t }}</p>
         } @else if (!page.pushNotifications.configured) {
-          <p class="hint mono">No configuradas en este entorno.</p>
+          <p class="hint mono">{{ 'notificationSettings.configuradasEsteEntorno' | t }}</p>
         } @else if (page.pushNotifications.loading()) {
           <!-- Conceder el permiso del sistema es instantaneo, pero obtener
                el token y guardarlo en el backend es async y puede tardar
@@ -27,22 +27,22 @@
                intermedio, "Activadas" aparecia en cuanto se concedia el
                permiso, antes de que el registro real hubiera terminado
                siquiera. -->
-          <p class="hint mono">Comprobando…</p>
+          <p class="hint mono">{{ 'notificationSettings.comprobando' | t }}</p>
         } @else if (page.pushNotifications.error()) {
           <p class="hint mono error">{{ page.pushNotifications.error() }}</p>
         } @else if (page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered()) {
-          <p class="hint mono">Activadas en este dispositivo.</p>
+          <p class="hint mono">{{ 'notificationSettings.activadasEsteDispositivo' | t }}</p>
         } @else if (page.pushNotifications.permission() === 'denied') {
-          <p class="hint mono">Bloqueadas en los permisos del navegador.</p>
+          <p class="hint mono">{{ 'notificationSettings.bloqueadasPermisosNavegador' | t }}</p>
         } @else {
-          <p class="hint mono">Hace falta darles permiso en este dispositivo.</p>
+          <p class="hint mono">{{ 'notificationSettings.haceFaltaDarlesPermiso' | t }}</p>
         }
         @if (page.pushNotifications.supported && page.pushNotifications.configured && page.pushNotifications.permission() !== 'denied') {
           @if (page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered()) {
-            <button type="button" class="piqo-secondary activate-btn" disabled>Activado</button>
+            <button type="button" class="piqo-secondary activate-btn" disabled>{{ 'common.activado' | t }}</button>
           } @else {
             <button type="button" class="piqo-secondary activate-btn" [disabled]="page.pushNotifications.loading()" (click)="page.pushNotifications.enable()">
-              {{ page.pushNotifications.loading() ? 'Activando…' : (page.pushNotifications.error() ? 'Reintentar' : 'Activar') }}
+              {{ page.pushNotifications.loading() ? ('notificationSettings.activando' | t) : (page.pushNotifications.error() ? ('common.reintentar' | t) : ('notificationSettings.activar' | t)) }}
             </button>
           }
         }
@@ -51,12 +51,12 @@
 
     @if (page.pushNotifications.permission() === 'granted' && page.pushNotifications.registered()) {
     <details class="group" open>
-      <summary>Jornadas</summary>
+      <summary>{{ 'notificationSettings.jornadas' | t }}</summary>
       <div class="rows">
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Jornada nueva disponible</p>
-            <p class="hint">Cuando ya se puede pronosticar.</p>
+            <p class="row-title">{{ 'notificationSettings.jornadaNuevaDisponible' | t }}</p>
+            <p class="hint">{{ 'notificationSettings.cuandoYaPuedePronosticar' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.matchdayOpening" [class.disabled]="page.isSaving('matchdayOpening')" (click)="page.togglePreference('matchdayOpening')">
             <span class="knob"></span>
@@ -64,7 +64,7 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">24 horas antes del cierre</p>
+            <p class="row-title">{{ 'notificationSettings.24HorasAntesCierre' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.reminder24h" [class.disabled]="page.isSaving('reminder24h')" (click)="page.togglePreference('reminder24h')">
             <span class="knob"></span>
@@ -72,7 +72,7 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">5 horas antes del cierre</p>
+            <p class="row-title">{{ 'notificationSettings.5HorasAntesCierre' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.reminder5h" [class.disabled]="page.isSaving('reminder5h')" (click)="page.togglePreference('reminder5h')">
             <span class="knob"></span>
@@ -80,7 +80,7 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">1 hora antes del cierre</p>
+            <p class="row-title">{{ 'notificationSettings.1HoraAntesCierre' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.reminder1h" [class.disabled]="page.isSaving('reminder1h')" (click)="page.togglePreference('reminder1h')">
             <span class="knob"></span>
@@ -88,23 +88,23 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">30 minutos antes del cierre</p>
+            <p class="row-title">{{ 'notificationSettings.30MinutosAntesCierre' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.reminder30m" [class.disabled]="page.isSaving('reminder30m')" (click)="page.togglePreference('reminder30m')">
             <span class="knob"></span>
           </button>
         </div>
-        <p class="hint group-hint">Solo avisan si todavía te falta algún pronóstico.</p>
+        <p class="hint group-hint">{{ 'notificationSettings.soloAvisanSiTodavia' | t }}</p>
       </div>
     </details>
 
     <details class="group" open>
-      <summary>Actividad</summary>
+      <summary>{{ 'notificationSettings.actividad' | t }}</summary>
       <div class="rows">
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Partido propio terminado</p>
-            <p class="hint">Con tus puntos, solo de partidos que pronosticaste.</p>
+            <p class="row-title">{{ 'notificationSettings.partidoPropioTerminado' | t }}</p>
+            <p class="hint">{{ 'notificationSettings.puntosSoloPartidosPronosticaste' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.matchFinishedPoints" [class.disabled]="page.isSaving('matchFinishedPoints')" (click)="page.togglePreference('matchFinishedPoints')">
             <span class="knob"></span>
@@ -112,8 +112,8 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Jornada terminada</p>
-            <p class="hint">Resultado y tu posición en la clasificación.</p>
+            <p class="row-title">{{ 'notificationSettings.jornadaTerminada' | t }}</p>
+            <p class="hint">{{ 'notificationSettings.resultadoPosicionClasificacion' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.matchdayFinishedResult" [class.disabled]="page.isSaving('matchdayFinishedResult')" (click)="page.togglePreference('matchdayFinishedResult')">
             <span class="knob"></span>
@@ -121,7 +121,7 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Insignia conseguida</p>
+            <p class="row-title">{{ 'notificationSettings.insigniaConseguida' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.badgeEarned" [class.disabled]="page.isSaving('badgeEarned')" (click)="page.togglePreference('badgeEarned')">
             <span class="knob"></span>
@@ -129,7 +129,7 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Subida de nivel</p>
+            <p class="row-title">{{ 'notificationSettings.subidaNivel' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.levelUp" [class.disabled]="page.isSaving('levelUp')" (click)="page.togglePreference('levelUp')">
             <span class="knob"></span>
@@ -137,7 +137,7 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Fin de temporada y trofeos</p>
+            <p class="row-title">{{ 'notificationSettings.finTemporadaTrofeos' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.seasonFinishedTrophies" [class.disabled]="page.isSaving('seasonFinishedTrophies')" (click)="page.togglePreference('seasonFinishedTrophies')">
             <span class="knob"></span>
@@ -145,8 +145,8 @@
         </div>
         <div class="row">
           <div class="row-text">
-            <p class="row-title">Piqo te echa de menos</p>
-            <p class="hint">Un aviso si llevas varios días sin entrar.</p>
+            <p class="row-title">{{ 'notificationSettings.piqoEchaMenos' | t }}</p>
+            <p class="hint">{{ 'notificationSettings.avisoSiLlevasVarios' | t }}</p>
           </div>
           <button type="button" class="toggle" [class.on]="preferences.reengagement" [class.disabled]="page.isSaving('reengagement')" (click)="page.togglePreference('reengagement')">
             <span class="knob"></span>
@@ -156,10 +156,10 @@
     </details>
 
     <details class="group">
-      <summary>Grupos silenciados</summary>
+      <summary>{{ 'notificationSettings.gruposSilenciados' | t }}</summary>
       <div class="rows">
         @if (page.groups().length === 0) {
-          <p class="hint group-hint">Todavía no perteneces a ningún grupo.</p>
+          <p class="hint group-hint">{{ 'notificationSettings.todaviaPertenecesNingunGrupo' | t }}</p>
         }
         @for (group of page.groups(); track group.groupId) {
           <div class="row">
@@ -171,7 +171,7 @@
             </button>
           </div>
         }
-        <p class="hint group-hint">Silenciar un grupo apaga todos sus avisos, aunque los tengas activados arriba.</p>
+        <p class="hint group-hint">{{ 'notificationSettings.silenciarGrupoApagaTodos' | t }}</p>
       </div>
     </details>
     }

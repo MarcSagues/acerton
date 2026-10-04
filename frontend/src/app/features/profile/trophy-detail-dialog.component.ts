@@ -1,6 +1,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { Router } from '@angular/router';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export interface TrophyDetailData {
   id: string;
@@ -21,6 +22,7 @@ export interface TrophyDetailData {
 @Component({
   selector: 'app-trophy-detail-dialog',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="trophy-dialog">
@@ -31,13 +33,13 @@ export interface TrophyDetailData {
       />
       <p class="name">{{ data.name }}</p>
       @if (data.count === 0) {
-        <p class="status">Todavía sin conseguir</p>
+        <p class="status">{{ 'common.todaviaSinConseguir' | t }}</p>
       } @else if (data.count === 1) {
-        <p class="status earned">Conseguido</p>
+        <p class="status earned">{{ 'trophyDetailDialog.conseguido' | t }}</p>
       } @else {
-        <p class="status earned">Conseguido × {{ data.count }}</p>
+        <p class="status earned">{{ 'trophyDetailDialog.conseguido2' | t: { count: data.count } }}</p>
       }
-      <p class="hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
+      <p class="hint">{{ 'common.trofeoPiqoSignificaGanar' | t }}</p>
 
       @if (data.years?.length) {
         <div class="years">

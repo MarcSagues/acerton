@@ -4,15 +4,15 @@
   <div class="state"><app-spinner [size]="28"></app-spinner></div>
 } @else if (page.previewError()) {
   <div class="state error">
-    <p>No se ha podido cargar este grupo.</p>
-    <button type="button" class="piqo-secondary" (click)="page.openPreview(page.previewGroupId()!)">Reintentar</button>
+    <p>{{ 'groupPreviewSheet.haPodidoCargarEste' | t }}</p>
+    <button type="button" class="piqo-secondary" (click)="page.openPreview(page.previewGroupId()!)">{{ 'common.reintentar' | t }}</button>
   </div>
 } @else {
   @if (page.preview(); as group) {
   <div class="sheet-body">
     <div class="head">
       <h2>{{ group.name }}</h2>
-      <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</span>
+      <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? ('common.resultadoExacto' | t) : '1X2' }}</span>
     </div>
 
     @if (group.description) {
@@ -24,27 +24,27 @@
         {{ group.memberCount }}
         <piqo-svg icon="grupos" size="13"></piqo-svg>
       </span>
-      <span>Creado el {{ group.createdAt | date: 'd MMM y' }}</span>
+      <span>{{ 'common.creado' | t: { createdAt: (group.createdAt | date: 'd MMM y') } }}</span>
     </div>
 
     <div class="section">
-      <p class="section-title">Reglas</p>
+      <p class="section-title">{{ 'common.reglas' | t }}</p>
       <p class="rule-text">
         @if (group.scoringMode === 'EXACT_SCORE') {
-          5 puntos por marcador exacto, 2 por acertar solo el ganador.
+          {{ 'common.5PuntosMarcadorExacto' | t }}
         } @else {
-          1 punto por acertar 1X2.
+          {{ 'common.1PuntoAcertar1x2' | t }}
         }
       </p>
       @if (group.comebackPointsPerBonus !== null) {
         <p class="rule-text">
-          Comodín de remontada activo: doble oportunidad cada {{ group.comebackPointsPerBonus }} puntos de diferencia con el líder.
+          {{ 'groupPreviewSheet.comodinRemontadaActivoDoble' | t: { comebackPointsPerBon: group.comebackPointsPerBonus } }}
         </p>
       }
     </div>
 
     <div class="section">
-      <p class="section-title">Ligas</p>
+      <p class="section-title">{{ 'common.ligas' | t }}</p>
       <div class="leagues">
         @for (comp of group.competitions; track comp.id) {
           <span class="league-chip">{{ comp.name }}</span>
@@ -53,9 +53,9 @@
     </div>
 
     <div class="section">
-      <p class="section-title">Clasificación general</p>
+      <p class="section-title">{{ 'common.clasificacionGeneral' | t }}</p>
       @if (group.topRanking.length === 0) {
-        <p class="rule-text muted">Todavía no hay clasificación en este grupo.</p>
+        <p class="rule-text muted">{{ 'common.todaviaHayClasificacionEste' | t }}</p>
       } @else {
         <div class="ranking-list">
           @for (row of group.topRanking; track row.userId) {
@@ -76,7 +76,7 @@
       [disabled]="group.isMember || page.joiningGroupId() === group.id"
       (click)="join(group.id)"
     >
-      {{ group.isMember ? 'Unido' : page.joiningGroupId() === group.id ? 'Uniendo…' : 'Unirme' }}
+      {{ group.isMember ? ('common.unido' | t) : page.joiningGroupId() === group.id ? ('common.uniendo' | t) : ('common.unirme' | t) }}
     </button>
   </div>
   }

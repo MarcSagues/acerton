@@ -2,10 +2,10 @@
   <div class="sheet-handle"></div>
   <div class="sheet-header">
     <div>
-      <h2>Cómo ganar XP</h2>
-      <p class="sheet-sub">La XP se suma al cerrarse cada jornada.</p>
+      <h2>{{ 'common.comoGanarXp' | t }}</h2>
+      <p class="sheet-sub">{{ 'levelInfoSheet.xpSumaCerrarseCada' | t }}</p>
     </div>
-    <button type="button" class="close-btn" aria-label="Cerrar" (click)="close()">
+    <button type="button" class="close-btn" [attr.aria-label]="'common.cerrar' | t" (click)="close()">
       <piqo-svg icon="cerrar" size="14"></piqo-svg>
     </button>
   </div>
@@ -30,5 +30,5 @@
     }
   </div>
 
-  <div class="tip">Los niveles nunca bajan: la XP acumulada se conserva aunque falles una jornada.</div>
+  <div class="tip">{{ 'levelInfoSheet.nivelesNuncaBajanXp' | t }}</div>
 </div>

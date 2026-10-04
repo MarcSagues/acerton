@@ -10,6 +10,7 @@ import { ActiveGroupService } from '../../../core/services/active-group.service'
 import { SeasonsService } from '../../../core/services/seasons.service';
 import { Group } from '../../../core/models/group.model';
 import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
+import { t } from '../../../core/i18n/translate';
 
 export interface EvolutionBar {
   label: string;
@@ -156,7 +157,7 @@ export class RankingsPageFacade {
       next: (matchday) => {
         this.resolvingUserId.set(null);
         if (!matchday) {
-          this.toast.show('Todavía no hay jornadas cerradas para ver quinielas');
+          this.toast.show(t('rankingsPage.todaviaHayJornadasCerradas'));
           return;
         }
         const path =
@@ -167,7 +168,7 @@ export class RankingsPageFacade {
       },
       error: () => {
         this.resolvingUserId.set(null);
-        this.toast.show('No se pudo cargar la jornada');
+        this.toast.show(t('currentMatchday.pudoCargarJornada'));
       },
     });
   }

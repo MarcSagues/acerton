@@ -83,15 +83,35 @@ describe('copyResultMessage', () => {
 });
 
 describe('copySourceSubtitle', () => {
-  const source = (copyableCount: number): CopySource => ({
+  const source = (overrides: Partial<CopySource> = {}): CopySource => ({
     groupId: 'g2',
     name: 'Trabajo',
     scoringMode: 'ONE_X_TWO',
-    copyableCount,
+    copyableCount: 3,
+    unavailable: null,
+    ...overrides,
   });
 
   it('cuenta los partidos copiables en singular/plural', () => {
-    expect(copySourceSubtitle(source(1))).toBe('1 partido');
-    expect(copySourceSubtitle(source(3))).toBe('3 partidos');
+    expect(copySourceSubtitle(source({ copyableCount: 1 }), 'ONE_X_TWO')).toBe('1 partido');
+    expect(copySourceSubtitle(source(), 'ONE_X_TWO')).toBe('3 partidos');
+  });
+
+  it('si es de otro modo, lo dice nombrando los dos modos, en los dos sentidos', () => {
+    expect(
+      copySourceSubtitle(source({ unavailable: 'DIFFERENT_MODE' }), 'EXACT_SCORE'),
+    ).toBe('Juega a 1X2 y este a resultado exacto: no se puede copiar entre modos');
+    expect(
+      copySourceSubtitle(
+        source({ scoringMode: 'EXACT_SCORE', unavailable: 'DIFFERENT_MODE' }),
+        'ONE_X_TWO',
+      ),
+    ).toBe('Juega a resultado exacto y este a 1X2: no se puede copiar entre modos');
+  });
+
+  it('si todos sus partidos ya empezaron, lo dice', () => {
+    expect(
+      copySourceSubtitle(source({ unavailable: 'ALL_STARTED', copyableCount: 0 }), 'ONE_X_TWO'),
+    ).toMatch(/ya han empezado/);
   });
 });

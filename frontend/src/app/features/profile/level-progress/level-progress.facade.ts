@@ -9,6 +9,7 @@ import { UserProfile, XpProgress } from '../../../core/models/profile.model';
 import { environment } from '../../../../environments/environment';
 import { LevelInfoSheetComponent } from './level-info-sheet.component';
 import { LEVEL_REWARDS, mascotAssetPath, rankForLevel, xpForLevel } from './level-progress.domain';
+import { t } from '../../../core/i18n/translate';
 
 export interface LevelNodeView {
   n: number;
@@ -65,9 +66,9 @@ export class LevelProgressFacade {
     const acc = this.accuracy();
     const badges = this.badgesUnlocked();
     return [
-      { value: acc.scored > 0 ? `${acc.hits}/${acc.scored}` : '—', label: 'Aciertos', tone: 'text' },
-      { value: `x${this.globalStreak().currentStreak}`, label: 'Racha', tone: 'warning' },
-      { value: `${badges.earned}/${badges.total}`, label: 'Insignias', tone: 'text' },
+      { value: acc.scored > 0 ? `${acc.hits}/${acc.scored}` : '—', label: t('matchdayResults.aciertos'), tone: 'text' },
+      { value: `x${this.globalStreak().currentStreak}`, label: t('levelProgress.racha'), tone: 'warning' },
+      { value: `${badges.earned}/${badges.total}`, label: t('common.insignias'), tone: 'text' },
     ];
   });
 
@@ -76,11 +77,11 @@ export class LevelProgressFacade {
   readonly currentXp = computed(() => this.xp().currentLevelXp);
   readonly levelFraction = computed(() => Math.max(0, Math.min(1, this.currentXp() / this.needXp())));
   readonly rank = computed(() => rankForLevel(this.currentLevel()));
-  readonly tierLabel = computed(() => `NIVEL ${this.currentLevel()} DE ${this.maxLevel}`);
+  readonly tierLabel = computed(() => t('levelProgress.nivel3', { currentLevel: this.currentLevel(), maxLevel: this.maxLevel }));
   readonly toNextLabel = computed(
-    () => `Te faltan ${Math.max(0, this.needXp() - this.currentXp())} XP para desbloquear el nivel ${this.currentLevel() + 1}.`,
+    () => t('levelProgress.faltanXpDesbloquearNivel', { max: Math.max(0, this.needXp() - this.currentXp()), v: this.currentLevel() + 1 }),
   );
-  readonly unlockedLabel = computed(() => `${this.currentLevel()} de ${this.maxLevel} desbloqueados`);
+  readonly unlockedLabel = computed(() => t('levelProgress.desbloqueados', { currentLevel: this.currentLevel(), maxLevel: this.maxLevel }));
 
   readonly selected = computed(() => this.selectedLevel());
 
@@ -128,22 +129,27 @@ export class LevelProgressFacade {
     return 0;
   });
   readonly selectedNeed = computed(() => xpForLevel(this.selected()));
-  readonly selectedStatusLabel = computed(() =>
-    this.selected() < this.currentLevel() ? 'CONSEGUIDO' : this.selectedIsCurrent() ? 'EN CURSO' : 'BLOQUEADO',
+  /** Estado del nivel seleccionado como identificador (la plantilla lo usa para el color); el texto sale de selectedStatusLabel. */
+  readonly selectedStatus = computed<'done' | 'current' | 'locked'>(() =>
+    this.selected() < this.currentLevel() ? 'done' : this.selectedIsCurrent() ? 'current' : 'locked',
   );
+  readonly selectedStatusLabel = computed(() => {
+    const status = this.selectedStatus();
+    return t(status === 'done' ? 'levelProgress.statusDone' : status === 'current' ? 'levelProgress.statusCurrent' : 'levelProgress.statusLocked');
+  });
   readonly selectedDescription = computed(() => {
     const sel = this.selected();
     const current = this.currentLevel();
-    if (sel < current) return `Desbloqueado en el nivel ${sel}. Puedes activarlo desde tu perfil.`;
+    if (sel < current) return t('levelProgress.desbloqueadoNivelPuedesActivarlo', { sel });
     if (this.selectedIsCurrent()) {
-      return `Te faltan ${Math.max(0, this.needXp() - this.currentXp())} XP de los ${this.needXp()} de este nivel.`;
+      return t('levelProgress.faltanXpEsteNivel', { max: Math.max(0, this.needXp() - this.currentXp()), needXp: this.needXp() });
     }
-    return `Se desbloquea al completar los ${this.selectedNeed()} XP del nivel ${sel}.`;
+    return t('levelProgress.desbloqueaCompletarXpNivel', { selectedNeed: this.selectedNeed(), sel });
   });
   /** Solo tiene sentido pulsable para un nivel ya conseguido (navega a elegir avatar) — para el nivel actual no se muestra boton (ver plantilla), y para uno bloqueado el texto es meramente informativo. */
   readonly ctaLabel = computed(() => {
-    if (this.selected() < this.currentLevel()) return 'Ver en mi perfil';
-    return `Faltan ${this.selected() - this.currentLevel()} niveles`;
+    if (this.selected() < this.currentLevel()) return t('levelProgress.verPerfil');
+    return t('levelProgress.faltanNiveles', { count: this.selected() - this.currentLevel() });
   });
 
   /** Nivel, XP, recompensas y estadisticas de la tarjeta "Tu jornada" — todo real (ProfileController). */
@@ -220,10 +226,10 @@ export class LevelProgressFacade {
     }
     try {
       await Share.share({
-        title: 'Únete a Piqo',
-        text: 'Te invito a jugar a Piqo conmigo',
+        title: t('levelProgress.unetePiqo'),
+        text: t('levelProgress.invitoJugarPiqoConmigo'),
         url: link,
-        dialogTitle: 'Compartir invitación',
+        dialogTitle: t('levelProgress.compartirInvitacion'),
       });
     } catch {
       // Cierra el panel sin elegir nada: no es un fallo que avisar.
