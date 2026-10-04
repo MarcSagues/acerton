@@ -2,14 +2,14 @@
   <div class="head-row">
     <button type="button" class="back-link" (click)="page.goBack()">
       <piqo-svg icon="atras" size="20"></piqo-svg>
-      {{ page.step() === 'details' ? 'Ligas' : 'Grupos' }}
+      {{ page.step() === 'details' ? ('common.ligas' | t) : ('common.grupos' | t) }}
     </button>
   </div>
 
   @if (page.step() === 'competitions') {
     <div class="title-row">
-      <h1>Crear grupo</h1>
-      <p class="lead">Elige al menos una liga para el grupo. Podrás añadir más después, pero no quitar estas.</p>
+      <h1>{{ 'common.crearGrupo' | t }}</h1>
+      <p class="lead">{{ 'groupCreate.eligeMenosLigaGrupo' | t }}</p>
     </div>
     <div class="section">
       <div class="comp-list">
@@ -38,30 +38,30 @@
         [disabled]="page.selectedCompetitionIds().size === 0"
         (click)="page.goToDetails()"
       >
-        Continuar ({{ page.selectedCompetitionIds().size }})
+        {{ 'groupCreate.continuar' | t: { size: page.selectedCompetitionIds().size } }}
       </button>
     </div>
   } @else {
     <div class="title-row">
-      <h1>Crear grupo</h1>
-      <p class="lead">Tú decides el nombre y quién entra. El modo de juego no se puede cambiar después.</p>
+      <h1>{{ 'common.crearGrupo' | t }}</h1>
+      <p class="lead">{{ 'groupCreate.decidesNombreQuienEntra' | t }}</p>
     </div>
 
     <form [formGroup]="page.form" (ngSubmit)="page.createGroup()" class="form">
       <label class="field">
-        <span class="field-label">Nombre del grupo <span class="required">· obligatorio</span></span>
-        <input class="field-input" formControlName="name" placeholder="El grupo del domingo" />
+        <span class="field-label">{{ 'common.nombreGrupo' | t }} <span class="required">{{ 'common.obligatorio' | t }}</span></span>
+        <input class="field-input" formControlName="name" [attr.placeholder]="'groupCreate.grupoDomingo' | t" />
         @if (page.form.controls.name.invalid && page.form.controls.name.touched) {
-          <span class="hint error">Escribe un nombre de al menos 3 caracteres.</span>
+          <span class="hint error">{{ 'groupCreate.escribeNombreMenos3' | t }}</span>
         }
       </label>
       <label class="field">
-        <span class="field-label">Descripción <span class="required">· opcional</span></span>
-        <input class="field-input" formControlName="description" placeholder="Pique entre amigos de toda la vida" />
+        <span class="field-label">{{ 'groupCreate.descripcion' | t }} <span class="required">{{ 'groupCreate.opcional' | t }}</span></span>
+        <input class="field-input" formControlName="description" [attr.placeholder]="'groupCreate.piqueEntreAmigosToda' | t" />
       </label>
 
       <div class="field">
-        <span class="field-label">Modo de puntuación</span>
+        <span class="field-label">{{ 'groupCreate.modoPuntuacion' | t }}</span>
         <div class="radio-group">
           <button
             type="button"
@@ -72,7 +72,7 @@
             (click)="page.setScoringMode('ONE_X_TWO')"
           >
             <piqo-svg icon="marcador" size="18"></piqo-svg>
-            <span class="radio-title">Quiniela 1X2</span>
+            <span class="radio-title">{{ 'common.quiniela1x2' | t }}</span>
           </button>
           <button
             type="button"
@@ -83,17 +83,16 @@
             (click)="page.setScoringMode('EXACT_SCORE')"
           >
             <piqo-svg icon="objetivo" size="18"></piqo-svg>
-            <span class="radio-title">Resultado exacto</span>
+            <span class="radio-title">{{ 'common.resultadoExacto' | t }}</span>
           </button>
         </div>
         <p class="hint">
-          {{ page.form.value.scoringMode === 'EXACT_SCORE' ? '5 puntos por marcador exacto, 2 por acertar solo el resultado.' : '1 punto por acertar 1X2.' }}
-          No podrás cambiar el modo después de crear el grupo.
+          {{ 'groupCreate.podrasCambiarModoDespues' | t: { v: (page.form.value.scoringMode === 'EXACT_SCORE' ? ('groupCreate.hintExacto' | t) : ('common.1PuntoAcertar1x2' | t)) } }}
         </p>
       </div>
 
       <div class="field">
-        <span class="field-label">Comodín de remontada</span>
+        <span class="field-label">{{ 'common.comodinRemontada' | t }}</span>
         <div class="radio-group">
           <button
             type="button"
@@ -104,7 +103,7 @@
             (click)="page.setComebackEnabled(true)"
           >
             <piqo-svg icon="comodin" size="18"></piqo-svg>
-            <span class="radio-title">Activado</span>
+            <span class="radio-title">{{ 'common.activado' | t }}</span>
           </button>
           <button
             type="button"
@@ -115,26 +114,26 @@
             (click)="page.setComebackEnabled(false)"
           >
             <piqo-svg icon="cerrar" size="18"></piqo-svg>
-            <span class="radio-title">Desactivado</span>
+            <span class="radio-title">{{ 'common.desactivado' | t }}</span>
           </button>
         </div>
-        <button type="button" class="link-btn" (click)="page.showComebackDetail()">¿Cómo funciona el comodín?</button>
+        <button type="button" class="link-btn" (click)="page.showComebackDetail()">{{ 'groupCreate.comoFuncionaComodin' | t }}</button>
         <p class="hint">
           @if (page.form.value.comebackEnabled) {
             {{
               page.form.value.scoringMode === 'EXACT_SCORE'
-                ? 'Duplicar puntos de un partido para quien va por detrás.'
-                : 'Doble oportunidad (1X/X2/12) para quien va por detrás.'
+                ? ('common.duplicarPuntosPartidoQuien' | t)
+                : ('common.dobleOportunidad1xX2' | t)
             }}
           } @else {
-            {{ page.form.value.scoringMode === 'EXACT_SCORE' ? 'Nadie podrá duplicar puntos.' : 'Nadie tendrá doble oportunidad.' }}
+            {{ page.form.value.scoringMode === 'EXACT_SCORE' ? ('groupCreate.nadiePodraDuplicarPuntos' | t) : ('groupCreate.nadieTendraDobleOportunidad' | t) }}
           }
-          Podrás cambiarlo después desde los ajustes del grupo.
+          {{ 'groupCreate.podrasCambiarloDespuesDesde' | t }}
         </p>
       </div>
 
       <div class="field">
-        <span class="field-label">Privacidad</span>
+        <span class="field-label">{{ 'common.privacidad' | t }}</span>
         <div class="radio-group">
           <button
             type="button"
@@ -145,7 +144,7 @@
             (click)="page.setPrivacy(false)"
           >
             <piqo-svg icon="candado" size="18"></piqo-svg>
-            <span class="radio-title">Privado</span>
+            <span class="radio-title">{{ 'groupCreate.privado' | t }}</span>
           </button>
           <button
             type="button"
@@ -156,19 +155,18 @@
             (click)="page.setPrivacy(true)"
           >
             <piqo-svg icon="publico" size="18"></piqo-svg>
-            <span class="radio-title">Público</span>
+            <span class="radio-title">{{ 'groupCreate.publico' | t }}</span>
           </button>
         </div>
         <p class="hint">
-          {{ page.form.value.isPublic ? 'Cualquiera puede verlo y unirse sin invitación.' : 'Solo se puede entrar con el enlace o código de invitación.' }}
+          {{ page.form.value.isPublic ? ('groupCreate.cualquieraPuedeVerloUnirse' | t) : ('groupCreate.soloPuedeEntrarEnlace' | t) }}
         </p>
       </div>
 
       <div class="callout warning">
         <piqo-svg icon="alerta" size="20"></piqo-svg>
         <span>
-          El modo {{ page.form.value.scoringMode === 'EXACT_SCORE' ? 'resultado exacto' : '1X2' }} queda fijado al
-          crear el grupo. No podrás cambiarlo más adelante.
+          {{ 'groupCreate.modoQuedaFijadoCrear' | t: { v: (page.form.value.scoringMode === 'EXACT_SCORE' ? ('groupCreate.resultadoExacto' | t) : '1X2') } }}
         </span>
       </div>
 
@@ -176,7 +174,7 @@
         <p class="error">{{ page.errorMessage() }}</p>
       }
       <button type="submit" class="piqo-primary cta" [disabled]="page.formLoading()">
-        {{ page.formLoading() ? 'Creando…' : 'Crear grupo con modo ' + (page.form.value.scoringMode === 'EXACT_SCORE' ? 'resultado exacto' : '1X2') }}
+        {{ page.formLoading() ? ('groupCreate.creando' | t) : ('groupCreate.crearGrupoModo' | t: { mode: (page.form.value.scoringMode === 'EXACT_SCORE' ? ('groupCreate.resultadoExacto' | t) : '1X2') }) }}
       </button>
     </form>
   }

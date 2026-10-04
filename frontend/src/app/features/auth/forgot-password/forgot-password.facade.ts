@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ForgotPasswordFacade {
@@ -40,7 +41,7 @@ export class ForgotPasswordFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo procesar la solicitud. Inténtalo de nuevo.');
+        this.errorMessage.set(error.error?.message ?? t('forgotPassword.pudoProcesarSolicitudIntentalo'));
       },
     });
   }

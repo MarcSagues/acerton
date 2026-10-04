@@ -1,20 +1,20 @@
 <div class="page">
   <div class="head-row">
-    <a routerLink="/profile" class="back-btn" aria-label="Volver a Perfil">
-      <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+    <a routerLink="/profile" class="back-btn" [attr.aria-label]="'common.volverPerfil' | t">
+      <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.perfil' | t }}
     </a>
   </div>
   <div class="title-row">
     <p class="eyebrow">{{ page.trophyName() }}</p>
-    <h1>Temporada {{ page.year() }}</h1>
+    <h1>{{ 'trophySeason.temporada' | t: { year: page.year() } }}</h1>
   </div>
 
   <div class="section">
     @if (!page.demoCalloutDismissed()) {
       <div class="callout info">
         <piqo-svg icon="info" size="20"></piqo-svg>
-        <span><strong>Vista de demostración.</strong> Esta clasificación y este historial son datos de ejemplo: Piqo todavía no guarda un histórico real de temporadas ganadas.</span>
-        <button type="button" class="callout-close" aria-label="Cerrar aviso" (click)="page.demoCalloutDismissed.set(true)">
+        <span><strong>{{ 'trophySeason.vistaDemostracion' | t }}</strong> {{ 'trophySeason.estaClasificacionEsteHistorial' | t }}</span>
+        <button type="button" class="callout-close" [attr.aria-label]="'common.cerrarAviso' | t" (click)="page.demoCalloutDismissed.set(true)">
           <piqo-svg icon="cerrar" size="14"></piqo-svg>
         </button>
       </div>
@@ -24,8 +24,8 @@
   <div class="section-head">
     <span class="section-n mono">01</span>
     <div>
-      <p class="eyebrow-sm">Al cerrar la temporada</p>
-      <h2>Clasificación final</h2>
+      <p class="eyebrow-sm">{{ 'trophySeason.cerrarTemporada' | t }}</p>
+      <h2>{{ 'trophySeason.clasificacionFinal' | t }}</h2>
     </div>
   </div>
   <div class="section">
@@ -33,8 +33,8 @@
       @for (row of page.standings(); track row.position) {
         <div class="row" [class.me]="row.isMe">
           <span class="pos mono">{{ row.position }}</span>
-          <span class="name">{{ row.isMe ? 'Tú · ' + row.name : row.name }}</span>
-          <span class="pts mono">{{ row.points }} pts</span>
+          <span class="name">{{ row.isMe ? ('trophySeason.tu' | t: { name: row.name }) : row.name }}</span>
+          <span class="pts mono">{{ 'common.pts' | t: { points: row.points } }}</span>
         </div>
       }
     </div>
@@ -43,8 +43,8 @@
   <div class="section-head">
     <span class="section-n mono">02</span>
     <div>
-      <p class="eyebrow-sm">Jornada a jornada</p>
-      <h2>Historial de la temporada</h2>
+      <p class="eyebrow-sm">{{ 'trophySeason.jornadaJornada' | t }}</p>
+      <h2>{{ 'trophySeason.historialTemporada' | t }}</h2>
     </div>
   </div>
   <div class="section">
@@ -52,11 +52,11 @@
       @for (matchday of page.matchdays(); track matchday.order) {
         <div class="row">
           <span class="order-badge">
-            <span class="order-n mono">J{{ matchday.order }}</span>
+            <span class="order-n mono">{{ 'common.jornadaAbrev' | t: { order: matchday.order } }}</span>
           </span>
           <span class="meta">
-            <span class="title">Ganó {{ matchday.winnerName }}</span>
-            <span class="note mono">Tu puntuación: {{ matchday.myPoints }}</span>
+            <span class="title">{{ 'trophySeason.gano' | t: { winnerName: matchday.winnerName } }}</span>
+            <span class="note mono">{{ 'common.puntuacion' | t: { myPoints: matchday.myPoints } }}</span>
           </span>
         </div>
       }

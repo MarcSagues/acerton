@@ -31,11 +31,13 @@ import {
   isPredictionHit,
   lockedMatchLabel,
   matchAccentTone as domainMatchAccentTone,
+  isKickoffToday as domainIsKickoffToday,
   matchDayLabel as domainMatchDayLabel,
   pointsForPrediction,
   predictionLabel,
   predictionSummary,
 } from '../domain/prediction-rules';
+import { t } from '../../../core/i18n/translate';
 
 const AUTO_SAVE_NOTICE_DISMISSED_KEY = 'acerton.autoSaveNotice.dismissed.v1';
 
@@ -109,8 +111,8 @@ export class CurrentMatchdayFacade {
 
   readonly activeEntry = computed(() => this.entries()[this.activeTabIndex()] ?? null);
   readonly isExactScore = computed(() => this.activeGroupService.activeGroup()?.scoringMode === 'EXACT_SCORE');
-  readonly sharePlayerName = computed(() => this.authService.currentUser()?.name ?? 'Jugador');
-  readonly shareGroupName = computed(() => this.activeGroupService.activeGroup()?.name ?? 'Mi grupo');
+  readonly sharePlayerName = computed(() => this.authService.currentUser()?.name ?? t('currentMatchday.jugador'));
+  readonly shareGroupName = computed(() => this.activeGroupService.activeGroup()?.name ?? t('common.miGrupo'));
   readonly shareScoringMode = computed(() => this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO');
   /**
    * Proximo partido todavia predecible de la jornada activa (el mas cercano
@@ -233,19 +235,19 @@ export class CurrentMatchdayFacade {
 
   /** Texto de cabecera segun el ciclo de 4 estados de la jornada (HANDOFF §9). */
   cicloTitulo(entry: CurrentMatchdayEntry): string {
-    if (entry.matchday.status === 'FINISHED') return `Finalizada · ${entry.competition.name} J${entry.matchday.order}`;
-    if (this.isLocked(entry)) return 'Cerrada · en juego';
+    if (entry.matchday.status === 'FINISHED') return t('currentMatchday.finalizadaJ', { name: entry.competition.name, order: entry.matchday.order });
+    if (this.isLocked(entry)) return t('currentMatchday.cerradaJuego');
     // Solo una jornada que aun no le toca (previsualizada con "siguiente"):
     // la que le toca siempre esta abierta, sea cual sea la fecha de su primer partido.
-    if (!entry.matchday.canPredict) return 'Próxima · empieza en';
-    return 'Abierta · cierra en';
+    if (!entry.matchday.canPredict) return t('currentMatchday.proximaEmpieza');
+    return t('currentMatchday.abiertaCierra');
   }
 
   cicloMeta(entry: CurrentMatchdayEntry): string {
     if (entry.matchday.status === 'FINISHED') {
-      return `${this.totalPoints()} ${this.totalPoints() === 1 ? 'punto' : 'puntos'}`;
+      return t('currentMatchday.points', { count: this.totalPoints() });
     }
-    if (this.isLocked(entry)) return `${this.totalPoints()} pts en juego`;
+    if (this.isLocked(entry)) return t('currentMatchday.ptsJuego', { totalPoints: this.totalPoints() });
     return this.countdownLabel();
   }
 
@@ -255,14 +257,14 @@ export class CurrentMatchdayFacade {
     const anyError = entry.matchday.matches.some((m) => this.stateFor(m.id).error);
     if (anyError) {
       if (this.dismissedLiveAviso() === `${entry.matchday.id}:error`) return null;
-      return { text: 'No se ha guardado algún pronóstico. Revisa tu conexión y reintenta.', tone: 'error' };
+      return { text: t('currentMatchday.haGuardadoAlgunPronostico'), tone: 'error' };
     }
     if (this.doneCount() < entry.matchday.matches.length) {
       if (this.autoSaveNoticeDismissed()) return null;
-      return { text: 'Se guarda automáticamente al elegir. Puedes editarlo hasta el cierre.', tone: 'info' };
+      return { text: t('currentMatchday.guardaAutomaticamenteElegirPuedes'), tone: 'info' };
     }
     if (this.dismissedLiveAviso() === `${entry.matchday.id}:warning`) return null;
-    return { text: `Cierra en ${this.countdownLabel()}. Puedes editar tus elecciones hasta entonces.`, tone: 'warning' };
+    return { text: t('currentMatchday.cierraPuedesEditarElecciones', { countdownLabel: this.countdownLabel() }), tone: 'warning' };
   }
 
   /**
@@ -297,8 +299,7 @@ export class CurrentMatchdayFacade {
     if (!this.hasComebackSlot(entry)) return null;
     const comeback = this.comeback();
     if (!comeback?.enabled || comeback.remaining <= 0) return null;
-    const count = comeback.remaining === 1 ? '1 comodín' : `${comeback.remaining} comodines`;
-    return `Tienes ${count} de remontada esta jornada. Mantén pulsado un partido para usarlo.`;
+    return t('currentMatchday.comebackBanner', { count: comeback.remaining });
   }
 
   dismissComebackBanner(entry: CurrentMatchdayEntry): void {
@@ -343,16 +344,16 @@ export class CurrentMatchdayFacade {
     try {
       const earned = await this.adsService.watchRewardedAd(userId);
       if (!earned) {
-        this.toast.show('No se pudo cargar el vídeo. Inténtalo de nuevo en unos segundos.');
+        this.toast.show(t('currentMatchday.pudoCargarVideoIntentalo'));
         return;
       }
       this.wildcardsService.claimAdReward(groupId, entry.matchday.id).subscribe({
         next: (status) => {
           this.comeback.set(status);
-          this.toast.show('¡Comodín extra conseguido! Ya puedes usarlo en un pronóstico.');
+          this.toast.show(t('currentMatchday.comodinExtraConseguidoYa'));
         },
         error: () => {
-          this.toast.show('El vídeo se vio bien, pero no se pudo aplicar el comodín. Inténtalo de nuevo.');
+          this.toast.show(t('currentMatchday.videoVioBienPero'));
         },
       });
     } finally {
@@ -381,7 +382,7 @@ export class CurrentMatchdayFacade {
       next: (sources) => {
         this.copyBusy.set(false);
         if (sources.length === 0) {
-          this.toast.show('No has marcado pronósticos de esta jornada en tus otros grupos');
+          this.toast.show(t('currentMatchday.hasMarcadoPronosticosEsta'));
           return;
         }
         const ref = this.sheet.open<CopyFromGroupSheetComponent, CopySource | undefined, CopyFromGroupSheetData>(
@@ -394,7 +395,7 @@ export class CurrentMatchdayFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.copyBusy.set(false);
-        this.toast.show(error.error?.message ?? 'No se pudieron cargar tus otros grupos');
+        this.toast.show(error.error?.message ?? t('currentMatchday.pudieronCargarOtrosGrupos'));
       },
     });
   }
@@ -408,10 +409,10 @@ export class CurrentMatchdayFacade {
     this.dialog
       .open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, {
         data: {
-          title: '¿Sustituir tus pronósticos?',
-          message: `Ya tienes pronósticos en este grupo. Se sustituirán por los de «${source.name}» en los partidos que tengan allí; los demás se quedan como están.`,
-          confirmLabel: 'Copiar',
-          cancelLabel: 'Cancelar',
+          title: t('currentMatchday.sustituirPronosticos'),
+          message: t('currentMatchday.yaTienesPronosticosEste', { name: source.name }),
+          confirmLabel: t('common.copiar'),
+          cancelLabel: t('common.cancelar'),
         },
       })
       .closed.subscribe((confirmed) => {
@@ -453,7 +454,7 @@ export class CurrentMatchdayFacade {
         const message = copyResultMessage(source.name, result);
         if (message.needsAttention) {
           this.dialog.open<InfoDialogComponent, void, InfoDialogData>(InfoDialogComponent, {
-            data: { title: 'Pronósticos copiados', message: message.text },
+            data: { title: t('currentMatchday.pronosticosCopiados'), message: message.text },
           });
         } else {
           this.toast.show(message.text, { duration: 4000 });
@@ -461,7 +462,7 @@ export class CurrentMatchdayFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.copyBusy.set(false);
-        this.toast.show(error.error?.message ?? 'No se pudieron copiar los pronósticos');
+        this.toast.show(error.error?.message ?? t('currentMatchday.pudieronCopiarPronosticos'));
       },
     });
   }
@@ -600,7 +601,7 @@ export class CurrentMatchdayFacade {
       },
       error: () => {
         this.navigating.set(false);
-        this.toast.show('No se pudo cargar la jornada');
+        this.toast.show(t('currentMatchday.pudoCargarJornada'));
       },
     });
   }
@@ -618,7 +619,7 @@ export class CurrentMatchdayFacade {
           if (direction === 'next') {
             this.noNextAvailable.set(true);
           }
-          this.toast.show(direction === 'previous' ? 'No hay jornada anterior' : 'Todavía no hay jornada siguiente');
+          this.toast.show(direction === 'previous' ? t('currentMatchday.hayJornadaAnterior') : t('currentMatchday.todaviaHayJornadaSiguiente'));
           return;
         }
         this.noNextAvailable.set(false);
@@ -626,7 +627,7 @@ export class CurrentMatchdayFacade {
       },
       error: () => {
         this.navigating.set(false);
-        this.toast.show('No se pudo cargar la jornada');
+        this.toast.show(t('currentMatchday.pudoCargarJornada'));
       },
     });
   }
@@ -773,6 +774,10 @@ export class CurrentMatchdayFacade {
   }
 
   /** "Hoy"/"Manana" cuando aplica; si no, fecha corta (dd/MM) en vez del dia de la semana. */
+  isKickoffToday(kickoff: string): boolean {
+    return domainIsKickoffToday(kickoff, this.now());
+  }
+
   matchDayLabel(kickoff: string): string {
     return domainMatchDayLabel(kickoff, this.now());
   }
@@ -872,11 +877,11 @@ export class CurrentMatchdayFacade {
 
     if (!hasCurrent) {
       if (!comeback?.enabled) {
-        this.toast.show('El comodín de remontada está desactivado en este grupo');
+        this.toast.show(t('currentMatchday.comodinRemontadaEstaDesactivado'));
         return;
       }
       if (comeback.remaining <= 0) {
-        this.toast.show('No te quedan comodines de remontada disponibles esta jornada');
+        this.toast.show(t('currentMatchday.quedanComodinesRemontadaDisponibles'));
         return;
       }
     }
@@ -974,7 +979,7 @@ export class CurrentMatchdayFacade {
           this.finishDrawProgress(state, seq, () => {
             state.saving = false;
             state.error = true;
-            this.toast.show(error.error?.message ?? 'No se pudo guardar el pronóstico');
+            this.toast.show(error.error?.message ?? t('currentMatchday.pudoGuardarPronostico'));
           });
         },
       });

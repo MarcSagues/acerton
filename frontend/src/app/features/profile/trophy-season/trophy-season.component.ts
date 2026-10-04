@@ -1,11 +1,12 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TrophySeasonFacade } from './trophy-season.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-trophy-season',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [TrophySeasonFacade],
   templateUrl: './trophy-season.component.html',

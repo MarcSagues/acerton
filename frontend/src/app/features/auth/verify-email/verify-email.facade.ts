@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class VerifyEmailFacade {
@@ -15,7 +16,7 @@ export class VerifyEmailFacade {
   init(): void {
     const token = this.route.snapshot.queryParamMap.get('token');
     if (!token) {
-      this.errorMessage.set('Falta el token de confirmación en el enlace.');
+      this.errorMessage.set(t('verifyEmail.faltaTokenConfirmacionEnlace'));
       return;
     }
 
@@ -23,7 +24,7 @@ export class VerifyEmailFacade {
       next: () => this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route)),
       error: (error) =>
         this.errorMessage.set(
-          error.error?.message ?? 'El enlace de confirmación no es válido o ha caducado.',
+          error.error?.message ?? t('verifyEmail.enlaceConfirmacionValidoHa'),
         ),
     });
   }

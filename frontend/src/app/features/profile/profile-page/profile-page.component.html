@@ -4,11 +4,11 @@
   @if (page.profile(); as p) {
   <div class="page">
     <div class="title-row">
-      <h1>Tu perfil</h1>
+      <h1>{{ 'common.perfil2' | t }}</h1>
     </div>
 
     <div class="identity-row">
-      <a routerLink="/profile/avatar" class="avatar-link" aria-label="Cambiar avatar">
+      <a routerLink="/profile/avatar" class="avatar-link" [attr.aria-label]="'profilePage.cambiarAvatar' | t">
         <app-avatar
           [url]="page.authService.currentUser()?.avatarUrl ?? null"
           [background]="page.authService.currentUser()?.avatarBackground ?? null"
@@ -28,22 +28,22 @@
 
     <div class="stats-row">
       <div class="stat-card">
-        <p class="stat-label">Racha actual</p>
+        <p class="stat-label">{{ 'profilePage.rachaActual' | t }}</p>
         <p class="stat-value mono">{{ page.globalCurrentStreak() }}</p>
-        <p class="stat-hint">jornadas seguidas en tus grupos</p>
+        <p class="stat-hint">{{ 'profilePage.jornadasSeguidasGrupos' | t }}</p>
       </div>
       <div class="stat-card">
-        <p class="stat-label">Mejor racha</p>
+        <p class="stat-label">{{ 'common.mejorRacha' | t }}</p>
         <p class="stat-value mono">{{ page.globalLongestStreak() }}</p>
-        <p class="stat-hint">en cualquiera de tus grupos</p>
+        <p class="stat-hint">{{ 'profilePage.cualquieraGrupos' | t }}</p>
       </div>
     </div>
 
     <div class="section">
       <a class="card level-card" routerLink="/profile/level">
         <div class="level-card-top">
-          <span class="level-badge mono">Nv. {{ p.xp.level }}</span>
-          <span class="level-hint">{{ p.xp.currentLevelXp }} / {{ p.xp.neededForLevel }} XP</span>
+          <span class="level-badge mono">{{ 'profilePage.nv' | t: { level: p.xp.level } }}</span>
+          <span class="level-hint">{{ 'profilePage.xp' | t: { currentLevelXp: p.xp.currentLevelXp, neededForLevel: p.xp.neededForLevel } }}</span>
         </div>
         <div class="level-bar-track">
           <div class="level-bar-fill" [style.width.%]="(p.xp.currentLevelXp / p.xp.neededForLevel) * 100"></div>
@@ -52,16 +52,16 @@
     </div>
 
     <div class="section-head">
-      <h2>Vitrina</h2>
+      <h2>{{ 'profilePage.vitrina' | t }}</h2>
     </div>
-    <p class="section-hint">Un trofeo de Piqo significa ganar la competición de pronósticos del grupo, no el torneo real.</p>
+    <p class="section-hint">{{ 'common.trofeoPiqoSignificaGanar' | t }}</p>
     <div class="trophies-row">
       @for (trophy of page.trophies; track trophy.id) {
         <button
           type="button"
           class="trophy-btn"
           [class.earned]="trophy.count > 0"
-          [attr.aria-label]="trophy.name + (trophy.count > 0 ? ', conseguido' : ', sin conseguir')"
+          [attr.aria-label]="trophy.name + (trophy.count > 0 ? ('common.conseguido' | t) : ('common.sinConseguir' | t))"
           (click)="page.openTrophy(trophy)"
         >
           @if (trophy.count > 0) {
@@ -83,21 +83,21 @@
     </div>
 
     <div class="section-head">
-      <h2>Insignias</h2>
-      <a routerLink="/profile/badges" class="link">Ver colección</a>
+      <h2>{{ 'common.insignias' | t }}</h2>
+      <a routerLink="/profile/badges" class="link">{{ 'profilePage.verColeccion' | t }}</a>
     </div>
-    <p class="section-hint">{{ page.badgeCount() }} conseguidas hasta ahora.</p>
+    <p class="section-hint">{{ 'profilePage.conseguidasHastaAhora' | t: { badgeCount: page.badgeCount() } }}</p>
     <div class="badges-row">
       @for (item of page.badgePreview(); track item.badge.id) {
         <button
           type="button"
           class="badge-preview"
           [class.earned]="item.earned"
-          [attr.aria-label]="item.badge.name + (item.earned ? '' : ', por desbloquear')"
+          [attr.aria-label]="(item.badge | badgeName) + (item.earned ? '' : ('profilePage.desbloquear' | t))"
           (click)="page.openBadge(item)"
         >
           @if (page.artId(item.badge.code); as artId) {
-            <img class="badge-art" [class.locked]="!item.earned" [src]="page.artSrc(artId)" [alt]="item.badge.name" />
+            <img class="badge-art" [class.locked]="!item.earned" [src]="page.artSrc(artId)" [alt]="item.badge | badgeName" />
           } @else {
             <piqo-svg icon="medalla" size="26"></piqo-svg>
           }
@@ -111,8 +111,8 @@
     <div class="section">
       <a class="card settings-link" routerLink="/profile/stats">
         <div>
-          <p class="card-title">Estadísticas</p>
-          <p class="hint mono">Posición, puntos y racha en tu grupo activo</p>
+          <p class="card-title">{{ 'common.estadisticas' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.posicionPuntosRachaGrupo' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
@@ -120,19 +120,19 @@
     <div class="section">
       <a class="card settings-link" routerLink="/profile/history">
         <div>
-          <p class="card-title">Histórico</p>
-          <p class="hint mono">Tus últimas jornadas jugadas</p>
+          <p class="card-title">{{ 'common.historico' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.ultimasJornadasJugadas' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
     </div>
 
     <div class="section-head">
-      <h2>Ajustes</h2>
+      <h2>{{ 'profilePage.ajustes' | t }}</h2>
     </div>
     <div class="section">
       <div class="card">
-        <p class="card-title">Nombre</p>
+        <p class="card-title">{{ 'profilePage.nombre' | t }}</p>
         <div class="name-edit-row">
           <input
             class="name-input mono"
@@ -145,12 +145,12 @@
           />
           @if (!page.nameChangeAvailableAt()) {
             <button type="button" class="piqo-primary save-btn" [disabled]="!page.canSaveName()" (click)="page.saveName()">
-              {{ page.nameSaving() ? 'Guardando…' : 'Guardar' }}
+              {{ page.nameSaving() ? ('common.guardando' | t) : ('common.guardar' | t) }}
             </button>
           }
         </div>
         @if (page.nameChangeAvailableAt(); as availableAt) {
-          <p class="hint mono">Ya lo has cambiado. Podras hacerlo de nuevo el {{ availableAt | date: 'dd/MM/yyyy' }}.</p>
+          <p class="hint mono">{{ 'profilePage.yaHasCambiadoPodras' | t: { availableAt: (availableAt | date: 'dd/MM/yyyy') } }}</p>
         } @else {
           @if (page.nameHint(); as hint) {
             <p class="error mono">{{ hint }}</p>
@@ -165,8 +165,8 @@
     <div class="section">
       <a class="card settings-link" routerLink="/profile/appearance">
         <div>
-          <p class="card-title">Apariencia</p>
-          <p class="hint mono">Claro, oscuro o según el sistema</p>
+          <p class="card-title">{{ 'common.apariencia' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.claroOscuroSegunSistema' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
@@ -174,8 +174,8 @@
     <div class="section">
       <a class="card settings-link" routerLink="/notifications/preferences">
         <div>
-          <p class="card-title">Preferencias de avisos</p>
-          <p class="hint mono">Qué avisos recibir y qué grupos silenciar</p>
+          <p class="card-title">{{ 'common.preferenciasAvisos' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.avisosRecibirGruposSilenciar' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
@@ -183,8 +183,8 @@
     <div class="section">
       <a class="card settings-link" routerLink="/rules">
         <div>
-          <p class="card-title">Normas y premios</p>
-          <p class="hint mono">Puntuación real y acuerdos del grupo</p>
+          <p class="card-title">{{ 'common.normasPremios' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.puntuacionRealAcuerdosGrupo' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
@@ -192,8 +192,8 @@
     <div class="section">
       <a class="card settings-link" routerLink="/profile/invite">
         <div>
-          <p class="card-title">Invitar</p>
-          <p class="hint mono">Tu enlace, y aplicar el código de un amigo</p>
+          <p class="card-title">{{ 'common.invitar' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.enlaceAplicarCodigoAmigo' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
@@ -202,17 +202,17 @@
       <div class="section">
         <a class="card settings-link" routerLink="/profile/change-password">
           <div>
-            <p class="card-title">Cambiar contraseña</p>
-            <p class="hint mono">Actualiza la contraseña de tu cuenta</p>
+            <p class="card-title">{{ 'common.cambiarContrasena' | t }}</p>
+            <p class="hint mono">{{ 'profilePage.actualizaContrasenaCuenta' | t }}</p>
           </div>
           <piqo-svg icon="flecha" size="18"></piqo-svg>
         </a>
       </div>
     }
 
-    <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">Ver tutorial de nuevo</button>
-    <button type="button" class="logout-btn" (click)="page.logout()">Cerrar sesión</button>
-    <a class="delete-account-link mono" routerLink="/profile/delete-account">Eliminar cuenta</a>
+    <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">{{ 'profilePage.verTutorialNuevo' | t }}</button>
+    <button type="button" class="logout-btn" (click)="page.logout()">{{ 'profilePage.cerrarSesion' | t }}</button>
+    <a class="delete-account-link mono" routerLink="/profile/delete-account">{{ 'common.eliminarCuenta' | t }}</a>
   </div>
   }
 }

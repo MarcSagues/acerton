@@ -1,5 +1,6 @@
 import { CurrentMatchdayEntry, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption } from '../../../core/models/prediction.model';
+import { currentLocale, t } from '../../../core/i18n/translate';
 
 export interface PredictionSelection {
   choice: PredictionChoice | null;
@@ -126,22 +127,27 @@ export function matchAccentTone(
 }
 
 export function lockedMatchLabel(match: Match): string {
-  if (match.status === 'POSTPONED') return 'Aplazado';
-  if (match.status === 'CANCELLED') return 'Cancelado';
-  return 'En juego';
+  if (match.status === 'POSTPONED') return t('predictionRules.aplazado');
+  if (match.status === 'CANCELLED') return t('predictionRules.cancelado');
+  return t('predictionRules.juego');
 }
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+/** true si el partido es hoy (la plantilla pone "Hoy" en negrita: compara aqui, no contra el texto traducido). */
+export function isKickoffToday(kickoff: string, today: Date): boolean {
+  return isSameDay(new Date(kickoff), today);
+}
+
 export function matchDayLabel(kickoff: string, today: Date): string {
   const date = new Date(kickoff);
-  if (isSameDay(date, today)) return 'Hoy';
+  if (isSameDay(date, today)) return t('currentMatchday.hoy');
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (isSameDay(date, tomorrow)) return 'Mañana';
-  return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  if (isSameDay(date, tomorrow)) return t('predictionRules.manana');
+  return date.toLocaleDateString(currentLocale(), { day: '2-digit', month: '2-digit' });
 }
 
 export function predictionSummary(
@@ -157,10 +163,10 @@ export function predictionSummary(
     .filter((row): row is { match: (typeof entry.matchday.matches)[number]; label: string } => row.label != null)
     .map((row) => `${row.match.homeTeam} - ${row.match.awayTeam}: ${row.label}`);
   return [
-    `Piqo · ${entry.competition.name} · Jornada ${entry.matchday.order}`,
+    t('predictionRules.piqoJornada', { name: entry.competition.name, order: entry.matchday.order }),
     '',
     ...lines,
     '',
-    'Pronósticos enviados',
+    t('predictionRules.pronosticosEnviados'),
   ].join('\n');
 }

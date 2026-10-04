@@ -7,8 +7,8 @@
     </div>
     <app-empty-state
       icon="jornada"
-      title="Todavía no hay jornada sincronizada"
-      text="Las competiciones de este grupo todavía no tienen una jornada sincronizada. Vuelve más tarde."
+      [title]="'currentMatchday.todaviaHayJornadaSincronizada' | t"
+      [text]="'currentMatchday.competicionesEsteGrupoTodavia' | t"
     ></app-empty-state>
   </div>
 } @else if (page.submissionConfirmed()) {
@@ -16,11 +16,11 @@
     <main class="sent-page">
       <piqo-svg logo size="120"></piqo-svg>
       <div class="sent-check" aria-hidden="true"><piqo-svg icon="check" size="28"></piqo-svg></div>
-      <p class="sent-eyebrow">{{ entry.competition.name }} · J{{ entry.matchday.order }}</p>
-      <h1>Enviado</h1>
-      <p class="sent-lead">Tus pronósticos están guardados. Puedes volver a cambiarlos hasta que empiece cada partido.</p>
+      <p class="sent-eyebrow">{{ entry.competition.name }} · {{ 'common.jornadaAbrev' | t: { order: entry.matchday.order } }}</p>
+      <h1>{{ 'currentMatchday.enviado' | t }}</h1>
+      <p class="sent-lead">{{ 'currentMatchday.pronosticosEstanGuardadosPuedes' | t }}</p>
 
-      <section class="sent-summary" aria-label="Resumen de pronósticos">
+      <section class="sent-summary" [attr.aria-label]="'currentMatchday.resumenPronosticos' | t">
         @for (match of entry.matchday.matches; track match.id) {
           @if (page.pickLabel(match.id); as pick) {
             <div class="sent-match">
@@ -36,15 +36,15 @@
 
       <button type="button" class="piqo-primary sent-btn" [disabled]="page.justCopiedSummary()" (click)="page.copySummary()">
         <piqo-svg [attr.icon]="page.justCopiedSummary() ? 'check' : 'copiar'" size="18"></piqo-svg>
-        {{ page.justCopiedSummary() ? 'Resumen copiado' : 'Copiar resumen' }}
+        {{ page.justCopiedSummary() ? ('currentMatchday.resumenCopiado' | t) : ('currentMatchday.copiarResumen' | t) }}
       </button>
       <button type="button" class="piqo-secondary sent-btn sent-share-btn" (click)="page.openShareCard()">
         <piqo-svg icon="compartir" size="18"></piqo-svg>
-        Compartir imagen
+        {{ 'common.compartirImagen' | t }}
       </button>
       <button type="button" class="piqo-secondary sent-btn" (click)="page.editPredictions()">
         <piqo-svg icon="atras" size="18"></piqo-svg>
-        Volver
+        {{ 'common.volver2' | t }}
       </button>
     </main>
   }
@@ -58,19 +58,19 @@
 
     @if (page.activeEntry(); as entry) {
       <div class="title-row">
-        <h1>Tu jornada</h1>
+        <h1>{{ 'common.jornada' | t }}</h1>
         <div class="eyebrow-row">
           <button
             type="button"
             class="nav-btn"
             [disabled]="page.navigating() || entry.matchday.order <= 1"
             (click)="page.navigatePrevious()"
-            aria-label="Jornada anterior"
+            [attr.aria-label]="'common.jornadaAnterior' | t"
           >
             <piqo-svg icon="atras" size="16"></piqo-svg>
           </button>
           <button type="button" class="eyebrow" (click)="page.goToCalendar()">
-            {{ entry.competition.name | uppercase }} · JORNADA {{ entry.matchday.order }}
+            {{ 'currentMatchday.jornada' | t: { name: (entry.competition.name | uppercase), order: entry.matchday.order } }}
             <piqo-svg icon="abajo" size="16"></piqo-svg>
           </button>
           <button
@@ -78,13 +78,13 @@
             class="nav-btn"
             [disabled]="page.navigating() || page.noNextAvailable()"
             (click)="page.navigateNext()"
-            aria-label="Jornada siguiente"
+            [attr.aria-label]="'common.jornadaSiguiente' | t"
           >
             <piqo-svg icon="arriba" size="16" style="transform: rotate(90deg)"></piqo-svg>
           </button>
         </div>
         @if (!page.isViewingLive()) {
-          <button type="button" class="live-link mono" (click)="page.goToLive()">&lt; Volver a la jornada actual</button>
+          <button type="button" class="live-link mono" (click)="page.goToLive()">{{ 'currentMatchday.volverJornadaActual' | t }}</button>
         }
       </div>
 
@@ -110,7 +110,7 @@
               <span class="ciclo-meta mono">{{ page.cicloMeta(entry) }}</span>
             </span>
             <span class="ciclo-summary-cta">
-              Ver resumen
+              {{ 'currentMatchday.verResumen' | t }}
               <piqo-svg icon="flecha" size="14"></piqo-svg>
             </span>
           </button>
@@ -135,7 +135,7 @@
         <div class="aviso" [class.warning]="aviso.tone === 'warning'" [class.error]="aviso.tone === 'error'" [class.info]="aviso.tone === 'info'">
           <piqo-svg [attr.icon]="aviso.tone === 'error' ? 'sin-conexion' : aviso.tone === 'warning' ? 'alerta' : 'reloj'" size="20"></piqo-svg>
           <span>{{ aviso.text }}</span>
-          <button type="button" class="aviso-close" aria-label="Cerrar aviso" (click)="page.dismissAviso(entry, aviso.tone)">
+          <button type="button" class="aviso-close" [attr.aria-label]="'common.cerrarAviso' | t" (click)="page.dismissAviso(entry, aviso.tone)">
             <piqo-svg icon="cerrar" size="16"></piqo-svg>
           </button>
         </div>
@@ -145,7 +145,7 @@
         <div class="copy-row">
           <button type="button" class="copy-groups-btn" [disabled]="page.copyBusy()" (click)="page.openCopySheet()">
             <piqo-svg icon="copiar" size="16"></piqo-svg>
-            {{ page.copyBusy() ? 'Un momento…' : 'Copiar pronósticos de otro grupo' }}
+            {{ page.copyBusy() ? ('currentMatchday.momento' | t) : ('currentMatchday.copiarPronosticosOtroGrupo' | t) }}
           </button>
         </div>
       }
@@ -161,8 +161,8 @@
               <span class="pending-dot match-pending-dot" aria-hidden="true"></span>
             }
             <p class="kickoff mono">
-              @if (page.matchDayLabel(match.kickoff) === 'Hoy') {
-                <strong>Hoy</strong>
+              @if (page.isKickoffToday(match.kickoff)) {
+                <strong>{{ 'currentMatchday.hoy' | t }}</strong>
               } @else {
                 {{ page.matchDayLabel(match.kickoff) }}
               }
@@ -173,7 +173,7 @@
               <button
                 type="button"
                 class="match-share-btn"
-                aria-label="Compartir este partido"
+                [attr.aria-label]="'currentMatchday.compartirEstePartido' | t"
                 [disabled]="!page.hasPick(match.id)"
                 (click)="page.openMatchShareCard(match)"
               >
@@ -198,27 +198,27 @@
 
             <div class="status-row">
               @if (match.status === 'FINISHED' && page.matchAccentTone(match) === 'none') {
-                <span class="points-badge mono" data-tone="none">No participado</span>
+                <span class="points-badge mono" data-tone="none">{{ 'currentMatchday.participado' | t }}</span>
               } @else if (match.status === 'FINISHED') {
                 <span class="points-badge mono" [attr.data-tone]="page.matchAccentTone(match)">
-                  {{ page.pointsFor(match) > 0 ? '+' : '' }}{{ page.pointsFor(match) }} pts
+                  {{ 'currentMatchday.pts' | t: { v: (page.pointsFor(match) > 0 ? '+' : ''), pointsFor: page.pointsFor(match) } }}
                 </span>
               } @else if (page.isMatchLocked(match)) {
                 <span class="points-badge mono" data-tone="none">{{ page.matchLockedLabel(match) }}</span>
               } @else if (!page.pickingAllowed()) {
                 <piqo-svg icon="reloj" size="16"></piqo-svg>
-                <span>Aún no</span>
+                <span>{{ 'currentMatchday.aun' | t }}</span>
               } @else if (page.stateFor(match.id).error) {
                 <piqo-svg icon="sin-conexion" size="16" class="miss"></piqo-svg>
-                <span class="miss">No se ha guardado</span>
-                <button type="button" class="retry-btn" (click)="page.save(match.id, page.stateFor(match.id))">Reintentar</button>
+                <span class="miss">{{ 'currentMatchday.haGuardado' | t }}</span>
+                <button type="button" class="retry-btn" (click)="page.save(match.id, page.stateFor(match.id))">{{ 'common.reintentar' | t }}</button>
               } @else if (page.stateFor(match.id).saving) {
                 <app-spinner [size]="16"></app-spinner>
-                <span>Guardando…</span>
+                <span>{{ 'common.guardando' | t }}</span>
               } @else if (page.stateFor(match.id).saved && !page.isExactScore()) {
-                <span class="points-badge mono" data-tone="hit">Guardado</span>
+                <span class="points-badge mono" data-tone="hit">{{ 'currentMatchday.guardado' | t }}</span>
               } @else {
-                <span class="points-badge mono" data-tone="pending">Pendiente de jugar</span>
+                <span class="points-badge mono" data-tone="pending">{{ 'currentMatchday.pendienteJugar' | t }}</span>
               }
             </div>
           </div>
@@ -293,7 +293,7 @@
             </div>
           }
         } @else if (match.status === 'FINISHED') {
-          <div class="options" [class.disabled]="page.matchAccentTone(match) === 'none'" role="group" aria-label="Resultado del partido">
+          <div class="options" [class.disabled]="page.matchAccentTone(match) === 'none'" role="group" [attr.aria-label]="'currentMatchday.resultadoPartido' | t">
             @for (opt of oneXTwoOptions; track opt.v) {
               <span class="choice" [class]="'choice ' + (page.choiceReviewTone(match, opt.v) ?? '')">{{ opt.l }}</span>
             }
@@ -314,7 +314,7 @@
             <!-- Mantener pulsada esta fila abre el panel del comodin de
                  remontada (ComebackSheetComponent), en vez de un boton fijo
                  aparte junto a las opciones — ver openComebackSheet(). -->
-            <div class="options" role="group" [attr.aria-label]="'Pronostico ' + match.homeTeam + ' contra ' + match.awayTeam">
+            <div class="options" role="group" [attr.aria-label]="'currentMatchday.pronosticoContra' | t: { home: match.homeTeam, away: match.awayTeam }">
               @if (page.stateFor(match.id).doubleChanceOption) {
                 @for (opt of [{ v: 'HOME_OR_DRAW', l: '1X' }, { v: 'DRAW_OR_AWAY', l: 'X2' }, { v: 'HOME_OR_AWAY', l: '12' }]; track opt.v) {
                   <button
@@ -353,7 +353,7 @@
 
       @if (entry.matchday.status === 'FINISHED') {
         <a class="results-link" [routerLink]="['/matchday', entry.matchday.id, 'results']">
-          <piqo-svg icon="historial" size="20"></piqo-svg>Ver desglose de resultados
+          <piqo-svg icon="historial" size="20"></piqo-svg>{{ 'currentMatchday.verDesgloseResultados' | t }}
         </a>
       }
     }
@@ -363,14 +363,14 @@
     <div class="comeback-banner-wrap">
       <div class="comeback-banner ad-reward-banner">
         <piqo-svg icon="comodin" size="18"></piqo-svg>
-        <span>Consigue 1 comodín extra viendo un vídeo</span>
+        <span>{{ 'currentMatchday.consigue1ComodinExtra' | t }}</span>
         <button type="button" class="ad-reward-watch-btn" [disabled]="page.watchingAd()" (click)="page.watchAdForComebackBonus()">
-          {{ page.watchingAd() ? 'Cargando…' : 'Ver vídeo' }}
+          {{ page.watchingAd() ? ('common.cargando' | t) : ('currentMatchday.verVideo' | t) }}
         </button>
         <button
           type="button"
           class="comeback-banner-close"
-          aria-label="Cerrar aviso del vídeo"
+          [attr.aria-label]="'currentMatchday.cerrarAvisoVideo' | t"
           (click)="page.dismissAdRewardBanner(page.activeEntry()!)"
         >
           <piqo-svg icon="cerrar" size="14"></piqo-svg>
@@ -385,7 +385,7 @@
         <button
           type="button"
           class="comeback-banner-close"
-          aria-label="Cerrar aviso del comodín"
+          [attr.aria-label]="'currentMatchday.cerrarAvisoComodin' | t"
           (click)="page.dismissComebackBanner(page.activeEntry()!)"
         >
           <piqo-svg icon="cerrar" size="14"></piqo-svg>

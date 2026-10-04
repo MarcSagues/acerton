@@ -7,6 +7,8 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { drawCircleFill, drawRoundRect, drawText, ellipsizeText, loadCanvasImage, shortInitials } from '../../../shared/canvas-share/canvas-draw.util';
 import { canvasToPngBlob, copyImageBlobToClipboard, shareOrDownloadImageBlob } from '../../../shared/canvas-share/share-image.util';
 import { PredictionSelection, matchAccentTone, pointsForPrediction } from '../domain/prediction-rules';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { currentLocale, t } from '../../../core/i18n/translate';
 
 /** Mismas parejas que DOUBLE_CHANCE_COVERAGE (prediction-rules.ts, privado ahi) — que casillas 1/X/2 cubre cada doble oportunidad. */
 const DOUBLE_CHANCE_PAIRS: Record<DoubleChanceOption, PredictionChoice[]> = {
@@ -42,30 +44,31 @@ export interface MatchShareCardData {
 @Component({
   selector: 'app-match-share-card',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <header class="share-head">
       <div>
-        <p class="share-kicker">Lista para publicar</p>
-        <h2 id="match-share-title">Comparte este partido</h2>
+        <p class="share-kicker">{{ 'common.listaPublicar' | t }}</p>
+        <h2 id="match-share-title">{{ 'matchShareCard.comparteEstePartido' | t }}</h2>
       </div>
-      <button type="button" class="close-btn" aria-label="Cerrar" (click)="dialogRef.close()">
+      <button type="button" class="close-btn" [attr.aria-label]="'common.cerrar' | t" (click)="dialogRef.close()">
         <piqo-svg icon="cerrar" size="18"></piqo-svg>
       </button>
     </header>
 
     <div class="canvas-frame" [class.rendering]="rendering()">
-      <canvas #shareCanvas width="1080" height="1920" aria-label="Vista previa del partido"></canvas>
+      <canvas #shareCanvas width="1080" height="1920" [attr.aria-label]="'matchShareCard.vistaPreviaPartido' | t"></canvas>
     </div>
 
     <div class="share-actions">
       <button type="button" class="piqo-primary" [disabled]="rendering()" (click)="shareImage()">
         <piqo-svg icon="compartir" size="18"></piqo-svg>
-        Compartir imagen
+        {{ 'common.compartirImagen' | t }}
       </button>
       <button type="button" class="piqo-secondary" [disabled]="rendering() || copying() || justCopied()" (click)="copyImage()">
         <piqo-svg [attr.icon]="justCopied() ? 'check' : 'copiar'" size="18"></piqo-svg>
-        {{ justCopied() ? 'Copiada' : copying() ? 'Copiando…' : 'Copiar' }}
+        {{ justCopied() ? ('common.copiada' | t) : copying() ? ('common.copiando' | t) : ('common.copiar' | t) }}
       </button>
     </div>
   `,
@@ -178,7 +181,7 @@ export class MatchShareCardComponent {
       await this.drawCard();
       this.imageBlob = await this.canvasBlob();
     } catch {
-      this.toast.show('No se pudo generar la imagen. Inténtalo de nuevo.');
+      this.toast.show(t('matchShareCard.pudoGenerarImagenIntentalo'));
     } finally {
       this.rendering.set(false);
     }
@@ -193,13 +196,13 @@ export class MatchShareCardComponent {
       blob,
       this.fileName(),
       {
-        title: `Mi pronóstico en Piqo · ${match.homeTeam} - ${match.awayTeam}`,
+        title: t('matchShareCard.pronosticoPiqo', { homeTeam: match.homeTeam, awayTeam: match.awayTeam }),
         text: this.finished()
-          ? `Así me ha ido en ${match.homeTeam} - ${match.awayTeam} en Piqo.`
-          : `Mi pronóstico para ${match.homeTeam} - ${match.awayTeam} en Piqo.`,
+          ? t('matchShareCard.asiHaIdoPiqo', { homeTeam: match.homeTeam, awayTeam: match.awayTeam })
+          : t('matchShareCard.pronosticoPiqo2', { homeTeam: match.homeTeam, awayTeam: match.awayTeam }),
       },
       this.toast,
-      'Imagen descargada: ya puedes subirla a Instagram o compartirla donde quieras',
+      t('matchShareCard.imagenDescargadaYaPuedes'),
     );
   }
 
@@ -213,7 +216,7 @@ export class MatchShareCardComponent {
       this.justCopied.set(true);
       setTimeout(() => this.justCopied.set(false), 2000);
     } catch {
-      this.toast.show('No se pudo copiar la imagen. Usa "Compartir imagen" en su lugar.');
+      this.toast.show(t('matchShareCard.pudoCopiarImagenUsa'));
     } finally {
       this.copying.set(false);
     }
@@ -259,7 +262,7 @@ export class MatchShareCardComponent {
     await this.drawBrand(ctx);
     drawText(
       ctx,
-      finished ? 'RESULTADO DEL PARTIDO' : 'MI PRONÓSTICO',
+      finished ? t('matchShareCard.resultadoPartido') : t('matchShareCard.pronostico'),
       72,
       206,
       21,
@@ -269,8 +272,8 @@ export class MatchShareCardComponent {
       .12,
     );
     const competitionLine = this.data.competitionName
-      ? `${this.data.competitionName} · J${this.data.matchdayOrder}`
-      : `Jornada ${this.data.matchdayOrder}`;
+      ? `${this.data.competitionName} · ${t('common.jornadaAbrev', { order: this.data.matchdayOrder })}`
+      : t('matchShareCard.jornada', { matchdayOrder: this.data.matchdayOrder });
     drawText(ctx, ellipsizeText(ctx, competitionLine, width - 144, '700 32px Inter'), 72, 256, 32, 700, '#f1f0ea', 'Inter');
     drawText(ctx, this.kickoffLine(), 72, 296, 18, 600, '#9aa0a3', 'Inter');
 
@@ -328,7 +331,7 @@ export class MatchShareCardComponent {
       drawText(ctx, awayVal, awayBoxX + boxSize / 2, boxY2 + boxSize * 0.62, 96, 800, '#d2be94', 'Manrope', 0, 'center');
       drawText(ctx, '-', centerX, boxY2 + boxSize * 0.6, 56, 800, '#9aa0a3', 'Manrope', 0, 'center');
       if (selection.doublePointsWildcard) {
-        drawText(ctx, 'COMODÍN x2', centerX, panelY + 780, 18, 700, '#d2be94', 'Inter', .1, 'center');
+        drawText(ctx, t('matchShareCard.comodinX2'), centerX, panelY + 780, 18, 700, '#d2be94', 'Inter', .1, 'center');
       }
     } else {
       // Las 3 casillas 1/X/2 siempre visibles, con el nombre del equipo (o
@@ -343,7 +346,7 @@ export class MatchShareCardComponent {
       const boxGap = 27;
       const boxW = (contentRight - contentLeft - boxGap * 2) / 3;
       const boxH = 241;
-      const captions: Record<PredictionChoice, string> = { HOME: match.homeTeam, DRAW: 'Empate', AWAY: match.awayTeam };
+      const captions: Record<PredictionChoice, string> = { HOME: match.homeTeam, DRAW: t('matchShareCard.empate'), AWAY: match.awayTeam };
       ONE_X_TWO_OPTIONS.forEach((option, index) => {
         const boxX = contentLeft + index * (boxW + boxGap);
         const isSelected = covered.includes(option.choice);
@@ -368,14 +371,14 @@ export class MatchShareCardComponent {
       const tone = matchAccentTone(match, selection, exactScore);
       const resultLineY = panelY + 850;
       if (tone === 'none') {
-        drawText(ctx, 'No participado', centerX, resultLineY, 22, 600, '#9aa0a3', 'Inter', 0, 'center');
+        drawText(ctx, t('currentMatchday.participado'), centerX, resultLineY, 22, 600, '#9aa0a3', 'Inter', 0, 'center');
       } else {
         const points = pointsForPrediction(match, selection, exactScore);
         const hit = tone === 'hit' || tone === 'partial';
-        const label = tone === 'hit' ? 'Acierto pleno' : tone === 'partial' ? 'Acierto del ganador' : 'Fallo';
+        const label = tone === 'hit' ? t('matchShareCard.aciertoPleno') : tone === 'partial' ? t('matchShareCard.aciertoGanador') : t('matchdayResults.fallo');
         drawText(
           ctx,
-          `${label} · ${points > 0 ? `+${points} pts` : '0 pts'}`,
+          `${label} · ${points > 0 ? t('matchShareCard.pts', { points }) : t('matchShareCard.0Pts')}`,
           centerX,
           resultLineY,
           24,
@@ -398,12 +401,12 @@ export class MatchShareCardComponent {
 
     const avatarY = footerY + 60;
     drawCircleFill(ctx, 104, avatarY, 34, this.safeAvatarColor());
-    drawText(ctx, shortInitials(this.data.playerName || 'Jugador', 2), 104, avatarY + 9, 23, 800, '#121619', 'Inter', 0, 'center');
-    drawText(ctx, ellipsizeText(ctx, this.data.playerName || 'Jugador', width - 300, '700 28px Inter'), 154, avatarY - 6, 28, 700, '#f1f0ea', 'Inter');
-    drawText(ctx, ellipsizeText(ctx, this.data.groupName || 'Mi grupo', width - 300, '500 20px Inter'), 154, avatarY + 26, 20, 500, '#9aa0a3', 'Inter');
+    drawText(ctx, shortInitials(this.data.playerName || t('currentMatchday.jugador'), 2), 104, avatarY + 9, 23, 800, '#121619', 'Inter', 0, 'center');
+    drawText(ctx, ellipsizeText(ctx, this.data.playerName || t('currentMatchday.jugador'), width - 300, '700 28px Inter'), 154, avatarY - 6, 28, 700, '#f1f0ea', 'Inter');
+    drawText(ctx, ellipsizeText(ctx, this.data.groupName || t('common.miGrupo'), width - 300, '500 20px Inter'), 154, avatarY + 26, 20, 500, '#9aa0a3', 'Inter');
 
     drawText(ctx, 'piqo.es', 72, height - 64, 26, 750, '#d2be94', 'Manrope');
-    drawText(ctx, 'Pronostica · Compite · Pica', width - 72, height - 64, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
+    drawText(ctx, t('matchShareCard.pronosticaCompitePica'), width - 72, height - 64, 18, 600, '#9aa0a3', 'Inter', 0, 'right');
   }
 
   private async drawBrand(ctx: CanvasRenderingContext2D): Promise<void> {
@@ -469,8 +472,8 @@ export class MatchShareCardComponent {
 
   private kickoffLine(): string {
     const date = new Date(this.data.match.kickoff);
-    const day = date.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: '2-digit' });
-    const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const day = date.toLocaleDateString(currentLocale(), { weekday: 'short', day: '2-digit', month: '2-digit' });
+    const time = date.toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' });
     return `${day} · ${time}`;
   }
 

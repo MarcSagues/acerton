@@ -6,6 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from './profile.service';
+import { t } from '../i18n/translate';
 
 /**
  * Nombre del evento DOM que AppDelegate.swift dispara sobre `window` con
@@ -151,11 +152,11 @@ export class PushNotificationsService {
 
   async enable(): Promise<boolean> {
     if (!this.supported) {
-      this.error.set('Este dispositivo no soporta notificaciones push.');
+      this.error.set(t('pushNotifications.esteDispositivoSoportaNotificaciones'));
       return false;
     }
     if (!this.configured) {
-      this.error.set('Las notificaciones push no están configuradas en este entorno.');
+      this.error.set(t('pushNotifications.notificacionesPushEstanConfiguradas'));
       return false;
     }
 
@@ -171,7 +172,7 @@ export class PushNotificationsService {
       // usuario nunca lo activo" — el unico sintoma visible era "no me
       // llegan notificaciones", sin ninguna pista de por que.
       console.error('[PushNotifications] enable() failed', error);
-      this.error.set('No se pudieron activar las notificaciones.');
+      this.error.set(t('pushNotifications.pudieronActivarNotificaciones'));
       return false;
     } finally {
       this.loading.set(false);
@@ -182,7 +183,7 @@ export class PushNotificationsService {
     const permStatus = await PushNotifications.requestPermissions();
     if (permStatus.receive !== 'granted') {
       this.permission.set('denied');
-      this.error.set('Has bloqueado los permisos de notificación.');
+      this.error.set(t('pushNotifications.hasBloqueadoPermisosNotificacion'));
       return false;
     }
     this.permission.set('granted');
@@ -199,7 +200,7 @@ export class PushNotificationsService {
             // backend (401, 500, red) quedaba tan silencioso como el resto:
             // permission ya estaba en 'granted' y nada avisaba del fallo.
             console.error('[PushNotifications] registerNotificationToken failed', httpError);
-            this.error.set('Se obtuvo el token pero no se pudo guardar en el servidor.');
+            this.error.set(t('pushNotifications.obtuvoTokenPeroPudo'));
             resolve(false);
           },
         });
@@ -235,14 +236,14 @@ export class PushNotificationsService {
           cleanup();
           const detail = (event as CustomEvent<string>).detail;
           console.error('[PushNotifications] Messaging.token error nativo', detail);
-          this.error.set(`No se pudo obtener el token de FCM (Firebase): ${detail}`);
+          this.error.set(t('pushNotifications.pudoObtenerTokenFcm', { detail }));
           resolve(false);
         };
         timeoutId = setTimeout(() => {
           if (settled) return;
           settled = true;
           cleanup();
-          this.error.set('El token de FCM no llegó a tiempo (Firebase). Puede ser un problema de red o de configuración de Firebase, no de permisos.');
+          this.error.set(t('pushNotifications.tokenFcmLlegoTiempo'));
           resolve(false);
         }, 15000);
         window.addEventListener(FCM_TOKEN_EVENT, onFcmToken, { once: true });
@@ -252,7 +253,7 @@ export class PushNotificationsService {
       }
       PushNotifications.addListener('registrationError', (err) => {
         console.error('[PushNotifications] registrationError', err);
-        this.error.set(`No se pudo registrar en APNs: ${err?.error ?? JSON.stringify(err)}`);
+        this.error.set(t('pushNotifications.apnsError', { detail: err?.error ?? JSON.stringify(err) }));
         resolve(false);
       });
       // Sin listener de 'pushNotificationReceived' con alerta propia: con
@@ -268,7 +269,7 @@ export class PushNotificationsService {
     const permission = await Notification.requestPermission();
     this.permission.set(permission);
     if (permission !== 'granted') {
-      this.error.set('Has bloqueado los permisos de notificación.');
+      this.error.set(t('pushNotifications.hasBloqueadoPermisosNotificacion'));
       return false;
     }
 
@@ -288,7 +289,7 @@ export class PushNotificationsService {
       serviceWorkerRegistration: registration,
     });
     if (!token) {
-      this.error.set('No se pudo obtener el token de notificaciones.');
+      this.error.set(t('pushNotifications.pudoObtenerTokenNotificaciones'));
       return false;
     }
 
@@ -298,7 +299,7 @@ export class PushNotificationsService {
     onMessage(messaging, (payload) => {
       const title = payload.notification?.title ?? 'Piqo';
       const body = payload.notification?.body ?? '';
-      this.snackBar.open(`${title}: ${body}`, 'Cerrar', { duration: 5000 });
+      this.snackBar.open(`${title}: ${body}`, t('common.cerrar'), { duration: 5000 });
     });
 
     return true;

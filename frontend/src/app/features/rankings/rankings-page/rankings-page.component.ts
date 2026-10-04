@@ -5,11 +5,13 @@ import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { SegmentedControlComponent } from '../../../shared/ui/segmented-control/segmented-control.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { RankingsPageFacade } from './rankings-page.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { t } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'app-rankings-page',
   standalone: true,
-  imports: [CommonModule, GroupSwitcherComponent, SpinnerComponent, SegmentedControlComponent, AvatarComponent],
+  imports: [CommonModule, GroupSwitcherComponent, SpinnerComponent, SegmentedControlComponent, AvatarComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [RankingsPageFacade],
   templateUrl: './rankings-page.component.html',
@@ -19,7 +21,7 @@ export class RankingsPageComponent {
   readonly page = inject(RankingsPageFacade);
 
   readonly periodOptions = [
-    { value: 'WEEKLY' as const, label: 'Semanal' },
-    { value: 'TOTAL' as const, label: 'Total' },
+    { value: 'WEEKLY' as const, label: t('rankingsPage.semanal') },
+    { value: 'TOTAL' as const, label: t('rankingsPage.total') },
   ];
 }

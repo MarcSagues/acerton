@@ -2,11 +2,12 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { GroupCreateFacade } from './group-create.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-group-create',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupCreateFacade],
   templateUrl: './group-create.component.html',

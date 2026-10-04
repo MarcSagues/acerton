@@ -1,4 +1,5 @@
 import { ScoringMode } from '../../../core/models/group.model';
+import { t } from '../../../core/i18n/translate';
 
 export interface ScoringRule {
   points: number;
@@ -8,14 +9,14 @@ export interface ScoringRule {
 }
 
 const EXACT_SCORE_RULES: ScoringRule[] = [
-  { points: 5, label: 'Marcador exacto', description: 'Aciertas todos los goles', featured: true },
-  { points: 2, label: 'Signo correcto', description: 'Aciertas ganador o empate', featured: false },
-  { points: 0, label: 'Sin acierto', description: 'El resultado no coincide', featured: false },
+  { points: 5, label: t('scoringRules.marcadorExacto'), description: t('scoringRules.aciertasTodosGoles'), featured: true },
+  { points: 2, label: t('scoringRules.signoCorrecto'), description: t('scoringRules.aciertasGanadorEmpate'), featured: false },
+  { points: 0, label: t('scoringRules.sinAcierto'), description: t('scoringRules.resultadoCoincide'), featured: false },
 ];
 
 const ONE_X_TWO_RULES: ScoringRule[] = [
-  { points: 1, label: 'Signo correcto', description: 'Local, empate o visitante', featured: true },
-  { points: 0, label: 'Sin acierto', description: 'El signo no coincide', featured: false },
+  { points: 1, label: t('scoringRules.signoCorrecto'), description: t('scoringRules.localEmpateVisitante'), featured: true },
+  { points: 0, label: t('scoringRules.sinAcierto'), description: t('scoringRules.signoCoincide'), featured: false },
 ];
 
 export function scoringRules(mode: ScoringMode): ScoringRule[] {
@@ -23,5 +24,5 @@ export function scoringRules(mode: ScoringMode): ScoringRule[] {
 }
 
 export function scoringModeLabel(mode: ScoringMode): string {
-  return mode === 'EXACT_SCORE' ? 'Resultado exacto' : 'Quiniela 1X2';
+  return mode === 'EXACT_SCORE' ? t('common.resultadoExacto') : t('common.quiniela1x2');
 }

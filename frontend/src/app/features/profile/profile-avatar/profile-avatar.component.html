@@ -4,12 +4,12 @@
   <div class="page">
     <div class="head-row">
       <button type="button" class="back-btn" (click)="page.goBack()">
-        <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+        <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.perfil' | t }}
       </button>
     </div>
     <div class="title-row">
-      <h1>Tu avatar</h1>
-      <p class="lead">Elige un color de fondo y una mascota de Piqo.</p>
+      <h1>{{ 'profileAvatar.avatar' | t }}</h1>
+      <p class="lead">{{ 'profileAvatar.eligeColorFondoMascota' | t }}</p>
     </div>
 
     <div class="preview-row">
@@ -22,7 +22,7 @@
     </div>
 
     <div class="section-head">
-      <p class="eyebrow-sm">Color de fondo</p>
+      <p class="eyebrow-sm">{{ 'profileAvatar.colorFondo' | t }}</p>
     </div>
     <div class="section">
       <div class="swatches">
@@ -34,7 +34,11 @@
             [style.background]="color"
             [class.selected]="page.selectedBackground() === color"
             [attr.aria-disabled]="page.isBackgroundLocked(color)"
-            [attr.aria-label]="page.isBackgroundLocked(color) ? 'Color bloqueado: llega al nivel ' + page.requiredLevelForBackground(color) + ' para desbloquearlo' : 'Color ' + color"
+            [attr.aria-label]="
+              page.isBackgroundLocked(color)
+                ? ('profileAvatar.colorBloqueado' | t: { level: page.requiredLevelForBackground(color) })
+                : ('profileAvatar.colorEtiqueta' | t: { color: color })
+            "
             (click)="page.selectBackground(color)"
           >
             @if (page.isBackgroundLocked(color)) {
@@ -43,16 +47,16 @@
               <piqo-svg icon="check" size="16"></piqo-svg>
             }
             @if (page.isBackgroundNew(color)) {
-              <span class="new-dot" aria-label="Recién desbloqueado"></span>
+              <span class="new-dot" [attr.aria-label]="'profileAvatar.recienDesbloqueado' | t"></span>
             }
           </button>
         }
       </div>
-      <p class="trophy-hint">Los colores con candado se desbloquean al llegar a ese nivel.</p>
+      <p class="trophy-hint">{{ 'profileAvatar.coloresCandadoDesbloqueanLlegar' | t }}</p>
     </div>
 
     <div class="section-head">
-      <p class="eyebrow-sm">Mascota</p>
+      <p class="eyebrow-sm">{{ 'profileAvatar.mascota' | t }}</p>
     </div>
     <div class="section">
       <div class="mascot-grid">
@@ -67,8 +71,8 @@
             [attr.aria-label]="
               page.isMascotLocked(mascot)
                 ? mascot.requiresTrophyId
-                  ? 'Mascota bloqueada: gana el trofeo correspondiente para desbloquearla'
-                  : 'Mascota bloqueada: llega al nivel ' + page.requiredLevelForMascot(mascot) + ' para desbloquearla'
+                  ? ('profileAvatar.mascotaBloqueadaTrofeo' | t)
+                  : ('profileAvatar.mascotaBloqueadaNivel' | t: { level: page.requiredLevelForMascot(mascot) })
                 : null
             "
             (click)="page.selectMascot(mascot)"
@@ -77,12 +81,12 @@
             @if (page.isMascotLocked(mascot)) {
               <span class="lock-badge"><piqo-svg icon="candado" size="12"></piqo-svg></span>
             } @else if (page.isMascotNew(mascot)) {
-              <span class="new-dot" aria-label="Recién desbloqueada"></span>
+              <span class="new-dot" [attr.aria-label]="'profileAvatar.recienDesbloqueada' | t"></span>
             }
           </button>
         }
       </div>
-      <p class="trophy-hint">Las mascotas con candado se desbloquean al llegar a ese nivel, o al ganar el trofeo correspondiente.</p>
+      <p class="trophy-hint">{{ 'profileAvatar.mascotasCandadoDesbloqueanLlegar' | t }}</p>
     </div>
 
     @if (page.error()) {
@@ -91,7 +95,7 @@
 
     <div class="actions">
       <button type="button" class="piqo-primary cta" [disabled]="!page.hasChanges() || page.saving()" (click)="page.save()">
-        {{ page.saving() ? 'Guardando…' : 'Guardar avatar' }}
+        {{ page.saving() ? ('common.guardando' | t) : ('profileAvatar.guardarAvatar' | t) }}
       </button>
     </div>
   </div>

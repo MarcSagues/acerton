@@ -4,6 +4,7 @@ import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet
 import { CopySource } from '../../../core/models/prediction.model';
 import { ScoringMode } from '../../../core/models/group.model';
 import { copySourceSubtitle } from '../domain/copy-predictions.rules';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 export interface CopyFromGroupSheetData {
   /** Todos tus otros grupos con pronosticos de la jornada; los que no se pueden copiar vienen con el motivo. */
@@ -20,11 +21,12 @@ export interface CopyFromGroupSheetData {
 @Component({
   selector: 'app-copy-from-group-sheet',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
     <div class="sheet-handle"></div>
-    <p class="sheet-title">Copiar de otro grupo</p>
+    <p class="sheet-title">{{ 'copyFromGroupSheet.copiarOtroGrupo' | t }}</p>
     <p class="sheet-lead">
-      Rellena todos los partidos de esta jornada con tus pronósticos de ese grupo (solo entre grupos con el mismo modo de juego). Después puedes cambiar los que quieras.
+      {{ 'copyFromGroupSheet.rellenaTodosPartidosEsta' | t }}
     </p>
     <ul class="sources">
       @for (source of data.sources; track source.groupId) {

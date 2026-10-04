@@ -3,11 +3,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { BottomNavService } from '../../core/services/bottom-nav.service';
 import { ActiveGroupService } from '../../core/services/active-group.service';
 import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-bottom-nav',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './bottom-nav.component.html',
   styleUrl: './bottom-nav.component.scss',

@@ -1,11 +1,12 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RulesAndPrizesFacade } from './rules-and-prizes.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-rules-and-prizes',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [RulesAndPrizesFacade],
   templateUrl: './rules-and-prizes.component.html',

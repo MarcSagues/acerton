@@ -1,20 +1,20 @@
 <div class="page">
   <div class="head-row">
-    <a routerLink="/profile" class="back-btn" aria-label="Volver a Perfil">
-      <piqo-svg icon="atras" size="20"></piqo-svg>Perfil
+    <a routerLink="/profile" class="back-btn" [attr.aria-label]="'common.volverPerfil' | t">
+      <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.perfil' | t }}
     </a>
     @if (page.notices().length > 0) {
-      <button type="button" class="link" (click)="page.markAllRead()">Leer todo</button>
+      <button type="button" class="link" (click)="page.markAllRead()">{{ 'notificationsPage.leerTodo' | t }}</button>
     }
   </div>
   <div class="title-row">
-    <h1>Avisos</h1>
+    <h1>{{ 'common.avisos' | t }}</h1>
   </div>
 
   @if (page.notices().length === 0) {
     <div class="empty-state">
       <piqo-svg icon="campana" size="32"></piqo-svg>
-      <p>Todavía no tienes avisos. Aquí verás recordatorios de cierre, resultados de jornada e insignias conseguidas.</p>
+      <p>{{ 'notificationsPage.todaviaTienesAvisosAqui' | t }}</p>
     </div>
   } @else {
     <div class="notice-groups">
@@ -22,7 +22,7 @@
         @let items = page.noticesForPeriod(period);
         @if (items.length > 0) {
           <div class="section-head">
-            <h2>{{ period }}</h2>
+            <h2>{{ page.periodLabel(period) }}</h2>
           </div>
           <div class="section">
             <div class="notices">
@@ -33,7 +33,7 @@
                     <div class="notice-title-row">
                       <p class="notice-title">{{ notice.title }}</p>
                       @if (notice.unread) {
-                        <span class="unread-dot" aria-label="No leído"></span>
+                        <span class="unread-dot" [attr.aria-label]="'notificationsPage.leido' | t"></span>
                       }
                     </div>
                     <p class="notice-body">{{ notice.body }}</p>

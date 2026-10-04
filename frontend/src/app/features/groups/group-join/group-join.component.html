@@ -2,7 +2,7 @@
   <div class="head-row">
     <button type="button" class="back-link" (click)="page.goToGroups()">
       <piqo-svg icon="atras" size="20"></piqo-svg>
-      Grupos
+      {{ 'common.grupos' | t }}
     </button>
   </div>
 
@@ -13,7 +13,7 @@
       <div class="body">
         <div class="head">
           <h1>{{ group.name }}</h1>
-          <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? 'Resultado exacto' : '1X2' }}</span>
+          <span class="mode-badge">{{ group.scoringMode === 'EXACT_SCORE' ? ('common.resultadoExacto' | t) : '1X2' }}</span>
         </div>
 
         @if (group.description) {
@@ -25,29 +25,28 @@
             {{ group.memberCount }}
             <piqo-svg icon="grupos" size="13"></piqo-svg>
           </span>
-          <span>Creado el {{ group.createdAt | date: 'd MMM y' }}</span>
+          <span>{{ 'common.creado' | t: { createdAt: (group.createdAt | date: 'd MMM y') } }}</span>
         </div>
 
         <div class="section">
-          <p class="section-title">Reglas</p>
+          <p class="section-title">{{ 'common.reglas' | t }}</p>
           <p class="rule-text">
             @if (group.scoringMode === 'EXACT_SCORE') {
-              5 puntos por marcador exacto, 2 por acertar solo el ganador.
+              {{ 'common.5PuntosMarcadorExacto' | t }}
             } @else {
-              1 punto por acertar 1X2.
+              {{ 'common.1PuntoAcertar1x2' | t }}
             }
           </p>
           @if (group.comebackPointsPerBonus) {
             <p class="rule-text muted">
-              Comodín de remontada activo: 1 uso cada {{ group.comebackPointsPerBonus }} puntos de diferencia con el
-              líder.
+              {{ 'groupJoin.comodinRemontadaActivo1' | t: { comebackPointsPerBon: group.comebackPointsPerBonus } }}
             </p>
           }
         </div>
 
         @if (group.competitions.length > 0) {
           <div class="section">
-            <p class="section-title">Ligas</p>
+            <p class="section-title">{{ 'common.ligas' | t }}</p>
             <div class="leagues">
               @for (comp of group.competitions; track comp.id) {
                 <span class="league-chip">{{ comp.name }}</span>
@@ -57,9 +56,9 @@
         }
 
         <div class="section">
-          <p class="section-title">Clasificación general</p>
+          <p class="section-title">{{ 'common.clasificacionGeneral' | t }}</p>
           @if (group.topRanking.length === 0) {
-            <p class="rule-text muted">Todavía no hay clasificación en este grupo.</p>
+            <p class="rule-text muted">{{ 'common.todaviaHayClasificacionEste' | t }}</p>
           } @else {
             <div class="ranking-list">
               @for (row of group.topRanking; track row.userId) {
@@ -82,17 +81,17 @@
         }
 
         @if (group.isMember) {
-          <button type="button" class="piqo-primary join-btn" (click)="page.goToGroup()">Unirme</button>
+          <button type="button" class="piqo-primary join-btn" (click)="page.goToGroup()">{{ 'common.unirme' | t }}</button>
         } @else {
           <div class="actions">
-            <button type="button" class="piqo-secondary cancel-btn" (click)="page.goToGroups()">Cancelar</button>
+            <button type="button" class="piqo-secondary cancel-btn" (click)="page.goToGroups()">{{ 'common.cancelar' | t }}</button>
             <button
               type="button"
               class="piqo-primary join-btn"
               [disabled]="page.joining()"
               (click)="page.confirmJoin()"
             >
-              {{ page.joining() ? 'Uniendo…' : 'Unirme' }}
+              {{ page.joining() ? ('common.uniendo' | t) : ('common.unirme' | t) }}
             </button>
           </div>
         }
@@ -100,7 +99,7 @@
     } @else {
       <div class="state error">
         <p>{{ page.errorMessage() }}</p>
-        <button type="button" class="piqo-secondary" (click)="page.goToGroups()">Ir a mis grupos</button>
+        <button type="button" class="piqo-secondary" (click)="page.goToGroups()">{{ 'groupJoin.irGrupos' | t }}</button>
       </div>
     }
   }

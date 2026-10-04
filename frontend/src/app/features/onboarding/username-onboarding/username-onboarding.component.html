@@ -1,12 +1,12 @@
 <div class="onboarding-page">
   <div class="onboarding-content">
     <piqo-svg logo size="120"></piqo-svg>
-    <h1>Cómo quieres<br />que te vean</h1>
-    <p class="tagline">Este es el nombre que verán tus amigos en la tabla y en los grupos. Podrás cambiarlo más adelante, una vez por semana.</p>
+    <h1>{{ 'usernameOnboarding.comoQuieres' | t }}<br />{{ 'usernameOnboarding.vean' | t }}</h1>
+    <p class="tagline">{{ 'usernameOnboarding.esteNombreVeranAmigos' | t }}</p>
 
     <form [formGroup]="page.form" (ngSubmit)="page.submit()" class="form">
       <label class="field">
-        <span class="field-label">Nombre de usuario</span>
+        <span class="field-label">{{ 'usernameOnboarding.nombreUsuario' | t }}</span>
         <input class="field-input" type="text" formControlName="name" autocomplete="nickname" maxlength="24" autofocus />
       </label>
       @if (page.nameHint(); as hint) {
@@ -21,7 +21,7 @@
         @if (page.loading()) {
           <app-spinner [size]="20"></app-spinner>
         } @else {
-          Continuar
+          {{ 'usernameOnboarding.continuar' | t }}
         }
       </button>
     </form>

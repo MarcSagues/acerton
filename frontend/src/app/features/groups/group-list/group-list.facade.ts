@@ -6,6 +6,7 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { Group, ScoringMode } from '../../../core/models/group.model';
 import { scoringModeIcon as scoringModeIconOf } from '../../../shared/utils/scoring-mode-badge';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class GroupListFacade {
@@ -82,7 +83,7 @@ export class GroupListFacade {
     const next = !group.isFavorite;
     this.groupsService.setFavorite(group.id, next).subscribe({
       next: () => this.activeGroupService.setGroups(this.groupsService.myGroups()),
-      error: () => this.toast.show('No se pudo actualizar el favorito. Inténtalo de nuevo.'),
+      error: () => this.toast.show(t('groupList.pudoActualizarFavoritoIntentalo')),
     });
   }
 

@@ -16,14 +16,15 @@ import {
   publicGroupFiltersFromQueryParams,
   publicGroupFiltersToQueryParams,
 } from './domain/public-group-filters';
+import { t } from '../../../core/i18n/translate';
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export const SCORING_MODE_OPTIONS: { value: ScoringMode | null; label: string }[] = [
-  { value: null, label: 'Todos' },
-  { value: 'ONE_X_TWO', label: 'Quiniela 1X2' },
-  { value: 'EXACT_SCORE', label: 'Resultado exacto' },
+  { value: null, label: t('groupExplore.todos') },
+  { value: 'ONE_X_TWO', label: t('common.quiniela1x2') },
+  { value: 'EXACT_SCORE', label: t('common.resultadoExacto') },
 ];
 
 @Injectable()
@@ -159,9 +160,9 @@ export class GroupExploreFacade {
       error: (err) => {
         this.joiningGroupId.set(null);
         if (err?.status === 409) {
-          this.toast.show('Ya eres miembro de este grupo');
+          this.toast.show(t('groupExplore.yaEresMiembroEste'));
         } else {
-          this.toast.show('No se ha podido unir al grupo. Reintenta.');
+          this.toast.show(t('groupExplore.haPodidoUnirGrupo'));
         }
       },
     });

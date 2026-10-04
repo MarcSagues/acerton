@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { initials } from '../../../shared/utils/initials';
 import { GroupJoinFacade } from './group-join.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-group-join',
   standalone: true,
-  imports: [CommonModule, SpinnerComponent],
+  imports: [CommonModule, SpinnerComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupJoinFacade],
   templateUrl: './group-join.component.html',

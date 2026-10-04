@@ -1,12 +1,12 @@
 <div class="sheet-inner">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <h2>Tus grupos</h2>
-    <button type="button" class="close-btn" aria-label="Cerrar" (click)="close()">
+    <h2>{{ 'common.grupos2' | t }}</h2>
+    <button type="button" class="close-btn" [attr.aria-label]="'common.cerrar' | t" (click)="close()">
       <piqo-svg icon="cerrar" size="22"></piqo-svg>
     </button>
   </div>
-  <div class="sheet-list" role="listbox" aria-label="Elegir grupo">
+  <div class="sheet-list" role="listbox" [attr.aria-label]="'groupSheet.elegirGrupo' | t">
     @for (group of activeGroupService.groups(); track group.id) {
       <button
         type="button"
@@ -44,5 +44,5 @@
       </button>
     }
   </div>
-  <button type="button" class="all-groups-btn" (click)="goToAllGroups()">Ver todos los grupos</button>
+  <button type="button" class="all-groups-btn" (click)="goToAllGroups()">{{ 'groupSheet.verTodosGrupos' | t }}</button>
 </div>

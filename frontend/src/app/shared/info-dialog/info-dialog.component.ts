@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export interface InfoDialogData {
   title: string;
@@ -10,12 +11,13 @@ export interface InfoDialogData {
 @Component({
   selector: 'app-info-dialog',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
     <div class="info-dialog">
       <p class="title">{{ data.title }}</p>
       <p class="message">{{ data.message }}</p>
       <div class="actions">
-        <button type="button" class="btn primary" (click)="close()">{{ data.closeLabel ?? 'Entendido' }}</button>
+        <button type="button" class="btn primary" (click)="close()">{{ data.closeLabel ?? ('common.entendido' | t) }}</button>
       </div>
     </div>
   `,

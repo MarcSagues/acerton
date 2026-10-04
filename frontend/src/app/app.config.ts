@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, ApplicationConfig, inject, isDevMode, provideZoneChangeDetection } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, LOCALE_ID, inject, isDevMode, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withInMemoryScrolling, withViewTransitions } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -9,6 +9,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
+import { currentLocale } from './core/i18n/translate';
 
 /**
  * Remata la animacion del loader estatico (ver index.html) antes de dejar
@@ -34,6 +35,8 @@ function initializeAuth(authService: AuthService): () => Promise<boolean> {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
+    // Idioma de DatePipe y demas pipes de formato: el mismo que el de los textos (ver core/i18n).
+    { provide: LOCALE_ID, useFactory: currentLocale },
     provideRouter(
       routes,
       // 'enabled': al volver atras (boton, gesto o navegador) restaura el

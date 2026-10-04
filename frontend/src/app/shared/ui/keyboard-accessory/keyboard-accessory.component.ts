@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 /**
  * Barra "Listo" sobre el teclado en iOS nativo: el teclado numerico
@@ -15,10 +16,11 @@ import { Keyboard } from '@capacitor/keyboard';
 @Component({
   selector: 'app-keyboard-accessory',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
     @if (visible()) {
       <div class="keyboard-accessory" [style.bottom.px]="height()">
-        <button type="button" (click)="dismiss()">Listo</button>
+        <button type="button" (click)="dismiss()">{{ 'keyboardAccessory.listo' | t }}</button>
       </div>
     }
   `,

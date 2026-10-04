@@ -1,8 +1,8 @@
 <main class="onboarding">
   <header class="topbar">
-    <a class="wordmark" routerLink="/" aria-label="Piqo, inicio"><piqo-svg logo size="146"></piqo-svg></a>
+    <a class="wordmark" routerLink="/" [attr.aria-label]="'landingPage.piqoInicio' | t"><piqo-svg logo size="146"></piqo-svg></a>
     @if (page.currentStep() < page.steps.length - 1) {
-      <button type="button" class="skip" (click)="page.goTo(page.steps.length - 1)">Saltar</button>
+      <button type="button" class="skip" (click)="page.goTo(page.steps.length - 1)">{{ 'landingPage.saltar' | t }}</button>
     }
   </header>
 
@@ -22,11 +22,11 @@
         <div class="visual visual-modes" aria-hidden="true">
           <img class="mascot-step mascot-pensando" src="assets/avatars/mascot/pensando.png" alt="" />
           <div class="mode-card">
-            <small>QUINIELA 1X2</small>
+            <small>{{ 'landingPage.quiniela1x2' | t }}</small>
             <div class="mode-options"><b>1</b><b>X</b><b>2</b></div>
           </div>
           <div class="mode-card exact-card">
-            <small>RESULTADO EXACTO</small>
+            <small>{{ 'landingPage.resultadoExacto' | t }}</small>
             <div class="exact-score"><b>2</b><span>:</span><b>1</b></div>
           </div>
         </div>
@@ -50,12 +50,12 @@
   </section>
 
   <footer class="actions">
-    <div class="dots" aria-label="Paso del carrusel">
+    <div class="dots" [attr.aria-label]="'landingPage.pasoCarrusel' | t">
       @for (step of page.steps; track $index) {
         <button
           type="button"
           [class.active]="$index === page.currentStep()"
-          [attr.aria-label]="'Ir al paso ' + ($index + 1)"
+          [attr.aria-label]="'landingPage.irPaso' | t: { n: $index + 1 }"
           [attr.aria-current]="$index === page.currentStep() ? 'step' : null"
           (click)="page.goTo($index)"
         ></button>
@@ -63,14 +63,14 @@
     </div>
 
     @if (page.currentStep() < page.steps.length - 1) {
-      <button type="button" class="piqo-primary primary" (click)="page.next()">Siguiente <span aria-hidden="true">→</span></button>
+      <button type="button" class="piqo-primary primary" (click)="page.next()">{{ 'common.siguiente' | t }} <span aria-hidden="true">→</span></button>
     } @else {
-      <a routerLink="/register" class="piqo-primary primary">Crear cuenta <span aria-hidden="true">→</span></a>
-      <a routerLink="/login" class="login-link">Ya tengo cuenta</a>
+      <a routerLink="/register" class="piqo-primary primary">{{ 'common.crearCuenta' | t }} <span aria-hidden="true">→</span></a>
+      <a routerLink="/login" class="login-link">{{ 'landingPage.yaTengoCuenta' | t }}</a>
     }
 
-    <nav class="legal-links" aria-label="Enlaces legales">
-      <a routerLink="/soporte">Soporte</a><span>·</span><a routerLink="/privacy">Privacidad</a>
+    <nav class="legal-links" [attr.aria-label]="'landingPage.enlacesLegales' | t">
+      <a routerLink="/soporte">{{ 'landingPage.soporte' | t }}</a><span>·</span><a routerLink="/privacy">{{ 'common.privacidad' | t }}</a>
     </nav>
   </footer>
 </main>

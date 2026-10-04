@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ProfileDeleteAccountFacade {
@@ -48,21 +49,21 @@ export class ProfileDeleteAccountFacade {
     this.errorMessage.set(null);
 
     if (!this.acknowledged()) {
-      this.errorMessage.set('Confirma que entiendes que esta acción no se puede deshacer');
+      this.errorMessage.set(t('profileDeleteAccount.confirmaEntiendesEstaAccion'));
       return;
     }
 
     const { password } = this.form.getRawValue();
     if (this.hasPassword() && !password) {
-      this.errorMessage.set('Introduce tu contraseña para confirmar');
+      this.errorMessage.set(t('profileDeleteAccount.introduceContrasenaConfirmar'));
       return;
     }
 
     this.confirm({
-      title: 'Eliminar cuenta',
+      title: t('common.eliminarCuenta'),
       message:
-        'Se borrarán tu perfil, tus pronósticos, insignias, rachas y avisos. Si eres el creador de algún grupo, la propiedad pasará a otro miembro o el grupo se eliminará si estás solo. Esta acción no se puede deshacer.',
-      confirmLabel: 'Eliminar mi cuenta',
+        t('profileDeleteAccount.borraranPerfilPronosticosInsignias'),
+      confirmLabel: t('profileDeleteAccount.eliminarCuenta'),
     }).subscribe((confirmed) => {
       if (!confirmed) return;
       this.deleteAccount(password || undefined);
@@ -74,12 +75,12 @@ export class ProfileDeleteAccountFacade {
     this.authService.deleteAccount(password).subscribe({
       next: () => {
         this.loading.set(false);
-        this.toast.show('Tu cuenta se ha eliminado');
+        this.toast.show(t('profileDeleteAccount.cuentaHaEliminado'));
         this.router.navigate(['/login']);
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo eliminar la cuenta');
+        this.errorMessage.set(error.error?.message ?? t('profileDeleteAccount.pudoEliminarCuenta'));
       },
     });
   }

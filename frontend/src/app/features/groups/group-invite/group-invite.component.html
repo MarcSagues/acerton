@@ -11,20 +11,20 @@
 
       <div class="content">
         <piqo-svg logo size="120"></piqo-svg>
-        <h1>Falta gente<br />para el pique</h1>
-        <p class="tagline">Comparte el código. Entran directos a {{ g.name }}.</p>
+        <h1>{{ 'groupInvite.faltaGente' | t }}<br />{{ 'groupInvite.pique' | t }}</h1>
+        <p class="tagline">{{ 'groupInvite.comparteCodigoEntranDirectos' | t: { name: g.name } }}</p>
 
         <div class="code-card">
-          <p class="code-label mono">CÓDIGO DEL GRUPO</p>
+          <p class="code-label mono">{{ 'groupInvite.codigoGrupo' | t }}</p>
           <p class="code mono">{{ g.inviteCode }}</p>
           <div class="code-actions">
             <button type="button" class="code-btn primary" [disabled]="page.justCopiedCode()" (click)="page.copyCode()">
               <piqo-svg [attr.icon]="page.justCopiedCode() ? 'check' : 'copiar'" size="18"></piqo-svg>
-              {{ page.justCopiedCode() ? 'Copiado' : 'Copiar código' }}
+              {{ page.justCopiedCode() ? ('common.copiado' | t) : ('groupInvite.copiarCodigo' | t) }}
             </button>
             <button type="button" class="code-btn ghost" (click)="page.shareLink()">
               <piqo-svg icon="compartir" size="18"></piqo-svg>
-              Compartir
+              {{ 'common.compartir' | t }}
             </button>
           </div>
         </div>
@@ -36,14 +36,14 @@
             class="link-copy-btn"
             [disabled]="page.justCopiedLink()"
             (click)="page.copyLink()"
-            aria-label="Copiar enlace"
+            [attr.aria-label]="'common.copiarEnlace' | t"
           >
             <piqo-svg [attr.icon]="page.justCopiedLink() ? 'check' : 'copiar'" size="16"></piqo-svg>
           </button>
         </div>
 
         <div class="members-block">
-          <p class="members-title">Ya dentro · {{ page.members().length }}</p>
+          <p class="members-title">{{ 'groupInvite.yaDentro' | t: { length: page.members().length } }}</p>
           <div class="members-row">
             @for (member of page.members(); track member.id) {
               <span class="member-avatar-wrap" #avatarWrap (click)="page.toggleMemberTooltip(member.id, member.user.name, avatarWrap)">
@@ -55,7 +55,7 @@
       </div>
 
       @if (page.memberTooltip(); as tip) {
-        <button type="button" class="member-tooltip-backdrop" aria-label="Cerrar" (click)="page.closeMemberTooltip()"></button>
+        <button type="button" class="member-tooltip-backdrop" [attr.aria-label]="'common.cerrar' | t" (click)="page.closeMemberTooltip()"></button>
         <span class="member-tooltip-floating" [style.top.px]="tip.top" [style.left.px]="tip.left">{{ tip.name }}</span>
       }
     </div>
