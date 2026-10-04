@@ -147,6 +147,7 @@ export class GroupsService {
     return this.prisma.group.update({
       where: { id: groupId },
       data: {
+        name: dto.name,
         comebackEnabled: dto.comebackEnabled,
         comebackPointsPerBonus: dto.comebackPointsPerBonus,
         isPublic: dto.isPublic,
