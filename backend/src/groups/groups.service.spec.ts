@@ -434,7 +434,9 @@ describe('GroupsService.updateRules', () => {
       group: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
     });
 
-    await expect(service.updateRules('nope', { name: 'Nuevo nombre' })).rejects.toThrow('Grupo no encontrado');
+    await expect(service.updateRules('nope', { name: 'Nuevo nombre' })).rejects.toThrow(
+      'Grupo no encontrado',
+    );
   });
 });
 
