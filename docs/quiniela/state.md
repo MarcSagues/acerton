@@ -1,5 +1,48 @@
 # Estado actual
 
+## 2026-10-04 — Rendimiento: cambiar de pestaña al instante (fuera de sprint)
+
+A petición explícita del usuario ("cuando pulso para cambiar de vista, pulso
+y se cambia la vista al cabo de 1s, debería ser instantáneo"; tras probar
+una primera vuelta, "sigue yendo muy lag"). Hasta ahora cada cambio de
+pestaña (Jornada, Grupos, Tabla, Perfil) esperaba ~1 s de red antes de que
+la vista cambiara.
+
+**Causa**: `hasGroupGuard` pedía `GET /groups/mine` en cada navegación y no
+activaba la ruta hasta que respondía, y ese endpoint era el más pesado de la
+app (55-64 consultas a la BD con solo 6 grupos × 2 ligas, muchas en serie:
+la jornada actual se recalculaba por cada grupo y cada competición, y
+`getCurrentMatchdayForCompetition` repetía `getReferenceOrder`). Con la BD
+remota cada consulta suma decenas de ms. Además Grupos volvía a pedir la
+misma lista con spinner, Tabla encadenaba grupo → clasificación en serie, y
+CORS no cacheaba el preflight (cada petición con `Authorization` costaba dos
+viajes).
+
+**Cambios**: (1) `hasGroupGuard` deja pasar al instante cuando el grupo
+activo ya está en memoria y refresca la lista por detrás (sigue pidiéndose en
+cada navegación, así los puntos rojos se actualizan; espera a la red solo la
+primera vez o si el grupo activo aún no está en la lista, p. ej. recién
+creado; si el refresco descubre que ya no quedan grupos, redirige igual).
+(2) `/groups/mine`: jornada actual una vez por competición y en paralelo,
+pronósticos de todos los grupos en una sola consulta (55-64 → ~22 consultas).
+(3) `getCurrentMatchdayForCompetition` no repite `getReferenceOrder`.
+(4) CORS `maxAge: 86400`. (5) Grupos pinta la lista en memoria sin spinner y
+refresca por detrás. (6) Tabla usa el grupo de `/groups/mine` para pedir la
+clasificación de inmediato (con `untracked` en el `effect`: sin él, el
+refresco por detrás de la lista recargaba la clasificación en bucle).
+
+**Medido** en navegador (backend + MySQL locales, +100 ms simulados por
+petición, mismo script antes/después): la ruta pasa a activarse en ~15 ms
+(antes 144-187 ms) y el contenido de Tabla/Perfil/Jornada llega en ~135-155 ms
+(antes 295-455 ms); Grupos pasa de 144 ms a 11 ms. 33 tests del frontend y
+304 del backend en verde.
+
+**No se toca / pendiente**: Jornada y Perfil siguen mostrando spinner un
+viaje al entrar (ya no esperan nada antes); si se quiere ver contenido
+cacheado al instante habría que cachear sus datos por grupo. No se ha medido
+el coste de pintado en el dispositivo (fondo animado + `backdrop-filter`):
+si tras esto sigue notándose lag en iPhone, ese es el siguiente sospechoso.
+
 ## 2026-10-04 — Renombrar el grupo siendo admin (Sprint 3, fuera de sprint)
 
 A petición explícita del usuario ("que se pueda cambiar el nombre del grupo
@@ -25,9 +68,11 @@ que tenía el grupo al crearse, no se reescriben. No hay historial de nombres
 ni límite de frecuencia de cambio (no pedido).
 
 Tests: 12 nuevos en el backend (`updateRules`, `assertIsAdmin` y validación del
-DTO) y 8 en el frontend (fachada de ajustes del grupo). **Sin verificar en
-navegador ni en dispositivo** (no había backend local levantado en esta
-sesión). Rama `feature/group-rename`.
+DTO) y 8 en el frontend (fachada de ajustes del grupo). **Verificado en
+navegador** (web, backend + MySQL locales): el admin ve la sección, renombra,
+la cabecera cambia y persiste en BD; por HTTP directo, un miembro normal
+recibe 403 y un nombre de 2 caracteres 400. Sin verificar en iOS/Android.
+PR #70 (ya en `main`).
 
 ## 2026-09-19 — Orden estable de jornadas por cierre de pronósticos (Sprint 5) — dos vueltas
 

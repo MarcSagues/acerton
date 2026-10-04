@@ -74,6 +74,53 @@ export function toPublicGroupSummary(
   };
 }
 
+type CurrentMatchday = Awaited<ReturnType<MatchdaysService['getCurrentMatchdayForCompetition']>>;
+
+/**
+ * La jornada ya admite pronosticos hoy: no esta finalizada, le toca por orden
+ * (canPredict) y ya ha pasado su hora de apertura — misma regla que el punto
+ * rojo de "Jornada" (ver CurrentMatchdayFacade.hasPendingPicks en el frontend).
+ */
+function isOpenForPicks(
+  matchday: CurrentMatchday,
+  now: Date,
+): matchday is NonNullable<CurrentMatchday> {
+  if (!matchday || matchday.status === 'FINISHED') return false;
+  return matchday.canPredict && new Date(matchday.opensAt).getTime() <= now.getTime();
+}
+
+/**
+ * true si a este usuario le queda algun partido abierto sin pronosticar en
+ * esta jornada de este grupo. Calculado aqui para poder mostrar el aviso en
+ * el selector/listado de grupos sin cargar la jornada completa de cada uno
+ * en el cliente.
+ */
+function hasPendingPicksIn(
+  matchday: CurrentMatchday,
+  scoringMode: ScoringMode,
+  predictionsByMatchId: Map<
+    string,
+    {
+      choice: unknown;
+      doubleChanceOption: unknown;
+      predictedHomeScore: number | null;
+      predictedAwayScore: number | null;
+    }
+  >,
+  now: Date,
+): boolean {
+  if (!isOpenForPicks(matchday, now)) return false;
+  return matchday.matches.some((match) => {
+    const isPredictable = match.status === 'SCHEDULED' && match.kickoff.getTime() > now.getTime();
+    if (!isPredictable) return false;
+    const prediction = predictionsByMatchId.get(match.id);
+    if (scoringMode === 'EXACT_SCORE') {
+      return prediction?.predictedHomeScore == null || prediction?.predictedAwayScore == null;
+    }
+    return !prediction?.choice && !prediction?.doubleChanceOption;
+  });
+}
+
 @Injectable()
 export class GroupsService {
   private readonly logger = new Logger(GroupsService.name);
@@ -176,30 +223,78 @@ export class GroupsService {
     });
 
     const now = new Date();
+
+    // Esta lista se pide en CADA cambio de pestana (ver hasGroupGuard en el
+    // frontend), asi que cuantas idas y vueltas a la BD hace importa mucho:
+    // con la BD remota cada consulta en serie suma decenas de ms. La jornada
+    // "actual" es la misma para todos los grupos que comparten competicion,
+    // asi que se calcula una sola vez por competicion y en paralelo, y los
+    // pronosticos de todos los grupos se piden en una unica consulta, en vez
+    // de repetir ambas cosas por cada grupo y cada competicion en serie.
+    const activeIdsByGroup = new Map(
+      groups.map((group) => [
+        group.id,
+        group.groupCompetitions.filter((gc) => gc.isActive).map((gc) => gc.competitionId),
+      ]),
+    );
+    const competitionIds = [...new Set([...activeIdsByGroup.values()].flat())];
+    const matchdayByCompetition = new Map(
+      await Promise.all(
+        competitionIds.map(
+          async (id) =>
+            [id, await this.matchdaysService.getCurrentMatchdayForCompetition(id)] as const,
+        ),
+      ),
+    );
+    const pickableMatchdayIds = [...matchdayByCompetition.values()]
+      .filter((matchday): matchday is NonNullable<typeof matchday> => isOpenForPicks(matchday, now))
+      .map((matchday) => matchday.id);
+    const predictionRows =
+      pickableMatchdayIds.length === 0
+        ? []
+        : await this.prisma.prediction.findMany({
+            where: {
+              userId,
+              groupId: { in: groups.map((group) => group.id) },
+              match: { matchdayId: { in: pickableMatchdayIds } },
+            },
+            select: {
+              groupId: true,
+              matchId: true,
+              choice: true,
+              doubleChanceOption: true,
+              predictedHomeScore: true,
+              predictedAwayScore: true,
+            },
+          });
+    const predictionsByGroup = new Map<string, Map<string, (typeof predictionRows)[number]>>();
+    for (const row of predictionRows) {
+      const byMatch = predictionsByGroup.get(row.groupId) ?? new Map();
+      byMatch.set(row.matchId, row);
+      predictionsByGroup.set(row.groupId, byMatch);
+    }
+
     const results = await Promise.all(
       groups.map(async (group) => {
         const { memberships, ...groupData } = group;
         const isFavorite = memberships[0]?.isFavorite ?? false;
-        const activeCompetitionIds = group.groupCompetitions
-          .filter((gc) => gc.isActive)
-          .map((gc) => gc.competitionId);
+        const activeCompetitionIds = activeIdsByGroup.get(group.id) ?? [];
         if (activeCompetitionIds.length === 0) {
           return { ...groupData, myPosition: null, hasPendingPicks: false, isFavorite };
         }
         const competitionId = activeCompetitionIds.length === 1 ? activeCompetitionIds[0] : null;
-        const [snapshot, hasPendingPicks] = await Promise.all([
-          this.prisma.rankingSnapshot.findFirst({
-            where: { groupId: group.id, userId, period: 'TOTAL', competitionId },
-            orderBy: { createdAt: 'desc' },
-          }),
-          this.hasPendingPicksForGroup(
-            group.id,
-            activeCompetitionIds,
+        const snapshot = await this.prisma.rankingSnapshot.findFirst({
+          where: { groupId: group.id, userId, period: 'TOTAL', competitionId },
+          orderBy: { createdAt: 'desc' },
+        });
+        const hasPendingPicks = activeCompetitionIds.some((id) =>
+          hasPendingPicksIn(
+            matchdayByCompetition.get(id) ?? null,
             group.scoringMode,
-            userId,
+            predictionsByGroup.get(group.id) ?? new Map(),
             now,
           ),
-        ]);
+        );
         return {
           ...groupData,
           myPosition: snapshot ? { position: snapshot.position, points: snapshot.points } : null,
@@ -213,48 +308,6 @@ export class GroupsService {
     // orden por fecha de creacion dentro de cada bloque — Array.sort es
     // estable en Node, asi que basta comparar el flag.
     return results.sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-  }
-
-  /**
-   * true si a este usuario le queda algun partido abierto sin pronosticar en
-   * alguna de las competiciones activas del grupo — misma regla que el punto
-   * rojo de "Jornada" (ver CurrentMatchdayFacade.hasPendingPicks en el
-   * frontend), pero calculada aqui para poder mostrar el aviso en el
-   * selector/listado de grupos sin tener que cargar la jornada completa de
-   * cada uno en el cliente.
-   */
-  private async hasPendingPicksForGroup(
-    groupId: string,
-    competitionIds: string[],
-    scoringMode: ScoringMode,
-    userId: string,
-    now: Date,
-  ): Promise<boolean> {
-    for (const competitionId of competitionIds) {
-      const matchday = await this.matchdaysService.getCurrentMatchdayForCompetition(competitionId);
-      if (!matchday || matchday.status === 'FINISHED') continue;
-
-      const isMatchdayOpenByTime = new Date(matchday.opensAt).getTime() <= now.getTime();
-      if (!matchday.canPredict || !isMatchdayOpenByTime) continue;
-
-      const predictions = await this.prisma.prediction.findMany({
-        where: { userId, groupId, match: { matchdayId: matchday.id } },
-      });
-      const byMatchId = new Map(predictions.map((p) => [p.matchId, p]));
-
-      const pending = matchday.matches.some((match) => {
-        const isPredictable =
-          match.status === 'SCHEDULED' && match.kickoff.getTime() > now.getTime();
-        if (!isPredictable) return false;
-        const prediction = byMatchId.get(match.id);
-        if (scoringMode === 'EXACT_SCORE') {
-          return prediction?.predictedHomeScore == null || prediction?.predictedAwayScore == null;
-        }
-        return !prediction?.choice && !prediction?.doubleChanceOption;
-      });
-      if (pending) return true;
-    }
-    return false;
   }
 
   /**

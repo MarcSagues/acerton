@@ -301,6 +301,27 @@ describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
     );
   });
 
+  it('calcula la jornada de referencia una sola vez por llamada (no la repite al decorar con canPredict)', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 7, matches: [{ kickoff: new Date(Date.now() + 3600_000) }] },
+    ]);
+    prisma.matchday.findFirst.mockResolvedValue({
+      id: 'jornada-7',
+      order: 7,
+      status: 'OPEN',
+      competitionId: 'c1',
+      closesAt: new Date(),
+    });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    const result = await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(result).toMatchObject({ id: 'jornada-7', canPredict: true });
+    // Cada llamada de mas a getReferenceOrder son dos consultas en serie a la BD.
+    expect(prisma.matchday.findMany).toHaveBeenCalledTimes(1);
+  });
+
   it('si todas estan finalizadas, devuelve la ultima jugada', async () => {
     const prisma = buildPrismaMock();
     prisma.matchday.findMany.mockResolvedValue([]); // no hay ninguna pendiente

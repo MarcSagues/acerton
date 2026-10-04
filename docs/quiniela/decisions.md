@@ -4,6 +4,24 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — La rama `dev` NO se actualiza desde `main`: los cambios de API para dev se portan a mano
+
+Descubierto al intentar arreglar un error del renombrado de grupo en dev
+(el usuario confirmó que **la API de dev despliega desde la rama `dev`**):
+`dev` sigue en **Postgres/Neon** (`provider = "postgresql"`, servicios
+`piqo-dev`/`acerton-dev` contra Neon) y va 36+ commits por detrás de `main`,
+que desde el 2026-09-29 es **MySQL** (Hostinger, ver memoria
+`project-db-mysql-hostinger`). Hacer fast-forward de `dev` a `main` rompería
+la API de dev (proveedor MySQL contra una URL de Neon) y exigiría migrar
+la BD de dev.
+
+**Consecuencia práctica**: un build de iOS con `environment=dev` lanzado desde
+`main` habla con una API que no tiene el código de `main`; cualquier cambio de
+API que se quiera probar en dev debe portarse (cherry-pick manual, solo
+backend) a una rama cortada de `origin/dev` y fusionarse en `dev`. Así se hizo
+con el renombrado de grupo (backport #71). Para probar contra la API completa
+de `main` hay que usar el entorno de producción o resolver antes la BD de dev.
+
 ## 2026-09-19 — Sprint 5, "orden estable de jornadas por cierre de pronósticos" — resuelto, sustituye la decisión implícita anterior
 
 El usuario resolvió con reglas y ejemplos concretos la pregunta que
