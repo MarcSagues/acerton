@@ -4,6 +4,25 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — Los anuncios a todos los usuarios solo salen del dashboard, con clave compartida
+
+El botón "Probar notificaciones" (Sprint 9) ya no estaba en la app, pero su endpoint
+`POST /notifications/test-broadcast` seguía abierto a cualquier usuario autenticado y
+notificaba a todos los dispositivos. Se elimina y el envío masivo pasa a ser una
+capacidad **exclusiva de piqo-dashboard**:
+
+- **Clave compartida en cabecera** (`X-Dashboard-Key` ↔ `DASHBOARD_API_KEY`) en vez de un
+  "rol admin" de usuario: la app no tiene concepto de administrador de plataforma y
+  añadirlo exigiría migrar la BD de producción. El dashboard ya es un servicio de
+  servidor con su propio login, así que puede guardar la clave sin exponerla.
+- Desactivado por defecto: sin clave (o corta) el endpoint responde 503, nunca abierto.
+- **Sin feed ni preferencias** (decisión de alcance, no técnica): un tipo nuevo de aviso
+  exige migrar el enum en la BD de producción. Si se quiere que los anuncios aparezcan
+  también en "Avisos", añadir `ANNOUNCEMENT` a `NotificationType` (migración + SQL para quien
+  gestiona la BD) y llamar a `recordMany` desde `broadcastAnnouncement`.
+- El dashboard deja de ser "solo lectura" en este único punto (su README lo refleja);
+  sigue sin poder escribir en la BD (conexión MySQL de solo lectura).
+
 ## 2026-10-04 — Sin ventana de apertura de 4 días: la jornada más próxima siempre acepta pronósticos (sustituye una regla anterior)
 
 Petición explícita del usuario: "siempre debe haber una jornada abierta para

@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 
 function buildPrismaMock() {
@@ -6,7 +7,10 @@ function buildPrismaMock() {
     groupCompetition: { findMany: jest.fn().mockResolvedValue([]) },
     rankingSnapshot: { findFirst: jest.fn().mockResolvedValue(null) },
     prediction: { findMany: jest.fn() },
-    notificationToken: { findMany: jest.fn() },
+    notificationToken: {
+      findMany: jest.fn(),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
     notificationPreference: {
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn().mockResolvedValue(null),
@@ -14,6 +18,7 @@ function buildPrismaMock() {
     user: {
       findMany: jest.fn().mockResolvedValue([]),
       updateMany: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0),
     },
     notification: {
       create: jest.fn().mockResolvedValue({}),
@@ -344,6 +349,125 @@ describe('NotificationsService.markAllRead', () => {
     expect(prisma.notification.updateMany).toHaveBeenCalledWith({
       where: { userId: 'u1', readAt: null },
       data: { readAt: expect.any(Date) },
+    });
+  });
+});
+
+describe('NotificationsService.broadcastAnnouncement (envio a todo el mundo desde el dashboard)', () => {
+  const announcement = { title: 'Novedades', body: 'Ya hay jornada nueva' };
+
+  function build(devices: { token: string; userId: string }[], totalUsers = 10) {
+    const prisma = buildPrismaMock();
+    prisma.user.count.mockResolvedValue(totalUsers);
+    prisma.notificationToken.findMany.mockResolvedValue(devices);
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendEachForMulticast = jest
+      .fn()
+      .mockImplementation(async ({ tokens }: { tokens: string[] }) => ({
+        successCount: tokens.length,
+        failureCount: 0,
+        responses: tokens.map(() => ({ success: true })),
+      }));
+    (service as unknown as { messaging: unknown }).messaging = { sendEachForMulticast };
+    return { service, prisma, sendEachForMulticast };
+  }
+
+  const devicesFor = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ token: `t${i}`, userId: `u${i % 7}` }));
+
+  it('dryRun solo cuenta destinatarios: no envia nada aunque Firebase este configurado', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(9), 25);
+
+    const result = await service.broadcastAnnouncement({ ...announcement, dryRun: true });
+
+    expect(result).toEqual({
+      dryRun: true,
+      totalUsers: 25,
+      usersWithDevices: 7,
+      tokenCount: 9,
+      successCount: 0,
+      failureCount: 0,
+      errors: {},
+    });
+    expect(sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('envia titulo y texto a todos los dispositivos registrados', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(3));
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    expect(sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(sendEachForMulticast).toHaveBeenCalledWith({
+      tokens: ['t0', 't1', 't2'],
+      notification: { title: 'Novedades', body: 'Ya hay jornada nueva' },
+      data: { type: 'ANNOUNCEMENT' },
+    });
+    expect(result).toMatchObject({
+      dryRun: false,
+      tokenCount: 3,
+      successCount: 3,
+      failureCount: 0,
+    });
+  });
+
+  it('con mas de 500 dispositivos envia por lotes de 500 (limite de FCM)', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(1200));
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    const sizes = sendEachForMulticast.mock.calls.map(
+      ([arg]: [{ tokens: string[] }]) => arg.tokens.length,
+    );
+    expect(sizes).toEqual([500, 500, 200]);
+    expect(result.successCount).toBe(1200);
+    expect(result.tokenCount).toBe(1200);
+  });
+
+  it('suma los fallos de todos los lotes, los agrupa por codigo y borra los tokens invalidos', async () => {
+    const { service, prisma, sendEachForMulticast } = build(devicesFor(4));
+    sendEachForMulticast.mockResolvedValueOnce({
+      successCount: 2,
+      failureCount: 2,
+      responses: [
+        { success: true },
+        { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+        { success: true },
+        { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+      ],
+    });
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    expect(result.successCount).toBe(2);
+    expect(result.failureCount).toBe(2);
+    expect(result.errors).toEqual({ 'messaging/registration-token-not-registered': 2 });
+    expect(prisma.notificationToken.deleteMany).toHaveBeenCalledWith({
+      where: { token: { in: ['t1', 't3'] } },
+    });
+  });
+
+  it('sin Firebase configurado falla (503) en vez de decir que se envio', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(3));
+    (service as unknown as { messaging: unknown }).messaging = null;
+
+    await expect(service.broadcastAnnouncement(announcement)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+    expect(sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('sin ningun dispositivo registrado no llama a Firebase y devuelve ceros', async () => {
+    const { service, sendEachForMulticast } = build([], 12);
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    expect(sendEachForMulticast).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      totalUsers: 12,
+      usersWithDevices: 0,
+      tokenCount: 0,
+      successCount: 0,
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { NotificationType, Prisma } from '@prisma/client';
@@ -8,6 +8,22 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   NotificationPreferenceFields,
 } from './notification-preferences.service';
+
+/** Maximo de tokens por llamada multicast de Firebase Cloud Messaging. */
+const BROADCAST_CHUNK_SIZE = 500;
+
+export interface BroadcastResult {
+  /** true: solo se han contado destinatarios, no se ha enviado nada. */
+  dryRun: boolean;
+  totalUsers: number;
+  /** Usuarios con al menos un dispositivo registrado (los unicos que pueden recibir el push). */
+  usersWithDevices: number;
+  tokenCount: number;
+  successCount: number;
+  failureCount: number;
+  /** Conteo de fallos por codigo de FCM (p.ej. messaging/registration-token-not-registered). */
+  errors: Record<string, number>;
+}
 
 export interface PushNotification {
   title: string;
@@ -179,39 +195,68 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
-   * Boton de prueba en Ajustes (ver ProfilePageFacade.sendTestBroadcast): un
-   * envio de verdad a todos los tokens registrados, para comprobar el
-   * pipeline completo de un vistazo. Devuelve conteos (no solo si fue bien)
-   * porque el fallo mas probable ahora mismo no es un error, es que
-   * userCount/tokenCount no coincidan — es decir, la mayoria de cuentas
-   * nunca han activado las notificaciones (ver "Preferencias de avisos").
+   * Envia un anuncio push a TODOS los dispositivos registrados. Solo lo llama
+   * el endpoint del dashboard (ver DashboardNotificationsController), nunca
+   * un usuario de la app: el antiguo POST /notifications/test-broadcast lo
+   * podia lanzar cualquier cuenta con sesion y se elimino por eso.
+   *
+   * No respeta las preferencias por tipo de aviso (NotificationPreference):
+   * un anuncio del equipo no es ninguno de esos tipos, y quien no quiere push
+   * ya no tiene token registrado (ver DELETE /users/me/notification-tokens).
+   * Tampoco crea fila en el feed "Avisos": un tipo nuevo exige migrar el enum
+   * NotificationType en la BBDD de produccion.
+   *
+   * FCM admite como mucho 500 tokens por llamada multicast (BROADCAST_CHUNK_SIZE):
+   * con mas dispositivos se envia por lotes. Con dryRun solo cuenta
+   * destinatarios, sin enviar nada.
    */
-  async sendTestBroadcast(): Promise<{
-    userCount: number;
-    tokenCount: number;
-    successCount: number;
-    failureCount: number;
-    errors: string[];
-  }> {
+  async broadcastAnnouncement(input: {
+    title: string;
+    body: string;
+    dryRun?: boolean;
+  }): Promise<BroadcastResult> {
+    const dryRun = input.dryRun ?? false;
+    const [totalUsers, devices] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.notificationToken.findMany({ select: { token: true, userId: true } }),
+    ]);
+    const base = {
+      dryRun,
+      totalUsers,
+      usersWithDevices: new Set(devices.map((device) => device.userId)).size,
+      tokenCount: devices.length,
+    };
+
+    if (dryRun) {
+      return { ...base, successCount: 0, failureCount: 0, errors: {} };
+    }
     if (!this.messaging) {
-      this.logger.warn('sendTestBroadcast: Firebase no esta configurado, no se envia nada');
+      throw new ServiceUnavailableException(
+        'Firebase no esta configurado en este servidor: no se ha enviado nada',
+      );
     }
 
-    const [userCount, tokens] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.notificationToken.findMany({ select: { token: true } }),
-    ]);
+    let successCount = 0;
+    let failureCount = 0;
+    const errors: Record<string, number> = {};
+    const tokens = devices.map((device) => device.token);
+    for (let i = 0; i < tokens.length; i += BROADCAST_CHUNK_SIZE) {
+      const result = await this.sendToTokens(tokens.slice(i, i + BROADCAST_CHUNK_SIZE), {
+        title: input.title,
+        body: input.body,
+        data: { type: 'ANNOUNCEMENT' },
+      });
+      successCount += result.successCount;
+      failureCount += result.failureCount;
+      for (const code of result.errors) {
+        errors[code] = (errors[code] ?? 0) + 1;
+      }
+    }
 
-    const { successCount, failureCount, errors } = await this.sendToTokens(
-      tokens.map((t) => t.token),
-      {
-        title: 'Notificación de prueba',
-        body: 'Si ves esto, las notificaciones push funcionan.',
-        data: { type: 'TEST_BROADCAST' },
-      },
+    this.logger.log(
+      `Anuncio enviado desde el dashboard: ${successCount} entregados, ${failureCount} fallidos de ${tokens.length} dispositivos`,
     );
-
-    return { userCount, tokenCount: tokens.length, successCount, failureCount, errors };
+    return { ...base, successCount, failureCount, errors };
   }
 
   /**

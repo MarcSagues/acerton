@@ -1,5 +1,59 @@
 # Estado actual
 
+## 2026-10-04 — Enviar una notificación a todo el mundo desde piqo-dashboard; fuera el endpoint de prueba (Sprint 9)
+
+A petición explícita del usuario ("lo de probar notificaciones debería desaparecer,
+y deberíamos añadir un endpoint que solo desde piqo-dashboard se pueda lanzar...
+título y descripción, botón enviar y pop-up para confirmar").
+
+**Eliminado**: `POST /notifications/test-broadcast` y `NotificationsService.sendTestBroadcast`
+(y su método huérfano en el frontend). Era un agujero real: lo podía lanzar
+**cualquier usuario con sesión** y mandaba un push de prueba a *todos* los
+dispositivos registrados. Hay un test de regresión que comprueba que ya no existe.
+
+**Nuevo endpoint** `POST /api/dashboard/send-notification` (API de Piqo):
+- Sin JWT de usuario (`@Public()`): el único control de acceso es
+  `DashboardApiKeyGuard` — clave compartida `DASHBOARD_API_KEY` en la cabecera
+  `X-Dashboard-Key`, comparación en tiempo constante. Sin clave configurada (o de
+  menos de 32 caracteres) responde 503 (desactivado, nunca abierto); clave
+  ausente/incorrecta, o un JWT de usuario, 403. Limitado a 5 peticiones/min.
+- Cuerpo: `title` (1–65), `body` (1–240), `dryRun` opcional (solo cuenta a cuántos
+  usuarios/dispositivos llegaría, sin enviar). Campos desconocidos → 400.
+- Envía a todos los `NotificationToken` por lotes de 500 (límite de FCM; el
+  envío anterior de un solo golpe habría fallado con más de 500 dispositivos) y
+  devuelve `totalUsers`, `usersWithDevices`, `tokenCount`, `successCount`,
+  `failureCount` y los fallos agrupados por código. Sin Firebase configurado
+  responde 503 en vez de decir que se envió. Los tokens que FCM da por inválidos
+  se borran, como en el resto de envíos.
+- **No** crea fila en el feed "Avisos" ni respeta preferencias por tipo: un anuncio
+  no es ninguno de los tipos existentes y añadir uno (`ANNOUNCEMENT`) exige migrar
+  el enum `NotificationType` en la BD de producción (la gestiona un compañero:
+  habría que darle el SQL). Pendiente si se quiere verlos también en "Avisos".
+
+**Dashboard** (repo aparte `piqo-dashboard`, rama `feature/send-notification`):
+sección "Enviar notificación" con título y descripción (con contadores) y botón
+**Enviar**; al pulsarlo no se manda nada: calcula a cuántos llegaría (dryRun) y sale
+un pop-up (`<dialog>`) con la vista previa y "Llegará a N de M usuarios (K
+dispositivos)"; solo **Enviar a todos** lo envía. Sin destinatarios, el botón del
+pop-up se desactiva. Su servidor reenvía a la API con la clave (nunca llega al
+navegador), exige JSON + cookie SameSite=Strict y deja 10 s mínimo entre envíos
+reales. Sigue funcionando sin la clave (el envío responde 503).
+
+**Para activarlo en producción** (lo hace el usuario, son secretos): generar la
+clave (`openssl rand -hex 32`), ponerla como `DASHBOARD_API_KEY` en el servicio
+`piqo` (API, Render) y en `piqo-dashboard` (más `PIQO_API_URL=https://api.piqo.es/api`).
+
+**Verificado**: 355 tests del backend (nuevos: guard, DTO, envío por lotes/fallos/dryRun/
+sin Firebase, y protección del controlador) y 10 del dashboard. En local, por HTTP
+contra la API: 403 sin clave, con clave mala y con JWT de usuario; 200 con `dryRun`;
+400 por validación; el antiguo test-broadcast da 404. En el navegador, dashboard +
+API reales: el botón está desactivado hasta tener título y descripción, el pop-up
+muestra vista previa y destinatarios, Cancelar no envía nada, y confirmar ejecuta el
+envío (con tokens falsos que FCM rechazó: "0 entregadas · 2 fallidas", registrado
+en el log). **No verificado**: una entrega real a un dispositivo (el flujo de FCM
+con tokens válidos solo está cubierto por tests con un FCM simulado) ni el límite de
+10 s entre envíos desde la interfaz (solo en test unitario).
+
 ## 2026-10-04 — La jornada más próxima siempre está abierta para pronosticar (fuera de sprint)
 
 A petición explícita del usuario ("haz que siempre haya la jornada más
