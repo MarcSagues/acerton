@@ -42,6 +42,13 @@ actuales.
 - Copiar enlace muestra una confirmación temporal «Copiado» únicamente si
   funciona. No vigilar el portapapeles.
 - Cerrar sesión requiere un único modal de confirmación.
+- Copiar de otro grupo (a petición del usuario, 2026-10-04): quien está en
+  varios grupos puede rellenar de una vez los pronósticos de la jornada
+  abierta copiándolos de otro de sus grupos, en vez de repetirlos uno a uno.
+  Rellena todos los partidos de esa jornada que el otro grupo tenga
+  pronosticados y siguen abiertos; después se puede cambiar cualquiera con el
+  autoguardado de siempre. Ver `decisions.md` (2026-10-04) para comodines y
+  modos de puntuación.
 
 ## Grupos y navegación
 

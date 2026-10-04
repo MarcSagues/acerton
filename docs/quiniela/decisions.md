@@ -4,6 +4,50 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-04 — Copiar los pronósticos de la jornada de otro grupo
+
+A petición explícita del usuario ("copiar lo que has puesto en otros grupos
+para no ponerlo todo de nuevo; si luego quieres modificar algún resultado
+puedes; que la opción ponga todos los partidos de esa jornada"). Un mismo
+partido se pronostica por separado en cada grupo (`Prediction` es
+`userId + groupId + matchId`), así que antes había que repetirlo grupo a grupo.
+
+**Cómo funciona**: botón "Copiar pronósticos de otro grupo" en `/matchday`
+(solo con más de un grupo y la jornada abierta). Elige el grupo de origen y el
+backend (`POST /groups/:id/predictions/copy-from/:sourceId`, con
+`GET .../copy-sources/:matchdayId` para listar candidatos) copia **todos** los
+pronósticos que el origen tenga en esa jornada y sigan abiertos. Reutiliza
+`submit()` partido a partido, así que valen las mismas reglas que al pronosticar
+a mano (partido no empezado, jornada abierta, comodines del destino, XP de
+participar) y lo copiado se edita después con el autoguardado normal.
+
+**Decisiones tomadas por defecto (a confirmar por el usuario):**
+
+1. **Sustituye lo que el destino ya tuviera de esos partidos** (no solo rellena
+   huecos), porque el usuario pidió "que ponga todos los partidos". Si ya hay
+   algo elegido, la pantalla pide confirmación antes. No toca los partidos que
+   el origen no tiene pronosticados.
+2. **Partidos ya empezados**: no se copian (no se puede pronosticar un partido
+   que ha empezado) y se avisa.
+3. **Comodín de remontada** (es de cada grupo: depende de la diferencia con el
+   líder de ESE grupo): solo se copia si el destino tiene comodines disponibles.
+   Sin comodín, una doble oportunidad (1X/X2/12) no tiene equivalente simple, así
+   que ese partido **se omite y se avisa** (no se inventa una elección); un
+   marcador con "x2 puntos" se copia **sin** el duplicador y se avisa. Cada
+   comodín copiado gasta uno de los del destino, por orden de kickoff.
+4. **Modos de puntuación distintos**: de resultado exacto a un grupo 1X2 se copia
+   el 1/X/2 que sale del marcador (el "x2" se descarta y se avisa); de un grupo
+   1X2 a uno de resultado exacto **no se puede** (no hay marcador): ese grupo sale
+   en el selector desactivado explicando por qué.
+5. **Solo grupos de los que sigue siendo miembro** y no eliminados, y solo si la
+   jornada es de una competición activa del grupo de destino.
+6. **XP**: como se reutiliza `submit()`, copiar a un grupo nuevo da la XP de
+   participar de cada partido igual que pronosticarlo a mano allí (no abre un
+   atajo que no existiera ya).
+
+**No es atómico**: si un partido falla, los demás siguen y se informa en
+`skipped`. No hay "deshacer" (se cambia a mano, como cualquier pronóstico).
+
 ## 2026-10-04 — Comunicados push desde el dashboard: el backend envía, el dashboard solo decide a quién
 
 A petición explícita del usuario ("añadir en el dashboard una opción para

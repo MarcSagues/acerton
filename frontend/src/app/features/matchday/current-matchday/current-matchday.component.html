@@ -141,6 +141,15 @@
         </div>
       }
 
+      @if (page.canOfferCopy(entry)) {
+        <div class="copy-row">
+          <button type="button" class="copy-groups-btn" [disabled]="page.copyBusy()" (click)="page.openCopySheet()">
+            <piqo-svg icon="copiar" size="16"></piqo-svg>
+            {{ page.copyBusy() ? 'Un momento…' : 'Copiar pronósticos de otro grupo' }}
+          </button>
+        </div>
+      }
+
       <div class="match-list">
         @for (match of entry.matchday.matches; track match.id; let first = $first) {
           <div

@@ -14,9 +14,13 @@ import { NotificationsFeedService } from '../../../core/services/notifications-f
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { CurrentMatchdayEntry, Matchday, Match, PredictionChoice } from '../../../core/models/matchday.model';
-import { DoubleChanceOption, Prediction } from '../../../core/models/prediction.model';
+import { CopySource, DoubleChanceOption, Prediction } from '../../../core/models/prediction.model';
 import { ComebackStatus } from '../../../core/models/profile.model';
 import { ComebackSheetComponent, ComebackSheetData, ComebackSheetResult } from './comeback-sheet.component';
+import { CopyFromGroupSheetComponent, CopyFromGroupSheetData } from './copy-from-group-sheet.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { InfoDialogComponent, InfoDialogData } from '../../../shared/info-dialog/info-dialog.component';
+import { copyResultMessage } from '../domain/copy-predictions.rules';
 import { MatchdayShareCardComponent, ShareCardData } from '../matchday-results/matchday-share-card.component';
 import { MatchShareCardComponent, MatchShareCardData } from './match-share-card.component';
 import { formatCountdown } from '../../../shared/countdown.util';
@@ -98,6 +102,8 @@ export class CurrentMatchdayFacade {
   /** Igual que dismissedComebackBanner pero para el aviso de "consigue un comodin extra viendo un video". */
   private readonly dismissedAdRewardBanner = signal<string | null>(null);
   readonly watchingAd = signal(false);
+  /** Cargando los grupos de origen o copiando pronosticos de otro grupo (ver openCopySheet). */
+  readonly copyBusy = signal(false);
 
   readonly predictionState = new Map<string, MatchPredictionState>();
 
@@ -361,6 +367,112 @@ export class CurrentMatchdayFacade {
     } finally {
       this.watchingAd.set(false);
     }
+  }
+
+  /**
+   * "Copiar de otro grupo": solo tiene sentido si el usuario tiene mas de un
+   * grupo y todavia se puede pronosticar algo en esta jornada. Que algun otro
+   * grupo tenga pronosticos de ella se mira al pulsar (openCopySheet), no al
+   * cargar la pantalla, para no pedir una consulta extra en cada navegacion.
+   */
+  canOfferCopy(entry: CurrentMatchdayEntry): boolean {
+    return this.activeGroupService.groups().length > 1 && this.pickingAllowed() && !this.isLocked(entry);
+  }
+
+  /** Abre el selector de grupo de origen; si ninguno tiene pronosticos abiertos de esta jornada, lo dice en vez de abrir un panel vacio. */
+  openCopySheet(): void {
+    const entry = this.activeEntry();
+    const groupId = this.activeGroupService.activeId();
+    if (!entry || !groupId || this.copyBusy()) return;
+
+    this.copyBusy.set(true);
+    this.predictionsService.getCopySources(groupId, entry.matchday.id).subscribe({
+      next: (sources) => {
+        this.copyBusy.set(false);
+        if (sources.length === 0) {
+          this.toast.show('No tienes pronósticos abiertos de esta jornada en tus otros grupos');
+          return;
+        }
+        const ref = this.sheet.open<CopyFromGroupSheetComponent, CopySource | undefined, CopyFromGroupSheetData>(
+          CopyFromGroupSheetComponent,
+          { data: { sources, targetMode: this.activeGroupService.activeGroup()?.scoringMode ?? 'ONE_X_TWO' } },
+        );
+        ref.closed.subscribe((source) => {
+          if (source) this.confirmCopy(groupId, entry.matchday.id, source);
+        });
+      },
+      error: (error: HttpErrorResponse) => {
+        this.copyBusy.set(false);
+        this.toast.show(error.error?.message ?? 'No se pudieron cargar tus otros grupos');
+      },
+    });
+  }
+
+  /** Copiar sustituye lo que ya haya en esos partidos: si ya hay algo elegido, se pide confirmacion antes. */
+  private confirmCopy(groupId: string, matchdayId: string, source: CopySource): void {
+    if (this.doneCount() === 0) {
+      this.copyFromGroup(groupId, matchdayId, source);
+      return;
+    }
+    this.dialog
+      .open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, {
+        data: {
+          title: '¿Sustituir tus pronósticos?',
+          message: `Ya tienes pronósticos en este grupo. Se sustituirán por los de «${source.name}» en los partidos que tengan allí; los demás se quedan como están.`,
+          confirmLabel: 'Copiar',
+          cancelLabel: 'Cancelar',
+        },
+      })
+      .closed.subscribe((confirmed) => {
+        if (confirmed) this.copyFromGroup(groupId, matchdayId, source);
+      });
+  }
+
+  private copyFromGroup(groupId: string, matchdayId: string, source: CopySource): void {
+    this.copyBusy.set(true);
+    this.predictionsService.copyFrom(groupId, source.groupId, matchdayId).subscribe({
+      next: (result) => {
+        this.copyBusy.set(false);
+        // Si cambio de grupo mientras tanto, lo copiado ya esta guardado en el
+        // grupo de antes; no hay nada que pintar en el de ahora.
+        if (this.activeGroupService.activeId() !== groupId) return;
+
+        for (const prediction of result.copied) {
+          this.predictionState.set(prediction.matchId, {
+            choice: prediction.choice,
+            doubleChanceOption: prediction.doubleChanceOption,
+            predictedHomeScore: prediction.predictedHomeScore,
+            predictedAwayScore: prediction.predictedAwayScore,
+            doublePointsWildcard: prediction.doublePointsWildcard,
+            saving: false,
+            saved: true,
+            error: false,
+            requestSeq: 0,
+            drawOffset: 0,
+            progressFrame: null,
+            pointsEarned: prediction.pointsEarned,
+          });
+        }
+        this.updatePendingBadge();
+        // Los comodines copiados gastan los del grupo; y copiar da XP de participar
+        // como al pronosticar a mano: el pop-up de nivel no debe esperar al polling.
+        this.refreshComeback(groupId);
+        this.notificationsFeed.refresh();
+
+        const message = copyResultMessage(source.name, result);
+        if (message.needsAttention) {
+          this.dialog.open<InfoDialogComponent, void, InfoDialogData>(InfoDialogComponent, {
+            data: { title: 'Pronósticos copiados', message: message.text },
+          });
+        } else {
+          this.toast.show(message.text, { duration: 4000 });
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.copyBusy.set(false);
+        this.toast.show(error.error?.message ?? 'No se pudieron copiar los pronósticos');
+      },
+    });
   }
 
   /** Cierra el aviso mostrado bajo la cabecera, cualquiera que sea su tono. */
