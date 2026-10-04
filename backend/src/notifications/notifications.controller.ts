@@ -6,12 +6,6 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  /** Boton "Probar notificaciones" en Ajustes (ver ProfilePageFacade). */
-  @Post('test-broadcast')
-  async testBroadcast() {
-    return this.notificationsService.sendTestBroadcast();
-  }
-
   /** Pantalla "Avisos" (ver issue #21) — los avisos reales del usuario, mas recientes primero. */
   @Get('me')
   getMine(@CurrentUser() user: AuthenticatedUser) {
