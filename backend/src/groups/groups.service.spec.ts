@@ -287,6 +287,18 @@ describe('GroupsService.findMineForUser', () => {
     expect(result.hasPendingPicks).toBe(true);
   });
 
+  it('marca hasPendingPicks a true aunque opensAt (solo compatibilidad) este en el futuro: la jornada mas proxima siempre esta abierta', async () => {
+    const matchday = {
+      ...openMatchday([futureMatch]),
+      opensAt: new Date(Date.now() + 10 * 24 * 3600_000).toISOString(),
+    };
+    const { service } = buildFindMineDeps(matchday, []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(true);
+  });
+
   it('marca hasPendingPicks a false si ya se pronostico ese partido', async () => {
     const { service } = buildFindMineDeps(openMatchday([futureMatch]), [
       { groupId: 'g1', matchId: 'm1', choice: 'HOME', doubleChanceOption: null },
