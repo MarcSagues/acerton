@@ -15,7 +15,8 @@ openCopySheet`), panel `CopyFromGroupSheetComponent`, confirmación si ya hay
 pronósticos, y mensajes en `domain/copy-predictions.rules.ts` (toast si todo
 bien; diálogo si algo no se copió o se copió sin comodín).
 
-**Verificado**: 367 tests del backend, `tsc`, lint y prettier; 47 del frontend
+**Verificado** (y repetido tras fusionar con `main`, incluido el PR #72 de jornadas
+siempre abiertas): 380 tests del backend, `tsc`, lint y prettier; 51 del frontend
 (karma) y `ng build` de producción. De punta a punta en Chromium con MariaDB real +
 backend + app Angular y login por la interfaz (usuario con 4 grupos, 1X2 y
 resultado exacto, una jornada con un partido ya empezado y clasificaciones
@@ -32,47 +33,105 @@ nombre de grupo; el botón se pinta siempre que haya más de un grupo aunque
 ningún otro tenga pronósticos de esa jornada (entonces avisa al pulsarlo, para no
 pedir una consulta extra en cada navegación).
 
-## 2026-10-04 — Comunicados push desde el dashboard (fuera de sprint)
+## 2026-10-04 — Enviar una notificación a todo el mundo desde piqo-dashboard; fuera el endpoint de prueba (Sprint 9)
 
-A petición explícita del usuario ("añadir en el dashboard una opción para
-mandar notificaciones push"). Dos repos, rama `claude/dashboard-push-
-notifications-yo0gk0` en ambos (sin PR). Decisiones y motivos en
-`decisions.md` (misma fecha).
+A petición explícita del usuario ("lo de probar notificaciones debería desaparecer,
+y deberíamos añadir un endpoint que solo desde piqo-dashboard se pueda lanzar...
+título y descripción, botón enviar y pop-up para confirmar").
 
-**Backend (este repo)**: `POST /api/admin/notifications/broadcast`
-(`AdminNotificationsController` + `AdminApiKeyGuard`, clave `ADMIN_API_KEY`,
-`@Public()` + `Authorization: Bearer`, 10/min). Cuerpo `{ title, body,
-userIds?, dryRun? }`: `NotificationsService.sendAnnouncement` manda el push a
-todos los dispositivos de los destinatarios y crea un aviso `ANNOUNCEMENT` en
-el feed de cada uno; `dryRun` solo cuenta. Migración
-`20261004000000_announcement_notification_type` (amplía el `ENUM`);
-frontend: `ANNOUNCEMENT` en `NotificationType` con el icono de campana.
-`sendToTokens` ahora envía por tandas de 500 (límite de FCM).
+**Eliminado**: `POST /notifications/test-broadcast` y `NotificationsService.sendTestBroadcast`
+(y su método huérfano en el frontend). Era un agujero real: lo podía lanzar
+**cualquier usuario con sesión** y mandaba un push de prueba a *todos* los
+dispositivos registrados. Hay un test de regresión que comprueba que ya no existe.
 
-**Dashboard (`piqo-dashboard`)**: sección "Enviar notificación push" con
-audiencia (todos / activos 7 d / inactivos +14 d / un usuario por email), título
-(65) y mensaje (240); "Calcular destinatarios" (dry-run) → confirmación nativa →
-"Enviar" (un envío a la vez, pausa de 5 s). Sigue sin escribir en la BD.
+**Nuevo endpoint** `POST /api/dashboard/send-notification` (API de Piqo):
+- Sin JWT de usuario (`@Public()`): el único control de acceso es
+  `DashboardApiKeyGuard` — clave compartida `DASHBOARD_API_KEY` en la cabecera
+  `X-Dashboard-Key`, comparación en tiempo constante. Sin clave configurada (o de
+  menos de 32 caracteres) responde 503 (desactivado, nunca abierto); clave
+  ausente/incorrecta, o un JWT de usuario, 403. Limitado a 5 peticiones/min.
+- Cuerpo: `title` (1–65), `body` (1–240), `dryRun` opcional (solo cuenta a cuántos
+  usuarios/dispositivos llegaría, sin enviar). Campos desconocidos → 400.
+- Envía a todos los `NotificationToken` por lotes de 500 (límite de FCM; el
+  envío anterior de un solo golpe habría fallado con más de 500 dispositivos) y
+  devuelve `totalUsers`, `usersWithDevices`, `tokenCount`, `successCount`,
+  `failureCount` y los fallos agrupados por código. Sin Firebase configurado
+  responde 503 en vez de decir que se envió. Los tokens que FCM da por inválidos
+  se borran, como en el resto de envíos.
+- **No** crea fila en el feed "Avisos" ni respeta preferencias por tipo: un anuncio
+  no es ninguno de los tipos existentes y añadir uno (`ANNOUNCEMENT`) exige migrar
+  el enum `NotificationType` en la BD de producción (la gestiona un compañero:
+  habría que darle el SQL). Pendiente si se quiere verlos también en "Avisos".
 
-**Verificado**: 342 tests del backend (26 nuevos entre servicio, guard, DTO y
-una prueba HTTP real del cableado con el `JwtAuthGuard` global) + lint + `tsc`;
-13 tests del dashboard. De punta a punta en local con MariaDB (migraciones
-reales aplicadas, sin deriva de esquema) + backend compilado + dashboard +
-Chromium: 401/404/400/200 correctos, el `dryRun` no escribe nada, el envío
-llega al FCM simulado con los tokens correctos, queda el aviso en el feed de
-todos (también de quien no tiene token), se borra el token inválido y el
-usuario `SELECT` del dashboard no puede escribir.
+**Dashboard** (repo aparte `piqo-dashboard`, rama `feature/send-notification`):
+sección "Enviar notificación" con título y descripción (con contadores) y botón
+**Enviar**; al pulsarlo no se manda nada: calcula a cuántos llegaría (dryRun) y sale
+un pop-up (`<dialog>`) con la vista previa y "Llegará a N de M usuarios (K
+dispositivos)"; solo **Enviar a todos** lo envía. Sin destinatarios, el botón del
+pop-up se desactiva. Su servidor reenvía a la API con la clave (nunca llega al
+navegador), exige JSON + cookie SameSite=Strict y deja 10 s mínimo entre envíos
+reales. Sigue funcionando sin la clave (el envío responde 503).
 
-**NO verificado**: entrega real por Firebase a un móvil (el FCM se simuló: no
-hay credenciales en el entorno), despliegue en Render/Vercel, `ng build` del
-frontend (solo se comprobó el tipo de los dos ficheros tocados).
+**Para activarlo en producción** (lo hace el usuario, son secretos): generar la
+clave (`openssl rand -hex 32`), ponerla como `DASHBOARD_API_KEY` en el servicio
+`piqo` (API, Render) y en `piqo-dashboard` (más `PIQO_API_URL=https://api.piqo.es/api`).
 
-**Antes de usarlo en producción**: (1) generar `openssl rand -hex 32` y ponerlo
-como `ADMIN_API_KEY` en el backend y `ACERTON_ADMIN_KEY` en el dashboard;
-(2) `ACERTON_API_URL=https://api.piqo.es/api` en el dashboard; (3) aplicar la
-migración (`prisma migrate deploy`); (4) probar primero con "Un usuario
-concreto". Ver también las limitaciones conocidas de `decisions.md`
-(`test-broadcast` abierto a cualquier usuario con sesión).
+**Verificado**: 355 tests del backend (nuevos: guard, DTO, envío por lotes/fallos/dryRun/
+sin Firebase, y protección del controlador) y 10 del dashboard. En local, por HTTP
+contra la API: 403 sin clave, con clave mala y con JWT de usuario; 200 con `dryRun`;
+400 por validación; el antiguo test-broadcast da 404. En el navegador, dashboard +
+API reales: el botón está desactivado hasta tener título y descripción, el pop-up
+muestra vista previa y destinatarios, Cancelar no envía nada, y confirmar ejecuta el
+envío (con tokens falsos que FCM rechazó: "0 entregadas · 2 fallidas", registrado
+en el log). **No verificado**: una entrega real a un dispositivo (el flujo de FCM
+con tokens válidos solo está cubierto por tests con un FCM simulado) ni el límite de
+10 s entre envíos desde la interfaz (solo en test unitario).
+
+## 2026-10-04 — La jornada más próxima siempre está abierta para pronosticar (fuera de sprint)
+
+A petición explícita del usuario ("haz que siempre haya la jornada más
+próxima abierta, tal y como funciona ahora la lógica pero siempre debe haber
+una jornada abierta para pronosticar"). Hasta ahora una jornada solo admitía
+pronósticos cuando le tocaba por orden **y además** faltaban menos de 4 días
+para su primer partido (`PREDICTIONS_OPEN_BEFORE_MS`): en un parón de
+selecciones, o justo tras acabar una ronda, no había ninguna jornada abierta
+y la pantalla decía "Próxima · abre en…" con los partidos en "Aún no".
+
+**Qué cambia** (la lógica de *cuál* es la jornada actual no se toca, ver
+`decisions.md` 2026-09-19):
+- **Sin ventana horaria**: `canAcceptPredictions` = `canPredict`. La jornada que
+  le toca está abierta desde el momento en que le toca, falten 2 días o 3
+  semanas. Frontend (`pickingAllowed`, punto rojo) y `/groups/mine`
+  (`hasPendingPicks`) igual.
+- **Hueco de las últimas horas** (nuevo `predictLimitOrder`): si a la jornada
+  actual ya no le queda ningún partido por empezar (los últimos están en
+  juego y la jornada aún no es FINISHED), también se admite la siguiente, la
+  del próximo partido que sí está por empezar. Dos jornadas por delante
+  siguen bloqueadas (no se rellenan semanas de golpe).
+- **Que exista una siguiente**: nuevo cron `JobsService.ensureUpcomingMatchdays`
+  (cada 10 min, conteo barato en BBDD) + `MatchdaysService.ensureUpcomingMatchday`:
+  si una competición usada por algún grupo no tiene nada por empezar, trae la
+  jornada en curso del proveedor y, si hace falta, pide ya la siguiente por
+  número (solo rondas numeradas de liga; no adivina eliminatorias).
+  Reintentos espaciados (3 h) si el proveedor no trae nada nuevo. Antes la
+  siguiente jornada solo se traía cuando no quedaba ninguna pendiente y con un
+  cron de 12 h.
+- **Compatibilidad**: el backend sigue enviando `opensAt`, pero nunca posterior
+  a "ahora" cuando la jornada admite pronósticos, para que las versiones de la
+  app ya instaladas (que bloquean en cliente por `opensAt`) también funcionen.
+  La app nueva ya no lo lee. Una jornada que aún no le toca (previsualizada con
+  "siguiente") muestra "Próxima · empieza en" en vez de "abre en".
+
+**Verificado**: 333 tests del backend (nuevos: sin ventana de 4 días, parón de
+3 semanas, hueco de las últimas horas, dos jornadas por delante, `opensAt`
+compatible, `ensureUpcomingMatchday` y su cron) y 45 del frontend. En local
+(backend + MySQL), con una jornada a 10 días: la API devuelve
+`canPredict: true` y `opensAt` = ahora, un pronóstico a un partido a 10 días
+se acepta (HTTP 201), y en la pantalla Jornada sale "Abierta · cierra en
+9d 23h", 20 campos de marcador habilitados, ningún "Aún no" y el punto rojo
+de pendientes. **No verificado en vivo**: el cron/proveedor (no hay clave de
+football-data en local; solo tests con el proveedor simulado) ni iOS/Android.
+
 
 ## 2026-10-04 — Rendimiento: cambiar de pestaña al instante (fuera de sprint)
 

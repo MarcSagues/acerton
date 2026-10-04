@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
-import { AdminNotificationsController } from './admin-notifications.controller';
+import { DashboardNotificationsController } from './dashboard-notifications.controller';
 import { NotificationPreferencesService } from './notification-preferences.service';
 import { NotificationPreferencesController } from './notification-preferences.controller';
 
@@ -9,7 +9,7 @@ import { NotificationPreferencesController } from './notification-preferences.co
   controllers: [
     NotificationPreferencesController,
     NotificationsController,
-    AdminNotificationsController,
+    DashboardNotificationsController,
   ],
   providers: [NotificationsService, NotificationPreferencesService],
   exports: [NotificationsService, NotificationPreferencesService],

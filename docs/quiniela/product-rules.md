@@ -38,6 +38,8 @@ actuales.
 - Añadir L y V sobre los campos local y visitante de resultado exacto.
 - Textos: «La jornada se abre en» y «La jornada cierra en». Es un cambio de
   texto, no una nueva regla de apertura.
+  **Actualizado 2026-10-04**: ya no hay regla de apertura por horas; la
+  jornada más próxima siempre está abierta para pronosticar (ver `decisions.md`).
 - Quitar el fondo de «Faltan X por enviar».
 - Copiar enlace muestra una confirmación temporal «Copiado» únicamente si
   funciona. No vigilar el portapapeles.

@@ -265,8 +265,6 @@ enum NotificationType {
   BADGE_EARNED
   REENGAGEMENT
   LEVEL_UP
-  /// Comunicado manual enviado desde el dashboard de administracion (sin grupo).
-  ANNOUNCEMENT
 }
 
 /// Historial real de avisos por usuario (pantalla "Avisos" / campanita del

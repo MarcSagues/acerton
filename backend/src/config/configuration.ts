@@ -47,18 +47,18 @@ export interface AppConfig {
     clientEmail: string;
     privateKey: string;
   };
-  admin: {
-    /**
-     * Clave compartida con el dashboard de administracion (dashboard.piqo.es)
-     * para el endpoint de comunicados push (ver AdminApiKeyGuard). Vacia =
-     * ese endpoint no existe (404), asi un despliegue sin configurar nunca
-     * queda abierto.
-     */
-    apiKey: string;
-  };
   comeback: {
     enabled: boolean;
     pointsPerBonus: number;
+  };
+  /**
+   * Acceso de piqo-dashboard (panel de administracion, proyecto aparte) a los
+   * endpoints /dashboard/*: clave compartida que el dashboard envia en la
+   * cabecera X-Dashboard-Key (ver DashboardApiKeyGuard). Sin configurar (o de
+   * menos de 32 caracteres) esos endpoints quedan desactivados.
+   */
+  dashboard: {
+    apiKey: string;
   };
   mail: {
     resendApiKey: string;
@@ -99,15 +99,15 @@ export default (): AppConfig => ({
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL ?? '',
     privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
   },
-  admin: {
-    apiKey: process.env.ADMIN_API_KEY ?? '',
-  },
   comeback: {
     // Valores por defecto al crear un grupo nuevo (editables despues por su admin).
     enabled: (process.env.COMEBACK_ENABLED_DEFAULT ?? 'true') === 'true',
     // Cada N puntos de diferencia con el lider dan 1 uso mas del comodin de
     // remontada esa jornada (ver WildcardsService.getComebackStatus).
     pointsPerBonus: parseInt(process.env.COMEBACK_POINTS_PER_BONUS_DEFAULT ?? '10', 10),
+  },
+  dashboard: {
+    apiKey: process.env.DASHBOARD_API_KEY ?? '',
   },
   mail: {
     // Sin configurar en local: MailService deja el correo en el log en vez

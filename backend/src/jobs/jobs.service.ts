@@ -58,6 +58,9 @@ const REMINDER_TIERS: ReminderTier[] = [
   },
 ];
 
+/** Espera entre intentos de traer la siguiente ronda cuando el proveedor no devuelve nada nuevo. */
+const NO_UPCOMING_RETRY_MS = 3 * 60 * 60 * 1000;
+
 @Injectable()
 export class JobsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(JobsService.name);
@@ -106,6 +109,58 @@ export class JobsService implements OnApplicationBootstrap {
         await this.matchdaysService.syncCurrentRound(competitionId);
       } catch (error) {
         this.logger.error(`Error sincronizando competicion ${competitionId}`, error as Error);
+      }
+    }
+  }
+
+  /**
+   * Cuando volver a intentar traer la siguiente ronda de una competicion que
+   * no tiene nada por pronosticar (en memoria, por competicion): si el
+   * proveedor todavia no la publica (parones, final de temporada) no hace
+   * falta preguntarle cada 10 minutos.
+   */
+  private readonly nextUpcomingAttemptAt = new Map<string, number>();
+
+  /**
+   * Cada competicion usada por algun grupo debe tener siempre una jornada con
+   * algo por pronosticar (2026-10-04, peticion explicita: "siempre debe haber
+   * una jornada abierta"). El cron de 12 h de syncUpcomingFixtures solo la
+   * traia cuando no quedaba ninguna jornada pendiente, asi que entre que
+   * empezaba el ultimo partido de una ronda y que el proveedor pasaba a la
+   * siguiente podian pasar horas sin nada abierto. La comprobacion normal es
+   * un conteo barato en BBDD; solo se llama al proveedor cuando de verdad no
+   * hay nada por pronosticar, y con reintentos espaciados si no hay nada nuevo.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async ensureUpcomingMatchdays(): Promise<void> {
+    const usedCompetitions = await this.prisma.groupCompetition.findMany({
+      where: { isActive: true },
+      distinct: ['competitionId'],
+      select: { competitionId: true },
+    });
+
+    const now = Date.now();
+    for (const { competitionId } of usedCompetitions) {
+      if ((this.nextUpcomingAttemptAt.get(competitionId) ?? 0) > now) {
+        continue;
+      }
+      try {
+        if (await this.matchdaysService.hasPredictableMatch(competitionId)) {
+          this.nextUpcomingAttemptAt.delete(competitionId);
+          continue;
+        }
+        const found = await this.matchdaysService.ensureUpcomingMatchday(competitionId);
+        if (found) {
+          this.nextUpcomingAttemptAt.delete(competitionId);
+        } else {
+          this.nextUpcomingAttemptAt.set(competitionId, now + NO_UPCOMING_RETRY_MS);
+        }
+      } catch (error) {
+        this.logger.error(
+          'Error buscando la siguiente jornada de ' + competitionId,
+          error as Error,
+        );
+        this.nextUpcomingAttemptAt.set(competitionId, now + NO_UPCOMING_RETRY_MS);
       }
     }
   }

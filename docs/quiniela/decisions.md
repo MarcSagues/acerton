@@ -49,53 +49,76 @@ participar) y lo copiado se edita después con el autoguardado normal.
 **No es atómico**: si un partido falla, los demás siguen y se informa en
 `skipped`. No hay "deshacer" (se cambia a mano, como cualquier pronóstico).
 
-## 2026-10-04 — Comunicados push desde el dashboard: el backend envía, el dashboard solo decide a quién
+## 2026-10-04 — Los anuncios a todos los usuarios solo salen del dashboard, con clave compartida
 
-A petición explícita del usuario ("añadir en el dashboard una opción para
-mandar notificaciones push"). El dashboard (`piqo-dashboard`, servicio aparte
-en Render) nació como panel **de solo lectura** (usuario MySQL con `GRANT
-SELECT`, API solo `GET`, y la promesa en su README de no tocar nunca tokens de
-push), así que había que decidir dónde vive el envío:
+El botón "Probar notificaciones" (Sprint 9) ya no estaba en la app, pero su endpoint
+`POST /notifications/test-broadcast` seguía abierto a cualquier usuario autenticado y
+notificaba a todos los dispositivos. Se elimina y el envío masivo pasa a ser una
+capacidad **exclusiva de piqo-dashboard**:
 
-- **Elegido**: endpoint nuevo en este backend, `POST /api/admin/notifications/
-  broadcast`, protegido por una clave compartida (`ADMIN_API_KEY` aquí,
-  `ACERTON_ADMIN_KEY` en el dashboard), sin JWT de usuario. El dashboard
-  resuelve la audiencia con `SELECT id FROM users ...` (sigue siendo solo
-  lectura, nunca lee tokens) y le pasa la lista de ids al backend, que ya
-  tiene Firebase, los tokens y el borrado de tokens muertos.
-- **Descartado**: darle al dashboard las credenciales de Firebase y permiso de
-  lectura sobre `notification_tokens` (duplica el envío y rompe la promesa de
-  solo lectura), o un usuario MySQL con escritura (necesario para el feed).
-- Sin `ADMIN_API_KEY` (o de menos de 32 caracteres) el endpoint responde 404:
-  un despliegue olvidado no queda abierto. 10 peticiones/minuto.
+- **Clave compartida en cabecera** (`X-Dashboard-Key` ↔ `DASHBOARD_API_KEY`) en vez de un
+  "rol admin" de usuario: la app no tiene concepto de administrador de plataforma y
+  añadirlo exigiría migrar la BD de producción. El dashboard ya es un servicio de
+  servidor con su propio login, así que puede guardar la clave sin exponerla.
+- Desactivado por defecto: sin clave (o corta) el endpoint responde 503, nunca abierto.
+- **Sin feed ni preferencias** (decisión de alcance, no técnica): un tipo nuevo de aviso
+  exige migrar el enum en la BD de producción. Si se quiere que los anuncios aparezcan
+  también en "Avisos", añadir `ANNOUNCEMENT` a `NotificationType` (migración + SQL para quien
+  gestiona la BD) y llamar a `recordMany` desde `broadcastAnnouncement`.
+- El dashboard deja de ser "solo lectura" en este único punto (su README lo refleja);
+  sigue sin poder escribir en la BD (conexión MySQL de solo lectura).
 
-**Decisiones de producto tomadas por defecto (a confirmar por el usuario):**
+## 2026-10-04 — Sin ventana de apertura de 4 días: la jornada más próxima siempre acepta pronósticos (sustituye una regla anterior)
 
-1. **Un comunicado ignora las preferencias de aviso** y el silencio de grupo:
-   no existe un ajuste de "comunicados" y no depende de ningún grupo. Si algún
-   día hace falta poder desactivarlos, habría que añadir una preferencia
-   nueva (esquema + pantalla de ajustes) y filtrar por ella en
-   `NotificationsService.sendAnnouncement`.
-2. **Queda en la pantalla "Avisos" de todos los destinatarios**, tengan o no
-   dispositivo registrado, con un tipo nuevo `ANNOUNCEMENT` (migración
-   `20261004000000_announcement_notification_type`, solo amplía el `ENUM`). El
-   push, en cambio, solo llega a quien tenga token.
-3. **No se puede deshacer ni editar** un comunicado ya enviado.
+Petición explícita del usuario: "siempre debe haber una jornada abierta para
+pronosticar", manteniendo la lógica actual de cuál es la jornada más próxima.
 
-**Efecto colateral**: `sendToTokens` (usado por todos los envíos) ahora manda
-por tandas de 500 tokens. Antes, a partir de 500 dispositivos registrados
-`sendEachForMulticast` rechazaba el envío entero (límite de FCM) — afectaba al
-botón "Probar notificaciones" y a `sendToUsers` en cuanto hubiese 500 tokens.
+**Sustituye** la regla de `PREDICTIONS_OPEN_BEFORE_MS` (4 días antes del primer
+partido): su comentario decía expresamente que "cerrar una jornada no abre la
+siguiente de golpe". Ahora sí: la jornada de referencia (próximo partido sin
+terminar, decisión del 2026-09-19, **sin cambios**) está abierta siempre.
+`PREDICTIONS_OPEN_BEFORE_MS` se conserva solo para calcular el `opensAt` nominal
+de compatibilidad con apps ya instaladas.
 
-**Limitaciones conocidas**: (a) el limitador por IP del backend usa `req.ip`
-sin `trust proxy`, así que detrás de Render las peticiones comparten IP y un
-tercero podría agotar las 10/min de este endpoint (no puede enviar nada sin la
-clave, solo bloquear un rato al dashboard); (b) esta rama es la línea MySQL de
-`main`: `dev` sigue en Postgres/Neon (ver decisión anterior), así que probar
-esto en la API de dev exige portarlo a mano; (c) **ya existía**
-`POST /notifications/test-broadcast` ("Probar notificaciones"), que cualquier
-usuario con sesión puede lanzar y manda "Notificación de prueba" a TODOS los
-dispositivos: no se ha tocado, pero conviene restringirlo o quitarlo.
+**Lo que se mantiene**: no se pueden rellenar jornadas "del futuro" — una
+jornada con número mayor que el límite sigue bloqueada ("Aún no"). El límite
+(`predictLimitOrder`) es la jornada de referencia, o la del próximo partido por
+empezar cuando a la de referencia solo le quedan partidos ya empezados (para
+no dejar horas sin ninguna jornada abierta mientras acaba el último partido).
+
+**Decisión de diseño**: se amplió el límite en vez de cambiar qué jornada se
+muestra como "actual" — el usuario pidió mantener esa lógica tal cual. Mientras
+el último partido de la jornada 7 está en juego se sigue viendo la 7 y la 8 se
+puede pronosticar yendo a "siguiente".
+
+**Riesgo conocido**: `ensureUpcomingMatchday` pide la siguiente ronda por número
+(`order + 1`) al proveedor, igual que ya hacía la navegación "siguiente" bajo
+demanda; solo se usa en rondas numeradas (`Regular Season - N`).
+
+## 2026-10-04 — (Descartada) Mi versión del envío de comunicados desde el dashboard: sustituida por la de `main`
+
+En paralelo a la implementación de arriba ("Los anuncios a todos los usuarios solo salen
+del dashboard"), la sesión de la nube había construido otra versión del mismo envío
+(`POST /api/admin/notifications/broadcast` + clave `ADMIN_API_KEY` en `Authorization:
+Bearer`). Al fusionar con `main` se **descartó entera** (endpoint, guard, DTO, clave,
+migración y formulario del dashboard) y se dejó la de `main`: ya estaba revisada,
+fusionada y con las variables de entorno elegidas (`DASHBOARD_API_KEY`, `PIQO_API_URL`).
+El diseño era casi idéntico; esto es lo que aportaba la mía y **no está en `main`**, por si
+algún día interesa:
+
+- **Un usuario concreto o un segmento** (activos 7 días / inactivos +14 días) además de
+  "todos": el dashboard resolvía los ids con un `SELECT id FROM users ...` y los pasaba al
+  backend en `userIds`. Sobre todo sirve para **probar con una sola cuenta antes de enviar
+  a todo el mundo** (con la de `main` el primer envío real ya va a todos; lo único que
+  protege es el `dryRun` y el pop-up de confirmación).
+- **Aviso en la pantalla "Avisos"** de cada destinatario (tipo `ANNOUNCEMENT`, migración
+  que amplía el `ENUM` de `notifications.type`). Misma decisión de alcance que arriba:
+  exige migrar la BD de producción.
+- **Envío por lotes de 500 dentro de `sendToTokens`** (afecta a todos los envíos, no solo al
+  anuncio): en `main` solo `broadcastAnnouncement` lo hace, así que `sendToUsers` con más
+  de 500 dispositivos (p. ej. un grupo muy grande en un recordatorio de cierre) sigue
+  topando con el límite de FCM.
+
 
 ## 2026-10-04 — La rama `dev` NO se actualiza desde `main`: los cambios de API para dev se portan a mano
 

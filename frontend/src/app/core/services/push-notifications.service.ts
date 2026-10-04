@@ -7,14 +7,6 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { environment } from '../../../environments/environment';
 import { ProfileService } from './profile.service';
 
-export interface TestBroadcastResult {
-  userCount: number;
-  tokenCount: number;
-  successCount: number;
-  failureCount: number;
-  errors: string[];
-}
-
 /**
  * Nombre del evento DOM que AppDelegate.swift dispara sobre `window` con
  * `evaluateJavaScript` en cuanto FirebaseMessaging entrega un token de FCM
@@ -310,10 +302,5 @@ export class PushNotificationsService {
     });
 
     return true;
-  }
-
-  /** Boton "Probar notificaciones" en Ajustes: manda un push real a todos los tokens registrados. */
-  sendTestBroadcast() {
-    return this.http.post<TestBroadcastResult>(`${environment.apiUrl}/notifications/test-broadcast`, {});
   }
 }

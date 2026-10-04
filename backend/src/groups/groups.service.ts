@@ -77,16 +77,14 @@ export function toPublicGroupSummary(
 type CurrentMatchday = Awaited<ReturnType<MatchdaysService['getCurrentMatchdayForCompetition']>>;
 
 /**
- * La jornada ya admite pronosticos hoy: no esta finalizada, le toca por orden
- * (canPredict) y ya ha pasado su hora de apertura — misma regla que el punto
- * rojo de "Jornada" (ver CurrentMatchdayFacade.hasPendingPicks en el frontend).
+ * La jornada admite pronosticos hoy: no esta finalizada y le toca por orden
+ * (canPredict) — misma regla que el punto rojo de "Jornada" (ver
+ * CurrentMatchdayFacade.hasPendingPicks en el frontend). Ya no hay ventana
+ * horaria de apertura: la jornada mas proxima siempre esta abierta.
  */
-function isOpenForPicks(
-  matchday: CurrentMatchday,
-  now: Date,
-): matchday is NonNullable<CurrentMatchday> {
+function isOpenForPicks(matchday: CurrentMatchday): matchday is NonNullable<CurrentMatchday> {
   if (!matchday || matchday.status === 'FINISHED') return false;
-  return matchday.canPredict && new Date(matchday.opensAt).getTime() <= now.getTime();
+  return matchday.canPredict;
 }
 
 /**
@@ -109,7 +107,7 @@ function hasPendingPicksIn(
   >,
   now: Date,
 ): boolean {
-  if (!isOpenForPicks(matchday, now)) return false;
+  if (!isOpenForPicks(matchday)) return false;
   return matchday.matches.some((match) => {
     const isPredictable = match.status === 'SCHEDULED' && match.kickoff.getTime() > now.getTime();
     if (!isPredictable) return false;
@@ -247,7 +245,7 @@ export class GroupsService {
       ),
     );
     const pickableMatchdayIds = [...matchdayByCompetition.values()]
-      .filter((matchday): matchday is NonNullable<typeof matchday> => isOpenForPicks(matchday, now))
+      .filter((matchday): matchday is NonNullable<typeof matchday> => isOpenForPicks(matchday))
       .map((matchday) => matchday.id);
     const predictionRows =
       pickableMatchdayIds.length === 0
