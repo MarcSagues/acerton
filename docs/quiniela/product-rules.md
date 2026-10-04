@@ -190,6 +190,23 @@ competición, calcular participación sobre sus propias jornadas.
   lógica ya existe según el usuario: revisar y modificar principalmente su
   presentación, sin reescribirla innecesariamente.
 
+## Idioma
+
+- La app está en español (idioma original y de reserva) e inglés.
+- Idioma de arranque: el elegido por el usuario en Perfil > Apariencia > Idioma; si
+  no ha elegido, el del dispositivo (inglés solo si el dispositivo está en inglés;
+  catalán, gallego, euskera y cualquier otro se quedan en español).
+- Cambiar de idioma recarga la app.
+- Los correos (confirmar correo, restablecer contraseña) y los mensajes de error del
+  servidor salen en el idioma de la app que hace la petición (cabecera
+  `Accept-Language`).
+- **Pendiente**: los avisos push y los del feed (jornada nueva, recordatorios de
+  cierre, partido/jornada terminados, insignia, nivel) y los comunicados del
+  dashboard se siguen generando en español para todo el mundo: dependen de saber el
+  idioma de cada usuario en el servidor (ver `decisions.md`, 2026-10-04 "Inglés").
+- Los textos legales (política de privacidad) están traducidos tal cual, sin
+  revisión legal.
+
 ## Insignias
 
 - Globales por cuenta.

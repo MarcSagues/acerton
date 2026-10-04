@@ -18,6 +18,7 @@ import type { CookieOptions, Request, Response } from 'express';
 import { AppConfig } from '../config/configuration';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser, AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { Locale, RequestLocale } from '../common/i18n/locale';
 import { AuthService, GENERIC_EMAIL_ACTION_MESSAGE, GoogleProfileInput } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -45,8 +46,11 @@ export class AuthController {
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
-  async register(@Body() dto: RegisterDto): Promise<{ email: string }> {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @RequestLocale() locale: Locale,
+  ): Promise<{ email: string }> {
+    return this.authService.register(dto, locale);
   }
 
   /** Confirma la cuenta desde el enlace del correo e inicia sesion de una vez. */
@@ -69,8 +73,9 @@ export class AuthController {
   @Post('resend-verification')
   async resendVerification(
     @Body() dto: ResendVerificationDto,
+    @RequestLocale() locale: Locale,
   ): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
-    await this.authService.resendVerification(dto.email);
+    await this.authService.resendVerification(dto.email, locale);
     return GENERIC_EMAIL_ACTION_MESSAGE;
   }
 
@@ -81,8 +86,9 @@ export class AuthController {
   @Post('forgot-password')
   async forgotPassword(
     @Body() dto: ForgotPasswordDto,
+    @RequestLocale() locale: Locale,
   ): Promise<typeof GENERIC_EMAIL_ACTION_MESSAGE> {
-    await this.authService.requestPasswordReset(dto.email);
+    await this.authService.requestPasswordReset(dto.email, locale);
     return GENERIC_EMAIL_ACTION_MESSAGE;
   }
 

@@ -1,5 +1,35 @@
 # Estado actual
 
+## 2026-10-04 — Inglés en toda la app (fuera de sprint)
+
+A petición explícita del usuario. Misma rama (`claude/dashboard-push-notifications-yo0gk0`),
+commits aparte. Cómo funciona y qué se decidió por defecto: `decisions.md` y
+`product-rules.md` ("Idioma"), misma fecha.
+
+**Hecho**: i18n propio en el frontend (~850 claves, es/en tipados), selector en
+Perfil > Apariencia, `Accept-Language` al backend, errores del backend y correos
+(confirmar correo, restablecer contraseña) en el idioma de la petición. Insignias
+traducidas por código en el cliente.
+
+**Verificado**: `ng build` (AOT, comprueba las plantillas), 64 tests del frontend
+(coherencia es/en: mismas claves, mismos marcadores, plurales completos), 398 del
+backend (incluye un test que falla si un mensaje de error del código no tiene
+traducción) y lint/prettier de los ficheros tocados. De punta a punta en Chromium con
+MariaDB + backend + Angular: recorrido de 39 pantallas en español comparado con una
+captura anterior a los cambios (solo difieren las mejoras señaladas en `decisions.md`),
+recorrido en inglés sin texto en español salvo datos de usuario/competiciones,
+cambio de idioma desde Apariencia (se guarda, recarga y persiste), detección por el
+idioma del dispositivo (en → inglés, fr → español), hoja de copiar pronósticos y estado
+vacío de grupos en inglés, errores y correos en inglés con `curl`, sin desbordes
+horizontales a 375 px.
+
+**NO hecho / NO verificado**: avisos push y feed de avisos en inglés (necesita una
+migración, ver `decisions.md`); iOS/Android (solo web/local); los textos legales no
+están revisados por nadie; solo se miró el aspecto del inglés a 375 px en las
+pantallas principales, no todas las hojas y diálogos; el idioma de fechas relativas
+("hace 5 min") y de nombres de día está probado solo en el recorrido, no con casos
+límite.
+
 ## 2026-10-04 — Copiar pronósticos de otro grupo (fuera de sprint)
 
 A petición explícita del usuario. Misma rama que el trabajo de comunicados push
