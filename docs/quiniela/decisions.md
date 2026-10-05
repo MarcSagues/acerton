@@ -4,6 +4,31 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-05 — El pop-up de "subiste de nivel" sale una sola vez, y lo deja leído el servidor (sustituye una regla de Sprint 14)
+
+Petición explícita del usuario: "el pop-up de subida de nivel solo debería salir una vez, y si
+le das a aceptar lo de notificaciones queda leído". Preguntó además si se podía evitar tocar el
+frontend "para no lanzar una nueva build".
+
+**Sustituye** lo dicho en Sprint 14 (el pop-up "no marca el aviso como leído; eso solo pasa al
+pulsarlo en Avisos"): el pop-up lo abre el cliente cuando recibe un `LEVEL_UP` sin leer y solo
+recordaba en memoria que ya lo había enseñado, así que en cada arranque volvía a salir mientras
+nadie pulsara el aviso.
+
+**Cómo queda** (solo backend, `NotificationsService.getFeedForUser`): `GET /notifications/me`
+devuelve los `LEVEL_UP` sin leer como sin leer **esa vez** (el cliente abre el pop-up) y los
+deja marcados como leídos en la base de datos. Efecto en la siguiente petición: ya no salen
+como pop-up, no cuentan en la campanita, y el puntito rojo / la etiqueta "Recién desbloqueado"
+de Perfil y del recorrido de niveles se apagan (dependen del mismo estado leído/no leído). Vale
+para todas las versiones de la app ya instaladas, sin build nueva. Un fallo al marcarlos no tumba
+el feed (lo peor: el pop-up vuelve a salir una vez más).
+
+**Matices a confirmar**: se marca al **entregar** el aviso, no al pulsar "Aceptar" (si la app se
+cierra con el pop-up abierto, ya queda leído); con dos dispositivos, lo ve el primero que abra la
+app; y los puntos rojos de recompensa duran ahora hasta el siguiente refresco del feed (como mucho 2
+min, o al abrir Avisos) en vez de hasta pulsar el aviso. Si se quisiera marcar exactamente al pulsar
+"Aceptar", haría falta tocar el frontend (llamar a `markRead` en el cierre del pop-up).
+
 ## 2026-10-05 — Historial de versiones y pop-up de novedades (fuera de sprint)
 
 A petición explícita del usuario ("añade siempre un historial con un control de

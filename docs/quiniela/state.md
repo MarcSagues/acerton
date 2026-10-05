@@ -1,5 +1,21 @@
 # Estado actual
 
+## 2026-10-05 — El pop-up de "subiste de nivel" sale una sola vez (fuera de sprint)
+
+A petición explícita del usuario. Reglas, matices y por qué se hizo en el servidor:
+`decisions.md` (misma fecha, sustituye la regla del pop-up de Sprint 14).
+
+**Hecho**: `NotificationsService.getFeedForUser` deja leídos los `LEVEL_UP` sin leer después de
+devolverlos como sin leer una vez. Solo backend, sin migraciones y sin build nueva de la app.
+
+**Verificado**: 4 tests nuevos del servicio (marca solo los de nivel sin leer, no toca otros tipos
+ni los ya leídos, un fallo no tumba el feed), tests/`tsc`/lint del backend, y de punta a punta
+en Chromium con MariaDB + backend + la app sin cambios: con un aviso de nivel sin leer sale el
+pop-up y queda leído en BD, al abrir de nuevo la app no sale, un aviso de nivel nuevo sí sale una
+vez, y en Avisos no queda ninguno sin leer.
+
+**NO verificado**: iOS/Android reales ni la entrega del push.
+
 ## 2026-10-05 — Historial de versiones y pop-up de novedades (fuera de sprint)
 
 A petición explícita del usuario. Misma rama (`claude/dashboard-push-notifications-yo0gk0`,
