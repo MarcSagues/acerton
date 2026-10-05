@@ -1,0 +1,91 @@
+.whats-new-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4px 4px 0;
+}
+
+.mascot {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--p4-accent) 18%, transparent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--p4-accent) 15%, transparent);
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  margin: 0;
+  font: 700 10px/1 var(--p4-font-ui);
+  letter-spacing: 1.4px;
+  color: var(--p4-accent);
+}
+
+.title {
+  margin: 8px 0 14px;
+  font: 700 19px/1.25 var(--p4-font-display);
+  color: var(--p4-text);
+}
+
+/* Con muchas novedades la lista scrollea dentro del diálogo en vez de crecer más que la pantalla. */
+.entries {
+  width: 100%;
+  max-height: min(46dvh, 340px);
+  overflow-y: auto;
+  text-align: left;
+  margin-bottom: 18px;
+}
+
+.entry + .entry {
+  margin-top: 14px;
+}
+
+.entry-version {
+  margin: 0 0 6px;
+  font: 700 12px/1.2 var(--p4-font-ui);
+  letter-spacing: 0.4px;
+  color: var(--p4-accent);
+}
+
+.changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    position: relative;
+    padding-left: 16px;
+    font: 400 13px/1.45 var(--p4-font-ui);
+    color: var(--p4-muted);
+  }
+
+  li + li {
+    margin-top: 8px;
+  }
+
+  li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--p4-accent);
+  }
+}
+
+.btn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--p4-radius-pill);
+  font: 600 14px/1 var(--p4-font-ui);
+  border: 1px solid transparent;
+
+  &.primary {
+    background: var(--p4-accent);
+    color: var(--p4-on-accent);
+  }
+}

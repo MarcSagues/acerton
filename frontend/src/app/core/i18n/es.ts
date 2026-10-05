@@ -847,4 +847,8 @@ export const es = {
   'verifyEmail.confirmandoCuenta': 'Confirmando tu cuenta...',
   'verifyEmail.enlaceConfirmacionValidoHa': 'El enlace de confirmación no es válido o ha caducado.',
   'verifyEmail.faltaTokenConfirmacionEnlace': 'Falta el token de confirmación en el enlace.',
+  'whatsNew.eyebrow': 'NOVEDADES',
+  'whatsNew.titulo': 'Novedades de la versión {version}',
+  'whatsNew.tituloVarias': 'Novedades desde tu última versión',
+  'whatsNew.version': 'Versión {version}',
 } as const;

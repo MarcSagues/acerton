@@ -849,4 +849,8 @@ export const en: Catalog = {
   'verifyEmail.confirmandoCuenta': 'Confirming your account...',
   'verifyEmail.enlaceConfirmacionValidoHa': 'The confirmation link is invalid or has expired.',
   'verifyEmail.faltaTokenConfirmacionEnlace': 'The link is missing the confirmation token.',
+  'whatsNew.eyebrow': "WHAT'S NEW",
+  'whatsNew.titulo': "What's new in version {version}",
+  'whatsNew.tituloVarias': "What's new since your last version",
+  'whatsNew.version': 'Version {version}',
 };

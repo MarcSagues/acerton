@@ -4,6 +4,44 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-05 — Historial de versiones y pop-up de novedades (fuera de sprint)
+
+A petición explícita del usuario ("añade siempre un historial con un control de
+versiones para que, si abres la app después de actualizar, solo la primera vez con esa
+versión, te salga un pop-up con una lista de cambios").
+
+**Cómo funciona**: `core/changelog/changelog.ts` es el historial (de la versión más
+nueva a la más antigua; cada cambio en español e inglés). `WhatsNewService` (lo llama
+`ShellFacade.init`, ~2 s tras entrar) compara la versión instalada con la última para la
+que ya decidió (`localStorage` `acerton.lastSeenVersion`, por dispositivo) y, si es nueva y
+tiene entrada, abre `WhatsNewDialogComponent`. La versión se apunta **al abrir** el aviso,
+no al cerrarlo, para que sea de verdad "solo la primera vez". La decisión es lógica pura y
+con tests (`changelog.rules.ts`).
+
+**Control de versiones**: la versión instalada es `App.getInfo().version` en la app nativa
+(= `MARKETING_VERSION` en iOS) y, en la web, la última entrada del historial. Para que no
+se rompa en silencio, `scripts/check-changelog.mjs` (paso de CI) exige que la entrada de
+arriba tenga la misma versión que `MARKETING_VERSION`. La regla de mantenimiento (una
+línea por cambio visible, en es y en) está en `CLAUDE.md`.
+
+**Decisiones tomadas por defecto (a confirmar por el usuario):**
+
+1. **Usuario nuevo** (sin tutorial hecho y sin versión guardada): no se le enseña nada, solo
+   se apunta la versión. Un usuario que ya jugaba y actualiza desde una versión sin este aviso
+   sí lo ve (con la entrada de la versión instalada).
+2. **Se saltó una versión** (1.0.2 → 1.0.4): se enseñan las novedades de todas las del
+   medio, con cabecera por versión; sin versión guardada, solo la instalada.
+3. **Build más antigua que la guardada** (se reinstala una anterior): no sale nada y no se
+   pisa la versión guardada.
+4. **Versión sin entrada en el historial**: no sale nada (se apunta y se sigue).
+5. **Android** no está alineado: su `versionName` es "1.0" y ninguna entrada coincide, así que
+   no verá el pop-up hasta que se le ponga la misma versión que a iOS.
+6. La entrada 1.0.2 resume lo visible desde 1.0.1 (inglés, copiar pronósticos, jornada siempre
+   abierta, renombrar grupo, pestañas instantáneas, perfil/insignias) y se redactó a partir
+   del historial de commits.
+
+**No hecho**: una pantalla para volver a ver el historial después (p. ej. en Perfil).
+
 ## 2026-10-04 — Inglés en toda la app (fuera de sprint)
 
 A petición explícita del usuario ("traducciones a inglés a toda la app").
