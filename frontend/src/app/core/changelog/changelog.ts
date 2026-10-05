@@ -40,7 +40,7 @@ export interface ChangelogEntry {
 /** De la más nueva a la más antigua. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
-    version: '1.0.4',
+    version: '1.0.3',
     date: '2026-10-05',
     changes: [
       {
@@ -51,12 +51,6 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Ora puoi usare l’app in catalano, francese, italiano e tedesco: scegli la lingua in Profilo > Aspetto.',
         de: 'Du kannst die App jetzt auf Katalanisch, Französisch, Italienisch und Deutsch nutzen: Wähle die Sprache unter Profil > Darstellung.',
       },
-    ],
-  },
-  {
-    version: '1.0.3',
-    date: '2026-10-05',
-    changes: [
       {
         es: 'Al escribir un resultado exacto, la pantalla sube para que el último partido no quede tapado por el teclado.',
         en: "When you type an exact score, the screen scrolls up so the last match isn't hidden behind the keyboard.",

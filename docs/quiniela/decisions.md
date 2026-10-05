@@ -25,8 +25,9 @@ interfaz, errores del servidor y correos). Ahora hay seis idiomas: es (original)
   cada mensaje del código está en todos) y correos en `mail/email-copy/<idioma>.ts`.
 - **Historial de versiones**: `es` y `en` siguen siendo obligatorios; `ca/fr/it/de` son **opcionales** (si
   falta uno, el pop-up sale en inglés, `changeText`) para no cargar cada cambio futuro con cuatro
-  traducciones. Las líneas existentes sí están en los seis. Entrada nueva **1.0.4** (la 1.0.3 ya se había
-  construido y se estaba preparando para la tienda): `MARKETING_VERSION` = 1.0.4.
+  traducciones. Las líneas existentes sí están en los seis. Los idiomas van **dentro de la 1.0.3** (la versión
+  que se está enviando a la tienda; una primera versión de este cambio subió a 1.0.4 por error y se corrigió):
+  `MARKETING_VERSION` = 1.0.3.
 - **iOS**: `CFBundleLocalizations` lista los seis (así el sistema le pasa a la web view el idioma del
   móvil). El texto del permiso de seguimiento (`NSUserTrackingUsageDescription`) sigue en español.
 - **Maquetación**: títulos (`h1`-`h3`) con `overflow-wrap: break-word` y `hyphens: auto` (alemán:
@@ -217,7 +218,7 @@ línea por cambio visible, en es y en) está en `CLAUDE.md`.
 1. **Usuario nuevo** (sin tutorial hecho y sin versión guardada): no se le enseña nada, solo
    se apunta la versión. Un usuario que ya jugaba y actualiza desde una versión sin este aviso
    sí lo ve (con la entrada de la versión instalada).
-2. **Se saltó una versión** (1.0.2 → 1.0.4): se enseñan las novedades de todas las del
+2. **Se saltó una versión** (1.0.2 → 1.0.3): se enseñan las novedades de todas las del
    medio, con cabecera por versión. Sin versión guardada (usuario que ya jugaba y actualiza desde
    una versión sin este aviso) se cuenta desde la 1.0.1, la última sin pop-up
    (`LAST_VERSION_WITHOUT_WHATS_NEW`): quien pasa de la 1.0.1 a la 1.0.3 ve los cambios de la 1.0.2

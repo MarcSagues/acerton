@@ -1,4 +1,4 @@
-# Ficha de la App Store — versión 1.0.4
+# Ficha de la App Store — versión 1.0.3
 
 Todo el texto listo para pegar en App Store Connect, en cada idioma. Los límites de Apple están
 comprobados (nombre 30, subtítulo 30, palabras clave 100, texto promocional 170, descripción y novedades
@@ -7,9 +7,9 @@ comprobados (nombre 30, subtítulo 30, palabras clave 100, texto promocional 170
 
 ## Cómo dejarlo listo para enviar
 
-1. **Versión y compilación.** En App Store Connect > Piqo > crea la versión **1.0.4** (si no existe) y, en
-   «Compilación», elige la **1.0.4** que sube el flujo de iOS (build #108; aparece cuando Apple termina de
-   procesarla, 10-30 minutos después de subirla).
+1. **Versión y compilación.** En App Store Connect > Piqo, abre la versión **1.0.3** y, en «Compilación»,
+   elige la última que ha subido el flujo de iOS con la 1.0.3 y los idiomas (aparece cuando Apple termina de
+   procesarla, 10-30 minutos después de subirla). No uses la build #108, que se subió como 1.0.4 por error.
 2. **Localizaciones.** En la barra lateral, «Información de la app» > «Localizaciones»: añade Catalán, Francés,
    Italiano, Alemán, Inglés (Reino Unido) e Inglés (EE. UU.). Para cada idioma pega **Nombre** y **Subtítulo**.
 3. **Textos de la versión.** En la página de la versión, para cada idioma pega **Texto promocional**,
@@ -22,8 +22,8 @@ comprobados (nombre 30, subtítulo 30, palabras clave 100, texto promocional 170
    revisión**.
 
 Dos avisos: el **nombre y el subtítulo nuevos solo se ven cuando Apple aprueba la versión**, y Apple rechaza un
-nombre que ya tenga otra app (te lo dice al guardar). Si la 1.0.3 nunca llegó a publicarse en la App Store,
-las novedades de abajo ya incluyen sus cambios.
+nombre que ya tenga otra app (te lo dice al guardar). Las novedades de abajo son las de la 1.0.3 completa,
+idiomas incluidos.
 
 Las **palabras clave** van separadas por comas y sin espacios, y no repiten lo que ya dicen el nombre o el
 subtítulo. Evitan a propósito «apuestas»/«betting» (la app es sin dinero y esas palabras te acercan a la
