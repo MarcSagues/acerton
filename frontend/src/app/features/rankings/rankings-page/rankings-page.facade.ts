@@ -57,7 +57,7 @@ export class RankingsPageFacade {
     const recent = this.evolutionMatchdays().slice(0, 6).reverse();
     const max = Math.max(1, ...recent.map((m) => m.myPoints ?? 0));
     return recent.map((m) => ({
-      label: `J${m.order}`,
+      label: t('common.jornadaAbrev', { order: m.order }),
       points: m.myPoints ?? 0,
       heightPct: m.myPoints === null ? 0 : Math.max(6, Math.round((m.myPoints / max) * 100)),
     }));

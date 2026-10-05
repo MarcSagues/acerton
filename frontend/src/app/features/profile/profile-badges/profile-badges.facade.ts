@@ -5,6 +5,7 @@ import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { BadgeProgress } from '../../../core/models/badge-progress.model';
 import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
+import { distinctBadgeCount } from '../../../shared/utils/badge-count';
 
 export interface BadgeState {
   badge: Badge;
@@ -40,7 +41,7 @@ export class ProfileBadgesFacade {
       };
     });
   });
-  readonly earnedCount = computed(() => this.profile()?.badges.length ?? 0);
+  readonly earnedCount = computed(() => distinctBadgeCount(this.profile()?.badges ?? []));
   readonly totalCount = computed(() => this.catalog().length);
 
   goBack(): void {

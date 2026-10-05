@@ -745,7 +745,7 @@ export const en: Catalog = {
   'rankingsPage.jugador': 'PLAYER',
   'rankingsPage.periodoClasificacion': 'Standings period',
   'rankingsPage.pts': 'PTS',
-  'rankingsPage.rarr': '{label} &rarr; {label2}',
+  'rankingsPage.rarr': '{label} → {label2}',
   'rankingsPage.semanal': 'Weekly',
   'rankingsPage.temporada': 'Season {label}',
   'rankingsPage.todaviaHayJornadasCerradas': 'There are no closed matchdays to see picks yet',

@@ -743,7 +743,7 @@ export const es = {
   'rankingsPage.jugador': 'JUGADOR',
   'rankingsPage.periodoClasificacion': 'Periodo de clasificación',
   'rankingsPage.pts': 'PTS',
-  'rankingsPage.rarr': '{label} &rarr; {label2}',
+  'rankingsPage.rarr': '{label} → {label2}',
   'rankingsPage.semanal': 'Semanal',
   'rankingsPage.temporada': 'Temporada {label}',
   'rankingsPage.todaviaHayJornadasCerradas': 'Todavía no hay jornadas cerradas para ver quinielas',

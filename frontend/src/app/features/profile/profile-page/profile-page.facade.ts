@@ -17,6 +17,7 @@ import { BadgeDetailDialogComponent, BadgeDetailData } from '../badge-detail-dia
 import { TROPHIES } from '../domain/trophies';
 import { t } from '../../../core/i18n/translate';
 import { badgeName, badgeDescription } from '../../../shared/utils/badge-text';
+import { distinctBadgeCount } from '../../../shared/utils/badge-count';
 
 export interface BadgePreviewItem {
   badge: Badge;
@@ -79,7 +80,7 @@ export class ProfilePageFacade {
    */
   readonly globalCurrentStreak = computed(() => this.profile()?.globalStreak.currentStreak ?? 0);
   readonly globalLongestStreak = computed(() => this.profile()?.globalStreak.longestStreak ?? 0);
-  readonly badgeCount = computed(() => this.profile()?.badges.length ?? 0);
+  readonly badgeCount = computed(() => distinctBadgeCount(this.profile()?.badges ?? []));
   readonly trophies = TROPHIES;
 
   openTrophy(trophy: TrophyDetailData): void {
