@@ -40,8 +40,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         en: 'Fix: the level-up notice now appears only once.',
       },
       {
-        es: 'Tabla: elige una jornada anterior para ver su clasificación, semanal o acumulada, en cada liga.',
-        en: 'Table: pick a previous matchday to see its standings, weekly or cumulative, in each league.',
+        es: 'Tabla: en Semanal puedes elegir una jornada (J1, J2…) de cada liga para ver lo que se puntuó en ella.',
+        en: 'Table: in Weekly you can pick a matchday (MD1, MD2…) of each league to see what was scored in it.',
       },
       {
         es: 'Los partidos sin hora confirmada muestran «Hora por confirmar» en vez de las 2:00, y la hora se actualiza sola en cuanto se confirma.',

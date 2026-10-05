@@ -17,6 +17,15 @@ partido con la hora provisional puesta a mano en la base de datos (restaurado), 
 **NO verificado**: contra football-data.org real (sin clave aquí): no sé qué devuelve ahora para La Liga ni si ya
 tiene horas confirmadas; el refresco nuevo lo comprobará cada hora desde que se despliegue.
 
+## 2026-10-05 — Tabla por jornadas: solo en Semanal, orden J1, J2, J3 y 0 puntos si no se jugó (fuera de sprint)
+
+A petición explícita del usuario (ver `decisions.md`, misma fecha). **Hecho**: selector de jornada solo en
+Semanal (nunca en Total) y en orden cronológico, centrando la jornada elegida; el backend
+(`RankingsService.getRankingForMatchday`) devuelve a todos los miembros, con 0 puntos los que no tienen
+fila en esa jornada. Línea de la 1.0.3 reescrita. **Verificado**: 4 tests de backend (jornada sin filas,
+jugador que entró después, empates a 0, tabla completa sin cambios) y los del facade reescritos. Frontend
+**necesita build nueva**; los 0 puntos funcionan al desplegar el backend.
+
 ## 2026-10-05 — Tabla por jornadas, flecha de "Tu evolución" y contador de insignias (fuera de sprint)
 
 A petición explícita del usuario (tres avisos seguidos al probar la build 1.0.3). Solo frontend;
@@ -24,8 +33,8 @@ A petición explícita del usuario (tres avisos seguidos al probar la build 1.0.
 `decisions.md` y `product-rules.md` (misma fecha).
 
 **Hecho**:
-- **Tabla por jornadas**: selector de jornada en cada liga, semanal y total
-  (`RankingsPageFacade`, `rankings-page.component.html`).
+- **Tabla por jornadas**: selector de jornada en cada liga (después limitado a Semanal, ver la entrada
+  anterior; `RankingsPageFacade`, `rankings-page.component.html`).
 - **"J3 &rarr; J7" salía con la entidad escrita**: la flecha quedó como `&rarr;` en los catálogos de
   idioma al migrar los textos (ahí no se decodifica); ahora es el carácter, y un test falla si algún texto
   del catálogo lleva una entidad HTML. La etiqueta "J3" estaba escrita a mano: ahora usa la abreviatura

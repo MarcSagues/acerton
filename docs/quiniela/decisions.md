@@ -32,6 +32,23 @@ pronosticar. Alternativa si preocupa: no cerrar un partido con hora provisional 
 Que cierre a la hora provisional también significa que la cuenta atrás "cierra en..." de Jornada es
 orientativa hasta entonces.
 
+## 2026-10-05 — Tabla por jornadas: solo en Semanal, en orden J1, J2, J3 y con 0 puntos si no se jugó (fuera de sprint)
+
+Petición explícita del usuario, tras probar la primera versión: "en total nunca debe salir el historial de
+otras jornadas, y cuando sale, debe salir en orden cronológico (J1, J2, J3), y si esa jornada no se
+jugaba, se le ponen todos 0 puntos y ya está". **Sustituye** las decisiones 1 (vale para semanal y total)
+de la entrada siguiente.
+
+- **Solo en Semanal**: en Total no hay selector y pasar a Total vuelve a la clasificación de ahora
+  (`showMatchdayPicker` exige periodo semanal; `selectMatchday` no hace nada en Total).
+- **Orden cronológico** (`matchdayChips`, por número de jornada ascendente): la elegida por defecto es la
+  última, que queda a la derecha; la fila se desplaza para centrarla.
+- **Jornada no jugada = todos a 0** (backend, `getRankingForMatchday`): quien no tiene fila en esa
+  jornada (grupo creado después, nadie pronosticó, o jugador que entró después) sale con 0 puntos; los
+  empates a 0 comparten puesto. Se listan los miembros actuales del grupo.
+
+**Necesita build nueva** (frontend); lo de los 0 puntos lo da el backend al desplegar.
+
 ## 2026-10-05 — Tabla: clasificación de jornadas anteriores en cada liga (fuera de sprint)
 
 Petición explícita del usuario: "en clasificación podrías ver la clasificación de cada semana; deberías
@@ -45,8 +62,7 @@ vuelve a la vista de siempre. `RankingsPageFacade.selectMatchday`.
 
 **Decisiones tomadas por defecto (a confirmar por el usuario):**
 
-1. Vale para **Semanal y Total**: semanal = lo puntuado en esa jornada; total = acumulado hasta esa
-   jornada. Cambiar entre una y otra mantiene la jornada elegida.
+1. ~~Vale para Semanal y Total~~ — sustituido: ahora solo en Semanal (ver la entrada anterior, misma fecha).
 2. **Solo por liga**: en "General" no hay selector. Cambiar de liga vuelve a la última jornada.
 3. Viendo una jornada anterior **no se enseñan subidas/bajadas de puesto** (el backend no las calcula
    para una jornada concreta) y el resumen "Tú" dice "Jornada N" en vez de "Esta semana".
