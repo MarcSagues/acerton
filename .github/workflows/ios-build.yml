@@ -26,7 +26,7 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Un tag v1.0.1 siempre es produccion (asi se cortan las releases);
       # el disparo manual sigue dejando elegir dev/production como hasta
