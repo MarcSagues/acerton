@@ -1,5 +1,21 @@
 # Estado actual
 
+## 2026-10-05 — Teclado en iOS: el último marcador ya no queda tapado (fuera de sprint)
+
+A petición explícita del usuario. Causa, solución y matices: `decisions.md` (misma fecha). Solo
+frontend (`KeyboardInsetService`, `styles.scss`); **necesita build nueva**. Se añadió una línea al
+historial de la 1.0.2 (`changelog.ts`) para este arreglo y otra para el del pop-up de nivel.
+
+**Verificado**: 8 tests nuevos (cálculo del desplazamiento; con una página larga y un campo al final:
+sube hasta dejarlo encima del teclado y la barra "Listo", también al cambiar de campo, quita el hueco al
+cerrar y no mueve un campo que ya se ve) y, en Chromium con la app real (Jornada, grupo de resultado
+exacto, 375×667) simulando el teclado superpuesto de 300 px: antes el último marcador quedaba 99 px
+dentro de la zona tapada y después queda por encima, también al pasar al campo anterior.
+
+**NO verificado**: en un iPhone real (la simulación no incluye el teclado ni los eventos de
+`@capacitor/keyboard`, que solo existen en nativo): hay que probar en TestFlight que sube bien con
+el teclado numérico, que la barra "Listo" no se solapa y que al cerrar el teclado no da un salto.
+
 ## 2026-10-05 — El pop-up de "subiste de nivel" sale una sola vez (fuera de sprint)
 
 A petición explícita del usuario. Reglas, matices y por qué se hizo en el servidor:

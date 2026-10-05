@@ -4,6 +4,26 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-05 — Teclado en iOS: la pantalla sube para que el último marcador no quede tapado (fuera de sprint)
+
+Petición explícita del usuario: "al escribir el resultado exacto del último partido no se ve; al
+abrirse el teclado debería subir toda la app para que se pudiera ver".
+
+**Causa**: con `Keyboard.resize: 'none'` (capacitor.config.ts, decisión anterior para que la barra
+inferior no suba con el teclado) el teclado se superpone sin mover nada, y el último campo de una
+pantalla larga ya está al final de la página: no hay más página por la que subir. Además, en esta
+app **no scrollea la ventana sino `<body>`** (html y body llevan `overflow-x: hidden`, lo que hace
+que body, con `height: 100%`, sea el que desplaza por dentro), así que `window.scrollBy` no movía nada.
+
+**Cómo queda** (`KeyboardInsetService`, solo iOS nativo): mientras el teclado está abierto pone un
+hueco al final de la página del alto del teclado + barra "Listo" + margen (`--keyboard-inset`, regla
+`html.keyboard-open app-root` en `styles.scss`) y sube el contenedor que de verdad hace scroll lo
+justo para dejar el campo enfocado encima del teclado; también al pasar de un campo a otro con el
+teclado ya abierto. Al cerrarse se quita el hueco. No toca `resize: 'none'`, así que la barra inferior
+sigue sin subir. Android no cambia (su WebView sí se redimensiona).
+
+**Esto SÍ necesita una build nueva de la app** (es frontend).
+
 ## 2026-10-05 — El pop-up de "subiste de nivel" sale una sola vez, y lo deja leído el servidor (sustituye una regla de Sprint 14)
 
 Petición explícita del usuario: "el pop-up de subida de nivel solo debería salir una vez, y si

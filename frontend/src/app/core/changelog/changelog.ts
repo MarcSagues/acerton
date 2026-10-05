@@ -60,6 +60,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         en: 'Fix: badges whose progress was already complete are now awarded even if they had not lit up.',
       },
       {
+        es: 'Al escribir un resultado exacto, la pantalla sube para que el último partido no quede tapado por el teclado.',
+        en: "When you type an exact score, the screen scrolls up so the last match isn't hidden behind the keyboard.",
+      },
+      {
+        es: 'Arreglo: el aviso de subida de nivel sale una sola vez.',
+        en: 'Fix: the level-up notice now appears only once.',
+      },
+      {
         es: 'Novedad: este aviso. La primera vez que abras una versión nueva verás aquí lo que ha cambiado.',
         en: "New: this notice. The first time you open a new version, you'll see here what has changed.",
       },
