@@ -126,13 +126,42 @@ export class NotificationsService implements OnModuleInit {
     }
   }
 
-  /** Lista los avisos del usuario para la pantalla "Avisos" (mas recientes primero). */
-  getFeedForUser(userId: string, limit = 50) {
-    return this.prisma.notification.findMany({
+  /**
+   * Lista los avisos del usuario para la pantalla "Avisos" (mas recientes primero).
+   *
+   * Los avisos de subida de nivel sin leer se devuelven como sin leer UNA vez y
+   * quedan marcados como leidos: la app los enseña como pop-up ("subiste al nivel
+   * N") al recibirlos, y sin esto el mismo pop-up volvia a salir en cada arranque
+   * hasta pulsar el aviso en la pantalla de Avisos. Se hace aqui, en el servidor,
+   * para que valga tambien para las versiones de la app ya instaladas.
+   */
+  async getFeedForUser(userId: string, limit = 50) {
+    const notices = await this.prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
+    await this.markLevelUpsAsSeen(userId, notices);
+    return notices;
+  }
+
+  /** Un fallo aqui no tumba el feed: lo peor es que el pop-up vuelva a salir en el siguiente arranque. */
+  private async markLevelUpsAsSeen(
+    userId: string,
+    notices: Array<{ id: string; type: NotificationType; readAt: Date | null }>,
+  ): Promise<void> {
+    const ids = notices
+      .filter((notice) => notice.type === NotificationType.LEVEL_UP && notice.readAt === null)
+      .map((notice) => notice.id);
+    if (ids.length === 0) return;
+    try {
+      await this.prisma.notification.updateMany({
+        where: { userId, id: { in: ids }, readAt: null },
+        data: { readAt: new Date() },
+      });
+    } catch (error) {
+      this.logger.warn(`No se pudo marcar como vistos los avisos de nivel de ${userId}: ${error}`);
+    }
   }
 
   /** "Leer todo" (ver NotificationsPageFacade). */

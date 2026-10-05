@@ -283,6 +283,16 @@ body {
   }
 }
 
+/* Teclado abierto en iOS (ver KeyboardInsetService): un hueco al final de la
+   pagina del alto del teclado y de la barra "Listo", para que el ultimo campo
+   (p.ej. el marcador del ultimo partido) pueda subir por encima del teclado.
+   Va en app-root y no en body porque body mide height:100% y su relleno no
+   alargaria la pagina. */
+html.keyboard-open app-root {
+  display: block;
+  padding-bottom: var(--keyboard-inset, 0px);
+}
+
 body {
   margin: 0;
   background: var(--p4-bg);

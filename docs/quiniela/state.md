@@ -1,5 +1,37 @@
 # Estado actual
 
+## 2026-10-05 — Teclado en iOS: el último marcador ya no queda tapado (fuera de sprint)
+
+A petición explícita del usuario. Causa, solución y matices: `decisions.md` (misma fecha). Solo
+frontend (`KeyboardInsetService`, `styles.scss`); **necesita build nueva**. Versión **1.0.3** (nueva entrada
+arriba en `changelog.ts` con este arreglo y el del pop-up de nivel, y `MARKETING_VERSION` 1.0.3).
+
+**Verificado**: 8 tests nuevos (cálculo del desplazamiento; con una página larga y un campo al final:
+sube hasta dejarlo encima del teclado y la barra "Listo", también al cambiar de campo, quita el hueco al
+cerrar y no mueve un campo que ya se ve) y, en Chromium con la app real (Jornada, grupo de resultado
+exacto, 375×667) simulando el teclado superpuesto de 300 px: antes el último marcador quedaba 99 px
+dentro de la zona tapada y después queda por encima, también al pasar al campo anterior.
+
+**NO verificado**: en un iPhone real (la simulación no incluye el teclado ni los eventos de
+`@capacitor/keyboard`, que solo existen en nativo): hay que probar en TestFlight que sube bien con
+el teclado numérico, que la barra "Listo" no se solapa y que al cerrar el teclado no da un salto.
+
+## 2026-10-05 — El pop-up de "subiste de nivel" sale una sola vez (fuera de sprint)
+
+A petición explícita del usuario. Reglas, matices y por qué se hizo en el servidor:
+`decisions.md` (misma fecha, sustituye la regla del pop-up de Sprint 14).
+
+**Hecho**: `NotificationsService.getFeedForUser` deja leídos los `LEVEL_UP` sin leer después de
+devolverlos como sin leer una vez. Solo backend, sin migraciones y sin build nueva de la app.
+
+**Verificado**: 4 tests nuevos del servicio (marca solo los de nivel sin leer, no toca otros tipos
+ni los ya leídos, un fallo no tumba el feed), tests/`tsc`/lint del backend, y de punta a punta
+en Chromium con MariaDB + backend + la app sin cambios: con un aviso de nivel sin leer sale el
+pop-up y queda leído en BD, al abrir de nuevo la app no sale, un aviso de nivel nuevo sí sale una
+vez, y en Avisos no queda ninguno sin leer.
+
+**NO verificado**: iOS/Android reales ni la entrega del push.
+
 ## 2026-10-05 — Historial de versiones y pop-up de novedades (fuera de sprint)
 
 A petición explícita del usuario. Misma rama (`claude/dashboard-push-notifications-yo0gk0`,

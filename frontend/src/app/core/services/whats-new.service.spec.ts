@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { CHANGELOG } from '../changelog/changelog';
+import { LAST_VERSION_WITHOUT_WHATS_NEW, compareVersions } from '../changelog/changelog.rules';
 import { PiqoDialogService } from '../../shared/ui/dialog/dialog.service';
 import { TutorialService } from './tutorial.service';
 import { LAST_SEEN_VERSION_KEY, WhatsNewService } from './whats-new.service';
@@ -27,14 +28,27 @@ describe('WhatsNewService (web: la versión es la última del historial)', () =>
 
   afterEach(() => localStorage.removeItem(LAST_SEEN_VERSION_KEY));
 
-  it('la primera vez que se abre la versión enseña las novedades y apunta la versión', async () => {
+  it('la primera vez que se abre la versión (sin ninguna guardada) enseña lo posterior a la 1.0.1 y apunta la versión', async () => {
     await build().checkOnLaunch();
 
     expect(dialog.open).toHaveBeenCalledTimes(1);
     const config = dialog.open.calls.mostRecent().args[1];
     expect(config.data.version).toBe(latest);
-    expect(config.data.entries.map((e: { version: string }) => e.version)).toEqual([latest]);
+    expect(config.data.entries.map((e: { version: string }) => e.version)).toEqual(
+      CHANGELOG.map((entry) => entry.version).filter((version) => compareVersions(version, LAST_VERSION_WITHOUT_WHATS_NEW) > 0),
+    );
     expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe(latest);
+  });
+
+  it('con la versión anterior ya vista, enseña solo las novedades de la nueva', async () => {
+    const previous = CHANGELOG[1]?.version;
+    if (!previous) return pending('el historial solo tiene una versión');
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, previous);
+
+    await build().checkOnLaunch();
+
+    const config = dialog.open.calls.mostRecent().args[1];
+    expect(config.data.entries.map((e: { version: string }) => e.version)).toEqual([latest]);
   });
 
   it('la segunda vez que se abre esa misma versión ya no sale', async () => {

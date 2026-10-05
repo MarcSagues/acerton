@@ -7,6 +7,7 @@ import { ToastHostComponent } from './shared/ui/toast/toast-host.component';
 import { ThemeService } from './core/services/theme.service';
 import { DeepLinkService } from './core/services/deep-link.service';
 import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
+import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { KeyboardAccessoryComponent } from './shared/ui/keyboard-accessory/keyboard-accessory.component';
 
 @Component({
@@ -29,9 +30,11 @@ export class AppComponent {
   private readonly themeService = inject(ThemeService);
   private readonly deepLinkService = inject(DeepLinkService);
   private readonly edgeSwipeBackService = inject(EdgeSwipeBackService);
+  private readonly keyboardInsetService = inject(KeyboardInsetService);
 
   constructor() {
     this.deepLinkService.init();
     this.edgeSwipeBackService.init();
+    this.keyboardInsetService.init();
   }
 }

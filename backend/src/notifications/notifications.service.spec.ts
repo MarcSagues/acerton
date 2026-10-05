@@ -322,12 +322,19 @@ describe('NotificationsService.notifyReengagement', () => {
 });
 
 describe('NotificationsService.getFeedForUser', () => {
-  it('lista los avisos del usuario, mas recientes primero', async () => {
-    const prisma = buildPrismaMock();
-    const notices = [{ id: 'n1' }, { id: 'n2' }];
-    prisma.notification.findMany.mockResolvedValue(notices);
+  const levelUp = (id: string, readAt: Date | null = null) => ({ id, type: 'LEVEL_UP', readAt });
+  const closing = (id: string) => ({ id, type: 'MATCHDAY_CLOSING_SOON', readAt: null });
 
-    const service = new NotificationsService(prisma as never, {} as never);
+  function build(notices: unknown[]) {
+    const prisma = buildPrismaMock();
+    prisma.notification.findMany.mockResolvedValue(notices);
+    return { prisma, service: new NotificationsService(prisma as never, {} as never) };
+  }
+
+  it('lista los avisos del usuario, mas recientes primero', async () => {
+    const notices = [{ id: 'n1' }, { id: 'n2' }];
+    const { prisma, service } = build(notices);
+
     const result = await service.getFeedForUser('u1');
 
     expect(prisma.notification.findMany).toHaveBeenCalledWith({
@@ -336,6 +343,38 @@ describe('NotificationsService.getFeedForUser', () => {
       take: 50,
     });
     expect(result).toBe(notices);
+  });
+
+  it('devuelve el aviso de subida de nivel como sin leer esta vez y lo deja leido para la siguiente', async () => {
+    const { prisma, service } = build([levelUp('l1'), closing('c1'), levelUp('l2')]);
+
+    const result = await service.getFeedForUser('u1');
+
+    expect(result.map((n) => [n.id, n.readAt])).toEqual([
+      ['l1', null],
+      ['c1', null],
+      ['l2', null],
+    ]);
+    expect(prisma.notification.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'u1', id: { in: ['l1', 'l2'] }, readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
+  });
+
+  it('no toca los avisos de otros tipos ni los de nivel que ya estaban leidos', async () => {
+    const { prisma, service } = build([closing('c1'), levelUp('l1', new Date())]);
+
+    await service.getFeedForUser('u1');
+
+    expect(prisma.notification.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('un fallo al marcarlos no tumba el feed', async () => {
+    const { prisma, service } = build([levelUp('l1')]);
+    prisma.notification.updateMany.mockRejectedValue(new Error('BD caida'));
+
+    await expect(service.getFeedForUser('u1')).resolves.toHaveLength(1);
   });
 });
 
