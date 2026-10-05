@@ -39,6 +39,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         es: 'Arreglo: el aviso de subida de nivel sale una sola vez.',
         en: 'Fix: the level-up notice now appears only once.',
       },
+      {
+        es: 'Tabla: elige una jornada anterior para ver su clasificación, semanal o acumulada, en cada liga.',
+        en: 'Table: pick a previous matchday to see its standings, weekly or cumulative, in each league.',
+      },
+      {
+        es: 'Arreglo: el contador de insignias cuenta las distintas, no las repetidas en cada grupo.',
+        en: 'Fix: the badge counter now counts distinct badges, not the same one repeated in every group.',
+      },
     ],
   },
   {

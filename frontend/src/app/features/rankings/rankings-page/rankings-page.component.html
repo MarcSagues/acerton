@@ -35,16 +35,30 @@
       </div>
     }
 
+    @if (page.showMatchdayPicker()) {
+      <div class="comp-pills md-pills" role="group" [attr.aria-label]="'common.elegirJornada' | t">
+        @for (md of page.finishedMatchdays(); track md.matchdayId) {
+          <button type="button" class="comp-pill" [class.active]="page.isMatchdaySelected(md.matchdayId)" (click)="page.selectMatchday(md.matchdayId)">
+            {{ 'common.jornadaAbrev' | t: { order: md.order } }}
+          </button>
+        }
+      </div>
+    }
+
     @if (page.myRow(); as mine) {
       <button type="button" class="my-row" (click)="page.viewUserPicks(mine.userId)">
         <span class="my-pos mono">{{ mine.position }}</span>
         <span class="my-meta">
           <span class="my-name">{{ 'rankingsPage.tu' | t: { name: mine.user.name } }}</span>
           <span class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
-            @if (page.deltaLabel(mine.positionDelta); as delta) {
-              {{ 'rankingsPage.estaSemana' | t: { delta: delta } }}
+            @if (page.viewingPastMatchday()) {
+              {{ 'rankingsPage.jornadaN' | t: { order: page.selectedMatchdayOrder() } }}
             } @else {
-              {{ 'rankingsPage.estaSemana2' | t }}
+              @if (page.deltaLabel(mine.positionDelta); as delta) {
+                {{ 'rankingsPage.estaSemana' | t: { delta: delta } }}
+              } @else {
+                {{ 'rankingsPage.estaSemana2' | t }}
+              }
             }
           </span>
         </span>

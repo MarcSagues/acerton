@@ -4,6 +4,29 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-05 — Tabla: clasificación de jornadas anteriores en cada liga (fuera de sprint)
+
+Petición explícita del usuario: "en clasificación podrías ver la clasificación de cada semana; deberías
+poder ver la clasificación de jornadas anteriores en cada liga".
+
+**Cómo funciona** (solo frontend; el backend ya guardaba una foto por jornada y ya admitía
+`?matchdayId=`): en Tabla, con una liga elegida, una fila de chips (`J6 J5 J4 J3`, la más nueva
+primera) lista las jornadas ya finalizadas (la misma petición del historial que alimenta la gráfica de
+evolución, una vez por grupo y liga). Elegir una pide la clasificación de esa jornada; elegir la última
+vuelve a la vista de siempre. `RankingsPageFacade.selectMatchday`.
+
+**Decisiones tomadas por defecto (a confirmar por el usuario):**
+
+1. Vale para **Semanal y Total**: semanal = lo puntuado en esa jornada; total = acumulado hasta esa
+   jornada. Cambiar entre una y otra mantiene la jornada elegida.
+2. **Solo por liga**: en "General" no hay selector. Cambiar de liga vuelve a la última jornada.
+3. Viendo una jornada anterior **no se enseñan subidas/bajadas de puesto** (el backend no las calcula
+   para una jornada concreta) y el resumen "Tú" dice "Jornada N" en vez de "Esta semana".
+4. Tocar a un jugador abre sus quinielas **de esa jornada** (antes: de la última cerrada).
+5. Solo salen las jornadas **finalizadas** (las que tienen foto de clasificación).
+
+**Necesita build nueva** (frontend).
+
 ## 2026-10-05 — Teclado en iOS: la pantalla sube para que el último marcador no quede tapado (fuera de sprint)
 
 Petición explícita del usuario: "al escribir el resultado exacto del último partido no se ve; al

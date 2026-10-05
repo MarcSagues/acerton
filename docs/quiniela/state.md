@@ -1,5 +1,34 @@
 # Estado actual
 
+## 2026-10-05 — Tabla por jornadas, flecha de "Tu evolución" y contador de insignias (fuera de sprint)
+
+A petición explícita del usuario (tres avisos seguidos al probar la build 1.0.3). Solo frontend;
+**necesita build nueva**. Reglas y decisiones por defecto de la clasificación por jornada:
+`decisions.md` y `product-rules.md` (misma fecha).
+
+**Hecho**:
+- **Tabla por jornadas**: selector de jornada en cada liga, semanal y total
+  (`RankingsPageFacade`, `rankings-page.component.html`).
+- **"J3 &rarr; J7" salía con la entidad escrita**: la flecha quedó como `&rarr;` en los catálogos de
+  idioma al migrar los textos (ahí no se decodifica); ahora es el carácter, y un test falla si algún texto
+  del catálogo lleva una entidad HTML. La etiqueta "J3" estaba escrita a mano: ahora usa la abreviatura
+  traducida (MD3 en inglés).
+- **"13 conseguidas" teniendo 5** (error anterior a la traducción): una insignia se concede por grupo
+  (una fila por usuario, insignia y grupo) y el contador contaba filas. Ahora cuenta insignias
+  distintas (`distinctBadgeCount`), en Perfil y en la pantalla de insignias. No se arregla en el
+  backend porque "insignia desbloqueada" de los resultados de la jornada necesita las filas por grupo.
+- Línea de historial en la 1.0.3 para la clasificación por jornadas y el contador.
+
+**Verificado**: 12 tests nuevos (selector de jornada: petición de la jornada elegida, volver a la
+última, mantener la jornada al cambiar de periodo, reinicio al cambiar de liga, respuesta tardía descartada,
+quinielas de esa jornada; contador de insignias; guarda de entidades HTML), `tsc`, `ng build` y, en
+Chromium con MariaDB + backend + app y 4 jornadas finalizadas sembradas (borradas después), en español e
+inglés: la lista de jornadas, el cambio de clasificación semanal/total, el resumen "Jornada N" y tocar un
+jugador.
+
+**NO verificado**: iOS/Android reales. **Pendiente**: el usuario avisó de que "la fecha de los
+partidos sale mal" sin decir dónde ni cómo debería verse; sin concretar.
+
 ## 2026-10-05 — Teclado en iOS: el último marcador ya no queda tapado (fuera de sprint)
 
 A petición explícita del usuario. Causa, solución y matices: `decisions.md` (misma fecha). Solo

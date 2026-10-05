@@ -740,6 +740,7 @@ export const es = {
   'rankingsPage.estaSemana2': 'Esta semana',
   'rankingsPage.evolucion': 'Tu evolución',
   'rankingsPage.general': 'General',
+  'rankingsPage.jornadaN': 'Jornada {order}',
   'rankingsPage.jugador': 'JUGADOR',
   'rankingsPage.periodoClasificacion': 'Periodo de clasificación',
   'rankingsPage.pts': 'PTS',

@@ -9,7 +9,7 @@ import { TutorialService } from '../../../core/services/tutorial.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { SeasonsService } from '../../../core/services/seasons.service';
 import { Group } from '../../../core/models/group.model';
-import { RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
+import { MatchdayHistoryEntry, RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
 import { t } from '../../../core/i18n/translate';
 
 export interface EvolutionBar {
@@ -33,6 +33,10 @@ export class RankingsPageFacade {
 
   /** Se inicia al entrar por primera vez en un grupo (Tabla es donde se aterriza al elegirlo). */
   private tutorialHandledThisSession = false;
+  /** Grupo y competicion de los que ya se pidieron las jornadas finalizadas (cambiar de periodo no las vuelve a pedir). */
+  private finishedMatchdaysKey = '';
+  /** Numero de la ultima peticion de clasificacion: una respuesta tardia de una anterior se descarta. */
+  private rankingRequestId = 0;
 
   readonly loading = signal(true);
   readonly loadingRanking = signal(false);
@@ -41,7 +45,10 @@ export class RankingsPageFacade {
   readonly period = signal<RankingPeriod>('TOTAL');
   readonly scope = signal<string>('general');
   readonly rows = signal<RankingRow[]>([]);
-  readonly evolutionMatchdays = signal<{ order: number; myPoints: number | null }[]>([]);
+  /** Jornadas ya finalizadas de la competicion elegida, de la mas nueva a la mas antigua: alimentan la grafica de evolucion y el selector de jornada. */
+  readonly finishedMatchdays = signal<MatchdayHistoryEntry[]>([]);
+  /** Jornada concreta que se esta viendo, o null para la ultima (la clasificacion de siempre, con la subida/bajada de posiciones). */
+  readonly selectedMatchdayId = signal<string | null>(null);
   readonly currentUserId = this.authService.currentUser()?.id;
   /** Etiqueta de la temporada abierta del grupo ("2026/27"), o null si todavia no se ha puntuado ninguna jornada. */
   readonly currentSeasonLabel = signal<string | null>(null);
@@ -53,8 +60,15 @@ export class RankingsPageFacade {
   readonly myRow = computed(() => this.rows().find((r) => r.userId === this.currentUserId) ?? null);
   /** Solo tiene sentido por competicion: cada una tiene su propio calendario de jornadas, no hay "jornada combinada" en la vista general. */
   readonly showEvolution = computed(() => this.period() === 'TOTAL' && this.scope() !== 'general');
+  /** Selector de jornada: solo por competicion (en la vista general no hay jornadas) y si ya hay alguna finalizada. */
+  readonly showMatchdayPicker = computed(() => this.scope() !== 'general' && this.finishedMatchdays().length > 0);
+  /** true si se esta viendo una jornada anterior a la ultima. */
+  readonly viewingPastMatchday = computed(() => this.selectedMatchdayId() !== null);
+  readonly selectedMatchdayOrder = computed(
+    () => this.finishedMatchdays().find((md) => md.matchdayId === this.selectedMatchdayId())?.order ?? null,
+  );
   readonly evolutionBars = computed<EvolutionBar[]>(() => {
-    const recent = this.evolutionMatchdays().slice(0, 6).reverse();
+    const recent = this.finishedMatchdays().slice(0, 6).reverse();
     const max = Math.max(1, ...recent.map((m) => m.myPoints ?? 0));
     return recent.map((m) => ({
       label: t('common.jornadaAbrev', { order: m.order }),
@@ -98,6 +112,9 @@ export class RankingsPageFacade {
     this.groupDetail.set(group);
     const active = (group.groupCompetitions ?? []).filter((gc) => gc.isActive);
     this.scope.set(active.length > 1 ? 'general' : (active[0]?.competitionId ?? 'general'));
+    this.selectedMatchdayId.set(null);
+    this.finishedMatchdaysKey = '';
+    this.finishedMatchdays.set([]);
     this.loading.set(false);
     this.fetchRanking(groupId);
     this.seasonsService.listSeasons(groupId).subscribe({
@@ -126,8 +143,27 @@ export class RankingsPageFacade {
 
   setScope(scope: string): void {
     this.scope.set(scope);
+    // Cada competicion tiene su propio calendario de jornadas.
+    this.selectedMatchdayId.set(null);
     const groupId = this.activeGroupService.activeId();
     if (groupId) this.fetchRanking(groupId);
+  }
+
+  /**
+   * Ver la clasificacion de una jornada anterior (semanal: lo que se puntuo en
+   * ella; total: lo acumulado hasta ella). Elegir la ultima vuelve a la vista de
+   * siempre, que ademas muestra cuantos puestos se ha subido o bajado.
+   */
+  selectMatchday(matchdayId: string): void {
+    const latestId = this.finishedMatchdays()[0]?.matchdayId ?? null;
+    this.selectedMatchdayId.set(matchdayId === latestId ? null : matchdayId);
+    const groupId = this.activeGroupService.activeId();
+    if (groupId) this.fetchRanking(groupId);
+  }
+
+  isMatchdaySelected(matchdayId: string): boolean {
+    const selected = this.selectedMatchdayId();
+    return selected === null ? matchdayId === this.finishedMatchdays()[0]?.matchdayId : selected === matchdayId;
   }
 
   /** "+2"/"-1" para el indicador de posicion ganada/perdida respecto a la jornada anterior; null si no ha cambiado (no se muestra nada). */
@@ -147,6 +183,15 @@ export class RankingsPageFacade {
   viewUserPicks(userId: string): void {
     const groupId = this.activeGroupService.activeId();
     if (!groupId || this.resolvingUserId()) return;
+
+    // Viendo una jornada anterior: las quinielas son las de ESA jornada (ya finalizada, asi que esta cerrada).
+    const viewedMatchdayId = this.selectedMatchdayId();
+    if (viewedMatchdayId) {
+      this.router.navigate(
+        userId === this.currentUserId ? ['/matchday', viewedMatchdayId, 'results'] : ['/matchday', viewedMatchdayId, 'results', userId],
+      );
+      return;
+    }
 
     const scope = this.scope();
     const competitionId = scope !== 'general' ? scope : this.activeCompetitions()[0]?.id;
@@ -174,25 +219,49 @@ export class RankingsPageFacade {
   }
 
   private fetchRanking(groupId: string): void {
+    const request = ++this.rankingRequestId;
+    const scope = this.scope();
+    const matchdayId = this.selectedMatchdayId();
     this.loadingRanking.set(true);
-    this.rankingsService.getRanking(groupId, this.period(), this.scope()).subscribe({
+    const source =
+      matchdayId && scope !== 'general'
+        ? this.rankingsService.getRankingForMatchday(groupId, this.period(), scope, matchdayId)
+        : this.rankingsService.getRanking(groupId, this.period(), scope);
+    source.subscribe({
       next: (rows) => {
+        if (request !== this.rankingRequestId) return;
         this.rows.set(rows);
         this.loadingRanking.set(false);
       },
       error: () => {
+        if (request !== this.rankingRequestId) return;
         this.rows.set([]);
         this.loadingRanking.set(false);
       },
     });
 
-    if (this.showEvolution()) {
-      this.rankingsService.getHistory(groupId, this.scope()).subscribe({
-        next: (history) => this.evolutionMatchdays.set(history.matchdays),
-        error: () => this.evolutionMatchdays.set([]),
-      });
-    } else {
-      this.evolutionMatchdays.set([]);
+    this.loadFinishedMatchdays(groupId, scope);
+  }
+
+  /** Una vez por grupo y competicion: la grafica de evolucion y el selector de jornada salen de la misma peticion. */
+  private loadFinishedMatchdays(groupId: string, scope: string): void {
+    if (scope === 'general') {
+      this.finishedMatchdaysKey = '';
+      this.finishedMatchdays.set([]);
+      return;
     }
+    const key = `${groupId}:${scope}`;
+    if (key === this.finishedMatchdaysKey) return;
+    this.finishedMatchdaysKey = key;
+    this.finishedMatchdays.set([]);
+    this.rankingsService.getHistory(groupId, scope).subscribe({
+      next: (history) => {
+        if (key === this.finishedMatchdaysKey) this.finishedMatchdays.set(history.matchdays);
+      },
+      error: () => {
+        // Se vuelve a intentar la proxima vez que se pida la clasificacion.
+        if (key === this.finishedMatchdaysKey) this.finishedMatchdaysKey = '';
+      },
+    });
   }
 }

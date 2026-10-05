@@ -742,6 +742,7 @@ export const en: Catalog = {
   'rankingsPage.estaSemana2': 'This week',
   'rankingsPage.evolucion': 'Your progress',
   'rankingsPage.general': 'Overall',
+  'rankingsPage.jornadaN': 'Matchday {order}',
   'rankingsPage.jugador': 'PLAYER',
   'rankingsPage.periodoClasificacion': 'Standings period',
   'rankingsPage.pts': 'PTS',
