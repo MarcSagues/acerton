@@ -1,101 +1,96 @@
 /**
- * Mensajes de error en fr (provisional: copia del ingles hasta traducir): la clave es el texto en espanol tal como esta
+ * Mensajes de error en French: la clave es el texto en espanol tal como esta
  * escrito en el codigo (ver error-messages.ts).
  */
 export const messages: Record<string, string> = {
-  // auth
-  'Falta el refresh token': 'The refresh token is missing',
-  'Ya existe una cuenta con ese email': 'An account with that email already exists',
-  'Credenciales inválidas': 'Invalid credentials',
+  'Falta el refresh token': 'Le jeton d’actualisation est manquant',
+  'Ya existe una cuenta con ese email': 'Un compte existe déjà avec cet e-mail',
+  'Credenciales inválidas': 'Identifiants invalides',
   'Confirma tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.':
-    'Confirm your email before signing in. Check your inbox.',
+    'Confirme ton e-mail avant de te connecter. Vérifie ta boîte de réception.',
   'El enlace de confirmación no es válido o ha caducado':
-    'The confirmation link is invalid or has expired',
+    'Le lien de confirmation n’est pas valide ou a expiré',
   'El enlace para restablecer la contraseña no es válido o ha caducado':
-    'The password reset link is invalid or has expired',
-  'Usuario no encontrado': 'User not found',
+    'Le lien de réinitialisation du mot de passe n’est pas valide ou a expiré',
+  'Usuario no encontrado': 'Utilisateur introuvable',
   'Esta cuenta usa Google para iniciar sesión y no tiene contraseña que cambiar':
-    'This account signs in with Google and has no password to change',
-  'La contraseña actual no es correcta': 'The current password is incorrect',
-  'Introduce tu contraseña para confirmar': 'Enter your password to confirm',
-  'La contraseña no es correcta': 'The password is incorrect',
-  'Token de Google inválido': 'Invalid Google token',
-  'El token de Google no incluye un email': "The Google token doesn't include an email",
-  'Token de Apple inválido': 'Invalid Apple token',
-  'El token de Apple no incluye un email': "The Apple token doesn't include an email",
-  'Refresh token inválido': 'Invalid refresh token',
-  'Refresh token inválido o expirado': 'Invalid or expired refresh token',
+    'Ce compte se connecte avec Google et n’a pas de mot de passe à changer',
+  'La contraseña actual no es correcta': 'Le mot de passe actuel est incorrect',
+  'Introduce tu contraseña para confirmar': 'Saisis ton mot de passe pour confirmer',
+  'La contraseña no es correcta': 'Le mot de passe est incorrect',
+  'Token de Google inválido': 'Jeton Google invalide',
+  'El token de Google no incluye un email': 'Le jeton Google ne contient pas d’adresse e-mail',
+  'Token de Apple inválido': 'Jeton Apple invalide',
+  'El token de Apple no incluye un email': 'Le jeton Apple ne contient pas d’adresse e-mail',
+  'Refresh token inválido': 'Jeton d’actualisation invalide',
+  'Refresh token inválido o expirado': 'Jeton d’actualisation invalide ou expiré',
   'La contraseña debe tener al menos 8 caracteres':
-    'The password must be at least 8 characters long',
-  // dashboard / servidor
-  'El acceso del dashboard no esta configurado': 'Dashboard access is not configured',
-  'Clave del dashboard invalida': 'Invalid dashboard key',
+    'Le mot de passe doit contenir au moins 8 caractères',
+  'El acceso del dashboard no esta configurado': 'L’accès au tableau de bord n’est pas configuré',
+  'Clave del dashboard invalida': 'Clé du tableau de bord invalide',
   'Firebase no esta configurado en este servidor: no se ha enviado nada':
-    'Firebase is not configured on this server: nothing was sent',
-  // competiciones y jornadas
-  'Competición no encontrada': 'Competition not found',
-  'Jornada no encontrada': 'Matchday not found',
-  'direction debe ser "previous" o "next"': 'direction must be "previous" or "next"',
-  // grupos
-  'Grupo no encontrado': 'Group not found',
-  'Código de invitación inválido': 'Invalid invitation code',
+    'Firebase n’est pas configuré sur ce serveur : rien n’a été envoyé',
+  'Competición no encontrada': 'Compétition introuvable',
+  'Jornada no encontrada': 'Journée introuvable',
+  'direction debe ser "previous" o "next"': 'direction doit valoir « previous » ou « next »',
+  'Grupo no encontrado': 'Groupe introuvable',
+  'Código de invitación inválido': 'Code d’invitation invalide',
   'El grupo es privado, necesitas un link de invitación':
-    'The group is private, you need an invitation link',
-  'No perteneces a este grupo': "You don't belong to this group",
-  'Solo un administrador del grupo puede hacer esto': 'Only a group administrator can do this',
-  'Solo el creador del grupo puede hacer esto': 'Only the group creator can do this',
+    'Ce groupe est privé : tu as besoin d’un lien d’invitation',
+  'No perteneces a este grupo': 'Tu ne fais pas partie de ce groupe',
+  'Solo un administrador del grupo puede hacer esto':
+    'Seul un administrateur du groupe peut faire cela',
+  'Solo el creador del grupo puede hacer esto': 'Seul le créateur du groupe peut faire cela',
   'El creador debe transferir la propiedad o eliminar el grupo antes de salir':
-    'The creator must transfer ownership or delete the group before leaving',
-  'Ese usuario no es miembro del grupo': 'That user is not a member of the group',
-  'Ese usuario no es miembro de este grupo': 'That user is not a member of this group',
+    'Le créateur doit transférer la propriété ou supprimer le groupe avant de partir',
+  'Ese usuario no es miembro del grupo': 'Cet utilisateur n’est pas membre du groupe',
+  'Ese usuario no es miembro de este grupo': 'Cet utilisateur n’est pas membre de ce groupe',
   'No se puede expulsar a un administrador ni al creador del grupo':
-    "An administrator or the group creator can't be removed",
+    'Impossible d’exclure un administrateur ou le créateur du groupe',
   'El creador siempre es administrador; transfiere la propiedad para cambiar esto':
-    'The creator is always an administrator; transfer ownership to change this',
-  'Ya eres el propietario de este grupo': 'You are already the owner of this group',
+    'Le créateur est toujours administrateur : transfère la propriété pour changer cela',
+  'Ya eres el propietario de este grupo': 'Tu es déjà propriétaire de ce groupe',
   'El nuevo propietario debe ser ya miembro del grupo':
-    'The new owner must already be a member of the group',
-  'Selecciona al menos una competición': 'Select at least one competition',
+    'Le nouveau propriétaire doit déjà être membre du groupe',
+  'Selecciona al menos una competición': 'Sélectionne au moins une compétition',
   'No se pueden desactivar competiciones ya activadas en el grupo, solo anadir nuevas':
-    "Competitions already activated in the group can't be deactivated, only new ones added",
-  'Ya eres miembro de este grupo': 'You are already a member of this group',
-  // pronosticos
-  'Partido no encontrado': 'Match not found',
+    'Impossible de désactiver des compétitions déjà activées dans le groupe : tu peux seulement en ajouter de nouvelles',
+  'Ya eres miembro de este grupo': 'Tu es déjà membre de ce groupe',
+  'Partido no encontrado': 'Match introuvable',
   'Este partido ya ha empezado, no se admiten más predicciones':
-    'This match has already started, no more predictions are accepted',
+    'Ce match a déjà commencé, les pronostics ne sont plus acceptés',
   'Todavía no se puede predecir esta jornada, espera a que sea la jornada actual':
-    "This matchday can't be predicted yet, wait until it is the current matchday",
+    'Cette journée n’est pas encore ouverte aux pronostics, attends qu’elle devienne la journée en cours',
   'Este grupo juega en modo resultado exacto, no admite pronóstico 1X2':
-    "This group plays in exact score mode and doesn't accept a 1X2 prediction",
+    'Ce groupe joue en mode score exact et n’accepte pas les pronostics 1X2',
   'Falta el resultado exacto (goles local y visitante)':
-    'The exact score is missing (home and away goals)',
+    'Le score exact est manquant (buts à domicile et à l’extérieur)',
   'Este grupo juega en modo 1X2, no admite resultado exacto':
-    "This group plays in 1X2 mode and doesn't accept an exact score",
-  'Falta el pronóstico 1X2': 'The 1X2 prediction is missing',
-  'Elige un grupo distinto del actual': 'Choose a group different from the current one',
+    'Ce groupe joue en mode 1X2 et n’accepte pas le score exact',
+  'Falta el pronóstico 1X2': 'Le pronostic 1X2 est manquant',
+  'Elige un grupo distinto del actual': 'Choisis un groupe différent de l’actuel',
   'Solo se puede copiar entre grupos con el mismo modo de juego (1X2 o resultado exacto)':
-    'You can only copy between groups with the same game mode (1X2 or exact score)',
+    'Tu ne peux copier qu’entre des groupes ayant le même mode de jeu (1X2 ou score exact)',
   'Esa jornada no pertenece a una competición activa de este grupo':
-    "That matchday doesn't belong to an active competition of this group",
+    'Cette journée n’appartient à aucune compétition active de ce groupe',
   'Las predicciones del grupo se ven cuando cierra la jornada':
-    "The group's predictions are visible once the matchday closes",
-  // comodines
+    'Les pronostics du groupe sont visibles une fois la journée clôturée',
   'El comodín de remontada está desactivado en este grupo':
-    'The comeback wildcard is turned off in this group',
-  'Esta jornada ya no admite comodines nuevos': 'This matchday no longer accepts new wildcards',
+    'Le joker remontada est désactivé dans ce groupe',
+  'Esta jornada ya no admite comodines nuevos': 'Cette journée n’accepte plus de nouveaux jokers',
   'No te quedan comodines de remontada disponibles esta jornada':
-    'You have no comeback wildcards left this matchday',
-  // usuarios
-  'Tu cuenta ya tiene un referidor asignado': 'Your account already has a referrer assigned',
-  'Código de invitación no válido': 'Invalid invitation code',
-  'No puedes usar tu propio código': "You can't use your own code",
+    'Tu n’as plus de joker remontada disponible cette journée',
+  'Tu cuenta ya tiene un referidor asignado': 'Ton compte a déjà un parrain attribué',
+  'Código de invitación no válido': 'Code d’invitation non valide',
+  'No puedes usar tu propio código': 'Tu ne peux pas utiliser ton propre code',
   'Usa solo letras, números, espacios, guiones y apostrofes':
-    'Use only letters, numbers, spaces, hyphens and apostrophes',
+    'Utilise uniquement des lettres, des chiffres, des espaces, des tirets et des apostrophes',
 };
 
 /** Mensajes con datos dentro: `{1}` es lo capturado por el patron del mismo id (ver error-messages.ts). */
 export const patterns: Record<string, string> = {
-  nameChangeCooldown: 'You can only change your name once a week. You can do it again on {1}.',
-  mascotLevel: 'You need level {1} to use this mascot.',
-  colorLevel: 'You need level {1} to use this color.',
+  nameChangeCooldown:
+    'Tu ne peux changer ton nom qu’une fois par semaine. Tu pourras le refaire le {1}.',
+  mascotLevel: 'Il te faut le niveau {1} pour utiliser cette mascotte.',
+  colorLevel: 'Il te faut le niveau {1} pour utiliser cette couleur.',
 };

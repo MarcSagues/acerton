@@ -867,3 +867,13 @@ button {
     animation: none;
   }
 }
+
+// Idiomas con palabras largas (alemán: "Mitteilungseinstellungen"): un título nunca se
+// sale de la pantalla; si no cabe en la línea, se parte (con guion donde el navegador
+// sabe, por el atributo lang del <html>).
+h1,
+h2,
+h3 {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}

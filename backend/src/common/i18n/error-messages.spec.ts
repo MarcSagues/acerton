@@ -68,8 +68,11 @@ describe('translateErrorMessage', () => {
   it.each(TRANSLATED_LOCALES)(
     'cada mensaje de error del codigo tiene su traduccion (%s)',
     (locale) => {
+      // En el diccionario, no "distinto del espanol": en catalan algun mensaje se escribe igual ("Falta el refresh token").
       const untranslated = messages.filter(
-        ({ message }) => translateErrorMessage(message, locale) === message,
+        ({ message }) =>
+          !(message in DICTIONARIES[locale].messages) &&
+          translateErrorMessage(message, locale) === message,
       );
       expect(untranslated).toEqual([]);
     },

@@ -2,32 +2,31 @@ import type { LocaleEmailCopy } from './types';
 
 export const copy: LocaleEmailCopy = {
   verification: {
-    subject: 'Confirm your email on Piqo',
-    preheader:
-      'One more step and you can create your group and start your football pool with your friends.',
-    mascotAlt: 'Piqo mascot celebrating',
-    heading: 'Confirm your email address',
-    body: 'Thanks for creating your Piqo account. Confirm your email to activate it, so you can create your group, choose a competition and share the link with your friends.',
-    button: 'Confirm my email',
-    expiry: 'This link expires in 24 hours.',
-    buttonFallback: 'Button not working? Copy and paste this link into your browser:',
-    ignore: "If you didn't create a Piqo account, you can ignore this email.",
+    subject: 'Confirma el teu correu a Piqo',
+    preheader: 'Un pas més i ja pots crear el teu grup i muntar la porra amb la teva colla.',
+    mascotAlt: 'Mascota de Piqo celebrant',
+    heading: 'Confirma el teu correu electrònic',
+    body: 'Gràcies per crear el teu compte a Piqo. Confirma el teu correu per activar-lo i poder crear el teu grup, triar competició i compartir l’enllaç amb la teva colla.',
+    button: 'Confirmar el meu correu',
+    expiry: 'Aquest enllaç caduca en 24 hores.',
+    buttonFallback: 'No et funciona el botó? Copia i enganxa aquest enllaç al navegador:',
+    ignore: 'Si no has creat cap compte a Piqo, pots ignorar aquest correu.',
   },
   reset: {
-    subject: 'Reset your Piqo password',
-    preheader: 'This link to reset your password expires in 60 minutes.',
-    mascotAlt: 'Piqo mascot thinking',
-    heading: 'Forgot your password?',
-    body: 'We received a request to reset the password of your Piqo account. Tap the button below to create a new password.',
-    button: 'Reset password',
-    expiry: 'This link expires in 60 minutes for security.',
-    buttonFallback: 'Button not working? Copy and paste this link into your browser:',
+    subject: 'Restableix la teva contrasenya de Piqo',
+    preheader: 'Aquest enllaç per restablir la teva contrasenya caduca en 60 minuts.',
+    mascotAlt: 'Mascota de Piqo pensant',
+    heading: 'Has oblidat la contrasenya?',
+    body: 'Hem rebut una sol·licitud per restablir la contrasenya del teu compte de Piqo. Prem el botó de sota per crear una contrasenya nova.',
+    button: 'Restablir la contrasenya',
+    expiry: 'Aquest enllaç caduca en 60 minuts per seguretat.',
+    buttonFallback: 'No et funciona el botó? Copia i enganxa aquest enllaç al navegador:',
     ignore:
-      "If you didn't request this change, you can ignore this email: your password will stay the same.",
+      'Si no has sol·licitat aquest canvi, pots ignorar aquest correu: la teva contrasenya continuarà sent la mateixa.',
   },
   footer: {
     tagline:
-      'The app for running a football pool with your group.<br/>No money, no bets and no spreadsheets.',
-    notOperator: 'Piqo is not a gambling operator. Bets and cash prizes are not accepted.',
+      'L’app per fer la porra de futbol amb el teu grup.<br/>Sense diners, sense apostes i sense fulls de càlcul.',
+    notOperator: 'Piqo no és un operador de joc. No s’admeten apostes ni premis en metàl·lic.',
   },
 };

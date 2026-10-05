@@ -2,32 +2,33 @@ import type { LocaleEmailCopy } from './types';
 
 export const copy: LocaleEmailCopy = {
   verification: {
-    subject: 'Confirm your email on Piqo',
+    subject: 'Confirme ton e-mail sur Piqo',
     preheader:
-      'One more step and you can create your group and start your football pool with your friends.',
-    mascotAlt: 'Piqo mascot celebrating',
-    heading: 'Confirm your email address',
-    body: 'Thanks for creating your Piqo account. Confirm your email to activate it, so you can create your group, choose a competition and share the link with your friends.',
-    button: 'Confirm my email',
-    expiry: 'This link expires in 24 hours.',
-    buttonFallback: 'Button not working? Copy and paste this link into your browser:',
-    ignore: "If you didn't create a Piqo account, you can ignore this email.",
+      'Encore une étape et tu pourras créer ton groupe et lancer vos pronos avec ta bande.',
+    mascotAlt: 'Mascotte de Piqo qui fête ça',
+    heading: 'Confirme ton adresse e-mail',
+    body: 'Merci d’avoir créé ton compte Piqo. Confirme ton e-mail pour l’activer et pouvoir créer ton groupe, choisir une compétition et partager le lien avec ta bande.',
+    button: 'Confirmer mon e-mail',
+    expiry: 'Ce lien expire dans 24 heures.',
+    buttonFallback: 'Le bouton ne fonctionne pas ? Copie et colle ce lien dans ton navigateur :',
+    ignore: 'Si tu n’as pas créé de compte Piqo, tu peux ignorer cet e-mail.',
   },
   reset: {
-    subject: 'Reset your Piqo password',
-    preheader: 'This link to reset your password expires in 60 minutes.',
-    mascotAlt: 'Piqo mascot thinking',
-    heading: 'Forgot your password?',
-    body: 'We received a request to reset the password of your Piqo account. Tap the button below to create a new password.',
-    button: 'Reset password',
-    expiry: 'This link expires in 60 minutes for security.',
-    buttonFallback: 'Button not working? Copy and paste this link into your browser:',
+    subject: 'Réinitialise ton mot de passe Piqo',
+    preheader: 'Ce lien pour réinitialiser ton mot de passe expire dans 60 minutes.',
+    mascotAlt: 'Mascotte de Piqo qui réfléchit',
+    heading: 'Mot de passe oublié ?',
+    body: 'Nous avons reçu une demande de réinitialisation du mot de passe de ton compte Piqo. Appuie sur le bouton ci-dessous pour créer un nouveau mot de passe.',
+    button: 'Réinitialiser le mot de passe',
+    expiry: 'Ce lien expire dans 60 minutes, par sécurité.',
+    buttonFallback: 'Le bouton ne fonctionne pas ? Copie et colle ce lien dans ton navigateur :',
     ignore:
-      "If you didn't request this change, you can ignore this email: your password will stay the same.",
+      'Si tu n’as pas fait cette demande, tu peux ignorer cet e-mail : ton mot de passe ne changera pas.',
   },
   footer: {
     tagline:
-      'The app for running a football pool with your group.<br/>No money, no bets and no spreadsheets.',
-    notOperator: 'Piqo is not a gambling operator. Bets and cash prizes are not accepted.',
+      'L’app pour organiser tes pronos de foot avec ton groupe.<br/>Sans argent, sans paris et sans tableurs.',
+    notOperator:
+      'Piqo n’est pas un opérateur de jeux d’argent. Les paris et les gains en espèces ne sont pas admis.',
   },
 };
