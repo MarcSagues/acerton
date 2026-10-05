@@ -1,5 +1,22 @@
 # Estado actual
 
+## 2026-10-05 — Hora de los partidos: horas provisionales del proveedor (fuera de sprint)
+
+Aviso del usuario ("en jornadas sale 11/10 a las 2 de la mañana en todos los partidos"; La Champions bien).
+Causa, solución y matices: `decisions.md` (misma fecha).
+
+**Hecho**: backend (`refreshUnconfirmedKickoffs` + cron horario, arregla los datos **sin build**) y frontend
+(«Hora por confirmar» en vez de las 2:00, **necesita build**). Línea de historial en la 1.0.3.
+
+**Verificado**: tests nuevos (backend: la heurística, el refresco —solo candidatos correctos, sin petición si no hay
+horas provisionales, corrige hora y cierre, no toca nada si el proveedor sigue sin hora, cron que no se cae
+si falla el proveedor—; frontend: la heurística), `tsc`, lint, `ng build` y, en Chromium con la app real y un
+partido con la hora provisional puesta a mano en la base de datos (restaurado), en español e inglés: sale
+«Hora por confirmar» y los demás partidos conservan su hora.
+
+**NO verificado**: contra football-data.org real (sin clave aquí): no sé qué devuelve ahora para La Liga ni si ya
+tiene horas confirmadas; el refresco nuevo lo comprobará cada hora desde que se despliegue.
+
 ## 2026-10-05 — Tabla por jornadas, flecha de "Tu evolución" y contador de insignias (fuera de sprint)
 
 A petición explícita del usuario (tres avisos seguidos al probar la build 1.0.3). Solo frontend;

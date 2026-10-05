@@ -208,6 +208,7 @@ export const es = {
   'currentMatchday.hasMarcadoPronosticosEsta': 'No has marcado pronósticos de esta jornada en tus otros grupos',
   'currentMatchday.hayJornadaAnterior': 'No hay jornada anterior',
   'currentMatchday.hoy': 'Hoy',
+  'currentMatchday.horaPorConfirmar': 'Hora por confirmar',
   'currentMatchday.jornada': '{name} · JORNADA {order}',
   'currentMatchday.jugador': 'Jugador',
   'currentMatchday.momento': 'Un momento…',

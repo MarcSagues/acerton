@@ -6,7 +6,7 @@ import { ScoringMode } from '../../../core/models/group.model';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { drawCircleFill, drawRoundRect, drawText, ellipsizeText, loadCanvasImage, shortInitials } from '../../../shared/canvas-share/canvas-draw.util';
 import { canvasToPngBlob, copyImageBlobToClipboard, shareOrDownloadImageBlob } from '../../../shared/canvas-share/share-image.util';
-import { PredictionSelection, matchAccentTone, pointsForPrediction } from '../domain/prediction-rules';
+import { PredictionSelection, isKickoffTimeTbc, matchAccentTone, pointsForPrediction } from '../domain/prediction-rules';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { currentLocale, t } from '../../../core/i18n/translate';
 
@@ -473,7 +473,9 @@ export class MatchShareCardComponent {
   private kickoffLine(): string {
     const date = new Date(this.data.match.kickoff);
     const day = date.toLocaleDateString(currentLocale(), { weekday: 'short', day: '2-digit', month: '2-digit' });
-    const time = date.toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' });
+    const time = isKickoffTimeTbc(this.data.match.kickoff)
+      ? t('currentMatchday.horaPorConfirmar')
+      : date.toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' });
     return `${day} · ${time}`;
   }
 

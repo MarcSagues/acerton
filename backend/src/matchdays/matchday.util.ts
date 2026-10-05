@@ -135,3 +135,18 @@ export function parseRoundOrder(roundName: string, fallbackIndex: number): numbe
   const match = /-\s*(\d+)\s*$/.exec(roundName.trim());
   return match ? parseInt(match[1], 10) : fallbackIndex;
 }
+
+/**
+ * El proveedor publica la fecha de un partido antes que su hora: mientras la
+ * hora no esta confirmada manda esa fecha a las 00:00:00 UTC (las 2:00 de la
+ * madrugada en España). Ningun partido de las competiciones que seguimos se
+ * juega a esa hora exacta, asi que se toma como "hora por confirmar".
+ */
+export function isKickoffTimeUnconfirmed(kickoff: Date): boolean {
+  return (
+    kickoff.getUTCHours() === 0 &&
+    kickoff.getUTCMinutes() === 0 &&
+    kickoff.getUTCSeconds() === 0 &&
+    kickoff.getUTCMilliseconds() === 0
+  );
+}

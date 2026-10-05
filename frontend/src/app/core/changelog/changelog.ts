@@ -44,6 +44,10 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         en: 'Table: pick a previous matchday to see its standings, weekly or cumulative, in each league.',
       },
       {
+        es: 'Los partidos sin hora confirmada muestran «Hora por confirmar» en vez de las 2:00, y la hora se actualiza sola en cuanto se confirma.',
+        en: 'Matches without a confirmed time now show "Time to be confirmed" instead of 2:00 AM, and the time updates by itself once it is confirmed.',
+      },
+      {
         es: 'Arreglo: el contador de insignias cuenta las distintas, no las repetidas en cada grupo.',
         en: 'Fix: the badge counter now counts distinct badges, not the same one repeated in every group.',
       },

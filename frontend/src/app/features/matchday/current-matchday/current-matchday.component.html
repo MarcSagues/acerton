@@ -166,7 +166,12 @@
               } @else {
                 {{ page.matchDayLabel(match.kickoff) }}
               }
-              · {{ match.kickoff | date: 'HH:mm' }}
+              ·
+              @if (page.isKickoffTimeTbc(match.kickoff)) {
+                {{ 'currentMatchday.horaPorConfirmar' | t }}
+              } @else {
+                {{ match.kickoff | date: 'HH:mm' }}
+              }
             </p>
 
             <div class="teams-row">

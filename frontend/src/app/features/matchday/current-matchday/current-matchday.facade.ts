@@ -32,6 +32,7 @@ import {
   lockedMatchLabel,
   matchAccentTone as domainMatchAccentTone,
   isKickoffToday as domainIsKickoffToday,
+  isKickoffTimeTbc as domainIsKickoffTimeTbc,
   matchDayLabel as domainMatchDayLabel,
   pointsForPrediction,
   predictionLabel,
@@ -780,6 +781,11 @@ export class CurrentMatchdayFacade {
 
   matchDayLabel(kickoff: string): string {
     return domainMatchDayLabel(kickoff, this.now());
+  }
+
+  /** Hora todavia sin confirmar por el proveedor (ver isKickoffTimeTbc): no se enseña una hora inventada. */
+  isKickoffTimeTbc(kickoff: string): boolean {
+    return domainIsKickoffTimeTbc(kickoff);
   }
 
   stateFor(matchId: string): MatchPredictionState {

@@ -141,6 +141,18 @@ export function isKickoffToday(kickoff: string, today: Date): boolean {
   return isSameDay(new Date(kickoff), today);
 }
 
+/**
+ * El proveedor manda las 00:00 UTC (las 2:00 de la madrugada en España) mientras
+ * la hora de un partido no esta confirmada: se enseña "hora por confirmar" en vez
+ * de una hora inventada. Ningun partido que seguimos se juega a esa hora exacta.
+ */
+export function isKickoffTimeTbc(kickoff: string): boolean {
+  const date = new Date(kickoff);
+  return (
+    date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0
+  );
+}
+
 export function matchDayLabel(kickoff: string, today: Date): string {
   const date = new Date(kickoff);
   if (isSameDay(date, today)) return t('currentMatchday.hoy');

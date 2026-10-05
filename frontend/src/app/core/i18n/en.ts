@@ -210,6 +210,7 @@ export const en: Catalog = {
   'currentMatchday.hasMarcadoPronosticosEsta': 'You haven\'t made predictions for this matchday in your other groups',
   'currentMatchday.hayJornadaAnterior': 'There is no previous matchday',
   'currentMatchday.hoy': 'Today',
+  'currentMatchday.horaPorConfirmar': 'Time to be confirmed',
   'currentMatchday.jornada': '{name} · MATCHDAY {order}',
   'currentMatchday.jugador': 'Player',
   'currentMatchday.momento': 'One moment…',

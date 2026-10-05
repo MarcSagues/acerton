@@ -114,6 +114,26 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   /**
+   * Corrige las horas provisionales de los partidos por jugar cuando el
+   * proveedor ya las ha confirmado (ver MatchdaysService.refreshUnconfirmedKickoffs).
+   * Cada hora: no gasta cupo si no queda ninguna hora por confirmar.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async refreshUnconfirmedKickoffs(): Promise<void> {
+    try {
+      const changed = await this.matchdaysService.refreshUnconfirmedKickoffs();
+      if (changed > 0) {
+        this.logger.log(`Horas de partido confirmadas por el proveedor: ${changed} actualizadas`);
+      }
+    } catch (error) {
+      this.logger.error(
+        'Error refrescando las horas provisionales de los partidos',
+        error as Error,
+      );
+    }
+  }
+
+  /**
    * Cuando volver a intentar traer la siguiente ronda de una competicion que
    * no tiene nada por pronosticar (en memoria, por competicion): si el
    * proveedor todavia no la publica (parones, final de temporada) no hace

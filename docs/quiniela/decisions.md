@@ -4,6 +4,34 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-05 — Hora de los partidos: horas provisionales del proveedor (fuera de sprint)
+
+Aviso del usuario: "en jornadas sale 11/10 a las 2 de la mañana en todos los partidos" (La Champions
+salía bien).
+
+**Causa**: mientras la hora de un partido no está confirmada, football-data.org manda la fecha a las
+**00:00:00 UTC** (las 2:00 en España) y la app la tomaba por real. Además `MatchdaysService.syncCurrentRound`
+**no vuelve a pedir una jornada ya importada** (ahorro de cupo del plan gratuito, deliberado), así que
+la hora provisional con la que entró el partido **no se corregía nunca**, aunque el proveedor la
+confirmara después. La Champions salió bien porque ya tenía hora al importarse.
+
+**Cómo queda**:
+- **Backend** (arregla los datos para todas las versiones de la app, sin build): `refreshUnconfirmedKickoffs`
+  (cron cada hora en `JobsService`) busca los partidos por jugar de jornadas abiertas/programadas cuya hora
+  es exactamente las 00:00:00 UTC (`isKickoffTimeUnconfirmed`), los vuelve a pedir al proveedor
+  (`getFixturesByIds`, 1 petición por cada 20) y corrige el `kickoff` y el cierre (`closesAt`) de la jornada
+  si cambia el primer partido. No gasta cupo si no hay horas por confirmar.
+- **Frontend** (necesita build): mientras la hora siga sin confirmar se enseña **«Hora por confirmar»** en
+  vez de las 2:00, en Jornada y en la imagen de compartir (`isKickoffTimeTbc`).
+
+**Matices a confirmar**: la detección es una heurística (ningún partido que seguimos se juega a las 00:00:00
+UTC exactas; el proveedor no nos dice si la hora es provisional en lo que guardamos: `mapStatus` junta
+`SCHEDULED` y `TIMED`); y **mientras la hora es provisional, la jornada se cierra a esa hora** (las 2:00 de
+la madrugada del día del partido): si el proveedor no la confirma antes, se perdería el margen real para
+pronosticar. Alternativa si preocupa: no cerrar un partido con hora provisional hasta el final de ese día.
+Que cierre a la hora provisional también significa que la cuenta atrás "cierra en..." de Jornada es
+orientativa hasta entonces.
+
 ## 2026-10-05 — Tabla: clasificación de jornadas anteriores en cada liga (fuera de sprint)
 
 Petición explícita del usuario: "en clasificación podrías ver la clasificación de cada semana; deberías
