@@ -134,6 +134,23 @@ export class JobsService implements OnApplicationBootstrap {
   }
 
   /**
+   * Trae el nombre corto de los equipos de los partidos que se guardaron sin el
+   * (ver MatchdaysService.backfillTeamShortNames). Cada hora, unos pocos a la vez:
+   * cuando no queda ninguno por rellenar no gasta cupo.
+   */
+  @Cron(CronExpression.EVERY_HOUR)
+  async backfillTeamShortNames(): Promise<void> {
+    try {
+      const filled = await this.matchdaysService.backfillTeamShortNames();
+      if (filled > 0) {
+        this.logger.log(`Nombres cortos de equipos rellenados: ${filled} partidos`);
+      }
+    } catch (error) {
+      this.logger.error('Error rellenando los nombres cortos de los equipos', error as Error);
+    }
+  }
+
+  /**
    * Cuando volver a intentar traer la siguiente ronda de una competicion que
    * no tiene nada por pronosticar (en memoria, por competicion): si el
    * proveedor todavia no la publica (parones, final de temporada) no hace

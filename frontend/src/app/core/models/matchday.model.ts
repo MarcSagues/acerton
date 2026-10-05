@@ -11,6 +11,9 @@ export interface Match {
   awayTeam: string;
   homeTeamLogo: string | null;
   awayTeamLogo: string | null;
+  /** Nombre corto del proveedor ("Barça", "Atleti"); null o ausente si todavía no se ha traído (usar `shortTeamName`). */
+  homeTeamShort?: string | null;
+  awayTeamShort?: string | null;
   kickoff: string;
   status: MatchStatus;
   homeScore: number | null;

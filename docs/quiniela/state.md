@@ -17,6 +17,16 @@ partido con la hora provisional puesta a mano en la base de datos (restaurado), 
 **NO verificado**: contra football-data.org real (sin clave aquí): no sé qué devuelve ahora para La Liga ni si ya
 tiene horas confirmadas; el refresco nuevo lo comprobará cada hora desde que se despliegue.
 
+## 2026-10-05 — Nombre corto de los equipos en las imágenes de compartir (fuera de sprint)
+
+A petición explícita del usuario (ver `decisions.md`, misma fecha). **Hecho**: columnas `homeTeamShort` y
+`awayTeamShort` en `matches` (**migración que hay que aplicar en producción antes de desplegar el
+backend**), mapeo del `shortName` de football-data.org, relleno automático de los partidos ya guardados
+(cron horario) y `shortTeamName` en las dos imágenes de compartir. **Verificado**: tests de backend
+(mapeo con una respuesta real de la API, relleno, cron) y de frontend; en Chromium con datos sembrados
+("Barça · Valencia", "Santander · Osasuna", y el nombre completo si el partido aún no tiene el corto).
+Frontend **necesita build nueva**.
+
 ## 2026-10-05 — Tabla por jornadas: solo en Semanal, orden J1, J2, J3 y 0 puntos si no se jugó (fuera de sprint)
 
 A petición explícita del usuario (ver `decisions.md`, misma fecha). **Hecho**: selector de jornada solo en

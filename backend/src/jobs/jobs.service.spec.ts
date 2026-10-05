@@ -14,6 +14,7 @@ function buildDeps() {
     syncResultsForClosedMatchdays: jest.fn(),
     closeDueMatchdays: jest.fn(),
     refreshUnconfirmedKickoffs: jest.fn(),
+    backfillTeamShortNames: jest.fn(),
   };
   const predictionsService = { scoreFinishedMatchday: jest.fn() };
   const rankingsService = { computeForFinishedMatchday: jest.fn() };
@@ -154,6 +155,24 @@ describe('JobsService.refreshUnconfirmedKickoffs (horas provisionales de los par
     matchdaysService.refreshUnconfirmedKickoffs.mockRejectedValue(new Error('proveedor caido'));
 
     await expect(service.refreshUnconfirmedKickoffs()).resolves.toBeUndefined();
+  });
+});
+
+describe('JobsService.backfillTeamShortNames (nombres cortos de equipos)', () => {
+  it('pide al servicio que rellene los nombres cortos que falten', async () => {
+    const { service, matchdaysService } = buildDeps();
+    matchdaysService.backfillTeamShortNames.mockResolvedValue(12);
+
+    await service.backfillTeamShortNames();
+
+    expect(matchdaysService.backfillTeamShortNames).toHaveBeenCalledTimes(1);
+  });
+
+  it('un fallo del proveedor no tumba el cron: se registra y se sigue', async () => {
+    const { service, matchdaysService } = buildDeps();
+    matchdaysService.backfillTeamShortNames.mockRejectedValue(new Error('proveedor caido'));
+
+    await expect(service.backfillTeamShortNames()).resolves.toBeUndefined();
   });
 });
 

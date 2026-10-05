@@ -9,8 +9,10 @@ roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 Aviso del usuario: "en jornadas sale 11/10 a las 2 de la mañana en todos los partidos" (La Champions
 salía bien).
 
-**Causa**: mientras la hora de un partido no está confirmada, football-data.org manda la fecha a las
-**00:00:00 UTC** (las 2:00 en España) y la app la tomaba por real. Además `MatchdaysService.syncCurrentRound`
+**Causa** (comprobada con una respuesta real de la API, jornada 8 de La Liga, 2026-10-05: ya traía las
+horas reales, estado `TIMED`, última actualización esa misma madrugada, y nuestra BD seguía con las
+provisionales): cuando se importó la jornada la hora aún no estaba confirmada y llegó como las
+**00:00:00 UTC** (las 2:00 en España), que la app tomó por real. Además `MatchdaysService.syncCurrentRound`
 **no vuelve a pedir una jornada ya importada** (ahorro de cupo del plan gratuito, deliberado), así que
 la hora provisional con la que entró el partido **no se corregía nunca**, aunque el proveedor la
 confirmara después. La Champions salió bien porque ya tenía hora al importarse.
@@ -31,6 +33,34 @@ la madrugada del día del partido): si el proveedor no la confirma antes, se per
 pronosticar. Alternativa si preocupa: no cerrar un partido con hora provisional hasta el final de ese día.
 Que cierre a la hora provisional también significa que la cuenta atrás "cierra en..." de Jornada es
 orientativa hasta entonces.
+
+## 2026-10-05 — Nombre corto de los equipos en las imágenes de compartir (fuera de sprint)
+
+Petición explícita del usuario: "¿puedes usar el short name para el canvas de exportar resultados para
+compartir?". football-data.org manda `shortName` ("Barça", "Atleti", "Santander") junto al nombre completo
+("FC Barcelona", "Club Atlético de Madrid", "Real Racing Club de Santander"), que en la imagen de la
+jornada se cortaba con puntos suspensivos.
+
+- **Backend**: dos columnas nuevas en `matches`, `homeTeamShort` y `awayTeamShort` (`VARCHAR(191) NULL`),
+  que se guardan al importar/refrescar un partido (`matchDataFromFixture`). Si el proveedor no da nombre
+  corto se guarda el completo, para que el partido no cuente como "pendiente" y no se pida cada hora. Los
+  partidos ya guardados se rellenan solos: `backfillTeamShortNames` (cron cada hora en `JobsService`) pide al
+  proveedor 40 partidos por pasada, los más recientes primero (2 peticiones/hora como mucho; ninguna si no
+  queda nada por rellenar).
+- **Frontend** (necesita build): `shortTeamName(match, 'home' | 'away')` devuelve el nombre corto o, si el
+  partido aún no lo tiene, el completo. Se usa en las dos imágenes de compartir: la de la jornada
+  (pronósticos y resultados) y la de un partido (nombres, iniciales del círculo y rótulos 1/X/2). El resto
+  de la app, y los textos que acompañan a la imagen al compartir, siguen con el nombre completo.
+
+**MIGRACIÓN en la BD de producción — aplicarla ANTES de desplegar el backend**: Prisma pide todas las
+columnas de `matches` en cada consulta, así que el backend nuevo sin las columnas falla en cualquier
+consulta de partidos. La migración es aditiva y el backend actual la ignora, así que se puede aplicar
+antes sin riesgo (`backend/prisma/migrations/20261005120000_match_team_short_names`):
+
+```sql
+ALTER TABLE `matches` ADD COLUMN `awayTeamShort` VARCHAR(191) NULL,
+    ADD COLUMN `homeTeamShort` VARCHAR(191) NULL;
+```
 
 ## 2026-10-05 — Tabla por jornadas: solo en Semanal, en orden J1, J2, J3 y con 0 puntos si no se jugó (fuera de sprint)
 

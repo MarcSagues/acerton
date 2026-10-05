@@ -489,6 +489,11 @@ model Match {
   awayTeam          String
   homeTeamLogo      String?           @db.VarChar(1024)
   awayTeamLogo      String?           @db.VarChar(1024)
+  /// Nombre corto del proveedor ("Barça", "Atleti") para sitios con poco espacio,
+  /// como las imagenes de compartir. null = todavia no traido: se rellena solo
+  /// (ver MatchdaysService.backfillTeamShortNames) y mientras tanto se usa el nombre completo.
+  homeTeamShort     String?
+  awayTeamShort     String?
   kickoff           DateTime
   status            MatchStatus       @default(SCHEDULED)
   homeScore         Int?

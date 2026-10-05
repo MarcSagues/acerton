@@ -7,6 +7,7 @@ import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { drawCircleFill, drawRoundRect, drawText, ellipsizeText, loadCanvasImage, shortInitials } from '../../../shared/canvas-share/canvas-draw.util';
 import { canvasToPngBlob, copyImageBlobToClipboard, shareOrDownloadImageBlob } from '../../../shared/canvas-share/share-image.util';
 import { PredictionSelection, isKickoffTimeTbc, matchAccentTone, pointsForPrediction } from '../domain/prediction-rules';
+import { shortTeamName } from '../domain/team-name';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { currentLocale, t } from '../../../core/i18n/translate';
 
@@ -295,13 +296,13 @@ export class MatchShareCardComponent {
     const circleCenterY = panelY + 170;
     const homeCircleX = panelX + 88 + circleR;
     const awayCircleX = panelX + panelW - 88 - circleR;
-    this.drawTeamCircle(ctx, match.homeTeam, homeCircleX, circleCenterY, circleR, 'filled');
-    this.drawTeamCircle(ctx, match.awayTeam, awayCircleX, circleCenterY, circleR, 'outline');
+    this.drawTeamCircle(ctx, shortTeamName(match, 'home'), homeCircleX, circleCenterY, circleR, 'filled');
+    this.drawTeamCircle(ctx, shortTeamName(match, 'away'), awayCircleX, circleCenterY, circleR, 'outline');
 
     const nameY = panelY + 330;
     const nameMaxWidth = 320;
-    drawText(ctx, ellipsizeText(ctx, match.homeTeam, nameMaxWidth, '700 40px Manrope'), homeCircleX, nameY, 40, 700, '#f1f0ea', 'Manrope', 0, 'center');
-    drawText(ctx, ellipsizeText(ctx, match.awayTeam, nameMaxWidth, '700 40px Manrope'), awayCircleX, nameY, 40, 700, '#f1f0ea', 'Manrope', 0, 'center');
+    drawText(ctx, ellipsizeText(ctx, shortTeamName(match, 'home'), nameMaxWidth, '700 40px Manrope'), homeCircleX, nameY, 40, 700, '#f1f0ea', 'Manrope', 0, 'center');
+    drawText(ctx, ellipsizeText(ctx, shortTeamName(match, 'away'), nameMaxWidth, '700 40px Manrope'), awayCircleX, nameY, 40, 700, '#f1f0ea', 'Manrope', 0, 'center');
 
     if (finished) {
       const score = match.homeScore == null || match.awayScore == null ? '—' : `${match.homeScore} - ${match.awayScore}`;
@@ -346,7 +347,7 @@ export class MatchShareCardComponent {
       const boxGap = 27;
       const boxW = (contentRight - contentLeft - boxGap * 2) / 3;
       const boxH = 241;
-      const captions: Record<PredictionChoice, string> = { HOME: match.homeTeam, DRAW: t('matchShareCard.empate'), AWAY: match.awayTeam };
+      const captions: Record<PredictionChoice, string> = { HOME: shortTeamName(match, 'home'), DRAW: t('matchShareCard.empate'), AWAY: shortTeamName(match, 'away') };
       ONE_X_TWO_OPTIONS.forEach((option, index) => {
         const boxX = contentLeft + index * (boxW + boxGap);
         const isSelected = covered.includes(option.choice);
