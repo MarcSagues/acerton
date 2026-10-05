@@ -9,6 +9,11 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>es</string>
+		<string>en</string>
+		<string>ca</string>
+		<string>fr</string>
+		<string>it</string>
+		<string>de</string>
 	</array>
 	<key>CFBundleDisplayName</key>
         <string>Piqo</string>

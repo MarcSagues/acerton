@@ -13,9 +13,21 @@
  *   quien juega, no para quien programa ("Puedes copiar...", no "Endpoint nuevo...").
  * - `date` es la de la publicación (AAAA-MM-DD).
  */
+import type { Lang } from '../i18n/translate';
+
 export interface ChangelogChange {
   es: string;
   en: string;
+  /** Opcionales: si falta el del idioma de la app, el pop-up usa el ingles (ver changeText). */
+  ca?: string;
+  fr?: string;
+  it?: string;
+  de?: string;
+}
+
+/** Texto de un cambio en un idioma, o en ingles si todavia no esta traducido a ese. */
+export function changeText(change: ChangelogChange, lang: Lang): string {
+  return change[lang] ?? change.en;
 }
 
 export interface ChangelogEntry {

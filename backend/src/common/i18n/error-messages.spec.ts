@@ -1,8 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
-import { translateErrorMessage } from './error-messages';
-import { resolveLocale } from './locale';
+import { ERROR_PATTERNS, translateErrorMessage } from './error-messages';
+import { LOCALES, Locale, resolveLocale } from './locale';
+import * as dictCa from './messages/ca';
+import * as dictDe from './messages/de';
+import * as dictEn from './messages/en';
+import * as dictFr from './messages/fr';
+import * as dictIt from './messages/it';
+
+const TRANSLATED_LOCALES = LOCALES.filter(
+  (locale): locale is Exclude<Locale, 'es'> => locale !== 'es',
+);
+const DICTIONARIES = { en: dictEn, ca: dictCa, fr: dictFr, it: dictIt, de: dictDe };
 
 const SRC = path.resolve(__dirname, '../..');
 
@@ -55,11 +65,34 @@ describe('translateErrorMessage', () => {
     expect(messages.length).toBeGreaterThan(80);
   });
 
-  it('cada mensaje de error del codigo tiene su traduccion al ingles', () => {
-    const untranslated = messages.filter(
-      ({ message }) => translateErrorMessage(message, 'en') === message,
-    );
-    expect(untranslated).toEqual([]);
+  it.each(TRANSLATED_LOCALES)(
+    'cada mensaje de error del codigo tiene su traduccion (%s)',
+    (locale) => {
+      const untranslated = messages.filter(
+        ({ message }) => translateErrorMessage(message, locale) === message,
+      );
+      expect(untranslated).toEqual([]);
+    },
+  );
+
+  it.each(TRANSLATED_LOCALES)(
+    'el diccionario de %s tiene las mismas claves que el ingles, ni mas ni menos',
+    (locale) => {
+      expect(Object.keys(DICTIONARIES[locale].messages).sort()).toEqual(
+        Object.keys(dictEn.messages).sort(),
+      );
+      expect(Object.keys(DICTIONARIES[locale].patterns).sort()).toEqual(
+        Object.keys(dictEn.patterns).sort(),
+      );
+      expect(Object.keys(dictEn.patterns).sort()).toEqual(ERROR_PATTERNS.map((p) => p.id).sort());
+    },
+  );
+
+  it.each(TRANSLATED_LOCALES)('los mensajes con datos de %s conservan los datos', (locale) => {
+    for (const [id, template] of Object.entries(DICTIONARIES[locale].patterns)) {
+      expect(template).toContain('{1}');
+      expect({ locale, id, ok: !template.includes('{2}') }).toEqual({ locale, id, ok: true });
+    }
   });
 
   it('en espanol devuelve el mensaje original', () => {
@@ -87,13 +120,23 @@ describe('translateErrorMessage', () => {
 });
 
 describe('resolveLocale', () => {
-  it('ingles solo si el primer idioma es ingles', () => {
+  it('usa el primer idioma de la lista si sabemos contestar en el', () => {
     expect(resolveLocale('en')).toBe('en');
     expect(resolveLocale('en-GB,en;q=0.9,es;q=0.8')).toBe('en');
     expect(resolveLocale('EN-us')).toBe('en');
     expect(resolveLocale('es-ES,es;q=0.9,en;q=0.8')).toBe('es');
-    expect(resolveLocale('ca-ES')).toBe('es');
-    expect(resolveLocale('fr')).toBe('es');
+    expect(resolveLocale('ca-ES')).toBe('ca');
+    expect(resolveLocale('fr')).toBe('fr');
+    expect(resolveLocale('fr-CH,fr;q=0.9')).toBe('fr');
+    expect(resolveLocale('it-IT')).toBe('it');
+    expect(resolveLocale('de-AT,de;q=0.8')).toBe('de');
+    expect(resolveLocale('de;q=0.8')).toBe('de');
+  });
+
+  it('un idioma que no tenemos se queda en espanol aunque el segundo si lo tengamos', () => {
+    expect(resolveLocale('pt-BR,en;q=0.8')).toBe('es');
+    expect(resolveLocale('gl')).toBe('es');
+    expect(resolveLocale('deutsch')).toBe('es');
   });
 
   it('sin cabecera, o con una cabecera rara, se queda en espanol', () => {

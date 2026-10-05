@@ -1,19 +1,22 @@
 import { es } from './es';
-import { en } from './en';
 
 /**
  * Traducciones de la interfaz. `es.ts` es la fuente (el idioma original de la
- * app) y define las claves; `en.ts` esta tipado como `Catalog`, asi que si
- * falta una clave —o sobra— no compila.
+ * app) y define las claves; el resto (en, ca, fr, it, de) estan tipados como
+ * `Catalog`, asi que si falta una clave —o sobra— no compila.
  *
  * Es TypeScript puro (sin Angular) a proposito: lo usan tambien las reglas de
  * dominio y las constantes de modulo, que se evaluan al importar. Por eso el
  * idioma se decide una sola vez al cargar este modulo y cambiarlo recarga la
  * app (ver I18nService.setLanguage): un unico estado, sin tener que
  * reaccionar a cambios de idioma en caliente.
+ *
+ * Solo el espanol va en el paquete inicial: el catalogo del idioma elegido se
+ * descarga antes de arrancar la app (ver language-loader.ts) y se registra con
+ * `registerCatalog`, asi que cuando se evalua cualquier modulo de la app ya esta.
  */
-export type Lang = 'es' | 'en';
-export const SUPPORTED_LANGS: readonly Lang[] = ['es', 'en'];
+export type Lang = 'es' | 'en' | 'ca' | 'fr' | 'it' | 'de';
+export const SUPPORTED_LANGS: readonly Lang[] = ['es', 'en', 'ca', 'fr', 'it', 'de'];
 export const LANG_STORAGE_KEY = 'acerton.lang';
 
 export type TranslationKey = keyof typeof es;
@@ -24,16 +27,30 @@ export type PluralMessage = { one: string; other: string };
 export type Message = string | PluralMessage;
 export type Catalog = Record<TranslationKey, Message>;
 
-const CATALOGS: Record<Lang, Catalog> = { es, en };
+const CATALOGS: Partial<Record<Lang, Catalog>> = { es };
+
+/** Registra el catalogo de un idioma ya descargado (ver language-loader.ts; los tests registran todos). */
+export function registerCatalog(lang: Lang, catalog: Catalog): void {
+  CATALOGS[lang] = catalog;
+}
+
+/** El catalogo de un idioma, si esta registrado. */
+export function catalogOf(lang: Lang): Catalog | undefined {
+  return CATALOGS[lang];
+}
+
+const isSupported = (code: string): code is Lang => (SUPPORTED_LANGS as readonly string[]).includes(code);
 
 /**
  * Idioma guardado por el usuario; si no hay, el primero preferido del
- * dispositivo: ingles solo si es ingles, y cualquier otro (incluidos catalan,
- * gallego o euskera) se queda en espanol, que es el idioma principal de la app.
+ * dispositivo (en, ca, fr, it, de o es, con cualquier region: fr-CH, de-AT...);
+ * cualquier otro (gallego, euskera, portugues...) se queda en espanol, que es el
+ * idioma principal de la app.
  */
 export function detectLanguage(stored: string | null | undefined, preferred: readonly string[]): Lang {
-  if (stored === 'es' || stored === 'en') return stored;
-  return (preferred[0] ?? '').toLowerCase().startsWith('en') ? 'en' : 'es';
+  if (stored && isSupported(stored)) return stored;
+  const primary = (preferred[0] ?? '').toLowerCase().split(/[-_]/)[0];
+  return isSupported(primary) ? primary : 'es';
 }
 
 function readStoredLanguage(): string | null {
@@ -55,9 +72,12 @@ export function currentLang(): Lang {
   return current;
 }
 
-/** Locale de Intl / DatePipe para el idioma actual (en-GB: dia/mes, como el espanol). */
+/** Locale de Intl / DatePipe de cada idioma (en-GB: dia/mes, como el espanol). */
+const LOCALES: Record<Lang, string> = { es: 'es-ES', en: 'en-GB', ca: 'ca-ES', fr: 'fr-FR', it: 'it-IT', de: 'de-DE' };
+
+/** Locale de Intl / DatePipe para el idioma actual. */
 export function currentLocale(): string {
-  return current === 'en' ? 'en-GB' : 'es-ES';
+  return LOCALES[current];
 }
 
 /** Guarda la eleccion para el proximo arranque. No cambia el idioma en caliente: ver I18nService.setLanguage. */
@@ -80,11 +100,8 @@ function pluralCategory(count: unknown): 'one' | 'other' {
 }
 
 export function t(key: TranslationKey, params?: Params): string {
-  const message: Message = CATALOGS[current][key] ?? CATALOGS.es[key] ?? key;
+  const message: Message = CATALOGS[current]?.[key] ?? es[key] ?? key;
   const text = typeof message === 'string' ? message : message[pluralCategory(params?.['count'])];
   if (!params) return text;
   return text.replace(/\{(\w+)\}/g, (placeholder, name: string) => (name in params ? String(params[name] ?? '') : placeholder));
 }
-
-/** Los dos catalogos, para los tests de coherencia entre idiomas. */
-export const CATALOGS_FOR_TESTS = CATALOGS;
