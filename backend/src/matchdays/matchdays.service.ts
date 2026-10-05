@@ -8,6 +8,7 @@ import {
 } from '../football-data/football-provider.interface';
 import {
   computeMatchResult,
+  isKickoffTimeUnconfirmed,
   isMatchPredictable,
   parseRoundOrder,
   shouldCloseMatchday,
@@ -77,6 +78,61 @@ export class MatchdaysService {
 
     const existingCount = await this.prisma.matchday.count({ where: { competitionId } });
     return this.persistRoundFixtures(competition, fixtures, existingCount);
+  }
+
+  /**
+   * Vuelve a pedir al proveedor los partidos por jugar cuya hora todavia es
+   * provisional (ver isKickoffTimeUnconfirmed) y corrige su kickoff, y el cierre
+   * de la jornada si cambia el primer partido. Hace falta porque syncCurrentRound
+   * no vuelve a pedir una jornada ya importada (ahorro deliberado de cupo): sin
+   * esto, la hora provisional con la que entro un partido se quedaba para siempre
+   * aunque el proveedor la confirmara despues (2026-10-05: toda una jornada de La
+   * Liga a las 2:00). Solo gasta cupo mientras haya horas por confirmar: una
+   * peticion por cada 20 partidos. Devuelve cuantos partidos cambiaron de hora.
+   */
+  async refreshUnconfirmedKickoffs(now = new Date()): Promise<number> {
+    const candidates = await this.prisma.match.findMany({
+      where: {
+        status: 'SCHEDULED',
+        kickoff: { gt: now },
+        matchday: { status: { in: ['SCHEDULED', 'OPEN'] } },
+      },
+      select: { externalId: true, matchdayId: true, kickoff: true },
+    });
+    const unconfirmed = candidates.filter((match) => isKickoffTimeUnconfirmed(match.kickoff));
+    if (unconfirmed.length === 0) {
+      return 0;
+    }
+
+    const fixtures = await this.footballProvider.getFixturesByIds(
+      unconfirmed.map((match) => match.externalId),
+    );
+    const matchdaysToRefresh = new Set<string>();
+    let changed = 0;
+    for (const fixture of fixtures) {
+      const known = unconfirmed.find((match) => match.externalId === fixture.fixtureId);
+      if (!known || fixture.kickoff.getTime() === known.kickoff.getTime()) {
+        continue;
+      }
+      await this.updateMatchResult(fixture);
+      matchdaysToRefresh.add(known.matchdayId);
+      changed += 1;
+    }
+
+    for (const matchdayId of matchdaysToRefresh) {
+      const first = await this.prisma.match.findFirst({
+        where: { matchdayId },
+        orderBy: { kickoff: 'asc' },
+        select: { kickoff: true },
+      });
+      if (first) {
+        await this.prisma.matchday.update({
+          where: { id: matchdayId },
+          data: { closesAt: first.kickoff },
+        });
+      }
+    }
+    return changed;
   }
 
   /**

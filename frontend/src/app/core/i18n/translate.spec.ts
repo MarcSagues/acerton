@@ -18,6 +18,13 @@ describe('i18n — catalogos', () => {
     expect(mismatches).toEqual([]);
   });
 
+  it('ningún texto lleva entidades HTML (&rarr;, &amp;...): los catálogos no se decodifican y saldrían tal cual', () => {
+    const withEntity = keys.filter((key) =>
+      [es[key], en[key]].some((message) => /&(#\d+|#x[\da-f]+|[a-z]+);/i.test(typeof message === 'string' ? message : `${message.one} ${message.other}`)),
+    );
+    expect(withEntity).toEqual([]);
+  });
+
   it('un mensaje con plural lo es en los dos idiomas y con las dos formas rellenas', () => {
     for (const key of keys) {
       expect(typeof en[key]).withContext(key).toBe(typeof es[key]);

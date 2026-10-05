@@ -15,6 +15,7 @@ function buildPrismaMock(overrides: Record<string, unknown> = {}) {
     },
     match: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       upsert: jest.fn(),
       count: jest.fn(),
@@ -875,5 +876,115 @@ describe('MatchdaysService.ensureUpcomingMatchday (siempre una jornada con algo 
       .mockResolvedValueOnce({ id: 'md-38', order: 38, name: 'Regular Season - 38' });
 
     expect(await service.ensureUpcomingMatchday('c1')).toBe(false);
+  });
+});
+
+describe('MatchdaysService.refreshUnconfirmedKickoffs (horas provisionales)', () => {
+  const now = new Date('2026-10-05T10:00:00Z');
+  const placeholder = new Date('2026-10-11T00:00:00Z'); // 2:00 en España
+  const real = (hour: number) => new Date(`2026-10-11T${String(hour).padStart(2, '0')}:00:00Z`);
+
+  function build(
+    candidates: Array<{ externalId: number; matchdayId: string; kickoff: Date }>,
+    fixtures: unknown[],
+  ) {
+    const prisma = buildPrismaMock();
+    prisma.match.findMany.mockResolvedValue(candidates);
+    prisma.match.findFirst.mockResolvedValue(null);
+    const provider = { getFixturesByIds: jest.fn().mockResolvedValue(fixtures) };
+    const service = new MatchdaysService(prisma as never, provider as never);
+    return { prisma, provider, service };
+  }
+
+  const fixture = (fixtureId: number, kickoff: Date) => ({
+    fixtureId,
+    kickoff,
+    status: 'SCHEDULED',
+    homeTeam: { name: 'A', logoUrl: null },
+    awayTeam: { name: 'B', logoUrl: null },
+    homeGoals: null,
+    awayGoals: null,
+  });
+
+  it('busca solo partidos por jugar de jornadas abiertas o programadas y con kickoff futuro', async () => {
+    const { prisma, service } = build([], []);
+
+    await service.refreshUnconfirmedKickoffs(now);
+
+    expect(prisma.match.findMany).toHaveBeenCalledWith({
+      where: {
+        status: 'SCHEDULED',
+        kickoff: { gt: now },
+        matchday: { status: { in: ['SCHEDULED', 'OPEN'] } },
+      },
+      select: { externalId: true, matchdayId: true, kickoff: true },
+    });
+  });
+
+  it('sin horas provisionales no gasta ninguna peticion al proveedor', async () => {
+    const { provider, service } = build(
+      [{ externalId: 1, matchdayId: 'md1', kickoff: real(19) }],
+      [],
+    );
+
+    expect(await service.refreshUnconfirmedKickoffs(now)).toBe(0);
+    expect(provider.getFixturesByIds).not.toHaveBeenCalled();
+  });
+
+  it('corrige la hora de los partidos que el proveedor ya ha confirmado y el cierre de la jornada', async () => {
+    const { prisma, provider, service } = build(
+      [
+        { externalId: 1, matchdayId: 'md1', kickoff: placeholder },
+        { externalId: 2, matchdayId: 'md1', kickoff: placeholder },
+        { externalId: 3, matchdayId: 'md1', kickoff: real(19) }, // ya confirmado: ni se pregunta
+      ],
+      [fixture(1, real(14)), fixture(2, real(21))],
+    );
+    prisma.match.findFirst.mockResolvedValue({ kickoff: real(14) });
+
+    const changed = await service.refreshUnconfirmedKickoffs(now);
+
+    expect(changed).toBe(2);
+    expect(provider.getFixturesByIds).toHaveBeenCalledWith([1, 2]);
+    expect(prisma.match.update).toHaveBeenCalledTimes(2);
+    expect(prisma.match.update).toHaveBeenCalledWith({
+      where: { externalId: 1 },
+      data: expect.objectContaining({ kickoff: real(14) }),
+    });
+    expect(prisma.matchday.update).toHaveBeenCalledTimes(1);
+    expect(prisma.matchday.update).toHaveBeenCalledWith({
+      where: { id: 'md1' },
+      data: { closesAt: real(14) },
+    });
+  });
+
+  it('si el proveedor sigue sin hora (la misma provisional), no toca nada', async () => {
+    const { prisma, service } = build(
+      [{ externalId: 1, matchdayId: 'md1', kickoff: placeholder }],
+      [fixture(1, placeholder)],
+    );
+
+    expect(await service.refreshUnconfirmedKickoffs(now)).toBe(0);
+    expect(prisma.match.update).not.toHaveBeenCalled();
+    expect(prisma.matchday.update).not.toHaveBeenCalled();
+  });
+
+  it('solo recalcula el cierre de las jornadas cuyos partidos cambiaron', async () => {
+    const { prisma, service } = build(
+      [
+        { externalId: 1, matchdayId: 'md1', kickoff: placeholder },
+        { externalId: 2, matchdayId: 'md2', kickoff: placeholder },
+      ],
+      [fixture(1, real(16)), fixture(2, placeholder)],
+    );
+    prisma.match.findFirst.mockResolvedValue({ kickoff: real(16) });
+
+    await service.refreshUnconfirmedKickoffs(now);
+
+    expect(prisma.matchday.update).toHaveBeenCalledTimes(1);
+    expect(prisma.matchday.update).toHaveBeenCalledWith({
+      where: { id: 'md1' },
+      data: { closesAt: real(16) },
+    });
   });
 });

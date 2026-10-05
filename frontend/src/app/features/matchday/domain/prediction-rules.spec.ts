@@ -2,6 +2,7 @@ import { Match } from '../../../core/models/matchday.model';
 import {
   PredictionSelection,
   exactScorePoints,
+  isKickoffTimeTbc,
   isMatchPredictable,
   isPredictionHit,
   matchAccentTone,
@@ -75,3 +76,17 @@ describe('prediction rules', () => {
     expect(matchAccentTone(match(), miss, true)).toBe('miss');
   });
 });
+
+describe('isKickoffTimeTbc (hora por confirmar)', () => {
+  it('las 00:00 UTC (las 2:00 en España) son la hora provisional del proveedor', () => {
+    expect(isKickoffTimeTbc('2026-10-11T00:00:00.000Z')).toBeTrue();
+    expect(isKickoffTimeTbc('2026-10-11T00:00:00Z')).toBeTrue();
+  });
+
+  it('una hora real no lo es', () => {
+    expect(isKickoffTimeTbc('2026-10-11T19:00:00Z')).toBeFalse();
+    expect(isKickoffTimeTbc('2026-10-11T00:30:00Z')).toBeFalse();
+    expect(isKickoffTimeTbc('2026-10-11T20:00:00.500Z')).toBeFalse();
+  });
+});
+

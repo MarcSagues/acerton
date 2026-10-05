@@ -133,6 +133,11 @@ correspondiente; no introducir desempates nuevos sin consultarlo.
 - El contador junto al nombre suma exclusivamente primeros premios
   generales de grupo ganados en solitario.
 - Mostrar contador en Tabla y Perfil, oculto si vale cero.
+- En Tabla, dentro de cada liga, se puede elegir una jornada ya finalizada y ver su
+  clasificación: **semanal** (lo que se puntuó en ella) o **total** (lo acumulado hasta
+  ella). Por defecto, la última. No hay selector en la vista "General" (cada liga tiene
+  su propio calendario). Viendo una jornada anterior no se enseñan subidas/bajadas de
+  puesto y tocar a un jugador abre sus quinielas de esa jornada.
 - Los premios de competición no incrementan ese contador.
 - Premios identificados por grupo, temporada, categoría y posición.
 - No duplicar premios al repetir cierres o recalcular.
