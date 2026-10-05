@@ -22,7 +22,9 @@ justo para dejar el campo enfocado encima del teclado; también al pasar de un c
 teclado ya abierto. Al cerrarse se quita el hueco. No toca `resize: 'none'`, así que la barra inferior
 sigue sin subir. Android no cambia (su WebView sí se redimensiona).
 
-**Esto SÍ necesita una build nueva de la app** (es frontend).
+**Esto SÍ necesita una build nueva de la app** (es frontend). Sale en la **1.0.3** junto con el arreglo del
+pop-up de nivel (que ya funciona sin build, ver abajo): es la primera versión posterior a la 1.0.2, que
+ya estaba cerrada.
 
 ## 2026-10-05 — El pop-up de "subiste de nivel" sale una sola vez, y lo deja leído el servidor (sustituye una regla de Sprint 14)
 
@@ -75,7 +77,10 @@ línea por cambio visible, en es y en) está en `CLAUDE.md`.
    se apunta la versión. Un usuario que ya jugaba y actualiza desde una versión sin este aviso
    sí lo ve (con la entrada de la versión instalada).
 2. **Se saltó una versión** (1.0.2 → 1.0.4): se enseñan las novedades de todas las del
-   medio, con cabecera por versión; sin versión guardada, solo la instalada.
+   medio, con cabecera por versión. Sin versión guardada (usuario que ya jugaba y actualiza desde
+   una versión sin este aviso) se cuenta desde la 1.0.1, la última sin pop-up
+   (`LAST_VERSION_WITHOUT_WHATS_NEW`): quien pasa de la 1.0.1 a la 1.0.3 ve los cambios de la 1.0.2
+   y de la 1.0.3 (cambiado el 2026-10-05 al subir a la 1.0.3; antes solo veía la instalada).
 3. **Build más antigua que la guardada** (se reinstala una anterior): no sale nada y no se
    pisa la versión guardada.
 4. **Versión sin entrada en el historial**: no sale nada (se apunta y se sigue).

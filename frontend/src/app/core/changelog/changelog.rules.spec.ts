@@ -49,8 +49,9 @@ describe('decideWhatsNew', () => {
     expect(shownVersions('1.0.2', '1.0.1')).toEqual(['1.0.2']);
   });
 
-  it('sin versión previa guardada (se actualiza desde una versión sin este aviso): solo la instalada', () => {
-    expect(shownVersions('1.1.0', null)).toEqual(['1.1.0']);
+  it('sin versión previa guardada (se actualiza desde una versión sin este aviso): todo lo posterior a la 1.0.1', () => {
+    expect(shownVersions('1.1.0', null)).toEqual(['1.1.0', '1.0.2']);
+    expect(shownVersions('1.2.0', null)).toEqual(['1.2.0', '1.1.0', '1.0.2']);
   });
 
   it('un usuario nuevo sin versión previa: se apunta la versión y no se enseña nada', () => {
@@ -67,6 +68,6 @@ describe('decideWhatsNew', () => {
 
   it('una versión sin entrada en el historial ni novedades entre medias se apunta y no se enseña nada', () => {
     expect(decide('1.0.3', '1.0.2')).toEqual({ action: 'remember' });
-    expect(decide('9.9.9', null)).toEqual({ action: 'remember' });
+    expect(decide('1.0.1', null)).toEqual({ action: 'remember' });
   });
 });

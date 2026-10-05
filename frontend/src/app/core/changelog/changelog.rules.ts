@@ -17,6 +17,13 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
+/**
+ * Última versión publicada SIN el pop-up de novedades (la 1.0.1). Quien abre la
+ * app sin ninguna versión guardada y no es un usuario nuevo viene de esa o de
+ * otra anterior, así que se le enseña todo lo que ha cambiado desde ella.
+ */
+export const LAST_VERSION_WITHOUT_WHATS_NEW = '1.0.1';
+
 export type WhatsNewDecision =
   | { action: 'none' }
   /** Apuntar la versión como vista sin enseñar nada. */
@@ -40,9 +47,9 @@ export interface WhatsNewInput {
  * - nunca se decidió y es un usuario nuevo: apuntar la versión sin enseñar nada;
  * - versión nueva con novedades: enseñar las de todas las versiones entre la
  *   última vista (excluida) y la instalada (incluida), por si se saltó alguna.
- *   Si no hay última vista (se actualiza desde una versión sin este aviso) solo
- *   la instalada, porque no se sabe desde cuál se viene;
- * - versión nueva sin entrada en el historial: apuntarla y seguir.
+ *   Sin última vista (se actualiza desde una versión sin este aviso) se cuenta
+ *   desde LAST_VERSION_WITHOUT_WHATS_NEW;
+ * - versión nueva sin ninguna entrada que enseñar: apuntarla y seguir.
  */
 export function decideWhatsNew(input: WhatsNewInput): WhatsNewDecision {
   const { changelog, currentVersion, lastSeenVersion, isNewUser } = input;
@@ -52,10 +59,9 @@ export function decideWhatsNew(input: WhatsNewInput): WhatsNewDecision {
     return { action: 'remember' };
   }
 
+  const since = lastSeenVersion ?? LAST_VERSION_WITHOUT_WHATS_NEW;
   const entries = changelog.filter(
-    (entry) =>
-      compareVersions(entry.version, currentVersion) <= 0 &&
-      (lastSeenVersion === null ? entry.version === currentVersion : compareVersions(entry.version, lastSeenVersion) > 0),
+    (entry) => compareVersions(entry.version, since) > 0 && compareVersions(entry.version, currentVersion) <= 0,
   );
   return entries.length > 0 ? { action: 'show', entries } : { action: 'remember' };
 }

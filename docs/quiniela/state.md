@@ -3,8 +3,8 @@
 ## 2026-10-05 — Teclado en iOS: el último marcador ya no queda tapado (fuera de sprint)
 
 A petición explícita del usuario. Causa, solución y matices: `decisions.md` (misma fecha). Solo
-frontend (`KeyboardInsetService`, `styles.scss`); **necesita build nueva**. Se añadió una línea al
-historial de la 1.0.2 (`changelog.ts`) para este arreglo y otra para el del pop-up de nivel.
+frontend (`KeyboardInsetService`, `styles.scss`); **necesita build nueva**. Versión **1.0.3** (nueva entrada
+arriba en `changelog.ts` con este arreglo y el del pop-up de nivel, y `MARKETING_VERSION` 1.0.3).
 
 **Verificado**: 8 tests nuevos (cálculo del desplazamiento; con una página larga y un campo al final:
 sube hasta dejarlo encima del teclado y la barra "Listo", también al cambiar de campo, quita el hueco al

@@ -28,6 +28,20 @@ export interface ChangelogEntry {
 /** De la más nueva a la más antigua. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    version: '1.0.3',
+    date: '2026-10-05',
+    changes: [
+      {
+        es: 'Al escribir un resultado exacto, la pantalla sube para que el último partido no quede tapado por el teclado.',
+        en: "When you type an exact score, the screen scrolls up so the last match isn't hidden behind the keyboard.",
+      },
+      {
+        es: 'Arreglo: el aviso de subida de nivel sale una sola vez.',
+        en: 'Fix: the level-up notice now appears only once.',
+      },
+    ],
+  },
+  {
     version: '1.0.2',
     date: '2026-10-05',
     changes: [
@@ -58,14 +72,6 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
       {
         es: 'Arreglo: las insignias con el progreso ya completo se conceden aunque no se hubieran iluminado.',
         en: 'Fix: badges whose progress was already complete are now awarded even if they had not lit up.',
-      },
-      {
-        es: 'Al escribir un resultado exacto, la pantalla sube para que el último partido no quede tapado por el teclado.',
-        en: "When you type an exact score, the screen scrolls up so the last match isn't hidden behind the keyboard.",
-      },
-      {
-        es: 'Arreglo: el aviso de subida de nivel sale una sola vez.',
-        en: 'Fix: the level-up notice now appears only once.',
       },
       {
         es: 'Novedad: este aviso. La primera vez que abras una versión nueva verás aquí lo que ha cambiado.',
