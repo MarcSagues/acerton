@@ -5,7 +5,7 @@
 A petición explícita del usuario (ver `decisions.md`, misma fecha). **Hecho**: cuatro idiomas nuevos en
 interfaz (853 textos cada uno), errores del servidor (58 + 3 con datos), correos y novedades de versión;
 selector en Perfil > Apariencia, detección del dispositivo y carga del idioma bajo demanda (paquete inicial
-587 → 406 kB). Versión **1.0.4**. **Verificado**: backend 438 tests, frontend 143 (coherencia de claves,
+587 → 406 kB). Dentro de la **1.0.3**. **Verificado**: backend 438 tests, frontend 143 (coherencia de claves,
 marcadores, plurales y saltos de línea en los cinco idiomas, detección, locale), `ng build` de producción;
 en Chromium: detección por idioma del dispositivo, descarga solo del idioma usado, cambio de idioma desde
 Perfil > Apariencia, 19 pantallas por idioma sin textos cortados ni desbordes (tras acortar dos rótulos en
