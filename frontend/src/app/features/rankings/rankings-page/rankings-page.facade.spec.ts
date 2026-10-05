@@ -176,29 +176,45 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
   }
 
+  /** Pasa a la clasificacion semanal (la unica con selector de jornada) y atiende su peticion. */
+  function viewWeekly(facade: RankingsPageFacade): void {
+    facade.setPeriod('WEEKLY');
+    http.expectOne(rankingUrl('g1')).flush([]);
+  }
+
   afterEach(() => http.verify());
 
-  it('con jornadas finalizadas ofrece elegirlas, la ultima seleccionada', () => {
+  it('en Total nunca hay selector de jornadas: es siempre el acumulado de ahora', () => {
     const facade = setup();
     loadWithHistory();
 
+    expect(facade.period()).toBe('TOTAL');
+    expect(facade.showMatchdayPicker()).toBeFalse();
+  });
+
+  it('en Semanal ofrece las jornadas finalizadas en orden cronologico, la ultima seleccionada', () => {
+    const facade = setup();
+    loadWithHistory();
+    viewWeekly(facade);
+
     expect(facade.showMatchdayPicker()).toBeTrue();
-    expect(facade.finishedMatchdays().map((md) => md.order)).toEqual([7, 6, 5]);
+    expect(facade.matchdayChips().map((md) => md.order)).toEqual([5, 6, 7]);
     expect(facade.isMatchdaySelected('m7')).toBeTrue();
     expect(facade.isMatchdaySelected('m6')).toBeFalse();
     expect(facade.viewingPastMatchday()).toBeFalse();
   });
 
-  it('elegir una jornada anterior pide la clasificacion de ESA jornada', () => {
+  it('elegir una jornada anterior pide lo puntuado en ESA jornada', () => {
     const facade = setup();
     loadWithHistory();
+    viewWeekly(facade);
 
     facade.selectMatchday('m6');
 
     const request = http.expectOne(rankingUrl('g1'));
     expect(request.request.params.get('matchdayId')).toBe('m6');
     expect(request.request.params.get('scope')).toBe('laliga');
-    expect(request.request.params.get('period')).toBe('TOTAL');
+    expect(request.request.params.get('period')).toBe('WEEKLY');
     request.flush([{ userId: 'u1', points: 9, position: 1 }]);
     expect(facade.rows().length).toBe(1);
     expect(facade.viewingPastMatchday()).toBeTrue();
@@ -210,6 +226,7 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
   it('volver a la ultima jornada usa la vista de siempre (sin matchdayId)', () => {
     const facade = setup();
     loadWithHistory();
+    viewWeekly(facade);
     facade.selectMatchday('m5');
     http.expectOne(rankingUrl('g1')).flush([]);
 
@@ -221,19 +238,32 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     expect(facade.viewingPastMatchday()).toBeFalse();
   });
 
-  it('cambiar entre semanal y total mantiene la jornada elegida y no vuelve a pedir las jornadas', () => {
+  it('pasar a Total deja la clasificacion de ahora, sin ninguna jornada anterior elegida', () => {
     const facade = setup();
     loadWithHistory();
+    viewWeekly(facade);
     facade.selectMatchday('m6');
     http.expectOne(rankingUrl('g1')).flush([]);
 
-    facade.setPeriod('WEEKLY');
+    facade.setPeriod('TOTAL');
 
     const request = http.expectOne(rankingUrl('g1'));
-    expect(request.request.params.get('period')).toBe('WEEKLY');
-    expect(request.request.params.get('matchdayId')).toBe('m6');
+    expect(request.request.params.get('period')).toBe('TOTAL');
+    expect(request.request.params.has('matchdayId')).toBeFalse();
     request.flush([]);
+    expect(facade.viewingPastMatchday()).toBeFalse();
+    expect(facade.showMatchdayPicker()).toBeFalse();
     http.expectNone((req) => req.url.endsWith('/rankings/history'));
+  });
+
+  it('en Total no se puede elegir una jornada anterior', () => {
+    const facade = setup();
+    loadWithHistory();
+
+    facade.selectMatchday('m6');
+
+    http.expectNone(rankingUrl('g1'));
+    expect(facade.viewingPastMatchday()).toBeFalse();
   });
 
   it('cambiar de competicion reinicia la jornada y pide las jornadas de la nueva', () => {
@@ -242,9 +272,10 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     http.expectOne(`${API}/groups/g1/seasons`).flush([]);
     expect(facade.showMatchdayPicker()).toBeFalse(); // vista general: sin jornadas
 
-    facade.setScope('laliga');
+    facade.setPeriod('WEEKLY'); // la semanal no tiene vista general: pasa a la primera competicion
     http.expectOne(rankingUrl('g1')).flush([]);
     http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
+    expect(facade.showMatchdayPicker()).toBeTrue();
     facade.selectMatchday('m6');
     http.expectOne(rankingUrl('g1')).flush([]);
 
@@ -259,6 +290,7 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
   it('una respuesta tardia de una jornada ya abandonada no pisa la actual', () => {
     const facade = setup();
     loadWithHistory();
+    viewWeekly(facade);
 
     facade.selectMatchday('m6');
     const first = http.expectOne(rankingUrl('g1'));
@@ -274,6 +306,7 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
   it('tocar a un jugador viendo una jornada anterior abre sus quinielas de ESA jornada, sin preguntar al servidor', () => {
     const facade = setup();
     loadWithHistory();
+    viewWeekly(facade);
     facade.selectMatchday('m6');
     http.expectOne(rankingUrl('g1')).flush([]);
 

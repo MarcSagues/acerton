@@ -9,8 +9,10 @@ roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 Aviso del usuario: "en jornadas sale 11/10 a las 2 de la mañana en todos los partidos" (La Champions
 salía bien).
 
-**Causa**: mientras la hora de un partido no está confirmada, football-data.org manda la fecha a las
-**00:00:00 UTC** (las 2:00 en España) y la app la tomaba por real. Además `MatchdaysService.syncCurrentRound`
+**Causa** (comprobada con una respuesta real de la API, jornada 8 de La Liga, 2026-10-05: ya traía las
+horas reales, estado `TIMED`, última actualización esa misma madrugada, y nuestra BD seguía con las
+provisionales): cuando se importó la jornada la hora aún no estaba confirmada y llegó como las
+**00:00:00 UTC** (las 2:00 en España), que la app tomó por real. Además `MatchdaysService.syncCurrentRound`
 **no vuelve a pedir una jornada ya importada** (ahorro de cupo del plan gratuito, deliberado), así que
 la hora provisional con la que entró el partido **no se corregía nunca**, aunque el proveedor la
 confirmara después. La Champions salió bien porque ya tenía hora al importarse.
@@ -32,6 +34,51 @@ pronosticar. Alternativa si preocupa: no cerrar un partido con hora provisional 
 Que cierre a la hora provisional también significa que la cuenta atrás "cierra en..." de Jornada es
 orientativa hasta entonces.
 
+## 2026-10-05 — Nombre corto de los equipos en las imágenes de compartir (fuera de sprint)
+
+Petición explícita del usuario: "¿puedes usar el short name para el canvas de exportar resultados para
+compartir?". football-data.org manda `shortName` ("Barça", "Atleti", "Santander") junto al nombre completo
+("FC Barcelona", "Club Atlético de Madrid", "Real Racing Club de Santander"), que en la imagen de la
+jornada se cortaba con puntos suspensivos.
+
+- **Backend**: dos columnas nuevas en `matches`, `homeTeamShort` y `awayTeamShort` (`VARCHAR(191) NULL`),
+  que se guardan al importar/refrescar un partido (`matchDataFromFixture`). Si el proveedor no da nombre
+  corto se guarda el completo, para que el partido no cuente como "pendiente" y no se pida cada hora. Los
+  partidos ya guardados se rellenan solos: `backfillTeamShortNames` (cron cada hora en `JobsService`) pide al
+  proveedor 40 partidos por pasada, los más recientes primero (2 peticiones/hora como mucho; ninguna si no
+  queda nada por rellenar).
+- **Frontend** (necesita build): `shortTeamName(match, 'home' | 'away')` devuelve el nombre corto o, si el
+  partido aún no lo tiene, el completo. Se usa en las dos imágenes de compartir: la de la jornada
+  (pronósticos y resultados) y la de un partido (nombres, iniciales del círculo y rótulos 1/X/2). El resto
+  de la app, y los textos que acompañan a la imagen al compartir, siguen con el nombre completo.
+
+**MIGRACIÓN en la BD de producción — aplicarla ANTES de desplegar el backend**: Prisma pide todas las
+columnas de `matches` en cada consulta, así que el backend nuevo sin las columnas falla en cualquier
+consulta de partidos. La migración es aditiva y el backend actual la ignora, así que se puede aplicar
+antes sin riesgo (`backend/prisma/migrations/20261005120000_match_team_short_names`):
+
+```sql
+ALTER TABLE `matches` ADD COLUMN `awayTeamShort` VARCHAR(191) NULL,
+    ADD COLUMN `homeTeamShort` VARCHAR(191) NULL;
+```
+
+## 2026-10-05 — Tabla por jornadas: solo en Semanal, en orden J1, J2, J3 y con 0 puntos si no se jugó (fuera de sprint)
+
+Petición explícita del usuario, tras probar la primera versión: "en total nunca debe salir el historial de
+otras jornadas, y cuando sale, debe salir en orden cronológico (J1, J2, J3), y si esa jornada no se
+jugaba, se le ponen todos 0 puntos y ya está". **Sustituye** las decisiones 1 (vale para semanal y total)
+de la entrada siguiente.
+
+- **Solo en Semanal**: en Total no hay selector y pasar a Total vuelve a la clasificación de ahora
+  (`showMatchdayPicker` exige periodo semanal; `selectMatchday` no hace nada en Total).
+- **Orden cronológico** (`matchdayChips`, por número de jornada ascendente): la elegida por defecto es la
+  última, que queda a la derecha; la fila se desplaza para centrarla.
+- **Jornada no jugada = todos a 0** (backend, `getRankingForMatchday`): quien no tiene fila en esa
+  jornada (grupo creado después, nadie pronosticó, o jugador que entró después) sale con 0 puntos; los
+  empates a 0 comparten puesto. Se listan los miembros actuales del grupo.
+
+**Necesita build nueva** (frontend); lo de los 0 puntos lo da el backend al desplegar.
+
 ## 2026-10-05 — Tabla: clasificación de jornadas anteriores en cada liga (fuera de sprint)
 
 Petición explícita del usuario: "en clasificación podrías ver la clasificación de cada semana; deberías
@@ -45,8 +92,7 @@ vuelve a la vista de siempre. `RankingsPageFacade.selectMatchday`.
 
 **Decisiones tomadas por defecto (a confirmar por el usuario):**
 
-1. Vale para **Semanal y Total**: semanal = lo puntuado en esa jornada; total = acumulado hasta esa
-   jornada. Cambiar entre una y otra mantiene la jornada elegida.
+1. ~~Vale para Semanal y Total~~ — sustituido: ahora solo en Semanal (ver la entrada anterior, misma fecha).
 2. **Solo por liga**: en "General" no hay selector. Cambiar de liga vuelve a la última jornada.
 3. Viendo una jornada anterior **no se enseñan subidas/bajadas de puesto** (el backend no las calcula
    para una jornada concreta) y el resumen "Tú" dice "Jornada N" en vez de "Esta semana".

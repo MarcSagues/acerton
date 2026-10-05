@@ -136,6 +136,33 @@ export class MatchdaysService {
   }
 
   /**
+   * Rellena el nombre corto de los equipos de partidos ya guardados antes de que
+   * se guardara (columnas homeTeamShort/awayTeamShort a null): primero los mas
+   * recientes, `limit` por pasada (una peticion por cada 20) para no gastar cupo.
+   * Desde que se guarda al importar, solo hace falta para lo que ya habia. Devuelve
+   * cuantos partidos se han rellenado.
+   */
+  async backfillTeamShortNames(limit = 40): Promise<number> {
+    const missing = await this.prisma.match.findMany({
+      where: { OR: [{ homeTeamShort: null }, { awayTeamShort: null }] },
+      orderBy: { kickoff: 'desc' },
+      take: limit,
+      select: { externalId: true },
+    });
+    if (missing.length === 0) {
+      return 0;
+    }
+
+    const fixtures = await this.footballProvider.getFixturesByIds(
+      missing.map((match) => match.externalId),
+    );
+    for (const fixture of fixtures) {
+      await this.updateMatchResult(fixture);
+    }
+    return fixtures.length;
+  }
+
+  /**
    * true si alguna jornada pendiente de la competicion todavia tiene un
    * partido por empezar (SCHEDULED y con kickoff futuro): hay algo que
    * pronosticar ahora mismo. Una sola consulta de conteo, pensada para
@@ -330,6 +357,10 @@ export class MatchdaysService {
       awayTeam: fixture.awayTeam.name,
       homeTeamLogo: fixture.homeTeam.logoUrl,
       awayTeamLogo: fixture.awayTeam.logoUrl,
+      // Si el proveedor no da nombre corto se guarda el completo: asi el partido
+      // deja de contar como "pendiente de traer" para backfillTeamShortNames.
+      homeTeamShort: fixture.homeTeam.shortName ?? fixture.homeTeam.name,
+      awayTeamShort: fixture.awayTeam.shortName ?? fixture.awayTeam.name,
       kickoff: fixture.kickoff,
       status: fixture.status,
       homeScore: fixture.homeGoals,

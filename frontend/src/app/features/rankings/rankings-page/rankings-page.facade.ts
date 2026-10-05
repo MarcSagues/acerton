@@ -60,8 +60,16 @@ export class RankingsPageFacade {
   readonly myRow = computed(() => this.rows().find((r) => r.userId === this.currentUserId) ?? null);
   /** Solo tiene sentido por competicion: cada una tiene su propio calendario de jornadas, no hay "jornada combinada" en la vista general. */
   readonly showEvolution = computed(() => this.period() === 'TOTAL' && this.scope() !== 'general');
-  /** Selector de jornada: solo por competicion (en la vista general no hay jornadas) y si ya hay alguna finalizada. */
-  readonly showMatchdayPicker = computed(() => this.scope() !== 'general' && this.finishedMatchdays().length > 0);
+  /**
+   * Selector de jornada: solo en la clasificacion semanal (en "Total" no hay
+   * historial de jornadas: es siempre el acumulado de ahora), por competicion
+   * (en la vista general no hay jornadas) y si ya hay alguna finalizada.
+   */
+  readonly showMatchdayPicker = computed(
+    () => this.period() === 'WEEKLY' && this.scope() !== 'general' && this.finishedMatchdays().length > 0,
+  );
+  /** Las jornadas del selector en orden cronologico (J1, J2, J3...). */
+  readonly matchdayChips = computed(() => [...this.finishedMatchdays()].sort((a, b) => a.order - b.order));
   /** true si se esta viendo una jornada anterior a la ultima. */
   readonly viewingPastMatchday = computed(() => this.selectedMatchdayId() !== null);
   readonly selectedMatchdayOrder = computed(
@@ -130,6 +138,8 @@ export class RankingsPageFacade {
 
   setPeriod(period: RankingPeriod): void {
     this.period.set(period);
+    // "Total" es siempre el acumulado de ahora: no se queda ninguna jornada anterior elegida.
+    if (period === 'TOTAL') this.selectedMatchdayId.set(null);
     // La clasificacion semanal general no existe (cada competicion tiene su
     // propio calendario de jornadas): al elegir "Semanal" estando en
     // "General" se cambia a la primera competicion activa en vez de dejar
@@ -150,11 +160,12 @@ export class RankingsPageFacade {
   }
 
   /**
-   * Ver la clasificacion de una jornada anterior (semanal: lo que se puntuo en
-   * ella; total: lo acumulado hasta ella). Elegir la ultima vuelve a la vista de
-   * siempre, que ademas muestra cuantos puestos se ha subido o bajado.
+   * Ver lo que se puntuo en una jornada anterior (solo en la clasificacion
+   * semanal). Elegir la ultima vuelve a la vista de siempre, que ademas muestra
+   * cuantos puestos se ha subido o bajado.
    */
   selectMatchday(matchdayId: string): void {
+    if (this.period() !== 'WEEKLY') return;
     const latestId = this.finishedMatchdays()[0]?.matchdayId ?? null;
     this.selectedMatchdayId.set(matchdayId === latestId ? null : matchdayId);
     const groupId = this.activeGroupService.activeId();

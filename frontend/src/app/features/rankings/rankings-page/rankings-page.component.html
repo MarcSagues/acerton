@@ -37,7 +37,7 @@
 
     @if (page.showMatchdayPicker()) {
       <div class="comp-pills md-pills" role="group" [attr.aria-label]="'common.elegirJornada' | t">
-        @for (md of page.finishedMatchdays(); track md.matchdayId) {
+        @for (md of page.matchdayChips(); track md.matchdayId) {
           <button type="button" class="comp-pill" [class.active]="page.isMatchdaySelected(md.matchdayId)" (click)="page.selectMatchday(md.matchdayId)">
             {{ 'common.jornadaAbrev' | t: { order: md.order } }}
           </button>

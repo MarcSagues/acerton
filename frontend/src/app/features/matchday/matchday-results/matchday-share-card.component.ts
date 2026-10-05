@@ -8,6 +8,7 @@ import { drawCircleFill, drawRoundRect, drawText, ellipsizeText, loadCanvasImage
 import { canvasToPngBlob, copyImageBlobToClipboard, shareOrDownloadImageBlob } from '../../../shared/canvas-share/share-image.util';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { t } from '../../../core/i18n/translate';
+import { shortTeamName } from '../domain/team-name';
 
 export interface ShareCardData {
   matchday: Matchday;
@@ -367,7 +368,7 @@ export class MatchdayShareCardComponent {
     this.roundRect(ctx, x, y, width, height, 15, 'rgba(241,240,234,.05)');
 
     const midY = y + height * 0.61;
-    const teams = this.ellipsize(ctx, `${match.homeTeam} · ${match.awayTeam}`, width - 164, '600 17px Inter');
+    const teams = this.ellipsize(ctx, `${shortTeamName(match, 'home')} · ${shortTeamName(match, 'away')}`, width - 164, '600 17px Inter');
     this.text(ctx, teams, x + 18, midY, 17, 600, '#f1f0ea', 'Inter');
 
     if (this.data.variant === 'results') {

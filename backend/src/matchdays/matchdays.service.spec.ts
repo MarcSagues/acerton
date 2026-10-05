@@ -174,8 +174,8 @@ describe('MatchdaysService.getAdjacentMatchday', () => {
           fixtureId: 1,
           round: 'Regular Season - 5',
           kickoff: new Date('2026-02-01T20:00:00Z'),
-          homeTeam: { name: 'A', logoUrl: null },
-          awayTeam: { name: 'B', logoUrl: null },
+          homeTeam: { name: 'A', shortName: null, logoUrl: null },
+          awayTeam: { name: 'B', shortName: null, logoUrl: null },
           status: 'FINISHED',
           homeGoals: 2,
           awayGoals: 1,
@@ -231,8 +231,8 @@ describe('MatchdaysService.getAdjacentMatchday', () => {
           fixtureId: 1,
           round: 'Regular Season - 6',
           kickoff: new Date('2026-04-01T20:00:00Z'),
-          homeTeam: { name: 'A', logoUrl: null },
-          awayTeam: { name: 'B', logoUrl: null },
+          homeTeam: { name: 'A', shortName: null, logoUrl: null },
+          awayTeam: { name: 'B', shortName: null, logoUrl: null },
           status: 'SCHEDULED',
           homeGoals: null,
           awayGoals: null,
@@ -775,8 +775,8 @@ describe('MatchdaysService.ensureUpcomingMatchday (siempre una jornada con algo 
     round,
     kickoff: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
     status: 'SCHEDULED',
-    homeTeam: { name: 'Local', logoUrl: null },
-    awayTeam: { name: 'Visitante', logoUrl: null },
+    homeTeam: { name: 'Local', shortName: null, logoUrl: null },
+    awayTeam: { name: 'Visitante', shortName: null, logoUrl: null },
     homeGoals: null,
     awayGoals: null,
   });
@@ -900,8 +900,8 @@ describe('MatchdaysService.refreshUnconfirmedKickoffs (horas provisionales)', ()
     fixtureId,
     kickoff,
     status: 'SCHEDULED',
-    homeTeam: { name: 'A', logoUrl: null },
-    awayTeam: { name: 'B', logoUrl: null },
+    homeTeam: { name: 'A', shortName: null, logoUrl: null },
+    awayTeam: { name: 'B', shortName: null, logoUrl: null },
     homeGoals: null,
     awayGoals: null,
   });
@@ -985,6 +985,79 @@ describe('MatchdaysService.refreshUnconfirmedKickoffs (horas provisionales)', ()
     expect(prisma.matchday.update).toHaveBeenCalledWith({
       where: { id: 'md1' },
       data: { closesAt: real(16) },
+    });
+  });
+});
+
+describe('MatchdaysService.backfillTeamShortNames (nombres cortos)', () => {
+  const fixture = (fixtureId: number, home: string, homeShort: string | null) => ({
+    fixtureId,
+    kickoff: new Date('2026-10-10T16:30:00Z'),
+    status: 'SCHEDULED',
+    homeTeam: { name: home, shortName: homeShort, logoUrl: null },
+    awayTeam: { name: 'Getafe CF', shortName: 'Getafe', logoUrl: null },
+    homeGoals: null,
+    awayGoals: null,
+  });
+
+  function build(missing: Array<{ externalId: number }>, fixtures: unknown[]) {
+    const prisma = buildPrismaMock();
+    prisma.match.findMany.mockResolvedValue(missing);
+    const provider = { getFixturesByIds: jest.fn().mockResolvedValue(fixtures) };
+    const service = new MatchdaysService(prisma as never, provider as never);
+    return { prisma, provider, service };
+  }
+
+  it('sin partidos por rellenar no pide nada al proveedor', async () => {
+    const { provider, service } = build([], []);
+
+    expect(await service.backfillTeamShortNames()).toBe(0);
+    expect(provider.getFixturesByIds).not.toHaveBeenCalled();
+  });
+
+  it('busca los mas recientes primero, con tope por pasada', async () => {
+    const { prisma, service } = build([], []);
+
+    await service.backfillTeamShortNames(25);
+
+    expect(prisma.match.findMany).toHaveBeenCalledWith({
+      where: { OR: [{ homeTeamShort: null }, { awayTeamShort: null }] },
+      orderBy: { kickoff: 'desc' },
+      take: 25,
+      select: { externalId: true },
+    });
+  });
+
+  it('guarda el nombre corto que da el proveedor', async () => {
+    const { prisma, provider, service } = build(
+      [{ externalId: 564700 }],
+      [fixture(564700, 'FC Barcelona', 'Barça')],
+    );
+
+    expect(await service.backfillTeamShortNames()).toBe(1);
+
+    expect(provider.getFixturesByIds).toHaveBeenCalledWith([564700]);
+    expect(prisma.match.update).toHaveBeenCalledWith({
+      where: { externalId: 564700 },
+      data: expect.objectContaining({
+        homeTeam: 'FC Barcelona',
+        homeTeamShort: 'Barça',
+        awayTeamShort: 'Getafe',
+      }),
+    });
+  });
+
+  it('si el proveedor no da nombre corto guarda el completo, para no volver a pedirlo cada hora', async () => {
+    const { prisma, service } = build(
+      [{ externalId: 1 }],
+      [fixture(1, 'Real Racing Club de Santander', null)],
+    );
+
+    await service.backfillTeamShortNames();
+
+    expect(prisma.match.update).toHaveBeenCalledWith({
+      where: { externalId: 1 },
+      data: expect.objectContaining({ homeTeamShort: 'Real Racing Club de Santander' }),
     });
   });
 });
