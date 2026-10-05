@@ -86,6 +86,15 @@ El idioma original es el español. Para añadir o cambiar un texto de la interfa
 El idioma lo elige el usuario en Perfil > Apariencia (o el del dispositivo si no ha
 elegido) y el frontend lo manda al backend en `Accept-Language`.
 
+## Historial de versiones (novedades)
+
+`frontend/src/app/core/changelog/changelog.ts` es el historial de versiones de la app. La
+primera vez que se abre una versión nueva, un pop-up enseña sus cambios (una vez por
+versión y dispositivo). Cada cambio visible para el usuario añade una línea (en español e
+inglés) a la entrada de arriba; al subir de versión se crea una entrada nueva arriba y se
+pone la misma versión en `MARKETING_VERSION` del proyecto iOS (`node scripts/check-changelog.mjs`
+lo comprueba, también en CI).
+
 ## Tests
 
 ```bash

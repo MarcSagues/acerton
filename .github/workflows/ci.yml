@@ -63,6 +63,11 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit -p tsconfig.app.json
 
+      # El pop-up de novedades solo sale si la version de la entrada de arriba
+      # del historial (changelog.ts) es la del proyecto iOS.
+      - name: Historial de versiones al dia con la version de iOS
+        run: node scripts/check-changelog.mjs
+
       - name: Tests unitarios (Karma + ChromeHeadless)
         working-directory: frontend
         run: npx ng test --watch=false --browsers=ChromeHeadlessCI

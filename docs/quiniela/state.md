@@ -1,5 +1,29 @@
 # Estado actual
 
+## 2026-10-05 — Historial de versiones y pop-up de novedades (fuera de sprint)
+
+A petición explícita del usuario. Misma rama (`claude/dashboard-push-notifications-yo0gk0`,
+reiniciada desde `main` tras fusionar el PR #76). Cómo funciona y decisiones por defecto:
+`decisions.md` (misma fecha); la regla de mantenimiento, en `CLAUDE.md`.
+
+**Hecho**: historial en `core/changelog/changelog.ts` (entrada 1.0.2, es/en),
+`WhatsNewService` + `WhatsNewDialogComponent`, llamada desde `ShellFacade.init`, y
+`scripts/check-changelog.mjs` en CI (versión de arriba del historial = `MARKETING_VERSION`).
+Solo frontend y CI, sin backend ni migraciones.
+
+**Verificado**: `ng build`, 90 tests del frontend (reglas de versión y de cuándo enseñar,
+validación de la estructura del historial, servicio y diálogo en es/en) y el script de CI
+(pasa con 1.0.2 y falla con una versión distinta). De punta a punta en Chromium (375 px,
+claro y oscuro): usuario existente sin versión guardada lo ve una vez y no al recargar,
+con versión anterior guardada vuelve a salir, con una más nueva no sale ni se pisa, en
+inglés sale en inglés, y un usuario sin tutorial hecho no lo ve pero se apunta la versión;
+sin errores de consola.
+
+**NO verificado**: en iOS real (la versión nativa sale de `App.getInfo()`, que solo existe en
+nativo: en web se prueba con la última entrada del historial); Android (ver `decisions.md`).
+En TestFlight, quien ya tenga una build 1.0.2 con esta función solo lo verá la primera vez;
+para volver a verlo hay que reinstalar la app.
+
 ## 2026-10-04 — Inglés en toda la app (fuera de sprint)
 
 A petición explícita del usuario. Misma rama (`claude/dashboard-push-notifications-yo0gk0`),

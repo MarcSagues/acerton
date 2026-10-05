@@ -1,0 +1,24 @@
+<div class="whats-new-dialog">
+  <img class="mascot" src="assets/avatars/mascot/celebrando.png" alt="" aria-hidden="true" />
+  <p class="eyebrow">{{ 'whatsNew.eyebrow' | t }}</p>
+  <h2 class="title">
+    {{ (data.entries.length === 1 ? 'whatsNew.titulo' : 'whatsNew.tituloVarias') | t: { version: data.version } }}
+  </h2>
+
+  <div class="entries">
+    @for (entry of data.entries; track entry.version) {
+      <section class="entry">
+        @if (data.entries.length > 1) {
+          <h3 class="entry-version">{{ 'whatsNew.version' | t: { version: entry.version } }}</h3>
+        }
+        <ul class="changes">
+          @for (change of entry.changes; track $index) {
+            <li>{{ change[lang] }}</li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+
+  <button type="button" class="btn primary" (click)="close()">{{ 'common.entendido' | t }}</button>
+</div>
