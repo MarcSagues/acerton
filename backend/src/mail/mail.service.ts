@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { AppConfig } from '../config/configuration';
 import { Locale } from '../common/i18n/locale';
+import { EMAIL_COPY } from './email-copy';
 
 interface SendParams {
   to: string;
@@ -26,7 +27,7 @@ export class MailService {
   async sendVerificationEmail(to: string, verifyUrl: string, locale: Locale = 'es'): Promise<void> {
     await this.send({
       to,
-      subject: VERIFICATION_COPY[locale].subject,
+      subject: EMAIL_COPY[locale].verification.subject,
       html: verificationEmailHtml(verifyUrl, locale),
     });
   }
@@ -34,7 +35,7 @@ export class MailService {
   async sendPasswordResetEmail(to: string, resetUrl: string, locale: Locale = 'es'): Promise<void> {
     await this.send({
       to,
-      subject: RESET_COPY[locale].subject,
+      subject: EMAIL_COPY[locale].reset.subject,
       html: passwordResetEmailHtml(resetUrl, locale),
     });
   }
@@ -70,85 +71,6 @@ export class MailService {
   }
 }
 
-interface EmailCopy {
-  subject: string;
-  preheader: string;
-  mascotAlt: string;
-  heading: string;
-  body: string;
-  button: string;
-  expiry: string;
-  buttonFallback: string;
-  ignore: string;
-}
-
-const VERIFICATION_COPY: Record<Locale, EmailCopy> = {
-  es: {
-    subject: 'Confirma tu correo en Piqo',
-    preheader: 'Un paso más y ya puedes crear tu grupo y montar la porra con tu peña.',
-    mascotAlt: 'Mascota de Piqo celebrando',
-    heading: 'Confirma tu correo electrónico',
-    body: 'Gracias por crear tu cuenta en Piqo. Confirma tu correo para activarla y poder crear tu grupo, elegir competición y compartir el enlace con tu peña.',
-    button: 'Confirmar mi correo',
-    expiry: 'Este enlace caduca en 24 horas.',
-    buttonFallback: '¿El botón no funciona? Copia y pega este enlace en tu navegador:',
-    ignore: 'Si no has creado una cuenta en Piqo, puedes ignorar este correo.',
-  },
-  en: {
-    subject: 'Confirm your email on Piqo',
-    preheader:
-      'One more step and you can create your group and start your football pool with your friends.',
-    mascotAlt: 'Piqo mascot celebrating',
-    heading: 'Confirm your email address',
-    body: 'Thanks for creating your Piqo account. Confirm your email to activate it, so you can create your group, choose a competition and share the link with your friends.',
-    button: 'Confirm my email',
-    expiry: 'This link expires in 24 hours.',
-    buttonFallback: 'Button not working? Copy and paste this link into your browser:',
-    ignore: "If you didn't create a Piqo account, you can ignore this email.",
-  },
-};
-
-const RESET_COPY: Record<Locale, EmailCopy> = {
-  es: {
-    subject: 'Restablece tu contraseña de Piqo',
-    preheader: 'Este enlace para restablecer tu contraseña caduca en 60 minutos.',
-    mascotAlt: 'Mascota de Piqo pensando',
-    heading: '¿Olvidaste tu contraseña?',
-    body: 'Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Piqo. Pulsa el botón de abajo para crear una nueva contraseña.',
-    button: 'Restablecer contraseña',
-    expiry: 'Este enlace caduca en 60 minutos por seguridad.',
-    buttonFallback: '¿El botón no funciona? Copia y pega este enlace en tu navegador:',
-    ignore:
-      'Si no has solicitado este cambio, puedes ignorar este correo: tu contraseña seguirá siendo la misma.',
-  },
-  en: {
-    subject: 'Reset your Piqo password',
-    preheader: 'This link to reset your password expires in 60 minutes.',
-    mascotAlt: 'Piqo mascot thinking',
-    heading: 'Forgot your password?',
-    body: 'We received a request to reset the password of your Piqo account. Tap the button below to create a new password.',
-    button: 'Reset password',
-    expiry: 'This link expires in 60 minutes for security.',
-    buttonFallback: 'Button not working? Copy and paste this link into your browser:',
-    ignore:
-      "If you didn't request this change, you can ignore this email: your password will stay the same.",
-  },
-};
-
-/** Pie comun a los dos correos. */
-const FOOTER_COPY: Record<Locale, { tagline: string; notOperator: string }> = {
-  es: {
-    tagline:
-      'La app para hacer la porra de fútbol con tu grupo.<br/>Sin dinero, sin apuestas y sin hojas de cálculo.',
-    notOperator: 'Piqo no es un operador de juego. No se admiten apuestas ni premios en metálico.',
-  },
-  en: {
-    tagline:
-      'The app for running a football pool with your group.<br/>No money, no bets and no spreadsheets.',
-    notOperator: 'Piqo is not a gambling operator. Bets and cash prizes are not accepted.',
-  },
-};
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -160,8 +82,8 @@ function escapeHtml(value: string): string {
 /** Igual que verificationEmailHtml, pero para "restablecer contraseña". */
 function passwordResetEmailHtml(resetUrl: string, locale: Locale): string {
   const url = escapeHtml(resetUrl);
-  const c = RESET_COPY[locale];
-  const footer = FOOTER_COPY[locale];
+  const c = EMAIL_COPY[locale].reset;
+  const footer = EMAIL_COPY[locale].footer;
   return `<!DOCTYPE html>
 <html lang="${locale}" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
@@ -339,8 +261,8 @@ function passwordResetEmailHtml(resetUrl: string, locale: Locale): string {
  */
 function verificationEmailHtml(verifyUrl: string, locale: Locale): string {
   const url = escapeHtml(verifyUrl);
-  const c = VERIFICATION_COPY[locale];
-  const footer = FOOTER_COPY[locale];
+  const c = EMAIL_COPY[locale].verification;
+  const footer = EMAIL_COPY[locale].footer;
   return `<!DOCTYPE html>
 <html lang="${locale}" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>

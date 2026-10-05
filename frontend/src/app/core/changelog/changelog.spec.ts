@@ -34,6 +34,13 @@ describe('CHANGELOG (historial de versiones)', () => {
         expect(change.es.trim()).withContext(`${entry.version} es`).not.toBe('');
         expect(change.en.trim()).withContext(`${entry.version} en`).not.toBe('');
         expect(change.en).withContext(`${entry.version}: sin traducir`).not.toBe(change.es);
+        // ca/fr/it/de son opcionales (si faltan, el pop-up usa el ingles), pero si estan, tienen que ser texto de verdad.
+        for (const lang of ['ca', 'fr', 'it', 'de'] as const) {
+          const text = change[lang];
+          if (text === undefined) continue;
+          expect(text.trim()).withContext(`${entry.version} ${lang}`).not.toBe('');
+          expect(text).withContext(`${entry.version} ${lang}: sin traducir`).not.toBe(change.es);
+        }
       }
     }
   });

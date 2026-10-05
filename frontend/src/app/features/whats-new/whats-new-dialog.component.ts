@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { TranslatePipe } from '../../core/i18n/translate.pipe';
 import { currentLang } from '../../core/i18n/translate';
-import { ChangelogEntry } from '../../core/changelog/changelog';
+import { ChangelogChange, ChangelogEntry, changeText } from '../../core/changelog/changelog';
 
 export interface WhatsNewDialogData {
   /** Versión instalada. */
@@ -27,6 +27,10 @@ export class WhatsNewDialogComponent {
   readonly data = inject<WhatsNewDialogData>(DIALOG_DATA);
 
   readonly lang = currentLang();
+
+  text(change: ChangelogChange): string {
+    return changeText(change, this.lang);
+  }
 
   close(): void {
     this.dialogRef.close();

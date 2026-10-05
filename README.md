@@ -71,26 +71,36 @@ Los partidos y resultados se guardan siempre en Postgres (`Matchday`/`Match`); e
 - El limite de football-data.org es por minuto (no diario), asi que el patron de gasto real importa menos aqui que con un plan de cupo diario: con los crons actuales (jornada en curso cada 12h, resultados cada 10 min agrupando en una sola tanda), el numero de peticiones por minuto se queda en 1-2 salvo picos raros con muchas jornadas cerradas simultaneas. Si un grupo activa muchas competiciones con jornadas cerrandose a la vez, vigila los logs (`FootballDataOrgProvider` loguea cada peticion que hace) para confirmar que no te acercas al limite por minuto (cabecera `x-requests-available-minute` en las respuestas).
 - Nota: football-data.org no cubre la UEFA Conference League en ningun plan (ver comentario en `prisma/seed.ts`); esa competicion queda con un `externalId` placeholder y su sincronizacion simplemente no devuelve partidos.
 
-## Idiomas (español e inglés)
+## Idiomas (español, inglés, catalán, francés, italiano y alemán)
 
 El idioma original es el español. Para añadir o cambiar un texto de la interfaz:
 
-1. Añade la clave en `frontend/src/app/core/i18n/es.ts` y su traducción en `en.ts`
-   (`en.ts` está tipado: si falta o sobra una clave, no compila).
+1. Añade la clave en `frontend/src/app/core/i18n/es.ts` y su traducción en `en.ts`, `ca.ts`,
+   `fr.ts`, `it.ts` y `de.ts` (todos están tipados: si falta o sobra una clave, no compila).
 2. En plantillas: `{{ 'seccion.clave' | t }}` o `{{ 'seccion.clave' | t: { name } }}`;
    en TypeScript: `t('seccion.clave', { name })`. Los marcadores son `{name}`, y un
-   mensaje con singular/plural es `{ one: '...', other: '...' }` con el parámetro `count`.
+   mensaje con singular/plural es `{ one: '...', other: '...' }` con el parámetro `count`
+   (en francés el singular también vale para el 0: la forma `one` lleva `{count}`).
 3. Los errores del backend se lanzan en español (`throw new NotFoundException('...')`);
-   su traducción va en `backend/src/common/i18n/error-messages.ts` (un test falla si falta).
+   su traducción va en `backend/src/common/i18n/messages/<idioma>.ts`, uno por idioma
+   (un test falla si falta). Los correos están en `backend/src/mail/email-copy/<idioma>.ts`.
 
 El idioma lo elige el usuario en Perfil > Apariencia (o el del dispositivo si no ha
-elegido) y el frontend lo manda al backend en `Accept-Language`.
+elegido: ca, fr, it, de, en o es, con cualquier región; cualquier otro, español) y el
+frontend lo manda al backend en `Accept-Language`.
+
+Solo el español va en el paquete inicial: el catálogo del idioma elegido (y los datos de
+fechas de Angular) se descargan antes de arrancar la app (`core/i18n/language-loader.ts`,
+`main.ts`), así que el resto del código no sabe nada de cargas asíncronas. Los avisos
+push y los de la pantalla "Avisos" se siguen generando en español (hace falta guardar el
+idioma de cada usuario para cambiarlo).
 
 ## Historial de versiones (novedades)
 
 `frontend/src/app/core/changelog/changelog.ts` es el historial de versiones de la app. La
 primera vez que se abre una versión nueva, un pop-up enseña sus cambios (una vez por
 versión y dispositivo). Cada cambio visible para el usuario añade una línea (en español e
+inglés; catalán, francés, italiano y alemán son opcionales: si falta uno, el pop-up sale en
 inglés) a la entrada de arriba; al subir de versión se crea una entrada nueva arriba y se
 pone la misma versión en `MARKETING_VERSION` del proyecto iOS (`node scripts/check-changelog.mjs`
 lo comprueba, también en CI).

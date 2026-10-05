@@ -13,7 +13,7 @@
         }
         <ul class="changes">
           @for (change of entry.changes; track $index) {
-            <li>{{ change[lang] }}</li>
+            <li>{{ text(change) }}</li>
           }
         </ul>
       </section>

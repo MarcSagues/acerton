@@ -4,6 +4,50 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-05 — Catalán, francés, italiano y alemán en toda la app (fuera de sprint)
+
+Petición explícita del usuario: "¿podrías añadir catalán, francés, italiano y alemán?" (a la app entera:
+interfaz, errores del servidor y correos). Ahora hay seis idiomas: es (original), en, ca, fr, it, de.
+
+**Cómo funciona**
+- **Elección y detección**: Perfil > Apariencia ofrece los seis (cada uno con su nombre: Español, English,
+  Català, Français, Italiano, Deutsch). Sin elección guardada manda el primer idioma del dispositivo, con
+  cualquier región (fr-CH, de-AT...); **cambio respecto a antes**: el catalán ya no cae en español (antes
+  solo el inglés se distinguía); gallego, euskera, portugués... siguen en español.
+- **Carga bajo demanda**: solo el español va en el paquete inicial; el catálogo del idioma elegido (~15 kB
+  comprimidos) y los datos de fechas de Angular se descargan antes de arrancar la app
+  (`core/i18n/language-loader.ts`, `main.ts` importa la app después). `translate.ts` guarda un registro de
+  catálogos (`registerCatalog`); `t()` sigue siendo síncrono. Paquete inicial: 587 kB → 406 kB. Los tests
+  registran todos los idiomas (`test-setup.ts`, tras `test-language.ts`, que fija el idioma antes de que
+  se cargue `translate.ts`).
+- **Backend**: `Locale` con seis valores; `resolveLocale` usa el primer idioma de `Accept-Language` si es uno
+  de ellos. Errores en `common/i18n/messages/<idioma>.ts` (un fichero por idioma; el spec comprueba que
+  cada mensaje del código está en todos) y correos en `mail/email-copy/<idioma>.ts`.
+- **Historial de versiones**: `es` y `en` siguen siendo obligatorios; `ca/fr/it/de` son **opcionales** (si
+  falta uno, el pop-up sale en inglés, `changeText`) para no cargar cada cambio futuro con cuatro
+  traducciones. Las líneas existentes sí están en los seis. Entrada nueva **1.0.4** (la 1.0.3 ya se había
+  construido y se estaba preparando para la tienda): `MARKETING_VERSION` = 1.0.4.
+- **iOS**: `CFBundleLocalizations` lista los seis (así el sistema le pasa a la web view el idioma del
+  móvil). El texto del permiso de seguimiento (`NSUserTrackingUsageDescription`) sigue en español.
+- **Maquetación**: títulos (`h1`-`h3`) con `overflow-wrap: break-word` y `hyphens: auto` (alemán:
+  "Mitteilungseinstellungen"). Recorrido de 19 pantallas por idioma a 375 px, buscando textos cortados,
+  desbordes y claves sin traducir: solo salieron dos rótulos largos en alemán, acortados.
+
+**Cómo se tradujo**: un traductor (agente) por idioma, partiendo del español y con el inglés como apoyo, con
+glosario propio y registro informal ("tu", "du"); validación automática (mismas claves, mismos `{marcadores}`,
+mismos saltos de línea, sin entidades HTML, forma `one` con `{count}` en francés porque allí el 0 es singular).
+**Nadie nativo los ha revisado.** Decisiones de criterio que conviene que mire una persona de cada idioma:
+- it: «Quiniela 1X2» → **Schedina** (boleto de apuestas en italiano, igual que "quiniela" en español);
+  «Pica» → «Sfotti»; insignias reformuladas (In forma, Centurione, Pieno, Multicampionato, Instancabile).
+- fr: «Semanal» → **Hebdo** (pestaña); «Quiniela 1X2» → Pronostic 1X2; «Pica» → «Chambre»; comodín → joker.
+- de: «Quiniela» → 1X2-Tipp; comodín → Joker; abreviatura de jornada **ST** (Spieltag).
+- ca: «piques» / «Pica’ls» (sin equivalente limpio); «Quiniela 1X2» se mantiene.
+- Abreviaturas de jornada: J (ca, fr), G (it), ST (de), MD (en), J (es).
+- Frases montadas con trozos (`soporte.*`, `authPage.continuar...`, `rulesAndPrizes.*`) revisadas en pantalla.
+
+**Pendiente**: avisos push y de la pantalla "Avisos" (siguen en español; hace falta `users.locale`), el
+dashboard (solo español), el permiso de seguimiento de iOS, y los textos de la ficha de la App Store (a mano).
+
 ## 2026-10-05 — Hora de los partidos: horas provisionales del proveedor (fuera de sprint)
 
 Aviso del usuario: "en jornadas sale 11/10 a las 2 de la mañana en todos los partidos" (La Champions
