@@ -65,6 +65,72 @@ export class MatchdaysService {
   }
 
   /**
+   * true si alguna jornada pendiente de la competicion todavia tiene un
+   * partido por empezar (SCHEDULED y con kickoff futuro): hay algo que
+   * pronosticar ahora mismo. Una sola consulta de conteo, pensada para
+   * ejecutarse a menudo. En dev solo lo usa el Quiz de jornada (portado de main).
+   */
+  async hasPredictableMatch(competitionId: string): Promise<boolean> {
+    const upcoming = await this.prisma.match.count({
+      where: {
+        status: 'SCHEDULED',
+        kickoff: { gt: new Date() },
+        matchday: { competitionId, status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] } },
+      },
+    });
+    return upcoming > 0;
+  }
+
+  /**
+   * Garantiza, en la medida en que el proveedor lo permita, que haya una
+   * jornada con algo por pronosticar (2026-10-04, peticion explicita: "siempre
+   * debe haber una jornada abierta"). Devuelve true si tras la llamada hay
+   * partidos por empezar. Casos:
+   * - Ya los hay: no hace nada (ni consulta al proveedor).
+   * - No queda ninguna jornada pendiente (la anterior acaba de terminar): trae
+   *   la jornada en curso del proveedor, igual que syncCurrentRound.
+   * - Queda una jornada pendiente pero solo con partidos ya empezados (los
+   *   ultimos estan en juego) o el proveedor aun no ha pasado a la
+   *   siguiente: pide ya la siguiente por numero en vez de esperar a que la
+   *   actual termine del todo. Solo en rondas numeradas de liga regular (ver
+   *   syncSpecificRound): en eliminatorias no se adivina el numero.
+   */
+  async ensureUpcomingMatchday(competitionId: string): Promise<boolean> {
+    if (await this.hasPredictableMatch(competitionId)) {
+      return true;
+    }
+    const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
+    if (!competition) {
+      return false;
+    }
+
+    const hasPending = await this.prisma.matchday.findFirst({
+      where: {
+        competitionId,
+        season: competition.currentSeason,
+        status: { in: ['SCHEDULED', 'OPEN', 'CLOSED'] },
+      },
+      select: { id: true },
+    });
+    if (!hasPending) {
+      await this.syncCurrentRound(competitionId);
+      if (await this.hasPredictableMatch(competitionId)) {
+        return true;
+      }
+    }
+
+    const latest = await this.prisma.matchday.findFirst({
+      where: { competitionId, season: competition.currentSeason },
+      orderBy: { order: 'desc' },
+    });
+    if (!latest || parseRoundOrder(latest.name, -1) !== latest.order) {
+      return false;
+    }
+    await this.syncSpecificRound(competitionId, latest.order + 1);
+    return this.hasPredictableMatch(competitionId);
+  }
+
+  /**
    * Jornada anterior/siguiente a una dada, dentro de la misma competicion,
    * ordenada por `order` (numero de jornada) en vez de por closesAt, para
    * que un partido reprogramado antes/despues de su jornada no desordene la
