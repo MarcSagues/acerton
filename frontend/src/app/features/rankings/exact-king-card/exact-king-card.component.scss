@@ -1,0 +1,124 @@
+:host {
+  display: block;
+}
+
+/* Rey del marcador exacto (solo grupos de resultado exacto). */
+.exact-card {
+  margin: 16px 20px 0;
+  border-radius: var(--p4-radius-lg);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  border: 1px solid var(--p4-border);
+  padding: 14px 16px;
+}
+
+.exact-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--p4-accent);
+  margin-bottom: 12px;
+}
+
+.exact-title {
+  flex: 1;
+  font: 700 13.5px/1 var(--p4-font-ui);
+  color: var(--p4-text);
+}
+
+.exact-sub {
+  font-size: 10.5px;
+  color: var(--p4-muted);
+}
+
+.exact-king {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--p4-radius-md);
+  background: linear-gradient(135deg, rgba(210, 190, 148, 0.24), transparent 75%);
+  border: 1px solid rgba(210, 190, 148, 0.45);
+}
+
+.king-icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--p4-soft);
+  color: var(--p4-accent);
+}
+
+.king-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.king-name {
+  font: 700 14px/1.2 var(--p4-font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.king-count {
+  font: 500 11px/1.2 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.king-hits {
+  font: 700 22px/1 var(--p4-font-ui);
+  color: var(--p4-accent);
+}
+
+.exact-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.exact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font: 500 12.5px/1.2 var(--p4-font-ui);
+
+  & + & {
+    border-top: 1px solid var(--p4-border);
+  }
+
+  &.me {
+    font-weight: 700;
+  }
+}
+
+.exact-pos {
+  width: 22px;
+  color: var(--p4-muted);
+}
+
+.exact-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exact-hits {
+  font-weight: 700;
+}
+
+.exact-empty {
+  margin: 0;
+  font: 400 12px/17px var(--p4-font-ui);
+  color: var(--p4-muted);
+}

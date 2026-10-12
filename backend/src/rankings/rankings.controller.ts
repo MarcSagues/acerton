@@ -32,6 +32,22 @@ export class RankingsController {
     return this.rankingsService.getLatestRanking(groupId, query.period, competitionId);
   }
 
+  @Get('exact-scores')
+  async getExactScoreLeaders(
+    @Param('groupId') groupId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: GetRankingQueryDto,
+  ) {
+    await this.groupsService.assertIsMember(groupId, user.id);
+    const competitionId = query.scope === 'general' ? null : query.scope;
+    return this.rankingsService.getExactScoreLeaders(
+      groupId,
+      query.period,
+      competitionId,
+      query.matchdayId,
+    );
+  }
+
   @Get('history')
   async getHistory(
     @Param('groupId') groupId: string,
