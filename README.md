@@ -64,12 +64,18 @@ El backend corre en segundo plano (`@nestjs/schedule`, ver `src/jobs/jobs.servic
 
 ### Cupo de football-data.org (plan gratuito: 10 peticiones/minuto, sin limite diario)
 
-Los partidos y resultados se guardan siempre en Postgres (`Matchday`/`Match`); el proveedor externo solo se consulta para *rellenar* esa cache, nunca se lee en caliente desde los endpoints que usa el frontend. Ademas:
+Los partidos y resultados se guardan siempre en MySQL (`Matchday`/`Match`); el proveedor externo solo se consulta para *rellenar* esa cache, nunca se lee en caliente desde los endpoints que usa el frontend. Ademas:
 
 - **Jornada en curso** (`MatchdaysService.syncCurrentRound`): si ya hay una jornada no finalizada guardada para la temporada, no se vuelve a pedir — solo se pide una jornada nueva cuando la anterior termina (o no hay ninguna todavia). En condiciones normales esto es 0 peticiones la mayoria de las veces que corre el cron.
 - **Resultados** (`MatchdaysService.syncResultsForClosedMatchdays`): junta los partidos pendientes de *todas* las jornadas cerradas (de cualquier competicion) en una sola tanda de peticiones a `/matches?ids=...` (maximo 20 ids por peticion, se trocea si hace falta), en vez de una peticion por jornada. Tambien se salta partidos cuyo kickoff todavia no ha llegado.
-- El limite de football-data.org es por minuto (no diario), asi que el patron de gasto real importa menos aqui que con un plan de cupo diario: con los crons actuales (jornada en curso cada 12h, resultados cada 10 min agrupando en una sola tanda), el numero de peticiones por minuto se queda en 1-2 salvo picos raros con muchas jornadas cerradas simultaneas. Si un grupo activa muchas competiciones con jornadas cerrandose a la vez, vigila los logs (`FootballDataOrgProvider` loguea cada peticion que hace) para confirmar que no te acercas al limite por minuto (cabecera `x-requests-available-minute` en las respuestas).
+- **Cola compartida**: las solicitudes de grupos y quiz global se separan al menos 6,5 segundos dentro del proceso del proveedor; un 429 aplica cooldown segun Retry-After (60 segundos si falta). Con varias replicas o consumidores externos de la misma clave hace falta coordinar el cupo entre procesos.
 - Nota: football-data.org no cubre la UEFA Conference League en ningun plan (ver comentario en `prisma/seed.ts`); esa competicion queda con un `externalId` placeholder y su sincronizacion simplemente no devuelve partidos.
+
+### Quiz global por jornada
+
+El servidor ofrece un evento por liga y jornada, con preguntas variadas y rankings general/por liga independientes de los grupos. API autenticada bajo `/api/quiz`. El quiz se abre al habilitarse esa jornada y se cierra para todos al primer partido de toda la ronda. Las respuestas y puntos viven en tablas propias.
+
+Antes de arrancar el backend nuevo, aplicar la migracion `20261012140000_global_quiz` y regenerar Prisma. Estado, contrato y preparacion para conectar la interfaz: [entrega de backend](docs/quiniela/quiz-jornada-backend-handoff.md) y [plan](docs/quiniela/quiz-jornada-plan.md). La validacion de esta entrega usa una base MySQL local aislada; no modifica produccion.
 
 ## Idiomas (español, inglés, catalán, francés, italiano y alemán)
 
