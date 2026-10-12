@@ -137,47 +137,6 @@
         </div>
       }
 
-      <h2 class="section-title">Desglose por partido</h2>
-      @if (page.visiblePredictions().length === 0) {
-        <p class="empty">
-          {{ page.viewingSelf ? 'No enviaste pronósticos en esta jornada.' : 'No envió pronósticos en esta jornada.' }}
-        </p>
-      } @else {
-        <div class="predictions">
-          @for (prediction of page.visiblePredictions(); track prediction.id) {
-            <div class="pred-card">
-              <div class="pred-top">
-                <span class="pred-match">{{ page.matchLabel(prediction, md) }}</span>
-                <span class="pred-score mono">{{ page.scoreLabel(prediction, md) }}</span>
-              </div>
-              <div class="pred-bottom">
-                @if (page.isMatchPending(prediction, md)) {
-                  <span class="pred-pending mono">Partido todavía sin acabar</span>
-                } @else {
-                  <span class="pred-label">{{ page.viewingSelf ? 'Tu elección' : 'Su elección' }}</span>
-                  <span class="pred-chip mono">{{ page.pickLabel(prediction) }}</span>
-                  @if (page.scoringMode() !== 'EXACT_SCORE') {
-                    <span class="pred-label">· Resultado</span>
-                    <span class="pred-chip pred-chip-real mono">{{ page.realLabel(prediction, md) }}</span>
-                  }
-                  @if (prediction.doubleChanceOption) {
-                    <span class="wc-tag mono">SOS</span>
-                  }
-                  <span
-                    class="pred-result mono"
-                    [class.hit]="(prediction.pointsEarned ?? 0) > 0"
-                    [class.miss]="prediction.pointsEarned === 0"
-                  >
-                    {{ prediction.pointsEarned == null ? '-' : (prediction.pointsEarned > 0 ? '+' + prediction.pointsEarned : prediction.pointsEarned) }}
-                  </span>
-                }
-              </div>
-            </div>
-          }
-        </div>
-        <p class="footnote">Las elecciones de otros jugadores se muestran según las reglas de visibilidad del grupo tras el cierre.</p>
-      }
-
       @if (page.comparisonMembers().length > 1) {
         <h2 class="section-title">Comparativa del grupo</h2>
         <div class="comparison-scroll">
@@ -200,8 +159,12 @@
                   <td class="comparison-match">{{ match.homeTeam }} · {{ match.awayTeam }}</td>
                   @for (member of page.comparisonMembers(); track member.userId) {
                     <td>
-                      <span class="comparison-pick mono" [class]="page.cellClass(page.predictionFor(match.id, member.userId))">
-                        {{ page.cellLabel(page.predictionFor(match.id, member.userId)) }}
+                      @let prediction = page.predictionFor(match.id, member.userId);
+                      <span class="comparison-pick mono" [class]="page.cellClass(prediction)">
+                        {{ page.cellLabel(prediction) }}
+                        @if (prediction?.doublePointsWildcard) {
+                          <span class="x2-badge">x2</span>
+                        }
                       </span>
                     </td>
                   }
@@ -211,9 +174,61 @@
           </table>
         </div>
         <div class="comparison-legend">
+          @if (page.scoringMode() === 'EXACT_SCORE') {
+            <span class="mono"><span class="dot exact"></span>Resultado exacto</span>
+          }
           <span class="mono"><span class="dot hit"></span>Acierto</span>
           <span class="mono"><span class="dot miss"></span>Fallo</span>
+          @if (page.comparisonHasX2()) {
+            <span class="mono"><span class="x2-badge legend-x2">x2</span>Comodín de remontada</span>
+          }
         </div>
+      }
+
+      <h2 class="section-title">Desglose por partido</h2>
+      @if (page.visiblePredictions().length === 0) {
+        <p class="empty">
+          {{ page.viewingSelf ? 'No enviaste pronósticos en esta jornada.' : 'No envió pronósticos en esta jornada.' }}
+        </p>
+      } @else {
+        <div class="predictions">
+          @for (prediction of page.visiblePredictions(); track prediction.id) {
+            <div class="pred-card">
+              <div class="pred-top">
+                <span class="pred-match">{{ page.matchLabel(prediction, md) }}</span>
+                <span class="pred-score mono">{{ page.scoreLabel(prediction, md) }}</span>
+              </div>
+              <div class="pred-bottom">
+                @if (page.isMatchPending(prediction, md)) {
+                  <span class="pred-pending mono">Partido todavía sin acabar</span>
+                } @else {
+                  <span class="pred-label">{{ page.viewingSelf ? 'Tu elección' : 'Su elección' }}</span>
+                  <span class="pred-chip mono">
+                    {{ page.pickLabel(prediction) }}
+                    @if (prediction.doublePointsWildcard) {
+                      <span class="x2-badge">x2</span>
+                    }
+                  </span>
+                  @if (page.scoringMode() !== 'EXACT_SCORE') {
+                    <span class="pred-label">· Resultado</span>
+                    <span class="pred-chip pred-chip-real mono">{{ page.realLabel(prediction, md) }}</span>
+                  }
+                  @if (prediction.doubleChanceOption) {
+                    <span class="wc-tag mono">SOS</span>
+                  }
+                  <span
+                    class="pred-result mono"
+                    [class.hit]="(prediction.pointsEarned ?? 0) > 0"
+                    [class.miss]="prediction.pointsEarned === 0"
+                  >
+                    {{ prediction.pointsEarned == null ? '-' : (prediction.pointsEarned > 0 ? '+' + prediction.pointsEarned : prediction.pointsEarned) }}
+                  </span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+        <p class="footnote">Las elecciones de otros jugadores se muestran según las reglas de visibilidad del grupo tras el cierre.</p>
       }
 
       @if (page.comparisonTooltip(); as tip) {
