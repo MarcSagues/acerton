@@ -133,7 +133,9 @@
                       type="button"
                       role="radio"
                       class="option"
-                      [class.selected]="page.displayedOption(q) === option"
+                      [class.selected]="page.savingOption(q) === null && q.selectedOption === option"
+                      [class.saving]="page.savingOption(q) === option"
+                      [style.--progress]="page.savingOption(q) === option ? page.drawPercent(q) : null"
                       [attr.aria-checked]="page.displayedOption(q) === option"
                       [disabled]="!page.editable() || page.currentSave()?.status === 'saving'"
                       (click)="page.select(option)"
@@ -169,16 +171,9 @@
                   }
                 </div>
 
-                <div class="nav-row">
-                  <button type="button" class="piqo-secondary nav-btn" [disabled]="page.stepIndex() === 0" (click)="page.previous()">
-                    {{ 'quiz.anterior' | t }}
-                  </button>
-                  <button type="button" class="piqo-primary nav-btn" [disabled]="page.currentSave()?.status === 'saving'" (click)="page.next()">
-                    {{ page.isLast() ? ('quiz.verResumen' | t) : ('quiz.siguiente' | t) }}
-                  </button>
-                </div>
                 <button type="button" class="link-btn" (click)="page.showSummary()">{{ 'quiz.verResumen' | t }}</button>
               </section>
+
             }
           }
 
@@ -278,3 +273,22 @@
     }
   }
 </div>
+
+<!--
+  Fuera de .page a proposito: la animacion de entrada de pantalla le deja un
+  transform, y con el un position: fixed quedaria anclado a .page (debajo del
+  contenido) en vez de a las esquinas de la pantalla. Al guardar una opcion se
+  pasa sola a la siguiente: aqui solo volver atras o dejarla para luego.
+-->
+@if (page.loadState() === 'ready' && page.view() === 'question' && page.current()) {
+  <nav class="step-nav" [attr.aria-label]="'quiz.navegacionPreguntas' | t">
+    @if (page.stepIndex() > 0) {
+      <button type="button" class="step-link prev" (click)="page.previous()">
+        <piqo-svg icon="atras" size="16"></piqo-svg>{{ 'quiz.anterior' | t }}
+      </button>
+    }
+    <button type="button" class="step-link next" (click)="page.skip()">
+      {{ 'quiz.saltar' | t }}<piqo-svg icon="flecha" size="16"></piqo-svg>
+    </button>
+  </nav>
+}

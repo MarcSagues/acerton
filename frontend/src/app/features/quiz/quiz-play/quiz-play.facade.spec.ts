@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { quizDetail, quizQuestion, withAnswer } from '../testing/quiz.fixtures';
-import { QuizPlayFacade } from './quiz-play.facade';
+import { AUTO_ADVANCE_MS, DRAW_FINISH_MS, QuizPlayFacade } from './quiz-play.facade';
 
 const API = `${environment.apiUrl}/quiz`;
 const CLOSED = { statusCode: 409, message: 'closed', code: 'QUIZ_CLOSED' };
@@ -50,7 +50,10 @@ describe('QuizPlayFacade', () => {
     expect(facade.answered()).toBe(1);
   });
 
-  it('guarda la eleccion: Guardando mientras va y Guardado con la respuesta del servidor', () => {
+  /** Remate del contorno animado (como el 1X2) y, si se guardo, la pausa antes de pasar sola. */
+  const DRAW_DONE = DRAW_FINISH_MS + 40;
+
+  it('guarda la eleccion: contorno mientras va, Guardado al cerrarse y pasa sola a la siguiente', fakeAsync(() => {
     const facade = loaded();
     const detail = quizDetail();
 
@@ -59,61 +62,110 @@ describe('QuizPlayFacade', () => {
     expect(put.request.method).toBe('PUT');
     expect(put.request.body).toEqual({ answers: [{ questionId: 'qq2', option: 'YES' }] });
     expect(facade.currentSave()?.status).toBe('saving');
-    expect(facade.displayedOption(facade.current()!)).toBe('YES');
+    expect(facade.savingOption(facade.current()!)).toBe('YES');
+    tick(300);
+    expect(parseFloat(facade.drawPercent(facade.current()!))).toBeGreaterThan(0);
 
     put.flush(withAnswer(detail, 'qq2', 'YES'));
+    // El resultado no se aplica hasta que el contorno se ha cerrado del todo.
+    expect(facade.currentSave()?.status).toBe('saving');
+    tick(DRAW_DONE);
     expect(facade.currentSave()?.status).toBe('saved');
     expect(facade.current()?.selectedOption).toBe('YES');
     expect(facade.answered()).toBe(2);
-  });
+    expect(facade.stepIndex()).toBe(1);
 
-  it('si el servidor rechaza el guardado, no se muestra como guardada y se puede reintentar', () => {
+    tick(AUTO_ADVANCE_MS);
+    expect(facade.stepIndex()).toBe(2);
+    discardPeriodicTasks();
+  }));
+
+  it('si el servidor rechaza el guardado, no se marca, no avanza y se puede reintentar', fakeAsync(() => {
     const facade = loaded();
 
     facade.select('NO');
     http.expectOne(`${API}/q1/answers`).flush('boom', { status: 500, statusText: 'Server Error' });
+    tick(DRAW_DONE + AUTO_ADVANCE_MS);
 
     expect(facade.currentSave()?.status).toBe('error');
     expect(facade.displayedOption(facade.current()!)).toBeNull();
     expect(facade.current()?.selectedOption).toBeNull();
+    expect(facade.stepIndex()).toBe(1);
 
     facade.retry('qq2');
     const retry = http.expectOne(`${API}/q1/answers`);
     expect(retry.request.body).toEqual({ answers: [{ questionId: 'qq2', option: 'NO' }] });
     retry.flush(withAnswer(quizDetail(), 'qq2', 'NO'));
+    tick(DRAW_DONE);
     expect(facade.currentSave()?.status).toBe('saved');
-  });
+    tick(AUTO_ADVANCE_MS);
+    expect(facade.stepIndex()).toBe(2);
+    discardPeriodicTasks();
+  }));
 
-  it('sin conexion al guardar lo dice y conserva la respuesta confirmada anterior', () => {
+  it('sin conexion al guardar lo dice y conserva la respuesta confirmada anterior', fakeAsync(() => {
     const facade = loaded();
     facade.previous(); // qq1, ya contestada con HOME
     facade.select('AWAY');
     http.expectOne(`${API}/q1/answers`).error(new ProgressEvent('error'), { status: 0 });
+    tick(DRAW_DONE);
 
     expect(facade.currentSave()?.message).toBe('Sin conexión: no se ha guardado.');
     expect(facade.displayedOption(facade.current()!)).toBe('HOME');
+    discardPeriodicTasks();
+  }));
+
+  it('volver a pulsar la respuesta ya guardada no reenvia nada y pasa a la siguiente', () => {
+    const facade = loaded();
+    facade.previous(); // qq1, ya contestada con HOME
+    facade.select('HOME');
+    http.expectNone(`${API}/q1/answers`);
+    expect(facade.stepIndex()).toBe(1);
   });
 
-  it('las escrituras van en fila: la segunda sale cuando contesta la primera', () => {
+  it('Saltar deja la pregunta sin responder; desde la ultima lleva al resumen', () => {
+    const facade = loaded();
+    facade.skip();
+    expect(facade.stepIndex()).toBe(2);
+    facade.skip();
+    expect(facade.view()).toBe('summary');
+    expect(facade.answered()).toBe(1);
+  });
+
+  it('las escrituras van en fila y un guardado que acaba despues de Saltar no mueve la pregunta actual', fakeAsync(() => {
     const facade = loaded();
     const detail = quizDetail();
 
     facade.select('YES'); // qq2
-    facade.next();
-    expect(facade.stepIndex()).toBe(1); // no avanza mientras guarda
+    facade.skip(); // a qq3 mientras qq2 se guarda
+    expect(facade.stepIndex()).toBe(2);
+    facade.select('NO'); // qq3: espera en la fila
     const first = http.expectOne(`${API}/q1/answers`);
+    expect(first.request.body).toEqual({ answers: [{ questionId: 'qq2', option: 'YES' }] });
     first.flush(withAnswer(detail, 'qq2', 'YES'));
 
-    facade.next();
-    facade.select('NO'); // qq3
     const second = http.expectOne(`${API}/q1/answers`);
     expect(second.request.body).toEqual({ answers: [{ questionId: 'qq3', option: 'NO' }] });
-    second.flush(withAnswer(withAnswer(detail, 'qq2', 'YES'), 'qq3', 'NO'));
+    tick(DRAW_DONE + AUTO_ADVANCE_MS);
+    expect(facade.stepIndex()).toBe(2); // el avance de qq2 no aplica: ya no es la actual
 
+    second.flush(withAnswer(withAnswer(detail, 'qq2', 'YES'), 'qq3', 'NO'));
+    tick(DRAW_DONE + AUTO_ADVANCE_MS);
     expect(facade.allAnswered()).toBe(true);
-    facade.next();
+    expect(facade.view()).toBe('summary'); // era la ultima
+    discardPeriodicTasks();
+  }));
+
+  it('al cambiar una respuesta desde el resumen, al guardarla vuelve al resumen', fakeAsync(() => {
+    const facade = loaded();
+    facade.showSummary();
+    facade.goToQuestion(0);
+    facade.select('AWAY');
+    http.expectOne(`${API}/q1/answers`).flush(withAnswer(quizDetail(), 'qq1', 'AWAY'));
+    tick(DRAW_DONE + AUTO_ADVANCE_MS);
     expect(facade.view()).toBe('summary');
-  });
+    discardPeriodicTasks();
+  }));
 
   it('QUIZ_CLOSED al guardar: avisa, bloquea y ensena solo lo confirmado por el servidor', () => {
     const facade = loaded();

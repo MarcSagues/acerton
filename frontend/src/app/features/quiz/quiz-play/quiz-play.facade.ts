@@ -26,6 +26,11 @@ import {
 } from '../domain/quiz-rules';
 
 export type PlayView = 'intro' | 'question' | 'summary' | 'results';
+
+/** Pausa tras confirmar el guardado antes de pasar sola a la siguiente pregunta (se ve la eleccion rellena). */
+export const AUTO_ADVANCE_MS = 400;
+/** Remate del contorno animado al llegar la respuesta (mismo efecto que los botones 1X2 de Jornada). */
+export const DRAW_FINISH_MS = 180;
 export type PlayLoadState = 'loading' | 'ready' | LoadFailure;
 
 /**
@@ -61,6 +66,15 @@ export class QuizPlayFacade {
   readonly view = signal<PlayView>('question');
   readonly stepIndex = signal(0);
   readonly saveStates = signal<Record<string, SaveState>>({});
+  /**
+   * Contorno animado de la opcion que se esta guardando, de 0 a 100 (%), por
+   * pregunta: avanza hacia un limite mientras se espera y se completa al
+   * llegar la respuesta, como el 1X2 de Jornada (ver CurrentMatchdayFacade.
+   * startDrawProgress). El estado final (Guardado/error) no se aplica hasta
+   * que el contorno se ha cerrado.
+   */
+  readonly drawProgress = signal<Record<string, number>>({});
+  private readonly drawFrames = new Map<string, ReturnType<typeof setTimeout>>();
   /** El quiz se ha cerrado mientras se jugaba (contador o QUIZ_CLOSED al guardar). */
   readonly closedWhilePlaying = signal(false);
   readonly starting = signal(false);
@@ -71,6 +85,9 @@ export class QuizPlayFacade {
   /** Cierre por el que ya se volvio a preguntar al servidor (uno por valor de closesAt). */
   private refreshedClose: string | null = null;
   private refreshing = false;
+  /** Se entro a una pregunta con "Cambiar" desde el resumen: al guardarla se vuelve al resumen. */
+  private returnToSummary = false;
+  private advanceTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Las escrituras van en fila (concatMap): cada respuesta del servidor trae el
@@ -125,7 +142,12 @@ export class QuizPlayFacade {
   init(): void {
     this.load();
     const tick = setInterval(() => this.onTick(), 1000);
-    this.destroyRef.onDestroy(() => clearInterval(tick));
+    this.destroyRef.onDestroy(() => {
+      clearInterval(tick);
+      this.cancelAutoAdvance();
+      for (const frame of this.drawFrames.values()) clearTimeout(frame);
+      this.drawFrames.clear();
+    });
   }
 
   load(): void {
@@ -182,7 +204,11 @@ export class QuizPlayFacade {
     if (!question || !this.editable()) return;
     const state = this.saveStates()[question.id];
     if (state?.status === 'saving') return;
-    if (question.selectedOption === option && state?.status !== 'error') return;
+    // Volver a pulsar la respuesta ya guardada no reenvia nada: solo pasa a la siguiente.
+    if (question.selectedOption === option && state?.status !== 'error') {
+      this.advanceFrom(question.id);
+      return;
+    }
     this.enqueue({ questionId: question.id, option });
   }
 
@@ -194,6 +220,7 @@ export class QuizPlayFacade {
 
   private enqueue(request: WriteRequest): void {
     this.setSaveState(request.questionId, { status: 'saving', option: request.option });
+    this.startDraw(request.questionId);
     this.writes.next(request);
   }
 
@@ -208,25 +235,85 @@ export class QuizPlayFacade {
     const { request } = result;
     if ('detail' in result) {
       this.applyDetail(result.detail);
+      if (!result.detail.canAnswer) {
+        this.stopDraw(request.questionId);
+        this.onClosed();
+        return;
+      }
       const saved = result.detail.questions.find((q) => q.id === request.questionId)?.selectedOption === request.option;
-      this.setSaveState(
-        request.questionId,
-        saved ? { status: 'saved', option: request.option } : { status: 'error', option: request.option, message: t('quiz.errorGuardar') },
-      );
-      if (!result.detail.canAnswer) this.onClosed();
+      this.finishDraw(request.questionId, () => {
+        this.setSaveState(
+          request.questionId,
+          saved ? { status: 'saved', option: request.option } : { status: 'error', option: request.option, message: t('quiz.errorGuardar') },
+        );
+        // Solo tras la confirmacion del servidor: un fallo deja la pregunta delante para reintentar.
+        if (saved) this.scheduleAutoAdvance(request.questionId);
+      });
       return;
     }
     const code = quizErrorCode(result.error.error);
-    this.setSaveState(request.questionId, {
-      status: 'error',
-      option: request.option,
-      message: this.errorText(result.error, code),
-    });
-    if (isClosedError(code)) this.onClosed();
+    const failed: SaveState = { status: 'error', option: request.option, message: this.errorText(result.error, code) };
+    if (isClosedError(code)) {
+      this.stopDraw(request.questionId);
+      this.setSaveState(request.questionId, failed);
+      this.onClosed();
+      return;
+    }
+    this.finishDraw(request.questionId, () => this.setSaveState(request.questionId, failed));
   }
 
   private setSaveState(questionId: string, state: SaveState): void {
     this.saveStates.update((current) => ({ ...current, [questionId]: state }));
+  }
+
+  /** Contorno que se acerca a un limite sin llegar: la duracion real la marca la respuesta. */
+  private startDraw(questionId: string): void {
+    this.stopDraw(questionId);
+    const start = Date.now();
+    const step = () => {
+      const elapsed = Date.now() - start;
+      this.setDraw(questionId, 88 - 88 * Math.exp(-elapsed / 450));
+      this.drawFrames.set(questionId, setTimeout(step, 16));
+    };
+    this.setDraw(questionId, 0);
+    this.drawFrames.set(questionId, setTimeout(step, 16));
+  }
+
+  /** Remata rapido lo que falta del contorno y solo entonces aplica el resultado. */
+  private finishDraw(questionId: string, onDone: () => void): void {
+    this.clearDrawFrame(questionId);
+    const from = this.drawProgress()[questionId] ?? 0;
+    const start = Date.now();
+    const step = () => {
+      const t = Math.min(1, (Date.now() - start) / DRAW_FINISH_MS);
+      this.setDraw(questionId, from + (100 - from) * t);
+      if (t < 1) {
+        this.drawFrames.set(questionId, setTimeout(step, 16));
+        return;
+      }
+      this.stopDraw(questionId);
+      onDone();
+    };
+    this.drawFrames.set(questionId, setTimeout(step, 16));
+  }
+
+  private stopDraw(questionId: string): void {
+    this.clearDrawFrame(questionId);
+    this.drawProgress.update((current) => {
+      const next = { ...current };
+      delete next[questionId];
+      return next;
+    });
+  }
+
+  private clearDrawFrame(questionId: string): void {
+    const frame = this.drawFrames.get(questionId);
+    if (frame !== undefined) clearTimeout(frame);
+    this.drawFrames.delete(questionId);
+  }
+
+  private setDraw(questionId: string, value: number): void {
+    this.drawProgress.update((current) => ({ ...current, [questionId]: value }));
   }
 
   complete(): void {
@@ -281,6 +368,7 @@ export class QuizPlayFacade {
   }
 
   private refresh(): void {
+    for (const questionId of [...this.drawFrames.keys()]) this.stopDraw(questionId);
     if (this.refreshing) return;
     this.refreshing = true;
     this.quizService.getQuiz(this.quizId).subscribe({
@@ -306,8 +394,34 @@ export class QuizPlayFacade {
 
   // ---- Navegacion ------------------------------------------------------------------
 
-  next(): void {
-    if (this.currentSave()?.status === 'saving') return;
+  /** Dejar la pregunta para mas tarde: pasa a la siguiente (o al resumen desde la ultima) sin responder. */
+  skip(): void {
+    this.cancelAutoAdvance();
+    this.returnToSummary = false;
+    this.goForward();
+  }
+
+  previous(): void {
+    this.cancelAutoAdvance();
+    this.returnToSummary = false;
+    if (this.stepIndex() > 0) this.stepIndex.update((i) => i - 1);
+  }
+
+  goToQuestion(index: number): void {
+    if (!this.editable() || index < 0 || index >= this.total()) return;
+    this.cancelAutoAdvance();
+    this.returnToSummary = this.view() === 'summary';
+    this.stepIndex.set(index);
+    this.view.set('question');
+  }
+
+  showSummary(): void {
+    this.cancelAutoAdvance();
+    this.returnToSummary = false;
+    this.view.set('summary');
+  }
+
+  private goForward(): void {
     if (this.isLast()) {
       this.view.set('summary');
       return;
@@ -315,18 +429,35 @@ export class QuizPlayFacade {
     this.stepIndex.update((i) => i + 1);
   }
 
-  previous(): void {
-    if (this.stepIndex() > 0) this.stepIndex.update((i) => i - 1);
+  /**
+   * Avanza solo si se sigue en esa misma pregunta (si ya se salto o se volvio
+   * atras mientras se guardaba, no se mueve nada). Desde "Cambiar" del resumen
+   * se vuelve al resumen.
+   */
+  private advanceFrom(questionId: string): void {
+    this.cancelAutoAdvance();
+    if (this.view() !== 'question' || this.current()?.id !== questionId || !this.editable()) return;
+    if (this.returnToSummary) {
+      this.returnToSummary = false;
+      this.view.set('summary');
+      return;
+    }
+    this.goForward();
   }
 
-  goToQuestion(index: number): void {
-    if (!this.editable() || index < 0 || index >= this.total()) return;
-    this.stepIndex.set(index);
-    this.view.set('question');
+  private scheduleAutoAdvance(questionId: string): void {
+    this.cancelAutoAdvance();
+    this.advanceTimer = setTimeout(() => {
+      this.advanceTimer = null;
+      this.advanceFrom(questionId);
+    }, AUTO_ADVANCE_MS);
   }
 
-  showSummary(): void {
-    this.view.set('summary');
+  private cancelAutoAdvance(): void {
+    if (this.advanceTimer !== null) {
+      clearTimeout(this.advanceTimer);
+      this.advanceTimer = null;
+    }
   }
 
   backToHub(): void {
@@ -339,6 +470,17 @@ export class QuizPlayFacade {
   displayedOption(question: QuizQuestion): QuizOptionCode | null {
     const state = this.saveStates()[question.id];
     return state?.status === 'saving' ? state.option : question.selectedOption;
+  }
+
+  /** La opcion que se esta guardando ahora mismo (lleva el contorno animado), o null. */
+  savingOption(question: QuizQuestion): QuizOptionCode | null {
+    const state = this.saveStates()[question.id];
+    return state?.status === 'saving' ? state.option : null;
+  }
+
+  /** Porcentaje dibujado del contorno de la opcion que se guarda (CSS --progress). */
+  drawPercent(question: QuizQuestion): string {
+    return (this.drawProgress()[question.id] ?? 0) + '%';
   }
 
   /** El ultimo intento de guardar esta pregunta fallo (lo confirmado sigue siendo lo anterior). */
