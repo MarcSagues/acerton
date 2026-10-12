@@ -106,6 +106,9 @@
   --p4-error-bg: #f8e5e8;
   --p4-warning: #805900;
   --p4-warning-bg: #f6ebcf;
+  /* Resultado exacto (comparativa de resultados): dorado suave en claro, como success/error. */
+  --p4-exact: #6f5427;
+  --p4-exact-bg: #efe2c2;
   --p4-info: #285e91;
   --p4-info-bg: #e3edf8;
   --p4-disabled: #788184;
@@ -135,6 +138,8 @@
   --p4-error-bg: #43272e;
   --p4-warning: #e3bd75;
   --p4-warning-bg: #3b321e;
+  --p4-exact: var(--p4-on-accent);
+  --p4-exact-bg: var(--p4-accent-gradient);
   --p4-info: #a4c7ec;
   --p4-info-bg: #203247;
   --p4-disabled: #718083;

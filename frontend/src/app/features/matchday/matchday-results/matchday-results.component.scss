@@ -274,6 +274,7 @@
 }
 
 .pred-chip {
+  position: relative;
   width: 26px;
   height: 26px;
   border-radius: 7px;
@@ -469,6 +470,7 @@
 }
 
 .comparison-pick {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -480,6 +482,12 @@
   font-weight: 700;
   background: var(--p4-disabled-bg);
   color: var(--p4-muted);
+
+  /* Resultado exacto: dorado corporativo, para distinguir los 5 puntos de los 2 del ganador. */
+  &.exact {
+    background: var(--p4-exact-bg);
+    color: var(--p4-exact);
+  }
 
   &.hit {
     background: var(--p4-success-bg);
@@ -498,17 +506,44 @@
   }
 }
 
+/* Comodín x2: insignia en la esquina superior derecha, fuera del texto, para
+   que el chip mida siempre lo mismo. Azul para no confundirse con exacto (dorado), acierto ni fallo. */
+.x2-badge {
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  min-width: 16px;
+  height: 13px;
+  padding: 0 3px;
+  border-radius: 7px;
+  /* Azul claro fijo (el --p4-info de oscuro) en los dos temas. */
+  background: #a4c7ec;
+  color: #121619;
+  box-shadow: 0 0 0 1.5px var(--p4-surface);
+  font: 700 8px/13px var(--p4-font-ui);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* En la leyenda va en línea, no colgada de la esquina de un chip. */
+.x2-badge.legend-x2 {
+  position: static;
+  box-shadow: none;
+}
+
 .comparison-legend {
   padding: 10px 20px 4px;
   display: flex;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 6px 14px;
   font-size: 10px;
   color: var(--p4-muted);
 
-  span {
+  > span {
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    white-space: nowrap;
   }
 }
 
@@ -517,6 +552,10 @@
   height: 8px;
   border-radius: 2px;
   display: inline-block;
+
+  &.exact {
+    background: var(--p4-accent);
+  }
 
   &.hit {
     background: var(--p4-success);
