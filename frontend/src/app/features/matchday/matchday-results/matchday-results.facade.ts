@@ -119,6 +119,9 @@ export class MatchdayResultsFacade {
       .sort((a, b) => a.name.localeCompare(b.name));
   });
 
+  /** Solo se explica el x2 en la leyenda si alguien de la comparativa lo ha usado. */
+  readonly comparisonHasX2 = computed(() => this.allPredictions().some((p) => p.doublePointsWildcard));
+
   init(): void {
     const matchdayId = this.route.snapshot.paramMap.get('matchdayId')!;
     this.loadMatchday(matchdayId);
@@ -307,8 +310,8 @@ export class MatchdayResultsFacade {
   pickLabel(prediction: Prediction): string {
     if (this.scoringMode() === 'EXACT_SCORE') {
       if (prediction.predictedHomeScore == null || prediction.predictedAwayScore == null) return '?';
-      const score = `${prediction.predictedHomeScore}-${prediction.predictedAwayScore}`;
-      return prediction.doublePointsWildcard ? `${score} (x2)` : score;
+      // El comodín x2 va como insignia aparte (ver .x2-badge), no en el texto: el chip mantiene siempre el mismo tamaño.
+      return `${prediction.predictedHomeScore}-${prediction.predictedAwayScore}`;
     }
     if (prediction.doubleChanceOption) {
       return { HOME_OR_DRAW: '1X', DRAW_OR_AWAY: 'X2', HOME_OR_AWAY: '12' }[prediction.doubleChanceOption];
@@ -384,9 +387,17 @@ export class MatchdayResultsFacade {
     return prediction ? this.pickLabel(prediction) : '-';
   }
 
-  cellClass(prediction: Prediction | undefined): 'hit' | 'miss' | 'pending' | 'none' {
+  cellClass(prediction: Prediction | undefined): 'exact' | 'hit' | 'miss' | 'pending' | 'none' {
     if (!prediction) return 'none';
     if (prediction.pointsEarned == null) return 'pending';
+    if (this.isExactHit(prediction)) return 'exact';
     return prediction.pointsEarned > 0 ? 'hit' : 'miss';
+  }
+
+  /** Resultado exacto = 5 puntos (10 con comodín x2), igual que matchAccentTone; 2 (o 4) es solo el ganador. */
+  private isExactHit(prediction: Prediction): boolean {
+    if (this.scoringMode() !== 'EXACT_SCORE') return false;
+    const multiplier = prediction.doublePointsWildcard ? 2 : 1;
+    return prediction.pointsEarned === 5 * multiplier;
   }
 }
