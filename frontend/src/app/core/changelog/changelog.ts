@@ -68,6 +68,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         de: 'Wenn du ein exaktes Ergebnis eingibst, scrollt der Bildschirm nach oben, damit das letzte Spiel nicht von der Tastatur verdeckt wird.',
       },
       {
+        es: 'Los avisos de jornada terminada y de partidos por pronosticar dicen de qué grupo y liga son, y el de jornada terminada deja claro que son tus puntos de toda la jornada.',
+        en: 'Matchday-finished and matches-to-predict notifications now say which group and league they are about, and the matchday one makes clear the points are your total for the whole matchday.',
+        ca: 'Els avisos de jornada acabada i de partits per pronosticar diuen de quin grup i lliga són, i el de jornada acabada deixa clar que són els teus punts de tota la jornada.',
+        fr: 'Les notifications de journée terminée et de matchs à pronostiquer indiquent le groupe et le championnat, et celle de fin de journée précise que ce sont tes points sur toute la journée.',
+        it: 'Gli avvisi di giornata conclusa e di partite da pronosticare indicano il gruppo e il campionato, e quello di fine giornata chiarisce che sono i tuoi punti di tutta la giornata.',
+        de: 'Die Mitteilungen zu beendeten Spieltagen und offenen Tipps zeigen jetzt Gruppe und Liga, und die zum Spieltagsende macht klar, dass es deine Punkte für den ganzen Spieltag sind.',
+      },
+      {
         es: 'Arreglo: el aviso de subida de nivel sale una sola vez.',
         en: 'Fix: the level-up notice now appears only once.',
         ca: 'Arreglat: l’avís de pujada de nivell surt una sola vegada.',

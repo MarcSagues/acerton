@@ -321,6 +321,45 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
+   * Nombre del grupo, jornada legible y liga para los avisos de un grupo
+   * concreto. Sin esto, quien esta en varios grupos de la misma liga recibia
+   * avisos identicos ("Regular Season - 6 terminada") sin saber de que grupo
+   * ni de que liga era cada uno. Un fallo aqui no tumba el aviso: se manda
+   * sin grupo ni liga.
+   */
+  private async getGroupMatchdayContext(
+    groupId: string,
+    matchdayId: string,
+    matchdayName: string,
+  ): Promise<{ groupName: string | null; matchdayLabel: string; matchdayPhrase: string }> {
+    let groupName: string | null = null;
+    let competitionName: string | null = null;
+    try {
+      const [group, matchday] = await Promise.all([
+        this.prisma.group.findUnique({ where: { id: groupId }, select: { name: true } }),
+        this.prisma.matchday.findUnique({
+          where: { id: matchdayId },
+          select: { competition: { select: { name: true } } },
+        }),
+      ]);
+      groupName = group?.name ?? null;
+      competitionName = matchday?.competition?.name ?? null;
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo leer el grupo/liga del aviso (${groupId}, ${matchdayId}): ${error}`,
+      );
+    }
+    // El proveedor nombra las jornadas de liga "Regular Season - N" (ver FootballDataOrgProvider).
+    const roundNumber = /^Regular Season\s*-\s*(\d+)$/i.exec(matchdayName.trim())?.[1];
+    const matchdayLabel = roundNumber ? `Jornada ${roundNumber}` : matchdayName;
+    const baseMatchdayPhrase = roundNumber ? `la jornada ${roundNumber}` : matchdayName;
+    const matchdayPhrase = competitionName
+      ? `${baseMatchdayPhrase} de ${competitionName}`
+      : baseMatchdayPhrase;
+    return { groupName, matchdayLabel, matchdayPhrase };
+  }
+
+  /**
    * Aviso de que uno o varios partidos concretos (no toda la jornada: ver
    * JobsService.sendClosingReminders, que agrupa por jornada+franja los
    * partidos que entran a la vez en esa ventana) estan a punto de empezar
@@ -366,12 +405,19 @@ export class NotificationsService implements OnModuleInit {
     const eligibleIds = await this.filterByReminderCooldown(recipientIds);
     if (eligibleIds.length === 0) return;
 
+    const { groupName, matchdayPhrase } = await this.getGroupMatchdayContext(
+      groupId,
+      matchdayId,
+      matchdayName,
+    );
     const body =
       matchIds.length === 1
-        ? `Un partido de ${matchdayName} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
-        : `${matchIds.length} partidos de ${matchdayName} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
+        ? `Un partido de ${matchdayPhrase} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
+        : `${matchIds.length} partidos de ${matchdayPhrase} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
 
-    const title = 'Partidos por pronosticar';
+    const title = groupName
+      ? `${groupName} · Partidos por pronosticar`
+      : 'Partidos por pronosticar';
     await this.sendToUsers(eligibleIds, {
       title,
       body,
@@ -484,15 +530,25 @@ export class NotificationsService implements OnModuleInit {
       'matchdayFinishedResult',
     );
     const recipients = new Set(recipientIds);
+    if (recipients.size === 0) return;
+    const { groupName, matchdayLabel, matchdayPhrase } = await this.getGroupMatchdayContext(
+      groupId,
+      matchdayId,
+      matchdayName,
+    );
+    const title = groupName
+      ? `${groupName} · ${matchdayLabel} terminada`
+      : `${matchdayLabel} terminada`;
 
     await Promise.all(
       [...pointsByUser.entries()]
         .filter(([userId]) => recipients.has(userId))
         .map(async ([userId, points]) => {
           const position = await this.getPositionForUser(groupId, userId);
-          const positionText = position != null ? ` Vas ${position}º en la clasificación.` : '';
-          const title = `${matchdayName} terminada`;
-          const body = `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`;
+          const positionText =
+            position != null ? ` Vas ${position}º en la clasificación del grupo.` : '';
+          // "En total" deja claro que es la suma de toda la jornada, no los puntos de un partido.
+          const body = `Has sumado ${points} ${points === 1 ? 'punto' : 'puntos'} en total en ${matchdayPhrase}.${positionText}`;
           await this.sendToUser(userId, {
             title,
             body,
