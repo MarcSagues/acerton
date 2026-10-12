@@ -155,8 +155,10 @@ model User {
   xpEvents               XpEvent[]
   adRewardClaims         AdRewardClaim[]
   authTokens             AuthToken[]
-  referredBy             User?               @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
-  referrals              User[]              @relation("Referrals")
+  referredBy             User?                   @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals              User[]                  @relation("Referrals")
+
+  quizParticipations QuizParticipation[]
 
   @@map("users")
 }
@@ -442,8 +444,10 @@ model Matchday {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  competition             Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  matches                 Match[]
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  matches     Match[]
+
+  quizEvent               QuizEvent?
   rankingSnapshots        RankingSnapshot[]
   streaksLastPlayed       Streak[]          @relation("StreakLastMatchday")
   globalStreaksLastPlayed GlobalStreak[]    @relation("GlobalStreakLastMatchday")
@@ -507,6 +511,8 @@ model Match {
 
   matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
   predictions Prediction[]
+
+  quizQuestions QuizQuestion[]
 
   @@index([matchdayId])
   @@map("matches")
@@ -710,4 +716,111 @@ model GlobalStreak {
   lastMatchday Matchday? @relation("GlobalStreakLastMatchday", fields: [lastMatchdayId], references: [id])
 
   @@map("global_streaks")
+}
+
+// Eventos globales: nunca tienen groupId ni reutilizan Prediction.
+enum QuizStatus {
+  SCHEDULED
+  OPEN
+  CLOSED
+  FINISHED
+}
+
+enum QuizQuestionType {
+  WINNER
+  BOTH_SCORE
+  OVER_2_5
+  HOME_CLEAN_SHEET
+  AWAY_CLEAN_SHEET
+  HOME_TWO_PLUS
+  AWAY_TWO_PLUS
+  WIN_BY_TWO_PLUS
+}
+
+enum QuizOption {
+  HOME
+  DRAW
+  AWAY
+  YES
+  NO
+}
+
+enum QuizResolution {
+  PENDING
+  RESOLVED
+  VOID
+}
+
+model QuizEvent {
+  id           String     @id @default(cuid())
+  matchdayId   String     @unique
+  seasonLabel  String
+  status       QuizStatus @default(SCHEDULED)
+  rulesVersion Int        @default(1)
+  closesAt     DateTime
+  openedAt     DateTime?
+  lockedAt     DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  matchday       Matchday            @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  questions      QuizQuestion[]
+  participations QuizParticipation[]
+
+  @@index([seasonLabel, status])
+  @@map("quiz_events")
+}
+
+model QuizQuestion {
+  id            String           @id @default(cuid())
+  eventId       String
+  matchId       String
+  order         Int
+  type          QuizQuestionType
+  options       Json
+  resolution    QuizResolution   @default(PENDING)
+  correctOption QuizOption?
+
+  event   QuizEvent    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  match   Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@unique([eventId, order])
+  @@unique([eventId, matchId, type])
+  @@index([matchId])
+  @@map("quiz_questions")
+}
+
+model QuizParticipation {
+  id          String    @id @default(cuid())
+  eventId     String
+  userId      String
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  /// Cache recalculada desde respuestas bajo el bloqueo del evento.
+  points      Int       @default(0)
+
+  event   QuizEvent    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@map("quiz_participations")
+}
+
+model QuizAnswer {
+  id              String     @id @default(cuid())
+  participationId String
+  questionId      String
+  option          QuizOption
+  pointsEarned    Int?
+  updatedAt       DateTime   @updatedAt
+
+  participation QuizParticipation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+  question      QuizQuestion      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([participationId, questionId])
+  @@index([questionId])
+  @@map("quiz_answers")
 }
