@@ -7,9 +7,12 @@
       <span class="unread-badge mono">{{ page.unreadCount() > 9 ? '9+' : page.unreadCount() }}</span>
     }
   </button>
-  <button type="button" class="avatar-btn" [attr.aria-label]="'common.perfil2' | t" (click)="page.goProfile()">
+  <button type="button" class="avatar-btn" data-tutorial="nav-perfil" [attr.aria-label]="'common.perfil2' | t" (click)="page.goProfile()">
     @if (page.currentUser(); as user) {
       <app-avatar [url]="user.avatarUrl" [background]="user.avatarBackground" [name]="user.name" [level]="user.level" [size]="36"></app-avatar>
+    }
+    @if (page.hasUnreadLevelUp()) {
+      <span class="pending-dot" aria-hidden="true"></span>
     }
   </button>
 </div>

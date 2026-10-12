@@ -81,6 +81,13 @@ export class ProfilePageFacade {
   readonly globalCurrentStreak = computed(() => this.profile()?.globalStreak.currentStreak ?? 0);
   readonly globalLongestStreak = computed(() => this.profile()?.globalStreak.longestStreak ?? 0);
   readonly badgeCount = computed(() => distinctBadgeCount(this.profile()?.badges ?? []));
+  /**
+   * Perfil se puede abrir sin grupo (quien solo juega al Quiz): estadisticas,
+   * historico, normas y el tutorial dependen de un grupo y se ocultan o se
+   * cambian por un acceso a Grupos. Sale del perfil (no de ActiveGroupService),
+   * que puede no estar cargado si se llega directo desde el Quiz.
+   */
+  readonly hasGroups = computed(() => (this.profile()?.groups.length ?? 0) > 0);
   readonly trophies = TROPHIES;
 
   openTrophy(trophy: TrophyDetailData): void {

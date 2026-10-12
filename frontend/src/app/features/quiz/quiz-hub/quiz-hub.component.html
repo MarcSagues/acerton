@@ -1,0 +1,276 @@
+<div class="page">
+  <header class="title-row">
+    <h1>{{ 'quiz.titulo' | t }}</h1>
+    <p class="lead">{{ 'quiz.intro' | t }}</p>
+  </header>
+
+  @switch (page.overviewState()) {
+    @case ('loading') {
+      <div class="loading" role="status" [attr.aria-label]="'common.cargando' | t"><app-spinner [size]="32"></app-spinner></div>
+    }
+    @case ('offline') {
+      <app-empty-state
+        icon="sin-conexion"
+        [title]="'quiz.sinConexionTitulo' | t"
+        [text]="'quiz.sinConexionTexto' | t"
+        [ctaLabel]="'common.reintentar' | t"
+        (cta)="page.loadOverview()"
+      ></app-empty-state>
+    }
+    @case ('ready') {
+      @if (page.competitions().length === 0) {
+        <app-empty-state icon="objetivo" [title]="'quiz.sinLigasTitulo' | t" [text]="'quiz.sinLigasTexto' | t"></app-empty-state>
+      } @else {
+        <div class="comp-pills" role="group" [attr.aria-label]="'quiz.elegirLiga' | t">
+          @for (competition of page.competitions(); track competition.id) {
+            <button
+              type="button"
+              class="comp-pill"
+              [class.active]="competition.id === page.selectedCompetitionId()"
+              [attr.aria-pressed]="competition.id === page.selectedCompetitionId()"
+              (click)="page.selectCompetition(competition.id)"
+            >
+              @if (page.trophyId(competition); as trophy) {
+                <piqo-svg [attr.trophy]="trophy" variant="mini" size="18"></piqo-svg>
+              } @else if (competition.logoUrl) {
+                <img class="comp-logo" [src]="competition.logoUrl" alt="" />
+              }
+              <span>{{ competition.name }}</span>
+            </button>
+          }
+        </div>
+
+        @if (page.primaryQuiz(); as quiz) {
+          <section class="quiz-card" [attr.aria-label]="'quiz.jornadaN' | t: { order: quiz.matchdayOrder }">
+            <div class="card-head">
+              <div class="card-title">
+                <span class="eyebrow mono">{{ quiz.competition.name }} · {{ 'quiz.temporada' | t: { label: quiz.seasonLabel } }}</span>
+                <h2>{{ 'quiz.jornadaN' | t: { order: quiz.matchdayOrder } }}</h2>
+              </div>
+              <span class="status-chip mono" [attr.data-status]="quiz.status">{{ page.statusLabel(quiz) }}</span>
+            </div>
+
+            <p class="meta mono">
+              {{ 'quiz.nPreguntas' | t: { count: quiz.questionCount } }} · {{ 'quiz.nPartidos' | t: { count: quiz.matchCount } }}
+            </p>
+
+            @if (quiz.status === 'OPEN' || quiz.status === 'SCHEDULED') {
+              <p class="close-line">
+                <piqo-svg icon="reloj" size="16"></piqo-svg>
+                @if (page.countdown(quiz); as time) {
+                  <span><strong>{{ 'quiz.cierraEn' | t: { time: time } }}</strong></span>
+                } @else if (quiz.status === 'OPEN') {
+                  <span><strong>{{ 'quiz.cerrando' | t }}</strong></span>
+                }
+                @let sep = quiz.status === 'OPEN' ? '· ' : '';
+                @if (quiz.kickoffConfirmed) {
+                  <span class="muted">{{ sep }}{{ 'quiz.cierraEl' | t: { date: (quiz.closesAt | date: 'EEE d MMM, HH:mm') } }}</span>
+                } @else {
+                  <span class="muted">{{ sep }}{{ 'quiz.cierreSinConfirmar' | t }}</span>
+                }
+              </p>
+            }
+
+            @if (quiz.participation; as part) {
+              @if (quiz.status === 'OPEN' || quiz.status === 'SCHEDULED') {
+                <div class="progress" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="quiz.questionCount" [attr.aria-valuenow]="part.answeredCount" [attr.aria-label]="'quiz.progreso' | t: { answered: part.answeredCount, total: quiz.questionCount }">
+                  <div class="progress-bar" [style.width.%]="quiz.questionCount ? (part.answeredCount / quiz.questionCount) * 100 : 0"></div>
+                </div>
+                <p class="progress-text mono">
+                  {{ 'quiz.progreso' | t: { answered: part.answeredCount, total: quiz.questionCount } }}
+                  @if (part.completedAt) {
+                    · {{ 'quiz.completado' | t }}
+                  }
+                </p>
+              } @else {
+                <p class="score-line">
+                  <span class="score mono">{{ part.points }}</span>
+                  <span class="score-sub">
+                    {{ 'quiz.dePreguntasValidas' | t: { count: quiz.questionCount - part.voidCount } }}
+                    @if (quiz.questionCount - part.resolvedCount - part.voidCount > 0) {
+                      <span class="muted">· {{ 'quiz.nPendientes' | t: { count: quiz.questionCount - part.resolvedCount - part.voidCount } }}</span>
+                    }
+                    @if (part.voidCount > 0) {
+                      <span class="muted">· {{ 'quiz.nAnuladas' | t: { count: part.voidCount } }}</span>
+                    }
+                  </span>
+                </p>
+              }
+            } @else if (quiz.status === 'CLOSED' || quiz.status === 'FINISHED') {
+              <p class="muted small">{{ 'quiz.noParticipaste' | t }}</p>
+            }
+
+            <button
+              type="button"
+              class="main-cta"
+              [class.piqo-secondary]="page.action(quiz) === 'RESULTS'"
+              [class.piqo-primary]="page.action(quiz) !== 'RESULTS'"
+              [disabled]="page.action(quiz) === 'NONE' || page.startingQuizId() === quiz.id"
+              (click)="page.open(quiz)"
+            >
+              @if (page.startingQuizId() === quiz.id) {
+                <app-spinner [size]="18"></app-spinner>
+              }
+              {{ page.actionLabel(quiz) }}
+            </button>
+          </section>
+
+          @if (page.previousQuiz(); as previous) {
+            <button type="button" class="previous-card" (click)="page.open(previous)" [disabled]="page.action(previous) === 'NONE'">
+              <span class="previous-meta">
+                <span class="previous-title">{{ 'quiz.jornadaN' | t: { order: previous.matchdayOrder } }} · {{ page.statusLabel(previous) }}</span>
+                @if (previous.participation; as part) {
+                  <span class="previous-sub mono">
+                    @if (previous.status === 'OPEN') {
+                      {{ 'quiz.progreso' | t: { answered: part.answeredCount, total: previous.questionCount } }}
+                    } @else {
+                      {{ 'quiz.nPuntos' | t: { count: part.points } }}
+                    }
+                  </span>
+                }
+              </span>
+              <span class="previous-action">{{ page.actionLabel(previous) }}</span>
+              <piqo-svg icon="flecha" size="16"></piqo-svg>
+            </button>
+          }
+        } @else {
+          <app-empty-state icon="reloj" [title]="'quiz.sinJornadaTitulo' | t" [text]="'quiz.sinJornadaTexto' | t"></app-empty-state>
+        }
+      }
+    }
+    @default {
+      <app-empty-state
+        icon="error"
+        [title]="'quiz.errorTitulo' | t"
+        [text]="'quiz.errorTexto' | t"
+        [ctaLabel]="'common.reintentar' | t"
+        (cta)="page.loadOverview()"
+      ></app-empty-state>
+    }
+  }
+
+  <section class="ranking" aria-labelledby="quiz-ranking-title">
+    <div class="ranking-head">
+      <h2 id="quiz-ranking-title">{{ 'quiz.clasificacion' | t }}</h2>
+      @if (page.rankingSeasonLabel(); as label) {
+        <span class="season-label mono">{{ 'quiz.temporada' | t: { label: label } }}</span>
+      }
+    </div>
+
+    <div class="comp-pills filter-pills" role="group" [attr.aria-label]="'quiz.filtroLiga' | t">
+      <button
+        type="button"
+        class="comp-pill"
+        [class.active]="page.rankingCompetitionId() === null"
+        [attr.aria-pressed]="page.rankingCompetitionId() === null"
+        (click)="page.setRankingCompetition(null)"
+      >
+        {{ 'quiz.general' | t }}
+      </button>
+      @for (competition of page.competitions(); track competition.id) {
+        <button
+          type="button"
+          class="comp-pill"
+          [class.active]="page.rankingCompetitionId() === competition.id"
+          [attr.aria-pressed]="page.rankingCompetitionId() === competition.id"
+          (click)="page.setRankingCompetition(competition.id)"
+        >
+          {{ competition.name }}
+        </button>
+      }
+    </div>
+
+    @if (page.seasonOptions().length > 1) {
+      <div class="comp-pills season-pills" role="group" [attr.aria-label]="'quiz.filtroTemporada' | t">
+        @for (season of page.seasonOptions(); track season) {
+          <button
+            type="button"
+            class="comp-pill"
+            [class.active]="season === page.rankingSeasonLabel()"
+            [attr.aria-pressed]="season === page.rankingSeasonLabel()"
+            (click)="page.setRankingSeason(season)"
+          >
+            {{ season }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (page.rankingCompetitionId() === null) {
+      <p class="note">{{ 'quiz.notaGeneral' | t }}</p>
+    }
+
+    @switch (page.rankingState()) {
+      @case ('loading') {
+        <div class="loading small" role="status" [attr.aria-label]="'common.cargando' | t"><app-spinner [size]="22"></app-spinner></div>
+      }
+      @case ('ready') {
+        @if (page.rankingRows().length === 0) {
+          <p class="empty">{{ 'quiz.rankingVacio' | t }}</p>
+        } @else {
+          @if (page.rankingProvisional()) {
+            <p class="provisional mono">{{ 'quiz.provisional' | t }}</p>
+          }
+          @if (page.myRowOutsidePage(); as me) {
+            <div class="row me pinned" [attr.aria-label]="'quiz.tuPosicion' | t">
+              <span class="col-pos mono">{{ me.position }}</span>
+              <span class="col-name">
+                <app-avatar [url]="me.avatarUrl" [background]="me.avatarBackground" [name]="me.name" [size]="28"></app-avatar>
+                <span class="name-wrap">
+                  <span class="name">{{ 'quiz.tu' | t: { name: me.name } }}</span>
+                  <span class="played mono">{{ 'quiz.nQuizzes' | t: { count: me.quizzesPlayed } }}</span>
+                </span>
+              </span>
+              <span class="col-pts mono">{{ me.points }}</span>
+            </div>
+          }
+          <div class="table-head" aria-hidden="true">
+            <span class="col-pos mono">#</span>
+            <span class="col-name mono">{{ 'quiz.jugador' | t }}</span>
+            <span class="col-pts mono">{{ 'quiz.pts' | t }}</span>
+          </div>
+          <ol class="rows">
+            @for (row of page.rankingRows(); track row.userId) {
+              <li class="row" [class.me]="page.isMe(row)">
+                <span class="col-pos mono">{{ row.position }}</span>
+                <span class="col-name">
+                  <app-avatar [url]="row.avatarUrl" [background]="row.avatarBackground" [name]="row.name" [size]="28"></app-avatar>
+                  <span class="name-wrap">
+                    <span class="name">{{ page.isMe(row) ? ('quiz.tu' | t: { name: row.name }) : row.name }}</span>
+                    <span class="played mono">{{ 'quiz.nQuizzes' | t: { count: row.quizzesPlayed } }}</span>
+                  </span>
+                </span>
+                <span class="col-pts mono">{{ row.points }}</span>
+              </li>
+            }
+          </ol>
+          @if (page.hasMoreRanking()) {
+            <button type="button" class="piqo-secondary more-btn" [disabled]="page.loadingMore()" (click)="page.loadMoreRanking()">
+              @if (page.loadingMore()) {
+                <app-spinner [size]="16"></app-spinner>
+              }
+              {{ 'quiz.verMas' | t }}
+            </button>
+          }
+          <p class="footnote">
+            {{ 'quiz.nJugadores' | t: { count: page.rankingTotal() } }} · {{ 'quiz.notaEmpates' | t }}
+          </p>
+        }
+      }
+      @case ('offline') {
+        <div class="inline-error" role="alert">
+          <piqo-svg icon="sin-conexion" size="18"></piqo-svg>
+          <span>{{ 'quiz.sinConexionTexto' | t }}</span>
+          <button type="button" class="retry-btn" (click)="page.retryRanking()">{{ 'common.reintentar' | t }}</button>
+        </div>
+      }
+      @default {
+        <div class="inline-error" role="alert">
+          <piqo-svg icon="error" size="18"></piqo-svg>
+          <span>{{ 'quiz.errorRanking' | t }}</span>
+          <button type="button" class="retry-btn" (click)="page.retryRanking()">{{ 'common.reintentar' | t }}</button>
+        </div>
+      }
+    }
+  </section>
+</div>

@@ -57,6 +57,11 @@ export class GroupListFacade {
     return streak > 0 ? streak : null;
   }
 
+  /** Quiz de jornada: se puede jugar sin grupo (ver app.routes). */
+  goToQuiz(): void {
+    this.router.navigate(['/quiz']);
+  }
+
   goToExplorePublic(): void {
     this.router.navigate(['/groups/public']);
   }

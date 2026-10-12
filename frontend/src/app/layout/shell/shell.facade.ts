@@ -15,9 +15,10 @@ import { LevelUpDialogComponent } from '../../features/profile/level-up-dialog/l
  * flujos autocontenidos con su propia cabecera y boton de volver, no tabs
  * reales de la app — la barra inferior no pinta nada ahi, sobre todo para
  * quien todavia no tiene ningun grupo (Jornada/Tabla/Perfil no funcionan sin
- * uno y solo confunden).
+ * uno y solo confunden). Lo mismo al jugar un quiz (`/quiz/:id`, no el centro
+ * `/quiz`): tiene su propia navegacion anterior/siguiente y boton de volver.
  */
-const ROUTES_WITHOUT_BOTTOM_NAV = ['/groups/create', '/groups/join-code', '/groups/public'];
+const ROUTES_WITHOUT_BOTTOM_NAV = ['/groups/create', '/groups/join-code', '/groups/public', '/quiz/'];
 
 /**
  * Cada cuanto se vuelve a pedir el feed de avisos mientras la app sigue

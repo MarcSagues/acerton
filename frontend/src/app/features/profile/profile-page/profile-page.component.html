@@ -108,24 +108,37 @@
       }
     </div>
 
-    <div class="section">
-      <a class="card settings-link" routerLink="/profile/stats">
-        <div>
-          <p class="card-title">{{ 'common.estadisticas' | t }}</p>
-          <p class="hint mono">{{ 'profilePage.posicionPuntosRachaGrupo' | t }}</p>
-        </div>
-        <piqo-svg icon="flecha" size="18"></piqo-svg>
-      </a>
-    </div>
-    <div class="section">
-      <a class="card settings-link" routerLink="/profile/history">
-        <div>
-          <p class="card-title">{{ 'common.historico' | t }}</p>
-          <p class="hint mono">{{ 'profilePage.ultimasJornadasJugadas' | t }}</p>
-        </div>
-        <piqo-svg icon="flecha" size="18"></piqo-svg>
-      </a>
-    </div>
+    @if (page.hasGroups()) {
+      <div class="section">
+        <a class="card settings-link" routerLink="/profile/stats">
+          <div>
+            <p class="card-title">{{ 'common.estadisticas' | t }}</p>
+            <p class="hint mono">{{ 'profilePage.posicionPuntosRachaGrupo' | t }}</p>
+          </div>
+          <piqo-svg icon="flecha" size="18"></piqo-svg>
+        </a>
+      </div>
+      <div class="section">
+        <a class="card settings-link" routerLink="/profile/history">
+          <div>
+            <p class="card-title">{{ 'common.historico' | t }}</p>
+            <p class="hint mono">{{ 'profilePage.ultimasJornadasJugadas' | t }}</p>
+          </div>
+          <piqo-svg icon="flecha" size="18"></piqo-svg>
+        </a>
+      </div>
+    } @else {
+      <!-- Sin grupo (p.ej. quien solo juega al Quiz): estadisticas e historico son por grupo. -->
+      <div class="section">
+        <a class="card settings-link" routerLink="/groups">
+          <div>
+            <p class="card-title">{{ 'common.estadisticas' | t }}</p>
+            <p class="hint mono">{{ 'profilePage.sinGrupoEstadisticas' | t }}</p>
+          </div>
+          <piqo-svg icon="flecha" size="18"></piqo-svg>
+        </a>
+      </div>
+    }
 
     <div class="section-head">
       <h2>{{ 'profilePage.ajustes' | t }}</h2>
@@ -180,15 +193,17 @@
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
     </div>
-    <div class="section">
-      <a class="card settings-link" routerLink="/rules">
-        <div>
-          <p class="card-title">{{ 'common.normasPremios' | t }}</p>
-          <p class="hint mono">{{ 'profilePage.puntuacionRealAcuerdosGrupo' | t }}</p>
-        </div>
-        <piqo-svg icon="flecha" size="18"></piqo-svg>
-      </a>
-    </div>
+    @if (page.hasGroups()) {
+      <div class="section">
+        <a class="card settings-link" routerLink="/rules">
+          <div>
+            <p class="card-title">{{ 'common.normasPremios' | t }}</p>
+            <p class="hint mono">{{ 'profilePage.puntuacionRealAcuerdosGrupo' | t }}</p>
+          </div>
+          <piqo-svg icon="flecha" size="18"></piqo-svg>
+        </a>
+      </div>
+    }
     <div class="section">
       <a class="card settings-link" routerLink="/profile/invite">
         <div>
@@ -210,7 +225,9 @@
       </div>
     }
 
-    <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">{{ 'profilePage.verTutorialNuevo' | t }}</button>
+    @if (page.hasGroups()) {
+        <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">{{ 'profilePage.verTutorialNuevo' | t }}</button>
+    }
     <button type="button" class="logout-btn" (click)="page.logout()">{{ 'profilePage.cerrarSesion' | t }}</button>
     <a class="delete-account-link mono" routerLink="/profile/delete-account">{{ 'common.eliminarCuenta' | t }}</a>
   </div>

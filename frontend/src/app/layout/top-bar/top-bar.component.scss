@@ -41,3 +41,16 @@
   text-align: center;
 }
 
+
+/* Mismo punto que la barra inferior (bottom-nav): arriba a la derecha, sin
+   chocar con la insignia de nivel del avatar (abajo a la derecha). */
+.pending-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--p4-error);
+  border: 2px solid var(--p4-bg);
+}

@@ -21,13 +21,8 @@
     <span class="pill"><piqo-svg icon="tabla" size="22"></piqo-svg></span>
     <span class="label">{{ 'common.tabla' | t }}</span>
   </a>
-  <a routerLink="/profile" routerLinkActive="active" class="item" data-tutorial="nav-perfil">
-    <span class="pill">
-      <piqo-svg icon="perfil" size="22"></piqo-svg>
-      @if (notificationsFeed.unreadLevelUps().length > 0) {
-        <span class="pending-dot" aria-hidden="true"></span>
-      }
-    </span>
-    <span class="label">{{ 'common.perfil' | t }}</span>
+  <a routerLink="/quiz" routerLinkActive="active" class="item" data-tutorial="nav-quiz">
+    <span class="pill"><piqo-svg icon="objetivo" size="22"></piqo-svg></span>
+    <span class="label">{{ 'bottomNav.quiz' | t }}</span>
   </a>
 </nav>

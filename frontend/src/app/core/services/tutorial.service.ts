@@ -80,14 +80,16 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
           advanceOn: 'manual',
         },
     {
+      // Perfil ya no esta en la barra inferior (ahi va el Quiz): el paso
+      // senala el avatar de la cabecera, que es por donde se entra ahora.
       id: 'nav-profile',
       route: '/matchday',
       target: '[data-tutorial="nav-perfil"]',
       title: t('tutorial.gruposPerfil'),
       body: t('tutorial.gruposDejaCambiarEntre'),
       mascotId: 'celebrando',
-      mascotPosition: 'above',
-      placement: 'top',
+      mascotPosition: 'below',
+      placement: 'bottom',
       advanceOn: 'manual',
     },
   ];
