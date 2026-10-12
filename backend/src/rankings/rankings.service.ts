@@ -1,9 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RankingPeriod } from '@prisma/client';
+import { Prisma, RankingPeriod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SeasonsService } from '../seasons/seasons.service';
 import { rankEntries, ScoredEntry } from './rank-entries.util';
 import { xpProgressForLevel } from '../xp/xp.util';
+
+const RANKING_USER_SELECT = {
+  id: true,
+  name: true,
+  avatarUrl: true,
+  avatarBackground: true,
+  experience: true,
+} as const;
 
 function withLevel<T extends { user: { experience: number } }>(
   row: T,
@@ -303,8 +311,9 @@ export class RankingsService {
 
   /**
    * Historico de jornadas ya finalizadas de una competicion dentro de un
-   * grupo: quien gano cada una y cuantos puntos hizo el usuario que pide el
-   * historico, mas la media de puntos por jornada del grupo y la suya
+   * grupo: quien gano cada una, cuantos puntos hizo el usuario que pide el
+   * historico y cuantos hizo cada jugador (`scores`, para la grafica de
+   * lineas de Tabla), mas la media de puntos por jornada del grupo y la suya
    * propia. Reutiliza los RankingSnapshot semanales ya calculados al cerrar
    * cada jornada (computeWeekly) — no hace falta volver a sumar nada de
    * Prediction.
@@ -345,6 +354,11 @@ export class RankingsService {
           ? { userId: winner.userId, name: winner.user.name, points: winner.points }
           : null,
         myPoints: mine ? mine.points : null,
+        scores: entries.map((entry) => ({
+          userId: entry.userId,
+          name: entry.user.name,
+          points: entry.points,
+        })),
       };
     });
 
@@ -356,6 +370,105 @@ export class RankingsService {
     const userAverage = myPoints.length ? average(myPoints) : null;
 
     return { matchdays, groupAverage, userAverage };
+  }
+
+  /**
+   * "Rey del marcador exacto": cuantos marcadores exactos ha clavado cada
+   * miembro del grupo, solo en grupos de modo resultado exacto (en los de 1X2
+   * devuelve una lista vacia). Mismo alcance que la clasificacion que se esta
+   * viendo: en semanal, los partidos de la jornada pedida (o de la ultima con
+   * clasificacion semanal, la misma que enseña getLatestRanking); en total, los
+   * de la competicion o, en "general", todos los del grupo. Solo cuentan los
+   * partidos terminados, igual que los puntos. Quien no ha clavado ninguno sale
+   * con 0; los empates comparten puesto (rankEntries).
+   *
+   * Prisma no compara una columna con la de otra tabla en un `where`, asi que
+   * se traen los marcadores y se comparan aqui (mismo patron que
+   * BadgesService.countExactScoreHits).
+   */
+  async getExactScoreLeaders(
+    groupId: string,
+    period: RankingPeriod,
+    competitionId: string | null,
+    matchdayId?: string,
+  ) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      select: { scoringMode: true },
+    });
+    if (group?.scoringMode !== 'EXACT_SCORE') {
+      return [];
+    }
+
+    let matchFilter: Prisma.MatchWhereInput;
+    if (period === 'WEEKLY') {
+      // La semanal general no existe: cada competicion tiene su calendario.
+      if (!competitionId) {
+        return [];
+      }
+      const targetMatchdayId =
+        matchdayId ??
+        (
+          await this.prisma.rankingSnapshot.findFirst({
+            where: { groupId, period: 'WEEKLY', competitionId },
+            orderBy: { createdAt: 'desc' },
+            select: { matchdayId: true },
+          })
+        )?.matchdayId;
+      if (!targetMatchdayId) {
+        return [];
+      }
+      matchFilter = { matchdayId: targetMatchdayId, status: 'FINISHED' };
+    } else {
+      matchFilter = competitionId
+        ? { status: 'FINISHED', matchday: { competitionId } }
+        : { status: 'FINISHED' };
+    }
+
+    const [predictions, members] = await Promise.all([
+      this.prisma.prediction.findMany({
+        where: {
+          groupId,
+          predictedHomeScore: { not: null },
+          predictedAwayScore: { not: null },
+          match: matchFilter,
+        },
+        select: {
+          userId: true,
+          predictedHomeScore: true,
+          predictedAwayScore: true,
+          match: { select: { homeScore: true, awayScore: true } },
+        },
+      }),
+      this.prisma.groupMembership.findMany({
+        where: { groupId },
+        include: { user: { select: RANKING_USER_SELECT } },
+      }),
+    ]);
+
+    const hitsByUser = new Map<string, number>(members.map((m) => [m.userId, 0]));
+    for (const p of predictions) {
+      const exact =
+        p.match.homeScore != null &&
+        p.match.awayScore != null &&
+        p.predictedHomeScore === p.match.homeScore &&
+        p.predictedAwayScore === p.match.awayScore;
+      if (exact && hitsByUser.has(p.userId)) {
+        hitsByUser.set(p.userId, hitsByUser.get(p.userId)! + 1);
+      }
+    }
+
+    const userById = new Map(members.map((m) => [m.userId, m.user]));
+    return rankEntries(
+      [...hitsByUser.entries()].map(([userId, points]) => ({ userId, points })),
+    ).map((entry) =>
+      withLevel({
+        userId: entry.userId,
+        position: entry.position,
+        exactHits: entry.points,
+        user: userById.get(entry.userId)!,
+      }),
+    );
   }
 }
 
