@@ -1,5 +1,14 @@
 # Estado actual
 
+## 2026-10-13 — Retoques de la 1.1.0 y ficha de la App Store (fuera de sprint)
+
+Equipo favorito: quitarlo es ahora un botón con una X (icono `cerrar`) junto a la bandera, en vez de un texto.
+Historial de la 1.1.0: la línea de los idiomas decía «Perfil > Apariencia» y ahora «Perfil > Ajustes > Idioma», y la
+del equipo favorito «Perfil > Ajustes» (en los 6 idiomas; la entrada 1.0.2, ya publicada, no se toca).
+`docs/app-store/ficha-1.1.0.md` sustituye a la de la 1.0.3: nombres, subtítulos y palabras clave igual (son de la
+app, no de la versión); texto promocional y descripción actualizados (tres formas de jugar con el Quiz, equipo
+favorito) y Novedades copiadas del historial de la 1.1.0 en los 7 idiomas, todo dentro de los límites de Apple.
+
 ## 2026-10-13 — Versión 1.1.0 (fuera de sprint)
 
 Decisión del usuario: con tantos cambios grandes (Quiz, equipo favorito, Ajustes con pestañas, registro con

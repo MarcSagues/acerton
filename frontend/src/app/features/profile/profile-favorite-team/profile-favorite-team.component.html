@@ -9,8 +9,15 @@
     @if (page.current(); as current) {
       <div class="current">
         <app-team-flag [team]="current"></app-team-flag>
-        <button type="button" class="remove-btn" [disabled]="page.saving()" (click)="page.select(null)">
-          {{ 'favoriteTeam.quitar' | t }}
+        <button
+          type="button"
+          class="remove-btn"
+          [disabled]="page.saving()"
+          [attr.aria-label]="'favoriteTeam.quitar' | t"
+          [attr.title]="'favoriteTeam.quitar' | t"
+          (click)="page.select(null)"
+        >
+          <piqo-svg icon="cerrar" size="18"></piqo-svg>
         </button>
       </div>
     }
