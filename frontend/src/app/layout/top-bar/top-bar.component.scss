@@ -1,16 +1,31 @@
+/* El host solo reserva el hueco de la barra en el flujo (su alto es el de la barra fija): el contenido empieza justo debajo. */
 :host {
-  /* Barra superior siempre visible: se queda pegada arriba al hacer scroll. El margen de seguridad de iOS va dentro
-     de la barra (antes era del shell) para que la barra fija lo cubra tambien. */
   display: block;
-  position: sticky;
+  height: calc(var(--p4-topbar-h) + var(--topbar-extra, 0px));
+}
+
+/* Pantallas sin selector de grupo debajo: mas aire entre la barra y el contenido. */
+:host(.no-group-switcher) {
+  --topbar-extra: 14px;
+}
+
+/* Barra inamovible: `fixed` la ancla a la pantalla, asi que al hacer scroll (o al tirar hacia abajo en iOS) solo se mueve la
+   vista, nunca la barra. El margen de seguridad de iOS va dentro, para que la barra tape tambien la zona del notch. */
+.bar-fixed {
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  max-width: 480px;
+  margin: 0 auto;
   z-index: 20;
   padding-top: env(safe-area-inset-top);
+  padding-bottom: var(--topbar-extra, 0px);
   background: var(--p4-bg);
 }
 
 /* Degradado justo debajo de la barra: el contenido que pasa por debajo se desvanece en vez de cortarse de golpe. */
-:host::after {
+.bar-fixed::after {
   content: '';
   position: absolute;
   left: 0;
@@ -19,11 +34,6 @@
   height: 16px;
   background: linear-gradient(var(--p4-bg), transparent);
   pointer-events: none;
-}
-
-/* Pantallas sin selector de grupo debajo: mas aire entre la barra y el contenido. */
-:host(.no-group-switcher) {
-  padding-bottom: 14px;
 }
 
 .top-bar {

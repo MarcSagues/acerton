@@ -9,6 +9,9 @@ más de margen inferior, para que el contenido no quede pegado. `TopBarFacade.ha
 Además la barra y el selector de grupo fijos pasan de translúcidos (94% + desenfoque, dejaban ver el fondo punteado) a opacos
 (`var(--p4-bg)`), con un degradado de 14-16px justo debajo (`::after`) para que el contenido que pasa por debajo se desvanezca
 en vez de cortarse de golpe.
+La barra pasa de `sticky` a `fixed` (clase `.bar-fixed`, anclada a la pantalla a 480px de ancho máximo y centrada): al hacer scroll
+o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de `app-top-bar` solo reserva su hueco en el flujo
+(`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
 ## 2026-10-13 — Tabla: se entra en la primera liga y Total no cambia tras pasar por Semanal (fuera de sprint)
