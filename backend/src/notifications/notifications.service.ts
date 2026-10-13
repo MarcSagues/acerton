@@ -477,6 +477,24 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
+   * Avisos opcionales del Quiz de jornada (apertura y cierre). Como el Quiz no
+   * es de ningun grupo, no hay silenciados que mirar: QuizRemindersService ya
+   * elige a los destinatarios por su preferencia (y quita a quien ya lo
+   * termino); aqui solo se manda el push y se guarda en el buzon.
+   */
+  async notifyQuiz(
+    userIds: string[],
+    type: 'QUIZ_OPENED' | 'QUIZ_CLOSING_SOON',
+    title: string,
+    body: string,
+    quizId: string,
+  ): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.sendToUsers(userIds, { title, body, data: { type, quizId } });
+    await this.recordMany(userIds, NotificationType[type], title, body);
+  }
+
+  /**
    * Posicion actual del usuario en la clasificacion total del grupo: si el
    * grupo tiene mas de una competicion activa se usa la general
    * (competitionId null), igual que GroupsService.findMineForUser — mismo

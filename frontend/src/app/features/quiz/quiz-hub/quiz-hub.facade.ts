@@ -87,7 +87,6 @@ export class QuizHubFacade {
   readonly rankingMe = signal<QuizRankingRow | null>(null);
   readonly rankingTotal = signal(0);
   readonly rankingSeasonLabel = signal<string | null>(null);
-  readonly rankingProvisional = signal(false);
   readonly loadingMore = signal(false);
   private nextCursor: string | null = null;
   private rankingRequestId = 0;
@@ -300,7 +299,6 @@ export class QuizHubFacade {
     this.rankingMe.set(ranking.me);
     this.rankingTotal.set(ranking.total);
     this.rankingSeasonLabel.set(ranking.seasonLabel);
-    this.rankingProvisional.set(ranking.provisional);
     this.nextCursor = ranking.nextCursor;
     this.rankingHasNext.set(ranking.nextCursor !== null);
     this.loadingMore.set(false);

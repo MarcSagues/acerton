@@ -335,17 +335,11 @@ h1 {
 }
 
 .note,
-.provisional,
 .empty,
 .footnote {
   margin: 12px 20px 0;
   font: 400 12px/1.5 var(--p4-font-ui);
   color: var(--p4-muted);
-}
-
-.provisional {
-  font-size: 10.5px;
-  color: var(--p4-warning);
 }
 
 .table-head {

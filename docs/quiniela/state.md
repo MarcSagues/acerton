@@ -1,5 +1,21 @@
 # Estado actual
 
+## 2026-10-13 — Quiz: avisos opcionales y fuera el «provisional» (fuera de sprint)
+
+Petición del usuario. **Hecho**: tres preferencias nuevas (`quizOpening`, `quizReminder24h`,
+`quizReminder1h`, apagadas de serie) en «Preferencias de avisos», sección «Quiz de jornada».
+`QuizRemindersService` (cron cada 5 min) avisa al abrirse cada quiz (si se abrió hace menos de 6 h) y 24 h y
+1 h antes del cierre; los de cierre no le llegan a quien ya lo terminó, nunca salen dos franjas a la vez y
+cada aviso se reclama con un `updateMany` condicionado antes de enviar. Tipos `QUIZ_OPENED` y
+`QUIZ_CLOSING_SOON` (icono en el buzón; al pulsarlos, al Quiz). Textos del push en español, como el resto.
+Migración `20261013150000_quiz_reminders` (los quizzes ya publicados se marcan como avisados). Quitado el
+aviso «PROVISIONAL» de la clasificación del Quiz. Línea en la 1.0.3 del historial.
+
+**Verificado**: backend 501 tests, lint y `tsc`; frontend 196 tests y `tsc`; migración aplicada desde cero
+en un MySQL desechable sin diferencias con el schema. **NO verificado**: envío real de push ni pantalla en
+navegador/iOS. **Necesita**: migración en prod ANTES de desplegar (SQL manual en `output/` por si Render no
+las aplica), build nueva, y port a `dev` (Postgres).
+
 ## 2026-10-13 — Jornada: se ve la siguiente al acabar y aplazados/cancelados editables (fuera de sprint)
 
 Dos peticiones del usuario con la misma raíz. **Comprobado** en la BD de dev: Premier J6 y Serie A J6 con 9

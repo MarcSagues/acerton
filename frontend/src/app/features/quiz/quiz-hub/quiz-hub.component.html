@@ -222,9 +222,6 @@
         @if (page.rankingRows().length === 0) {
           <p class="empty">{{ 'quiz.rankingVacio' | t }}</p>
         } @else {
-          @if (page.rankingProvisional()) {
-            <p class="provisional mono">{{ 'quiz.provisional' | t }}</p>
-          }
           @if (page.myRowOutsidePage(); as me) {
             <div class="row me pinned" [attr.aria-label]="'quiz.tuPosicion' | t">
               <span class="col-pos mono">{{ me.position }}</span>

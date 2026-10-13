@@ -52,6 +52,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         de: 'Neu: das Spieltags-Quiz. Beantworte Fragen zu den Spielen jeder Liga und miss dich mit der ganzen Community, auch ohne Gruppe. Du findest es unten rechts; dein Profil erreichst du weiter über deinen Avatar.',
       },
       {
+        es: 'Avisos del Quiz, si los quieres: cuando se abre, 24 horas antes del cierre y 1 hora antes. Actívalos en Perfil > Preferencias de avisos.',
+        en: 'Quiz notifications, if you want them: when it opens, 24 hours before it closes and 1 hour before. Turn them on in Profile > Notification preferences.',
+        ca: 'Avisos del Quiz, si els vols: quan s’obre, 24 hores abans del tancament i 1 hora abans. Activa’ls a Perfil > Preferències d’avisos.',
+        fr: 'Notifications du Quiz, si tu le souhaites : à l’ouverture, 24 heures avant la clôture et 1 heure avant. Active-les dans Profil > Préférences de notifications.',
+        it: 'Avvisi del Quiz, se li vuoi: quando si apre, 24 ore prima della chiusura e 1 ora prima. Attivali in Profilo > Preferenze avvisi.',
+        de: 'Quiz-Mitteilungen, wenn du sie willst: beim Öffnen, 24 Stunden und 1 Stunde vor Schluss. Schalte sie unter Profil > Mitteilungseinstellungen ein.',
+      },
+      {
         es: 'En Tabla, una gráfica de líneas enseña cómo vais tú y los primeros del grupo jornada a jornada, en Semanal y en Total. Toca «Tú» para ver solo la tuya.',
         en: 'In Table, a line chart shows how you and the group leaders are doing matchday by matchday, in Weekly and Total. Tap "You" to see just yours.',
         ca: 'A Taula, una gràfica de línies mostra com aneu tu i els primers del grup jornada a jornada, a Setmanal i a Total. Toca «Tu» per veure només la teva.',
