@@ -27,8 +27,19 @@
   top: var(--p4-topbar-h);
   z-index: 15;
   padding: 12px 20px 8px;
-  background: color-mix(in srgb, var(--p4-bg) 94%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--p4-bg);
+}
+
+/* Degradado justo debajo: lo que pasa por debajo se desvanece en vez de cortarse de golpe. */
+.head-row::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 14px;
+  background: linear-gradient(var(--p4-bg), transparent);
+  pointer-events: none;
 }
 
 .title-row {

@@ -6,6 +6,9 @@ Petición del usuario. En las pantallas sin selector de grupo debajo (todas salv
 más de margen inferior, para que el contenido no quede pegado. `TopBarFacade.hasGroupSwitcher` mira la ruta (`/matchday`,
 `/rankings` y subrutas) y el host de `app-top-bar` lleva la clase `no-group-switcher`. En Jornada y Tabla no cambia (52px).
 **Verificado** en navegador (local: 66px en Grupos y Perfil, 52px en Tabla) y 222 tests del frontend (4 nuevos).
+Además la barra y el selector de grupo fijos pasan de translúcidos (94% + desenfoque, dejaban ver el fondo punteado) a opacos
+(`var(--p4-bg)`), con un degradado de 14-16px justo debajo (`::after`) para que el contenido que pasa por debajo se desvanezca
+en vez de cortarse de golpe.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
 ## 2026-10-13 — Tabla: se entra en la primera liga y Total no cambia tras pasar por Semanal (fuera de sprint)

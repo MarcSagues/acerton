@@ -6,8 +6,19 @@
   top: 0;
   z-index: 20;
   padding-top: env(safe-area-inset-top);
-  background: color-mix(in srgb, var(--p4-bg) 94%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--p4-bg);
+}
+
+/* Degradado justo debajo de la barra: el contenido que pasa por debajo se desvanece en vez de cortarse de golpe. */
+:host::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 16px;
+  background: linear-gradient(var(--p4-bg), transparent);
+  pointer-events: none;
 }
 
 /* Pantallas sin selector de grupo debajo: mas aire entre la barra y el contenido. */
