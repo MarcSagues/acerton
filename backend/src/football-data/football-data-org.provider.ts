@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import { AppConfig } from '../config/configuration';
+import { FootballRequestQueue } from './football-request-queue';
 import {
   FootballProvider,
   ProviderFixture,
@@ -72,6 +73,7 @@ function chunk<T>(items: T[], size: number): T[][] {
 export class FootballDataOrgProvider implements FootballProvider {
   private readonly logger = new Logger(FootballDataOrgProvider.name);
   private readonly http: AxiosInstance;
+  private readonly requestQueue = new FootballRequestQueue();
 
   constructor(private readonly configService: ConfigService<AppConfig, true>) {
     this.http = axios.create({
@@ -79,6 +81,21 @@ export class FootballDataOrgProvider implements FootballProvider {
       headers: { 'X-Auth-Token': this.configService.get('footballData.apiKey', { infer: true }) },
       timeout: 10_000,
     });
+    // Shared by group jobs and global quiz jobs: ten requests/minute within this process.
+    this.http.interceptors.request.use(async (request) => {
+      await this.requestQueue.waitForSlot();
+      return request;
+    });
+    this.http.interceptors.response.use(
+      (response) => response,
+      (error: unknown) => {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          const retryAfter = error.response.headers['retry-after'];
+          this.requestQueue.pause(typeof retryAfter === 'string' ? retryAfter : undefined);
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
   async getCurrentRoundFixtures(

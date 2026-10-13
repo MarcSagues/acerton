@@ -1,0 +1,294 @@
+<div class="page">
+  <div class="head-row">
+    <button type="button" class="back-link" (click)="page.backToHub()">
+      <piqo-svg icon="atras" size="20"></piqo-svg>
+      {{ 'quiz.titulo' | t }}
+    </button>
+    @if (page.countdown(); as time) {
+      <span class="countdown mono" role="timer">
+        <piqo-svg icon="reloj" size="14"></piqo-svg>{{ 'quiz.cierraEn' | t: { time: time } }}
+      </span>
+    }
+  </div>
+
+  @switch (page.loadState()) {
+    @case ('loading') {
+      <div class="loading" role="status" [attr.aria-label]="'common.cargando' | t"><app-spinner [size]="32"></app-spinner></div>
+    }
+    @case ('offline') {
+      <app-empty-state
+        icon="sin-conexion"
+        [title]="'quiz.sinConexionTitulo' | t"
+        [text]="'quiz.sinConexionTexto' | t"
+        [ctaLabel]="'common.reintentar' | t"
+        (cta)="page.load()"
+      ></app-empty-state>
+    }
+    @case ('notFound') {
+      <app-empty-state
+        icon="buscar"
+        [title]="'quiz.noEncontradoTitulo' | t"
+        [text]="'quiz.errorNoEncontrado' | t"
+        [ctaLabel]="'quiz.volverQuiz' | t"
+        (cta)="page.backToHub()"
+      ></app-empty-state>
+    }
+    @case ('error') {
+      <app-empty-state
+        icon="error"
+        [title]="'quiz.errorTitulo' | t"
+        [text]="'quiz.errorTexto' | t"
+        [ctaLabel]="'common.reintentar' | t"
+        (cta)="page.load()"
+      ></app-empty-state>
+    }
+    @case ('ready') {
+      @if (page.quiz(); as quiz) {
+        <header class="quiz-head">
+          <span class="eyebrow mono">{{ quiz.competition.name }} · {{ 'quiz.temporada' | t: { label: quiz.seasonLabel } }}</span>
+          <h1>{{ 'quiz.jornadaN' | t: { order: quiz.matchdayOrder } }}</h1>
+        </header>
+
+        @if (page.closedWhilePlaying()) {
+          <div class="banner warning" role="alert">
+            <piqo-svg icon="candado" size="18"></piqo-svg>
+            <span>
+              <strong>{{ 'quiz.cerradoTitulo' | t }}</strong>
+              {{ 'quiz.cerradoTexto' | t }}
+            </span>
+          </div>
+        } @else if (page.pastClose() && page.view() !== 'results') {
+          <div class="banner warning" role="status">
+            <app-spinner [size]="16"></app-spinner>
+            <span>{{ 'quiz.comprobandoCierre' | t }}</span>
+          </div>
+        }
+
+        @if (page.actionError(); as message) {
+          <div class="banner error" role="alert">
+            <piqo-svg icon="alerta" size="18"></piqo-svg>
+            <span>{{ message }}</span>
+          </div>
+        }
+
+        @switch (page.view()) {
+          @case ('intro') {
+            <section class="intro">
+              <p class="intro-text">{{ 'quiz.introTexto' | t: { count: page.total() } }}</p>
+              <p class="intro-note">{{ 'quiz.respuestasCuentan' | t }}</p>
+              <button type="button" class="piqo-primary main-cta" [disabled]="page.starting() || !page.detail()?.canAnswer || page.pastClose()" (click)="page.start()">
+                @if (page.starting()) {
+                  <app-spinner [size]="18"></app-spinner>
+                }
+                {{ 'quiz.empezar' | t }}
+              </button>
+            </section>
+          }
+
+          @case ('question') {
+            @if (page.current(); as q) {
+              <section class="question" [attr.aria-labelledby]="'q-' + q.id">
+                <div class="step-row">
+                  <span class="step mono">{{ 'quiz.preguntaXdeN' | t: { current: page.stepIndex() + 1, total: page.total() } }}</span>
+                  <div class="dots" aria-hidden="true">
+                    @for (item of page.questions(); track item.id; let i = $index) {
+                      <span class="dot" [class.done]="item.selectedOption !== null" [class.current]="i === page.stepIndex()"></span>
+                    }
+                  </div>
+                </div>
+
+                <div class="match">
+                  <div class="team">
+                    @if (q.match.homeTeamLogo) {
+                      <img class="crest" [src]="q.match.homeTeamLogo" alt="" />
+                    } @else {
+                      <span class="crest placeholder" aria-hidden="true"><piqo-svg icon="futbol" size="18"></piqo-svg></span>
+                    }
+                    <span class="team-name">{{ team(q.match, 'home') }}</span>
+                  </div>
+                  <span class="vs mono">vs</span>
+                  <div class="team">
+                    @if (q.match.awayTeamLogo) {
+                      <img class="crest" [src]="q.match.awayTeamLogo" alt="" />
+                    } @else {
+                      <span class="crest placeholder" aria-hidden="true"><piqo-svg icon="futbol" size="18"></piqo-svg></span>
+                    }
+                    <span class="team-name">{{ team(q.match, 'away') }}</span>
+                  </div>
+                </div>
+                <p class="kickoff mono">
+                  {{ q.match.kickoff | date: 'EEE d MMM' }} ·
+                  @if (kickoffTbc(q.match)) {
+                    {{ 'currentMatchday.horaPorConfirmar' | t }}
+                  } @else {
+                    {{ q.match.kickoff | date: 'HH:mm' }}
+                  }
+                </p>
+
+                <h2 class="question-text" [id]="'q-' + q.id">{{ page.questionText(q) }}</h2>
+
+                <div class="options" role="radiogroup" [attr.aria-labelledby]="'q-' + q.id" [class.three]="q.options.length === 3">
+                  @for (option of q.options; track option) {
+                    <button
+                      type="button"
+                      role="radio"
+                      class="option"
+                      [class.selected]="page.savingOption(q) === null && q.selectedOption === option"
+                      [class.saving]="page.savingOption(q) === option"
+                      [style.--progress]="page.savingOption(q) === option ? page.drawPercent(q) : null"
+                      [attr.aria-checked]="page.displayedOption(q) === option"
+                      [disabled]="!page.editable() || page.currentSave()?.status === 'saving'"
+                      (click)="page.select(option)"
+                    >
+                      {{ page.optionLabel(option, q) }}
+                    </button>
+                  }
+                </div>
+
+                <div class="save-row" aria-live="polite">
+                  @switch (page.currentSave()?.status) {
+                    @case ('saving') {
+                      <app-spinner [size]="14"></app-spinner>
+                      <span>{{ 'common.guardando' | t }}</span>
+                    }
+                    @case ('saved') {
+                      <piqo-svg icon="check" size="14" class="ok"></piqo-svg>
+                      <span class="ok">{{ 'quiz.guardado' | t }}</span>
+                    }
+                    @case ('error') {
+                      <piqo-svg icon="alerta" size="14" class="ko"></piqo-svg>
+                      <span class="ko">{{ page.currentSave()?.message }}</span>
+                      @if (page.editable()) {
+                        <button type="button" class="retry-btn" (click)="page.retry(q.id)">{{ 'common.reintentar' | t }}</button>
+                      }
+                    }
+                    @default {
+                      @if (q.selectedOption !== null) {
+                        <piqo-svg icon="check" size="14" class="ok"></piqo-svg>
+                        <span class="ok">{{ 'quiz.guardado' | t }}</span>
+                      }
+                    }
+                  }
+                </div>
+
+                <button type="button" class="link-btn" (click)="page.showSummary()">{{ 'quiz.verResumen' | t }}</button>
+              </section>
+
+            }
+          }
+
+          @case ('summary') {
+            <section class="summary">
+              <h2>{{ 'quiz.resumen' | t }}</h2>
+              @if (page.completed()) {
+                <p class="summary-note ok-note">{{ 'quiz.completadoTexto' | t }}</p>
+              } @else if (!page.allAnswered()) {
+                <p class="summary-note">{{ 'quiz.faltan' | t: { count: page.total() - page.answered() } }}</p>
+              }
+              <ol class="answer-list">
+                @for (q of page.questions(); track q.id; let i = $index) {
+                  <li>
+                    <button type="button" class="answer-row" [disabled]="!page.editable()" (click)="page.goToQuestion(i)">
+                      <span class="answer-num mono">{{ i + 1 }}</span>
+                      <span class="answer-body">
+                        <span class="answer-match">{{ team(q.match, 'home') }} – {{ team(q.match, 'away') }}</span>
+                        <span class="answer-question">{{ page.questionText(q) }}</span>
+                        <span class="answer-value" [class.missing]="q.selectedOption === null">{{ page.answerLabel(q) }}</span>
+                      </span>
+                      @if (page.saveFailed(q)) {
+                        <piqo-svg icon="alerta" size="16" class="ko" [attr.aria-label]="'quiz.noSeGuardo' | t"></piqo-svg>
+                      } @else if (page.editable()) {
+                        <span class="answer-edit">{{ 'quiz.cambiar' | t }}</span>
+                      }
+                    </button>
+                  </li>
+                }
+              </ol>
+              @if (!page.completed()) {
+                <p class="summary-note">{{ 'quiz.respuestasCuentan' | t }}</p>
+                <button
+                  type="button"
+                  class="piqo-primary main-cta"
+                  [disabled]="!page.editable() || !page.allAnswered() || page.completing() || page.anySaving()"
+                  (click)="page.complete()"
+                >
+                  @if (page.completing()) {
+                    <app-spinner [size]="18"></app-spinner>
+                  }
+                  {{ 'quiz.finalizar' | t }}
+                </button>
+              }
+              <button type="button" class="piqo-secondary main-cta" (click)="page.backToHub()">{{ 'quiz.volverQuiz' | t }}</button>
+            </section>
+          }
+
+          @case ('results') {
+            <section class="results">
+              <div class="results-head">
+                <span class="score mono">{{ page.points() }}</span>
+                <span class="score-sub">
+                  {{ 'quiz.dePreguntasValidas' | t: { count: page.validCount() } }}
+                  @if (page.pendingCount() > 0) {
+                    <span class="muted">· {{ 'quiz.nPendientes' | t: { count: page.pendingCount() } }}</span>
+                  }
+                  @if (page.total() - page.validCount() > 0) {
+                    <span class="muted">· {{ 'quiz.nAnuladas' | t: { count: page.total() - page.validCount() } }}</span>
+                  }
+                </span>
+              </div>
+              @if (!quiz.participation) {
+                <p class="summary-note">{{ 'quiz.noParticipaste' | t }}</p>
+              }
+              <ol class="answer-list">
+                @for (q of page.questions(); track q.id; let i = $index) {
+                  <li class="result-row" [attr.data-outcome]="page.outcome(q)">
+                    <span class="answer-num mono">{{ i + 1 }}</span>
+                    <span class="answer-body">
+                      <span class="answer-match">
+                        {{ team(q.match, 'home') }}
+                        @if (q.match.homeScore !== null && q.match.awayScore !== null) {
+                          <span class="mono">{{ q.match.homeScore }}–{{ q.match.awayScore }}</span>
+                        } @else {
+                          –
+                        }
+                        {{ team(q.match, 'away') }}
+                      </span>
+                      <span class="answer-question">{{ page.questionText(q) }}</span>
+                      <span class="answer-line">
+                        {{ 'quiz.tuRespuesta' | t }}: <strong [class.missing]="q.selectedOption === null">{{ page.answerLabel(q) }}</strong>
+                      </span>
+                      @if (q.resolution === 'RESOLVED' && q.correctOption) {
+                        <span class="answer-line">{{ 'quiz.respuestaCorrecta' | t }}: <strong>{{ page.optionLabel(q.correctOption, q) }}</strong></span>
+                      }
+                    </span>
+                    <span class="outcome-chip mono" [attr.data-outcome]="page.outcome(q)">{{ page.outcomeLabel(q) }}</span>
+                  </li>
+                }
+              </ol>
+              <button type="button" class="piqo-secondary main-cta" (click)="page.backToHub()">{{ 'quiz.volverQuiz' | t }}</button>
+            </section>
+          }
+        }
+      }
+    }
+  }
+</div>
+
+<!--
+  Fuera de .page a proposito: la animacion de entrada de pantalla le deja un
+  transform, y con el un position: fixed quedaria anclado a .page (debajo del
+  contenido) en vez de a las esquinas de la pantalla. Al guardar una opcion se
+  pasa sola a la siguiente: aqui solo volver atras o dejarla para luego.
+-->
+@if (page.loadState() === 'ready' && page.view() === 'question' && page.current()) {
+  <nav class="step-nav" [attr.aria-label]="'quiz.navegacionPreguntas' | t">
+    @if (page.stepIndex() > 0) {
+      <button type="button" class="step-link prev" (click)="page.previous()">
+        <piqo-svg icon="atras" size="16"></piqo-svg>{{ 'quiz.anterior' | t }}
+      </button>
+    }
+    <button type="button" class="step-link next" (click)="page.skip()">
+      {{ 'quiz.saltar' | t }}<piqo-svg icon="flecha" size="16"></piqo-svg>
+    </button>
+  </nav>
+}

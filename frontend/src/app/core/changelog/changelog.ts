@@ -44,6 +44,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-05',
     changes: [
       {
+        es: 'Nuevo Quiz de jornada: responde preguntas sobre los partidos de cada liga y compite con toda la comunidad, aunque no tengas grupo. Lo encuentras abajo a la derecha; tu Perfil sigue en tu avatar.',
+        en: "New Matchday quiz: answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.",
+        ca: 'Nou Quiz de jornada: respon preguntes sobre els partits de cada lliga i competeix amb tota la comunitat, encara que no tinguis grup. El trobaràs a baix a la dreta; el teu Perfil continua al teu avatar.',
+        fr: 'Nouveau Quiz de la journée : réponds à des questions sur les matchs de chaque ligue et affronte toute la communauté, même sans groupe. Il est en bas à droite ; ton Profil reste accessible depuis ton avatar.',
+        it: 'Nuovo Quiz della giornata: rispondi a domande sulle partite di ogni campionato e sfida tutta la community, anche senza gruppo. Lo trovi in basso a destra; il tuo Profilo resta sul tuo avatar.',
+        de: 'Neu: das Spieltags-Quiz. Beantworte Fragen zu den Spielen jeder Liga und miss dich mit der ganzen Community, auch ohne Gruppe. Du findest es unten rechts; dein Profil erreichst du weiter über deinen Avatar.',
+      },
+      {
         es: 'En Tabla, una gráfica de líneas enseña cómo vais tú y los primeros del grupo jornada a jornada, en Semanal y en Total. Toca «Tú» para ver solo la tuya.',
         en: 'In Table, a line chart shows how you and the group leaders are doing matchday by matchday, in Weekly and Total. Tap "You" to see just yours.',
         ca: 'A Taula, una gràfica de línies mostra com aneu tu i els primers del grup jornada a jornada, a Setmanal i a Total. Toca «Tu» per veure només la teva.',

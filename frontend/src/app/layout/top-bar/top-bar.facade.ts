@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
@@ -11,6 +11,8 @@ export class TopBarFacade {
 
   readonly currentUser = this.authService.currentUser;
   readonly unreadCount = this.notificationsFeed.unreadCount;
+  /** Punto de "subiste de nivel" sin ver: antes iba en la pestaña Perfil de la barra inferior, que ahora es Quiz. */
+  readonly hasUnreadLevelUp = computed(() => this.notificationsFeed.unreadLevelUps().length > 0);
 
   constructor() {
     // El top-bar esta presente en todo el shell autenticado: es el punto de

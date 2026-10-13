@@ -3,6 +3,12 @@
  * escrito en el codigo (ver error-messages.ts).
  */
 export const messages: Record<string, string> = {
+  'Quiz no encontrado': 'No s’ha trobat el quiz',
+  'El quiz ya está cerrado': 'El quiz ja està tancat',
+  'El quiz todavía no está abierto': 'El quiz encara no està obert',
+  'Respuesta de quiz no válida': 'Resposta del quiz no vàlida',
+  'Contesta todas las preguntas del quiz': 'Respon totes les preguntes del quiz',
+  'Temporada de quiz no válida': 'Temporada del quiz no vàlida',
   'Falta el refresh token': 'Falta el refresh token',
   'Ya existe una cuenta con ese email': 'Ja existeix un compte amb aquest correu',
   'Credenciales inválidas': 'Credencials no vàlides',

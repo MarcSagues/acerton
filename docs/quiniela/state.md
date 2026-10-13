@@ -1,5 +1,28 @@
 # Estado actual
 
+## 2026-10-12 — Quiz de jornada global: backend (fuera de sprint)
+
+Petición explícita del usuario: evento por liga/jornada, preguntas variadas, partidos destacados,
+clasificación general y por liga, acceso sin grupo y cierre al primer partido de la jornada. Reparto:
+Codex backend/integración; Opus frontend. Plan y contrato en `quiz-jornada-plan.md`; entrega de API,
+comprobaciones y preparación del entorno en `quiz-jornada-backend-handoff.md`.
+
+**Hecho en backend**: tablas propias y migración aditiva, seis endpoints autenticados, publicación
+de preguntas fijas, destacados, guardado parcial/idempotente, validación atómica y cierre irreversible
+con bloqueo de fila, corrección/puntuación y rankings paginados por temporada sin grupos; procesos
+de calendario independientes de grupos y cola compartida de llamadas al proveedor con cooldown 429.
+Errores traducidos en los seis idiomas. Sin cambios de campos/rutas respecto al contrato v1.
+
+**Verificado**: build backend; 480 tests en 35 suites (42 nuevos, incluidos ocho tests de integración
+con MySQL real y Nest HTTP/JWT); migraciones aplicadas solo a `acerton_quiz_test` local. No aplicado
+a la base habitual ni a producción. El lint estándar detecta finales CRLF preexistentes en el checkout;
+no se modifican archivos ajenos para normalizarlos. Comprobación adicional de los 176 archivos backend
+aceptando finales de línea del checkout (`endOfLine: auto`): 0 errores y 0 advertencias.
+
+**Pendiente**: conectar/verificar las pantallas de Opus contra el servidor nuevo, aplicar migración
+en el entorno de integración elegido, revisión móvil y comprobar calendarios del proveedor real.
+No considerar la funcionalidad completa ni desplegada por tener el backend terminado.
+
 ## 2026-10-12 — Tabla: gráfica de líneas del grupo y "Rey del marcador exacto" (fuera de sprint)
 
 A petición explícita del usuario (ver `decisions.md`, misma fecha). Rama `claude/clasificacion-grafica-lineas`.

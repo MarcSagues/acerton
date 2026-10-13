@@ -74,6 +74,18 @@
       </div>
     }
 
+    @if (page.isStandaloneWelcome) {
+      <!-- /welcome no tiene barra inferior: aqui esta el unico acceso al Quiz, que se juega sin grupo. -->
+      <button type="button" class="explore-public-btn quiz-btn" (click)="page.goToQuiz()">
+        <span class="explore-icon"><piqo-svg icon="objetivo" size="20"></piqo-svg></span>
+        <span class="explore-text">
+          <span class="explore-title">{{ 'quiz.titulo' | t }}</span>
+          <span class="explore-sub">{{ 'quiz.accesoSinGrupo' | t }}</span>
+        </span>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </button>
+    }
+
     <button type="button" class="explore-public-btn" (click)="page.goToExplorePublic()">
       <span class="explore-icon"><piqo-svg icon="publico" size="20"></piqo-svg></span>
       <span class="explore-text">

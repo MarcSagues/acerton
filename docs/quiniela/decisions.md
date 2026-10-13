@@ -4,6 +4,33 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-12 — Quiz global por jornada (fuera de sprint)
+
+El usuario pide un evento independiente de los grupos con preguntas variadas, equipos destacados,
+clasificación general y por liga, acceso desde la pestaña inferior derecha y cierre al empezar el
+primer partido de cada jornada. Plan y contrato: `quiz-jornada-plan.md`. Codex implementa servidor;
+Opus implementa interfaz y traducciones frontend. No se cambia el contrato unilateralmente.
+
+Decisiones de implementación siguiendo el plan propuesto: hasta diez partidos reales de una sola
+jornada, normalmente diez preguntas (ocho si solo hay un partido), 1 punto por acierto, empates de
+clasificación con posición compartida y suma por temporada. General suma todas las ligas, por lo
+que jugar varias ofrece más oportunidades de puntos. Sin grupo obligatorio, XP ni comodines.
+
+Preguntas, participaciones y respuestas se guardan separadas de las quinielas de grupo. Una sola
+publicación por Matchday; preguntas fijas para todos. Partidos obligatorios Barcelona/Real Madrid/
+Liverpool primero; aliases exactos normalizados con el esquema actual. Apertura reutiliza la regla
+de habilitación existente, pero el cierre usa TODA la jornada y queda persistido irreversible.
+El guardado se valida bajo bloqueo de fila del evento y vuelve a comprobar el plazo al finalizar.
+
+Marcadores en directo no puntúan; aplazados esperan y cancelados se anulan sin puntos. La corrección
+recalcula totales, nunca los incrementa al repetir el job. Los procesos mantienen ligas aunque nadie
+las tenga en un grupo. Conference queda fuera por el placeholder 0 del catálogo. La cola de API es
+compartida con los grupos y limita solicitudes dentro de un proceso; varias réplicas necesitan una
+coordinación adicional si comparten clave. Correcciones automáticas de finales: ventana de siete días.
+
+La migración se ha aplicado únicamente a una base MySQL de pruebas local aislada. No se ha desplegado
+ni aplicado a la base habitual. Detalles y comprobaciones en `quiz-jornada-backend-handoff.md`.
+
 ## 2026-10-12 — Tabla: gráfica de líneas del grupo y "Rey del marcador exacto" (fuera de sprint)
 
 Petición explícita del usuario: en Tabla, por defecto, una gráfica de líneas con la evolución de los puntos
