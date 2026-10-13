@@ -30,7 +30,7 @@ export class PlayersService {
         favoriteTeam: true,
       },
     });
-    if (!user) throw new NotFoundException('Jugador no encontrado');
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     const isMe = requesterId === userId;
     const [
