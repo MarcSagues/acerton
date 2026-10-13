@@ -22,7 +22,13 @@
 }
 
 .head-row {
-  padding: 12px 20px 0;
+  /* Fijo bajo la barra superior (ver --p4-topbar-h en styles.scss): el selector de grupo no se va al hacer scroll. */
+  position: sticky;
+  top: var(--p4-topbar-h);
+  z-index: 15;
+  padding: 12px 20px 8px;
+  background: color-mix(in srgb, var(--p4-bg) 94%, transparent);
+  backdrop-filter: blur(12px);
 }
 
 .title-row {

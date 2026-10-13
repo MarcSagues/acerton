@@ -1,5 +1,14 @@
 # Estado actual
 
+## 2026-10-13 — Barra superior y selector de grupo fijos (fuera de sprint)
+
+Petición del usuario: la barra de arriba (Piqo, avisos, perfil) se queda siempre visible al hacer scroll, y en las
+vistas con selector de grupo (Jornada y Tabla) el selector se queda pegado justo debajo. `app-top-bar` pasa a
+`position: sticky` (el margen de seguridad de iOS va ahora dentro de la barra, no en el shell) y `.head-row` de
+Jornada y Tabla usa `top: var(--p4-topbar-h)` (variable en `styles.scss`: 52px + margen de seguridad). Solo CSS.
+**Verificado** en navegador (local) en Jornada y Tabla y 211 tests del frontend; **NO** en iPhone (margen de
+seguridad y notch).
+
 ## 2026-10-13 — Retoques de la 1.1.0 y ficha de la App Store (fuera de sprint)
 
 Equipo favorito: quitarlo es ahora un botón con una X (icono `cerrar`) junto a la bandera, en vez de un texto.
