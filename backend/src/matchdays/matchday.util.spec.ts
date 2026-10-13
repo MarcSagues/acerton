@@ -1,6 +1,10 @@
 import {
   computeMatchResult,
+  isMatchEditable,
   isMatchPredictable,
+  isMatchResolved,
+  keepsMatchdayCurrent,
+  MATCH_IN_PLAY_WINDOW_MS,
   parseRoundOrder,
   shouldCloseMatchday,
   shouldSendReminder,
@@ -205,5 +209,67 @@ describe('sortCurrentMatchdayEntries', () => {
     ];
     const sorted = sortCurrentMatchdayEntries(entries);
     expect(sorted.map((e) => e.competitionId)).toEqual(['recent', 'old']);
+  });
+});
+
+describe('isMatchEditable (aplazados y cancelados)', () => {
+  const now = new Date('2026-03-05T20:00:00Z');
+  const past = new Date('2026-03-01T20:00:00Z');
+
+  it('aplazados y cancelados admiten pronostico aunque su fecha original ya haya pasado', () => {
+    expect(isMatchEditable({ status: 'POSTPONED', kickoff: past }, now)).toBe(true);
+    expect(isMatchEditable({ status: 'CANCELLED', kickoff: past }, now)).toBe(true);
+  });
+
+  it('en juego o terminado, no; por empezar, igual que isMatchPredictable', () => {
+    expect(isMatchEditable({ status: 'LIVE', kickoff: past }, now)).toBe(false);
+    expect(isMatchEditable({ status: 'FINISHED', kickoff: past }, now)).toBe(false);
+    expect(isMatchEditable({ status: 'SCHEDULED', kickoff: past }, now)).toBe(false);
+    expect(
+      isMatchEditable({ status: 'SCHEDULED', kickoff: new Date('2026-03-06T00:00:00Z') }, now),
+    ).toBe(true);
+  });
+});
+
+describe('keepsMatchdayCurrent', () => {
+  const now = new Date('2026-03-05T20:00:00Z');
+  const minus = (ms: number) => new Date(now.getTime() - ms);
+
+  it('un partido por jugar o empezado hace menos de la ventana mantiene su jornada como la actual', () => {
+    expect(
+      keepsMatchdayCurrent({ status: 'SCHEDULED', kickoff: new Date('2026-03-06T00:00:00Z') }, now),
+    ).toBe(true);
+    expect(
+      keepsMatchdayCurrent(
+        { status: 'LIVE', kickoff: minus(MATCH_IN_PLAY_WINDOW_MS - 60_000) },
+        now,
+      ),
+    ).toBe(true);
+  });
+
+  it('pasada la ventana sin resultado, o aplazado, cancelado o terminado, ya no', () => {
+    expect(
+      keepsMatchdayCurrent({ status: 'LIVE', kickoff: minus(MATCH_IN_PLAY_WINDOW_MS) }, now),
+    ).toBe(false);
+    expect(
+      keepsMatchdayCurrent(
+        { status: 'SCHEDULED', kickoff: minus(MATCH_IN_PLAY_WINDOW_MS + 1) },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      keepsMatchdayCurrent({ status: 'POSTPONED', kickoff: new Date('2026-03-06T00:00:00Z') }, now),
+    ).toBe(false);
+    expect(
+      keepsMatchdayCurrent({ status: 'CANCELLED', kickoff: new Date('2026-03-06T00:00:00Z') }, now),
+    ).toBe(false);
+    expect(keepsMatchdayCurrent({ status: 'FINISHED', kickoff: minus(60_000) }, now)).toBe(false);
+  });
+
+  it('un cancelado cuenta como resuelto al cerrar la jornada; un aplazado, no', () => {
+    expect(isMatchResolved({ status: 'CANCELLED' })).toBe(true);
+    expect(isMatchResolved({ status: 'FINISHED' })).toBe(true);
+    expect(isMatchResolved({ status: 'POSTPONED' })).toBe(false);
+    expect(isMatchResolved({ status: 'LIVE' })).toBe(false);
   });
 });
