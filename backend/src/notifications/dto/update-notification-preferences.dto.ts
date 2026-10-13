@@ -44,4 +44,16 @@ export class UpdateNotificationPreferencesDto {
   @IsOptional()
   @IsBoolean()
   levelUp?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  quizOpening?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  quizReminder24h?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  quizReminder1h?: boolean;
 }
