@@ -99,6 +99,38 @@
     </details>
 
     <details class="group" open>
+      <summary>{{ 'notificationSettings.quiz' | t }}</summary>
+      <div class="rows">
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">{{ 'notificationSettings.quizAbierto' | t }}</p>
+            <p class="hint">{{ 'notificationSettings.quizAbiertoHint' | t }}</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.quizOpening" [class.disabled]="page.isSaving('quizOpening')" (click)="page.togglePreference('quizOpening')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">{{ 'notificationSettings.24HorasAntesCierre' | t }}</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.quizReminder24h" [class.disabled]="page.isSaving('quizReminder24h')" (click)="page.togglePreference('quizReminder24h')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <div class="row">
+          <div class="row-text">
+            <p class="row-title">{{ 'notificationSettings.1HoraAntesCierre' | t }}</p>
+          </div>
+          <button type="button" class="toggle" [class.on]="preferences.quizReminder1h" [class.disabled]="page.isSaving('quizReminder1h')" (click)="page.togglePreference('quizReminder1h')">
+            <span class="knob"></span>
+          </button>
+        </div>
+        <p class="hint group-hint">{{ 'notificationSettings.quizSoloSiNoTerminado' | t }}</p>
+      </div>
+    </details>
+
+    <details class="group" open>
       <summary>{{ 'notificationSettings.actividad' | t }}</summary>
       <div class="rows">
         <div class="row">

@@ -31,8 +31,8 @@ export class NotificationsPageFacade {
   /**
    * Al pulsar un aviso concreto: marca solo ese como leido (quita su punto
    * rojo) y, segun el tipo, navega a donde tenga sentido verlo — de
-   * momento solo "subiste de nivel" lleva a elegir avatar (la recompensa
-   * que acabas de desbloquear).
+   * momento "subiste de nivel" lleva a elegir avatar (la recompensa que
+   * acabas de desbloquear) y los avisos del Quiz, al centro del Quiz.
    */
   openNotice(notice: NoticeItem): void {
     if (notice.unread) {
@@ -40,6 +40,8 @@ export class NotificationsPageFacade {
     }
     if (notice.type === 'LEVEL_UP') {
       this.router.navigate(['/profile/avatar']);
+    } else if (notice.type === 'QUIZ_OPENED' || notice.type === 'QUIZ_CLOSING_SOON') {
+      this.router.navigate(['/quiz']);
     }
   }
 }

@@ -248,6 +248,10 @@ model NotificationPreference {
   reengagement           Boolean @default(true)
   /// Subida de nivel (Sprint 14, XP). No depende de ningun grupo.
   levelUp                Boolean @default(true)
+  /// Quiz de jornada (opcionales, apagados de serie): al abrirse, 24 h y 1 h antes del cierre.
+  quizOpening            Boolean @default(false)
+  quizReminder24h        Boolean @default(false)
+  quizReminder1h         Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -266,6 +270,8 @@ enum NotificationType {
   BADGE_EARNED
   REENGAGEMENT
   LEVEL_UP
+  QUIZ_OPENED
+  QUIZ_CLOSING_SOON
 }
 
 /// Historial real de avisos por usuario (pantalla "Avisos" / campanita del
@@ -766,6 +772,10 @@ model QuizEvent {
   closesAt     DateTime
   openedAt     DateTime?
   lockedAt     DateTime?
+  /// Avisos opcionales ya enviados (ver QuizRemindersService): uno por evento y franja.
+  openNotifiedAt    DateTime?
+  reminder24hSentAt DateTime?
+  reminder1hSentAt  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

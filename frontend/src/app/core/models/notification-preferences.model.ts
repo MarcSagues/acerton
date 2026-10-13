@@ -10,6 +10,9 @@ export interface NotificationPreferences {
   seasonFinishedTrophies: boolean;
   reengagement: boolean;
   levelUp: boolean;
+  quizOpening: boolean;
+  quizReminder24h: boolean;
+  quizReminder1h: boolean;
   groups: { groupId: string; name: string; muted: boolean }[];
 }
 
