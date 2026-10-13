@@ -1,5 +1,6 @@
 # Estado actual
 
+<<<<<<< HEAD
 ## 2026-10-12 — Tabla: gráfica de líneas del grupo y "Rey del marcador exacto" (fuera de sprint)
 
 A petición explícita del usuario (ver `decisions.md`, misma fecha). Rama `claude/clasificacion-grafica-lineas`.
@@ -25,6 +26,21 @@ en el grupo 1X2; los recuentos coinciden con una consulta SQL independiente.
 
 **Necesita**: desplegar el backend (sin él, solo sale la gráfica individual y no sale el rey del exacto) y
 build nueva del frontend. El backend de `dev` (Postgres) necesita el mismo cambio a mano.
+=======
+## 2026-10-12 — Avisos con el grupo y puntos de toda la jornada (fuera de sprint)
+
+Aviso del usuario: los avisos de un grupo no decían de qué grupo eran, y el de jornada terminada
+("Has ganado X puntos") parecía hablar de un resultado y no de la jornada. **Comprobado** en la BD de
+dev (Neon): el número ya era la suma de toda la jornada en ese grupo (coincide con la Tabla semanal);
+lo confuso era el texto: título "Regular Season - 6 terminada" sin grupo ni liga, idéntico en cada grupo.
+
+**Hecho** (solo backend, `NotificationsService`): título con el nombre del grupo en jornada terminada
+y en partidos por pronosticar ("Los del bar · Jornada 6 terminada"), "Regular Season - N" pasa a
+"Jornada N", y el cuerpo dice la liga y "en total": "Has sumado 7 puntos en total en la jornada 6 de
+La Liga. Vas 1º en la clasificación del grupo." Línea en la 1.0.3 del historial. **Verificado**: tests
+de notificaciones y jobs (54), `tsc`. Funciona al desplegar el backend, sin build. Los avisos siguen
+solo en español (texto generado en el servidor), igual que antes.
+>>>>>>> origin/main
 
 ## 2026-10-05 — Catalán, francés, italiano y alemán (fuera de sprint)
 

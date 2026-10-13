@@ -4,6 +4,8 @@ import { NotificationsService } from './notifications.service';
 function buildPrismaMock() {
   return {
     groupMembership: { findMany: jest.fn() },
+    group: { findUnique: jest.fn().mockResolvedValue(null) },
+    matchday: { findUnique: jest.fn().mockResolvedValue(null) },
     groupCompetition: { findMany: jest.fn().mockResolvedValue([]) },
     rankingSnapshot: { findFirst: jest.fn().mockResolvedValue(null) },
     prediction: { findMany: jest.fn() },
@@ -145,6 +147,27 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
       expect.objectContaining({ body: expect.stringContaining('Vas 2º en la clasificación') }),
     );
   });
+  it('pone el grupo en el titulo y deja claro que son los puntos de toda la jornada de esa liga', async () => {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
+    prisma.prediction.findMany.mockResolvedValue([
+      { userId: 'u1', pointsEarned: 5 },
+      { userId: 'u1', pointsEarned: 2 },
+    ]);
+    prisma.group.findUnique.mockResolvedValue({ name: 'Los del bar' });
+    prisma.matchday.findUnique.mockResolvedValue({ competition: { name: 'La Liga' } });
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUser').mockResolvedValue(undefined);
+
+    await service.notifyMatchdayFinished('g1', 'md1', 'Regular Season - 6');
+
+    expect(sendSpy).toHaveBeenCalledWith('u1', {
+      title: 'Los del bar · Jornada 6 terminada',
+      body: 'Has sumado 7 puntos en total en la jornada 6 de La Liga.',
+      data: { type: 'MATCHDAY_FINISHED', groupId: 'g1', matchdayId: 'md1' },
+    });
+  });
 });
 
 describe('NotificationsService.notifyBadgeEarned', () => {
@@ -283,6 +306,36 @@ describe('NotificationsService.notifyMatchesClosingSoon', () => {
     expect(sendSpy).not.toHaveBeenCalled();
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
     expect(prisma.notification.createMany).not.toHaveBeenCalled();
+  });
+  it('pone el grupo en el titulo y la jornada y liga en el texto', async () => {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', mutedNotifications: false },
+    ]);
+    prisma.prediction.findMany.mockResolvedValue([]);
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastClosingReminderPushAt: null }]);
+    prisma.group.findUnique.mockResolvedValue({ name: 'Los del bar' });
+    prisma.matchday.findUnique.mockResolvedValue({ competition: { name: 'La Liga' } });
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
+
+    await service.notifyMatchesClosingSoon(
+      'g1',
+      'md1',
+      'Regular Season - 6',
+      ['m1', 'm2'],
+      '1 hora',
+      'reminder1h',
+    );
+
+    expect(sendSpy).toHaveBeenCalledWith(
+      ['u1'],
+      expect.objectContaining({
+        title: 'Los del bar · Partidos por pronosticar',
+        body: '2 partidos de la jornada 6 de La Liga empiezan en 1 hora y todavía no los has pronosticado.',
+      }),
+    );
   });
 });
 
