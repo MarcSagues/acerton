@@ -123,6 +123,8 @@ export interface QuizOverview {
 
 export interface QuizRankingRow {
   position: number;
+  /** Orden total de la fila (los empates comparten `position` pero no `rowNumber`): es el cursor para pedir tramos de la clasificacion. */
+  rowNumber: number;
   userId: string;
   name: string;
   avatarUrl: string | null;

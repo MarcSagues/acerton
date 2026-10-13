@@ -122,6 +122,7 @@ export function overview(overrides: Partial<QuizOverview> = {}): QuizOverview {
 export function rankingRow(overrides: Partial<QuizRankingRow> = {}): QuizRankingRow {
   return {
     position: 1,
+    rowNumber: 1,
     userId: 'u2',
     name: 'Ana',
     avatarUrl: null,

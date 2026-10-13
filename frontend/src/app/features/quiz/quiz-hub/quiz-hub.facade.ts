@@ -5,6 +5,14 @@ import { QuizService } from '../../../core/services/quiz.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { QuizCompetition, QuizOverview, QuizRanking, QuizRankingRow, QuizSummary } from '../../../core/models/quiz.model';
+import {
+  RankingSegment,
+  buildRankingItems,
+  mergeSegment,
+  pageBefore,
+  segmentFromRows,
+  windowAround,
+} from '../domain/ranking-segments';
 import { formatCountdown } from '../../../shared/countdown.util';
 import { competitionTrophyId } from '../../../shared/utils/competition-trophy';
 import { t } from '../../../core/i18n/translate';
@@ -31,6 +39,8 @@ export type LoadState = 'loading' | 'ready' | LoadFailure;
 /** Liga elegida para jugar, recordada entre visitas (solo comodidad: si falla el almacenamiento, se elige otra). */
 export const QUIZ_COMPETITION_STORAGE_KEY = 'piqo.quiz.competitionId';
 export const QUIZ_RANKING_PAGE_SIZE = 20;
+/** Al saltar a mi puesto sin tenerlo cargado: cuantas filas cargar por encima y por debajo de la mia. */
+export const QUIZ_RANKING_NEIGHBOURS = 10;
 
 @Injectable()
 export class QuizHubFacade {
@@ -83,21 +93,29 @@ export class QuizHubFacade {
   /** Temporada pedida (null = la que el servidor considere actual). */
   readonly rankingSeason = signal<string | null>(null);
   readonly rankingState = signal<LoadState>('loading');
-  readonly rankingRows = signal<QuizRankingRow[]>([]);
+  /** Tramos de la clasificacion ya cargados (ver ranking-segments.ts): uno al abrir, y otro mas al saltar a "mi puesto" si esta lejos. */
+  private readonly rankingSegments = signal<RankingSegment[]>([]);
+  readonly rankingRows = computed(() => this.rankingSegments().flatMap((segment) => segment.rows));
   readonly rankingMe = signal<QuizRankingRow | null>(null);
   readonly rankingTotal = signal(0);
   readonly rankingSeasonLabel = signal<string | null>(null);
   readonly loadingMore = signal(false);
-  private nextCursor: string | null = null;
+  /** Jugador cuya fila se resalta un momento tras saltar a ella. */
+  readonly flashUserId = signal<string | null>(null);
+  /**
+   * Mientras dura el salto con scroll suave a mi puesto, el scroll infinito se pausa: si no, al pasar por el final de un tramo se
+   * cargaria otra pagina, las filas se moverian y el salto se quedaria corto.
+   */
+  readonly jumping = signal(false);
   private rankingRequestId = 0;
+  private readonly rankingInFlight = new Set<string>();
 
-  private readonly rankingHasNext = signal(false);
-  readonly hasMoreRanking = computed(() => this.rankingState() === 'ready' && this.rankingHasNext());
-  /** La fila propia fuera de lo cargado: se fija aparte para que siempre se vea. */
-  readonly myRowOutsidePage = computed(() => {
+  /** La lista tal como se pinta: filas, centinelas del scroll infinito y huecos entre tramos. */
+  readonly rankingItems = computed(() => buildRankingItems(this.rankingSegments(), this.rankingTotal()));
+  /** Mi fila esta entre las cargadas (si no, al pulsar "mi puesto" se carga una ventana alrededor). */
+  readonly meLoaded = computed(() => {
     const me = this.rankingMe();
-    if (!me) return null;
-    return this.rankingRows().some((row) => row.userId === me.userId) ? null : me;
+    return !!me && this.rankingRows().some((row) => row.userId === me.userId);
   });
   /** Temporadas conocidas (de las jornadas y de la clasificacion), de la mas nueva a la mas antigua. */
   readonly seasonOptions = computed(() => {
@@ -110,7 +128,7 @@ export class QuizHubFacade {
 
   init(): void {
     this.loadOverview();
-    this.loadRanking(false);
+    this.loadRanking();
     const tick = setInterval(() => this.onTick(), 1000);
     this.destroyRef.onDestroy(() => clearInterval(tick));
   }
@@ -239,69 +257,126 @@ export class QuizHubFacade {
   setRankingCompetition(competitionId: string | null): void {
     if (competitionId === this.rankingCompetitionId()) return;
     this.rankingCompetitionId.set(competitionId);
-    this.loadRanking(false);
+    this.loadRanking();
   }
 
   setRankingSeason(seasonLabel: string): void {
     if (seasonLabel === (this.rankingSeason() ?? this.rankingSeasonLabel())) return;
     this.rankingSeason.set(seasonLabel);
-    this.loadRanking(false);
+    this.loadRanking();
   }
 
   retryRanking(): void {
-    this.loadRanking(false);
+    this.loadRanking();
   }
 
-  loadMoreRanking(): void {
-    if (!this.hasMoreRanking() || this.loadingMore()) return;
-    this.loadRanking(true);
+  /** Scroll infinito: carga la pagina que sigue a la fila `end` (el final de un tramo). */
+  loadAfter(end: number): void {
+    if (this.jumping()) return;
+    void this.fetchRange(`after:${end}`, end, QUIZ_RANKING_PAGE_SIZE);
+  }
+
+  /** Hueco entre tramos: carga la pagina que precede al tramo que empieza en `start`. */
+  loadBefore(start: number): void {
+    const page = pageBefore(start, QUIZ_RANKING_PAGE_SIZE);
+    if (page) void this.fetchRange(`before:${start}`, page.cursor, page.limit);
+  }
+
+  /**
+   * Asegura que mi fila esta cargada: si no lo esta, pide una ventana de filas alrededor de mi puesto (para ver a quienes tengo cerca)
+   * y la une a lo ya cargado. Devuelve si mi fila quedo cargada.
+   */
+  async ensureMeLoaded(): Promise<boolean> {
+    const me = this.rankingMe();
+    if (!me) return false;
+    if (!this.meLoaded()) {
+      const window = windowAround(me.rowNumber, QUIZ_RANKING_NEIGHBOURS);
+      await this.fetchRange(`around:${me.rowNumber}`, window.cursor, window.limit);
+    }
+    return this.meLoaded();
+  }
+
+  /** Resalta un momento la fila de un jugador (tras saltar a ella). */
+  flash(userId: string): void {
+    this.flashUserId.set(userId);
+    setTimeout(() => {
+      if (this.flashUserId() === userId) this.flashUserId.set(null);
+    }, 1800);
   }
 
   isMe(row: QuizRankingRow): boolean {
     return row.userId === this.currentUserId;
   }
 
-  private loadRanking(append: boolean): void {
+  /** Primera pagina de la clasificacion (al abrir y al cambiar de liga o temporada): sustituye a lo que hubiera cargado. */
+  private loadRanking(): void {
     const request = ++this.rankingRequestId;
-    if (append) {
-      this.loadingMore.set(true);
-    } else {
-      this.loadingMore.set(false);
-      this.rankingState.set('loading');
-    }
+    this.rankingInFlight.clear();
+    this.loadingMore.set(false);
+    this.rankingState.set('loading');
     this.quizService
       .getRanking({
         competitionId: this.rankingCompetitionId(),
         seasonLabel: this.rankingSeason(),
-        cursor: append ? this.nextCursor : null,
+        cursor: null,
         limit: QUIZ_RANKING_PAGE_SIZE,
       })
       .subscribe({
         next: (ranking) => {
           // Respuesta de un filtro anterior (se cambio de liga o temporada mientras llegaba): se descarta.
           if (request !== this.rankingRequestId) return;
-          this.applyRanking(ranking, append);
+          this.applyRanking(ranking, false);
         },
         error: (error: HttpErrorResponse) => {
           if (request !== this.rankingRequestId) return;
-          if (append) {
-            this.loadingMore.set(false);
-            this.toast.show(error.status === 0 ? t('quiz.sinConexion') : t('quiz.errorCargarMas'));
-            return;
-          }
           this.rankingState.set(loadFailureOf(error.status));
         },
       });
   }
 
-  private applyRanking(ranking: QuizRanking, append: boolean): void {
-    this.rankingRows.set(append ? [...this.rankingRows(), ...ranking.rows] : ranking.rows);
+  /** Pide un tramo de filas (`cursor` = filas a saltar) y lo une a los ya cargados. Una peticion por tramo a la vez. */
+  private fetchRange(key: string, cursor: number, limit: number): Promise<boolean> {
+    if (this.rankingState() !== 'ready' || this.rankingInFlight.has(key)) return Promise.resolve(false);
+    const request = this.rankingRequestId;
+    this.rankingInFlight.add(key);
+    this.loadingMore.set(true);
+    return new Promise((resolve) => {
+      this.quizService
+        .getRanking({
+          competitionId: this.rankingCompetitionId(),
+          seasonLabel: this.rankingSeason(),
+          cursor: String(cursor),
+          limit,
+        })
+        .subscribe({
+          next: (ranking) => {
+            this.rankingInFlight.delete(key);
+            if (request !== this.rankingRequestId) return resolve(false);
+            this.applyRanking(ranking, true);
+            resolve(true);
+          },
+          error: (error: HttpErrorResponse) => {
+            this.rankingInFlight.delete(key);
+            if (request !== this.rankingRequestId) return resolve(false);
+            this.loadingMore.set(this.rankingInFlight.size > 0);
+            this.toast.show(error.status === 0 ? t('quiz.sinConexion') : t('quiz.errorCargarMas'));
+            resolve(false);
+          },
+        });
+    });
+  }
+
+  private applyRanking(ranking: QuizRanking, merge: boolean): void {
+    const incoming = segmentFromRows(ranking.rows);
+    if (merge) {
+      if (incoming) this.rankingSegments.set(mergeSegment(this.rankingSegments(), incoming));
+    } else {
+      this.rankingSegments.set(incoming ? [incoming] : []);
+    }
     this.rankingMe.set(ranking.me);
     this.rankingTotal.set(ranking.total);
     this.rankingSeasonLabel.set(ranking.seasonLabel);
-    this.nextCursor = ranking.nextCursor;
-    this.rankingHasNext.set(ranking.nextCursor !== null);
-    this.loadingMore.set(false);
+    this.loadingMore.set(this.rankingInFlight.size > 0);
     this.rankingState.set('ready');
   }
 }

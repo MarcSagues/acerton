@@ -466,3 +466,67 @@ h1 {
   flex: none;
   color: var(--p4-muted);
 }
+
+/* "Mi puesto" fijo arriba de la tabla: es un boton (baja a mi fila), no un enlace. */
+button.row {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Tras saltar a mi fila se resalta un momento. */
+.row.flash {
+  animation: quiz-row-flash 1.6s ease-out;
+}
+
+@keyframes quiz-row-flash {
+  0%,
+  35% {
+    box-shadow: 0 0 0 2px var(--p4-accent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+/* Hueco entre dos tramos cargados de la clasificacion. */
+.gap-row {
+  list-style: none;
+}
+
+.gap-btn {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 12px;
+  border: 1px dashed var(--p4-border);
+  background: none;
+  color: var(--p4-accent);
+  font: 600 12px/1 var(--p4-font-ui);
+}
+
+.gap-dots {
+  color: var(--p4-muted);
+  letter-spacing: 2px;
+}
+
+/* Centinela del scroll infinito (siempre tiene altura para poder verse). */
+.more-row {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row.flash {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--p4-accent);
+  }
+}
