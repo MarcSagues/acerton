@@ -97,7 +97,7 @@ Los puntos y las insignias no tienen valor monetario ni se pueden canjear por pr
 Disponible en español, inglés, catalán, francés, italiano y alemán.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2625 caracteres
+**Novedades de esta versión (máx. 4000)** — 2857 caracteres
 
 ```
 • NUEVO MODO DE JUEGO: ¡QUIZ! Responde preguntas sobre los partidos de cada liga y compite con toda la comunidad, aunque no tengas grupo. Lo encuentras abajo a la derecha; tu Perfil sigue en tu avatar.
@@ -121,6 +121,7 @@ Disponible en español, inglés, catalán, francés, italiano y alemán.
 • Nueva pantalla de Ajustes en tu Perfil, con una pestaña para cada cosa: nombre, equipo, avisos, apariencia, idioma y contraseña.
 • Nuevo Historial de Quiz: en Estadísticas, la tuya y la de otros jugadores, ves todos los quizzes cerrados con lo que se respondió y si se acertó, y puedes filtrar por liga.
 • La gráfica de Tabla también sale en «General»: junta las jornadas de todas las ligas por orden de fecha (J1 Liga, J1 Champions, J2 Liga...).
+• Pulsa a cualquier jugador, en el Quiz o en Tabla, para ver su perfil: su bandera, sus aciertos y fallos en grupos, su racha, los marcadores exactos que ha clavado, su posición en el Quiz con su historial, sus insignias y trofeos.
 ```
 
 
@@ -181,7 +182,7 @@ Points and badges have no monetary value and can't be exchanged for prizes. Piqo
 Available in English, Spanish, Catalan, French, Italian and German.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2589 caracteres
+**Novedades de esta versión (máx. 4000)** — 2777 caracteres
 
 ```
 • NEW GAME MODE: QUIZ! Answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.
@@ -205,6 +206,7 @@ Available in English, Spanish, Catalan, French, Italian and German.
 • New Settings screen in your Profile, with a tab for each thing: name, team, notifications, appearance, language and password.
 • New Quiz history: in Statistics, yours and other players’, see every closed quiz with what was answered and whether it was right, and filter by league.
 • The Table chart now also shows in "General": it puts the matchdays of every league in date order (MD1 La Liga, MD1 Champions, MD2 La Liga...).
+• Tap any player, in the Quiz or in Table, to see their profile: their flag, hits and misses in groups, streak, exact scores nailed, Quiz position with their history, badges and trophies.
 ```
 
 
@@ -265,7 +267,7 @@ Points and badges have no monetary value and can't be exchanged for prizes. Piqo
 Available in English, Spanish, Catalan, French, Italian and German.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2589 caracteres
+**Novedades de esta versión (máx. 4000)** — 2777 caracteres
 
 ```
 • NEW GAME MODE: QUIZ! Answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.
@@ -289,6 +291,7 @@ Available in English, Spanish, Catalan, French, Italian and German.
 • New Settings screen in your Profile, with a tab for each thing: name, team, notifications, appearance, language and password.
 • New Quiz history: in Statistics, yours and other players’, see every closed quiz with what was answered and whether it was right, and filter by league.
 • The Table chart now also shows in "General": it puts the matchdays of every league in date order (MD1 La Liga, MD1 Champions, MD2 La Liga...).
+• Tap any player, in the Quiz or in Table, to see their profile: their flag, hits and misses in groups, streak, exact scores nailed, Quiz position with their history, badges and trophies.
 ```
 
 
@@ -349,7 +352,7 @@ Els punts i les insígnies no tenen valor monetari ni es poden bescanviar per pr
 Disponible en català, castellà, anglès, francès, italià i alemany.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2584 caracteres
+**Novedades de esta versión (máx. 4000)** — 2793 caracteres
 
 ```
 • NOU MODE DE JOC: QUIZ! Respon preguntes sobre els partits de cada lliga i competeix amb tota la comunitat, encara que no tinguis grup. El trobaràs a baix a la dreta; el teu Perfil continua al teu avatar.
@@ -373,6 +376,7 @@ Disponible en català, castellà, anglès, francès, italià i alemany.
 • Nova pantalla d’Ajustos al teu Perfil, amb una pestanya per a cada cosa: nom, equip, avisos, aparença, idioma i contrasenya.
 • Nou Historial de Quiz: a Estadístiques, la teva i la d’altres jugadors, veus tots els quizzes tancats amb el que es va respondre i si es va encertar, i pots filtrar per lliga.
 • La gràfica de Taula també surt a «General»: ajunta les jornades de totes les lligues per ordre de data (J1 Lliga, J1 Champions, J2 Lliga...).
+• Toca qualsevol jugador, al Quiz o a Taula, per veure el seu perfil: la seva bandera, encerts i errors en grups, ratxa, marcadors exactes encertats, posició al Quiz amb el seu historial, insígnies i trofeus.
 ```
 
 
@@ -433,7 +437,7 @@ Les points et les badges n’ont aucune valeur monétaire et ne peuvent pas êtr
 Disponible en français, espagnol, anglais, catalan, italien et allemand.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2865 caracteres
+**Novedades de esta versión (máx. 4000)** — 3113 caracteres
 
 ```
 • NOUVEAU MODE DE JEU : QUIZ ! Réponds à des questions sur les matchs de chaque ligue et affronte toute la communauté, même sans groupe. Il est en bas à droite ; ton Profil reste accessible depuis ton avatar.
@@ -457,6 +461,7 @@ Disponible en français, espagnol, anglais, catalan, italien et allemand.
 • Nouvel écran Réglages dans ton Profil, avec un onglet pour chaque chose : nom, équipe, notifications, apparence, langue et mot de passe.
 • Nouvel historique du Quiz : dans Statistiques, le tien et celui des autres joueurs, tu vois tous les quiz clos avec les réponses données et si elles étaient bonnes, et tu peux filtrer par ligue.
 • Le graphique de Classement apparaît aussi dans « Général » : il met les journées de toutes les ligues par ordre de date (J1 Liga, J1 Champions, J2 Liga...).
+• Touche n’importe quel joueur, dans le Quiz ou dans Classement, pour voir son profil : son drapeau, ses réussites et ses erreurs en groupes, sa série, ses scores exacts trouvés, sa position au Quiz avec son historique, ses badges et ses trophées.
 ```
 
 
@@ -517,7 +522,7 @@ I punti e i badge non hanno valore monetario e non si possono convertire in prem
 Disponibile in italiano, spagnolo, inglese, catalano, francese e tedesco.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2729 caracteres
+**Novedades de esta versión (máx. 4000)** — 2953 caracteres
 
 ```
 • NUOVA MODALITÀ DI GIOCO: QUIZ! Rispondi a domande sulle partite di ogni campionato e sfida tutta la community, anche senza gruppo. Lo trovi in basso a destra; il tuo Profilo resta sul tuo avatar.
@@ -541,6 +546,7 @@ Disponibile in italiano, spagnolo, inglese, catalano, francese e tedesco.
 • Nuova schermata Impostazioni nel tuo Profilo, con una scheda per ogni cosa: nome, squadra, avvisi, aspetto, lingua e password.
 • Nuovo storico dei Quiz: in Statistiche, il tuo e quello degli altri giocatori, vedi tutti i quiz chiusi con le risposte date e se erano giuste, e puoi filtrare per campionato.
 • Il grafico di Classifica compare anche in «Generale»: mette in ordine di data le giornate di tutti i campionati (G1 Liga, G1 Champions, G2 Liga...).
+• Tocca qualsiasi giocatore, nel Quiz o in Classifica, per vedere il suo profilo: la bandiera, esatte e sbagliate nei gruppi, la serie, i risultati esatti azzeccati, la posizione nel Quiz con lo storico, i badge e i trofei.
 ```
 
 
@@ -601,7 +607,7 @@ Punkte und Abzeichen haben keinen Geldwert und lassen sich nicht gegen Preise ei
 Verfügbar auf Deutsch, Spanisch, Englisch, Katalanisch, Französisch und Italienisch.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2952 caracteres
+**Novedades de esta versión (máx. 4000)** — 3166 caracteres
 
 ```
 • NEUER SPIELMODUS: QUIZ! Beantworte Fragen zu den Spielen jeder Liga und miss dich mit der ganzen Community, auch ohne Gruppe. Du findest es unten rechts; dein Profil erreichst du weiter über deinen Avatar.
@@ -625,4 +631,5 @@ Verfügbar auf Deutsch, Spanisch, Englisch, Katalanisch, Französisch und Italie
 • Neuer Einstellungsbildschirm in deinem Profil, mit einem Tab für jedes Thema: Name, Team, Mitteilungen, Darstellung, Sprache und Passwort.
 • Neu: Quiz-Verlauf. In den Statistiken, deinen und denen anderer Spieler, siehst du alle beendeten Quizze mit den Antworten und ob sie richtig waren, und kannst nach Liga filtern.
 • Das Diagramm in der Tabelle gibt es jetzt auch unter „Gesamt“: Es ordnet die Spieltage aller Ligen nach Datum (ST1 Liga, ST1 Champions, ST2 Liga ...).
+• Tippe auf einen beliebigen Spieler, im Quiz oder in der Tabelle, um sein Profil zu sehen: Flagge, Treffer und Fehler in Gruppen, Serie, getroffene exakte Ergebnisse, Quiz-Platz mit Verlauf, Abzeichen und Pokale.
 ```

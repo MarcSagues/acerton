@@ -1,0 +1,172 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else if (page.error()) {
+  <div class="error-state">
+    <p class="error-msg">{{ 'playerProfile.noCargado' | t }}</p>
+    <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">{{ 'common.reintentar' | t }}</button>
+  </div>
+} @else {
+  @if (page.profile(); as p) {
+    <div class="page">
+      <div class="head-row">
+        <button type="button" class="back-btn" (click)="page.goBack()">
+          <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.volver2' | t }}
+        </button>
+      </div>
+
+      <div class="identity">
+        <app-avatar [url]="p.avatarUrl" [background]="p.avatarBackground" [name]="p.name" [level]="p.level" [size]="64"></app-avatar>
+        <div>
+          <p class="name">{{ p.name }}</p>
+          <p class="sub mono">{{ 'playerProfile.nivel' | t: { level: p.level } }}</p>
+        </div>
+      </div>
+      @if (p.favoriteTeam) {
+        <app-team-flag class="team-flag" [team]="p.favoriteTeam"></app-team-flag>
+      }
+
+      <div class="section-head">
+        <h2>{{ 'playerProfile.grupos' | t }}</h2>
+        <span class="section-note mono">{{ 'playerProfile.enNGrupos' | t: { count: p.groupsCount } }}</span>
+      </div>
+      <div class="tiles">
+        <div class="tile">
+          <p class="tile-value mono hit">{{ p.predictions.hits }}</p>
+          <p class="tile-label mono">{{ 'quizHistory.aciertos' | t }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-value mono miss">{{ p.predictions.misses }}</p>
+          <p class="tile-label mono">{{ 'quizHistory.fallos' | t }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-value mono">{{ page.hitRatePercent() !== null ? page.hitRatePercent() + '%' : ('common.sinDatos' | t) }}</p>
+          <p class="tile-label mono">{{ 'playerProfile.porcentajeAcierto' | t }}</p>
+        </div>
+      </div>
+      <div class="tiles">
+        <div class="tile">
+          <p class="tile-value mono accent">{{ p.streak.current }}</p>
+          <p class="tile-label mono">{{ 'playerProfile.rachaActual' | t }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-value mono">{{ p.streak.longest }}</p>
+          <p class="tile-label mono">{{ 'common.mejorRacha' | t }}</p>
+        </div>
+      </div>
+
+      @if (p.exactScores.played > 0) {
+        <p class="list-title mono">{{ 'playerProfile.exactos' | t }}</p>
+        <div class="exact-summary">
+          <span class="exact-value mono">{{ p.exactScores.hits }}</span>
+          <span class="exact-of mono">{{ 'playerProfile.exactosDe' | t: { total: p.exactScores.played } }}</span>
+        </div>
+        @if (p.exactScores.recent.length > 0) {
+          <ul class="exact-list">
+            @for (score of p.exactScores.recent; track score.matchId) {
+              <li class="exact-row">
+                <span class="exact-teams">{{ page.teamName(score, 'home') }} {{ score.homeScore }}–{{ score.awayScore }} {{ page.teamName(score, 'away') }}</span>
+                <span class="exact-date mono">{{ score.kickoff | date: 'd MMM' }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="empty-note">{{ 'playerProfile.sinExactos' | t }}</p>
+        }
+      }
+
+      <p class="list-title mono">{{ 'playerProfile.gruposEnComun' | t }}</p>
+      @if (p.sharedGroups.length === 0) {
+        <p class="empty-note">{{ 'playerProfile.sinGruposEnComun' | t }}</p>
+      } @else {
+        <ul class="group-list">
+          @for (group of p.sharedGroups; track group.groupId) {
+            <li>
+              <a class="link-card" [routerLink]="['/groups', group.groupId, 'members', p.userId]">
+                <span class="link-text">
+                  <span class="link-title">{{ group.name }}</span>
+                  <span class="link-hint mono">
+                    {{ 'quizHistory.aciertosDe' | t: { hits: group.hits, total: group.scored } }} ·
+                    {{ 'playerProfile.rachaN' | t: { count: group.streak.current } }}
+                  </span>
+                </span>
+                <piqo-svg icon="flecha" size="16"></piqo-svg>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="section-head">
+        <h2>{{ 'playerProfile.quiz' | t }}</h2>
+        <span class="section-note mono">{{ p.quiz.seasonLabel }}</span>
+      </div>
+      <div class="tiles">
+        <div class="tile">
+          <p class="tile-value mono accent">
+            {{ p.quiz.position !== null ? ('playerProfile.posicionDe' | t: { pos: p.quiz.position, total: p.quiz.total }) : ('common.sinDatos' | t) }}
+          </p>
+          <p class="tile-label mono">{{ 'playerProfile.posicionQuiz' | t }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-value mono">{{ p.quiz.points }}</p>
+          <p class="tile-label mono">{{ 'playerProfile.puntos' | t }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-value mono">{{ p.quiz.quizzesPlayed }}</p>
+          <p class="tile-label mono">{{ 'quizHistory.jugados' | t }}</p>
+        </div>
+      </div>
+      <div class="tiles">
+        <div class="tile">
+          <p class="tile-value mono hit">{{ p.quiz.hits }}</p>
+          <p class="tile-label mono">{{ 'quizHistory.aciertos' | t }}</p>
+        </div>
+        <div class="tile">
+          <p class="tile-value mono miss">{{ p.quiz.misses }}</p>
+          <p class="tile-label mono">{{ 'quizHistory.fallos' | t }}</p>
+        </div>
+      </div>
+      <a class="link-card standalone" [routerLink]="['/quiz/history', p.userId]">
+        <span class="link-text">
+          <span class="link-title">{{ 'quizHistory.titulo' | t }}</span>
+          <span class="link-hint mono">{{ 'quizHistory.botonHint' | t }}</span>
+        </span>
+        <piqo-svg icon="flecha" size="16"></piqo-svg>
+      </a>
+
+      <div class="section-head">
+        <h2>{{ 'common.insignias' | t }}</h2>
+      </div>
+      @if (p.badges.length === 0) {
+        <p class="empty-note">{{ 'playerProfile.sinInsignias' | t }}</p>
+      } @else {
+        <div class="badges-row">
+          @for (badge of p.badges; track badge.code) {
+            <span class="badge-item" [attr.title]="badge.name" [attr.aria-label]="badge.name">
+              @if (page.artId(badge.code); as artId) {
+                <img class="badge-art" [src]="page.artSrc(artId)" [alt]="badge.name" />
+              } @else {
+                <piqo-svg icon="medalla" size="26"></piqo-svg>
+              }
+            </span>
+          }
+        </div>
+      }
+
+      <div class="section-head">
+        <h2>{{ 'memberDetail.trofeos' | t }}</h2>
+      </div>
+      <p class="section-hint">{{ 'common.trofeoPiqoSignificaGanar' | t }}</p>
+      <div class="trophies-row">
+        @for (trophy of page.trophies; track trophy.id) {
+          <span class="trophy-item" [class.earned]="trophy.count > 0" [attr.title]="trophy.name">
+            <piqo-svg [attr.trophy]="trophy.id" variant="detalle" size="48"></piqo-svg>
+            @if (trophy.count === 0) {
+              <piqo-svg icon="candado" size="12" class="lock-badge"></piqo-svg>
+            }
+          </span>
+        }
+      </div>
+    </div>
+  }
+}

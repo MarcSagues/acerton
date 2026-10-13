@@ -239,6 +239,12 @@ export const routes: Routes = [
           import('./features/quiz/quiz-hub/quiz-hub.component').then((m) => m.QuizHubComponent),
       },
       {
+        // Perfil general de cualquier jugador: lo que se abre al pulsar a alguien (Quiz, Tabla...).
+        path: 'player/:userId',
+        loadComponent: () =>
+          import('./features/player-profile/player-profile.component').then((m) => m.PlayerProfileComponent),
+      },
+      {
         path: 'quiz/history/:userId',
         loadComponent: () =>
           import('./features/quiz/quiz-history/quiz-history.component').then((m) => m.QuizHistoryComponent),

@@ -14,15 +14,21 @@ o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de
 (`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
-## 2026-10-13 — Perfil de un jugador desde la clasificación del Quiz (fuera de sprint)
+## 2026-10-13 — Perfil general de un jugador (desde el Quiz, Tabla...) (fuera de sprint)
 
-Petición del usuario: poder pulsar a un jugador en la clasificación del Quiz y ver su perfil. Cada fila (y la tuya fijada) es un
-enlace a `/quiz/history/:userId`, que ahora es el perfil del jugador en el Quiz: avatar con su nivel, nombre, bandera de su equipo
-favorito, totales, filtro por liga y su historial de quizzes cerrados con respuestas y aciertos. Backend: `QuizService.history`
-ya no pide compartir grupo (la clasificación es de toda la comunidad, con o sin grupo) y devuelve avatar, nivel y equipo favorito;
-un jugador que no existe da 404. Sigue sin enseñar quizzes abiertos. **Verificado**: backend 45 tests de Quiz y lint, frontend 228
-tests, y en navegador (local: la fila lleva a la página del jugador con avatar, nivel y bandera; también la de un jugador sin
-grupo en común, sin 403). **Necesita** backend desplegado en main y portado a `dev`, y build nueva.
+Petición del usuario: al pulsar a un jugador debe abrirse siempre su **perfil general**, no una vista suelta del Quiz. Nueva
+pantalla `/player/:userId` (`PlayerProfileComponent`), a la que llevan cada fila de la clasificación del Quiz (y la tuya fijada) y
+cada fila de Tabla: avatar con nivel, nombre, bandera del equipo favorito; **Grupos** (aciertos, fallos, % de acierto y racha
+global en todos sus grupos, los **marcadores exactos que ha clavado** (cuántos, de cuántos pronósticos de marcador, y los 5 últimos partidos),
+cómo va su racha, en cuántos juega, y los grupos en común con aciertos y racha de cada uno, que enlazan al detalle de
+miembro de ese grupo); **Quiz** (posición de la temporada, puntos, jugados, aciertos y fallos, y el botón al Historial de Quiz
+con filtro por liga); **Insignias** (las distintas que ha ganado) y **Trofeos** (la vitrina; todos bloqueados porque Piqo aún no
+tiene datos reales de trofeos). Backend: `GET players/:userId` (`PlayersModule`/`PlayersService`), una sola respuesta; los grupos
+solo son los que compartes con el jugador (los suyos todos, si es el tuyo). `QuizService.history` ya no pide compartir grupo y
+devuelve avatar, nivel y equipo favorito. Tabla ya no abre directamente los pronósticos de la última jornada (`openProfile`
+sustituye a `viewUserPicks` en la plantilla; el método sigue en el facade). **Verificado**: backend 51 tests de Quiz y Players y
+lint, frontend 233 tests, y en navegador (local: desde el Quiz y desde Tabla se abre el perfil con grupos, Quiz, insignia y
+trofeos, también el de otro jugador). **Necesita** backend desplegado en main y portado a `dev`, y build nueva. Línea en la 1.1.0.
 
 ## 2026-10-13 — Tabla: la gráfica también sale en «General» (fuera de sprint)
 

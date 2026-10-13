@@ -221,7 +221,7 @@
           <p class="empty">{{ 'quiz.rankingVacio' | t }}</p>
         } @else {
           @if (page.myRowOutsidePage(); as me) {
-            <a class="row me pinned" [routerLink]="['/quiz/history', me.userId]" [attr.aria-label]="'quiz.tuPosicion' | t">
+            <a class="row me pinned" [routerLink]="['/player', me.userId]" [attr.aria-label]="'quiz.tuPosicion' | t">
               <span class="col-pos mono">{{ me.position }}</span>
               <span class="col-name">
                 <app-avatar [url]="me.avatarUrl" [background]="me.avatarBackground" [name]="me.name" [size]="28"></app-avatar>
@@ -242,7 +242,7 @@
           <ol class="rows">
             @for (row of page.rankingRows(); track row.userId) {
               <li>
-              <a class="row" [class.me]="page.isMe(row)" [routerLink]="['/quiz/history', row.userId]">
+              <a class="row" [class.me]="page.isMe(row)" [routerLink]="['/player', row.userId]">
                 <span class="col-pos mono">{{ row.position }}</span>
                 <span class="col-name">
                   <app-avatar [url]="row.avatarUrl" [background]="row.avatarBackground" [name]="row.name" [size]="28"></app-avatar>

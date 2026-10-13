@@ -24,6 +24,7 @@ import { BadgesModule } from './badges/badges.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 import { QuizModule } from './quiz/quiz.module';
+import { PlayersModule } from './players/players.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { LocalizedExceptionFilter } from './common/i18n/localized-exception.filter';
 
@@ -61,6 +62,7 @@ import { LocalizedExceptionFilter } from './common/i18n/localized-exception.filt
     BadgesModule,
     NotificationsModule,
     JobsModule,
+    PlayersModule,
     QuizModule,
   ],
   providers: [

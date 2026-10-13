@@ -353,6 +353,11 @@ export class RankingsPageFacade {
     return null;
   }
 
+  /** Pulsar a un jugador abre su perfil general (grupos, Quiz, insignias, trofeos...). */
+  openProfile(userId: string): void {
+    void this.router.navigate(['/player', userId]);
+  }
+
   /**
    * Abre las quinielas de un jugador para la jornada cerrada mas reciente de
    * la competicion seleccionada (o de la primera activa si la vista es

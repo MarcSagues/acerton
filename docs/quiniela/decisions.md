@@ -43,6 +43,14 @@ clasificación del Quiz (que es de toda la comunidad) esa restricción dejaba fu
 autenticado: son solo respuestas a preguntas de fútbol de quizzes ya cerrados (nunca de uno abierto, para no destaparlas), y el nombre
 y los puntos ya eran públicos en la clasificación. Si más adelante se quiere privacidad, el sitio es `QuizService.history`.
 
+## 2026-10-13 — Pulsar a un jugador abre su perfil general (no una vista del Quiz ni del grupo)
+
+Desde la clasificacion del Quiz y desde Tabla se abre `/player/:userId`: un perfil unico por jugador con grupos, Quiz, insignias,
+trofeos y bandera. El detalle de miembro de un grupo (`/groups/:groupId/members/:userId`) sigue existiendo, pero se llega desde
+«Grupos en común» del perfil general. Privacidad: de los grupos solo se enseñan los que compartes con el jugador; el resto del perfil
+(aciertos agregados, racha, Quiz, insignias) y el historial de quizzes cerrados lo ve cualquier jugador. Coste: Tabla ya no abre
+directamente los pronósticos de la ultima jornada del jugador.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
