@@ -1,5 +1,14 @@
 # Estado actual
 
+## 2026-10-13 — Quiz sin escudos de los clubes (fuera de sprint)
+
+Decisión del usuario tras preguntar por derechos: los escudos (marcas y obras de los clubes, servidos por
+football-data.org sin licencia de imagen) solo salían en la pantalla de preguntas del Quiz; ahora sale el
+icono de balón que ya había para cuando faltaba el escudo. Fuera también el logo de competición de respaldo
+en las pestañas del Quiz (todas tienen trofeo propio). Nombres de equipos y resultados se mantienen.
+**Verificado**: 196 tests del frontend y `tsc`. **Necesita**: build nueva. Sin línea en el historial (el Quiz
+es nuevo en la 1.0.3 y nadie ha visto los escudos).
+
 ## 2026-10-13 — Quiz: avisos opcionales y fuera el «provisional» (fuera de sprint)
 
 Petición del usuario. **Hecho**: tres preferencias nuevas (`quizOpening`, `quizReminder24h`,
