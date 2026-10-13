@@ -51,6 +51,13 @@ trofeos y bandera. El detalle de miembro de un grupo (`/groups/:groupId/members/
 (aciertos agregados, racha, Quiz, insignias) y el historial de quizzes cerrados lo ve cualquier jugador. Coste: Tabla ya no abre
 directamente los pronósticos de la ultima jornada del jugador.
 
+## 2026-10-13 — Las lecturas del Quiz usan estado con hasta ~30 s de antigüedad
+
+Abrir el Quiz y su clasificación ya no publican rondas ni refrescan cada quiz en cada petición: lo hace el cron de cada minuto, y las lecturas
+solo lo repiten si pasaron 30 s (publicar) o 20 s (refrescar un quiz), con las ligas en memoria 60 s. Se gana velocidad (de más de mil consultas a
+unas pocas); se pierde que un cierre o una ronda nueva puede verse con hasta ~30 s de retraso. Responder y terminar un quiz no cambian: antes de
+escribir se refresca el quiz exacto (`refreshEvent`), así que nunca se acepta una respuesta fuera de plazo.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
