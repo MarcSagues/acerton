@@ -14,6 +14,16 @@ o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de
 (`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
+## 2026-10-13 — Perfil de un jugador desde la clasificación del Quiz (fuera de sprint)
+
+Petición del usuario: poder pulsar a un jugador en la clasificación del Quiz y ver su perfil. Cada fila (y la tuya fijada) es un
+enlace a `/quiz/history/:userId`, que ahora es el perfil del jugador en el Quiz: avatar con su nivel, nombre, bandera de su equipo
+favorito, totales, filtro por liga y su historial de quizzes cerrados con respuestas y aciertos. Backend: `QuizService.history`
+ya no pide compartir grupo (la clasificación es de toda la comunidad, con o sin grupo) y devuelve avatar, nivel y equipo favorito;
+un jugador que no existe da 404. Sigue sin enseñar quizzes abiertos. **Verificado**: backend 45 tests de Quiz y lint, frontend 228
+tests, y en navegador (local: la fila lleva a la página del jugador con avatar, nivel y bandera; también la de un jugador sin
+grupo en común, sin 403). **Necesita** backend desplegado en main y portado a `dev`, y build nueva.
+
 ## 2026-10-13 — Tabla: la gráfica también sale en «General» (fuera de sprint)
 
 Petición del usuario: en «General» (Total) no había gráfica porque cada liga tiene su calendario de jornadas. Ahora se juntan

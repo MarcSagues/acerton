@@ -1,4 +1,3 @@
-import { HttpException } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 
 const match = {
@@ -51,15 +50,21 @@ function participation() {
   };
 }
 
-function build(overrides: { shared?: boolean; user?: unknown; participations?: unknown[] } = {}) {
+function build(overrides: { user?: unknown; participations?: unknown[] } = {}) {
   const prisma = {
-    groupMembership: {
-      findFirst: jest.fn().mockResolvedValue(overrides.shared === false ? null : { id: 'gm' }),
-    },
     user: {
-      findUnique: jest
-        .fn()
-        .mockResolvedValue('user' in overrides ? overrides.user : { id: 'u2', name: 'Marta' }),
+      findUnique: jest.fn().mockResolvedValue(
+        'user' in overrides
+          ? overrides.user
+          : {
+              id: 'u2',
+              name: 'Marta',
+              avatarUrl: '/assets/avatars/mascot/guino.png',
+              avatarBackground: '#d2be94',
+              experience: 250,
+              favoriteTeam: 'Borussia Dortmund',
+            },
+      ),
     },
     quizParticipation: {
       findMany: jest.fn().mockResolvedValue(overrides.participations ?? [participation()]),
@@ -72,7 +77,7 @@ describe('QuizService.history', () => {
   it('devuelve los quizzes cerrados con sus respuestas, y solo las preguntas que respondio', async () => {
     const { prisma, service } = build();
 
-    const result = await service.history('u1', 'u2');
+    const result = await service.history('u2');
 
     expect(result.name).toBe('Marta');
     expect(result.quizzes).toHaveLength(1);
@@ -103,31 +108,40 @@ describe('QuizService.history', () => {
     );
   });
 
-  it('el historial propio no comprueba grupos', async () => {
-    const { prisma, service } = build({ user: { id: 'u1', name: 'Yo' } });
+  it('trae los datos publicos del jugador: avatar, nivel y equipo favorito con los colores de su bandera', async () => {
+    const { service } = build();
 
-    await service.history('u1', 'u1');
+    const result = await service.history('u2');
 
-    expect(prisma.groupMembership.findFirst).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        userId: 'u2',
+        name: 'Marta',
+        avatarUrl: '/assets/avatars/mascot/guino.png',
+        avatarBackground: '#d2be94',
+        level: 2,
+        favoriteTeam: { name: 'Borussia Dortmund', primary: '#1a1a1a', secondary: '#fdd835' },
+      }),
+    );
   });
 
-  it('rechaza (403) el historial de alguien con quien no se comparte grupo', async () => {
-    const { prisma, service } = build({ shared: false });
+  it('lo puede ver cualquier jugador, sin comprobar grupos: la clasificacion del Quiz es de toda la comunidad', async () => {
+    const { prisma, service } = build();
 
-    await expect(service.history('u1', 'u2')).rejects.toBeInstanceOf(HttpException);
-    await expect(service.history('u1', 'u2')).rejects.toMatchObject({ status: 403 });
-    expect(prisma.quizParticipation.findMany).not.toHaveBeenCalled();
+    await expect(service.history('u2')).resolves.toBeDefined();
+
+    expect(prisma.quizParticipation.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('un usuario que no existe es un 404', async () => {
     const { service } = build({ user: null });
 
-    await expect(service.history('u1', 'u2')).rejects.toMatchObject({ status: 404 });
+    await expect(service.history('u2')).rejects.toMatchObject({ status: 404 });
   });
 
   it('un jugador sin quizzes jugados devuelve la lista vacia', async () => {
     const { service } = build({ participations: [] });
 
-    expect((await service.history('u1', 'u2')).quizzes).toEqual([]);
+    expect((await service.history('u2')).quizzes).toEqual([]);
   });
 });

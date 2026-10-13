@@ -221,7 +221,7 @@
           <p class="empty">{{ 'quiz.rankingVacio' | t }}</p>
         } @else {
           @if (page.myRowOutsidePage(); as me) {
-            <div class="row me pinned" [attr.aria-label]="'quiz.tuPosicion' | t">
+            <a class="row me pinned" [routerLink]="['/quiz/history', me.userId]" [attr.aria-label]="'quiz.tuPosicion' | t">
               <span class="col-pos mono">{{ me.position }}</span>
               <span class="col-name">
                 <app-avatar [url]="me.avatarUrl" [background]="me.avatarBackground" [name]="me.name" [size]="28"></app-avatar>
@@ -231,7 +231,8 @@
                 </span>
               </span>
               <span class="col-pts mono">{{ me.points }}</span>
-            </div>
+              <piqo-svg icon="flecha" size="14" class="row-arrow"></piqo-svg>
+            </a>
           }
           <div class="table-head" aria-hidden="true">
             <span class="col-pos mono">#</span>
@@ -240,7 +241,8 @@
           </div>
           <ol class="rows">
             @for (row of page.rankingRows(); track row.userId) {
-              <li class="row" [class.me]="page.isMe(row)">
+              <li>
+              <a class="row" [class.me]="page.isMe(row)" [routerLink]="['/quiz/history', row.userId]">
                 <span class="col-pos mono">{{ row.position }}</span>
                 <span class="col-name">
                   <app-avatar [url]="row.avatarUrl" [background]="row.avatarBackground" [name]="row.name" [size]="28"></app-avatar>
@@ -250,6 +252,8 @@
                   </span>
                 </span>
                 <span class="col-pts mono">{{ row.points }}</span>
+                <piqo-svg icon="flecha" size="14" class="row-arrow"></piqo-svg>
+              </a>
               </li>
             }
           </ol>

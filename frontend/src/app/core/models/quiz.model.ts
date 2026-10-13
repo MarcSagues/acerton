@@ -1,3 +1,4 @@
+import { FavoriteTeam } from './favorite-team.model';
 import { CompetitionCode } from './competition.model';
 
 /**
@@ -98,6 +99,12 @@ export interface QuizHistoryEntry {
 export interface QuizHistory {
   userId: string;
   name: string;
+  avatarUrl: string | null;
+  avatarBackground: string | null;
+  /** Nivel derivado de la XP (ya resuelto por el backend). */
+  level: number;
+  /** Equipo favorito con los colores de su bandera, o null. */
+  favoriteTeam: FavoriteTeam | null;
   quizzes: QuizHistoryEntry[];
 }
 

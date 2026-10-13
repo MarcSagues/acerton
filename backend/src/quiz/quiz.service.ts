@@ -2,6 +2,8 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { Prisma, QuizOption, QuizStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
+import { xpProgressForLevel } from '../xp/xp.util';
+import { findFavoriteTeam } from '../users/team-catalog';
 import { getCurrentFootballSeason } from '../common/season.util';
 import { isKickoffTimeUnconfirmed } from '../matchdays/matchday.util';
 import { QuizAnswerDto, QuizRankingQueryDto } from './dto/quiz.dto';
@@ -285,27 +287,22 @@ export class QuizService {
   }
 
   /**
-   * Historial de quizzes de un jugador: los que ya cerraron y en los que respondio algo, del mas reciente al
-   * mas antiguo, con sus respuestas y si acerto. Nunca enseña un quiz abierto (se filtraria lo que ha
-   * respondido a quien aun puede jugarlo). Se puede ver el historial propio o el de quien comparte algun
-   * grupo contigo (los perfiles que se visitan son siempre de un grupo).
+   * Perfil de un jugador en el Quiz: sus datos publicos (nombre, avatar, nivel, equipo favorito) y el historial de
+   * quizzes que ya cerraron y en los que respondio algo, del mas reciente al mas antiguo, con sus respuestas y si
+   * acerto. Lo puede ver cualquier jugador (se llega desde la clasificacion del Quiz, que es de toda la comunidad,
+   * con o sin grupo). Nunca enseña un quiz abierto: se filtraria lo que ha respondido a quien aun puede jugarlo.
    */
-  async history(requesterId: string, userId: string) {
-    if (requesterId !== userId) {
-      const shared = await this.prisma.groupMembership.findFirst({
-        where: { userId, group: { memberships: { some: { userId: requesterId } } } },
-        select: { id: true },
-      });
-      if (!shared)
-        fail(
-          'QUIZ_HISTORY_FORBIDDEN',
-          403,
-          'Solo puedes ver el historial de quien comparte un grupo contigo',
-        );
-    }
+  async history(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true },
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+        avatarBackground: true,
+        experience: true,
+        favoriteTeam: true,
+      },
     });
     if (!user) fail('USER_NOT_FOUND', 404, 'Usuario no encontrado');
 
@@ -327,6 +324,10 @@ export class QuizService {
     return {
       userId: user.id,
       name: user.name,
+      avatarUrl: user.avatarUrl,
+      avatarBackground: user.avatarBackground,
+      level: xpProgressForLevel(user.experience).level,
+      favoriteTeam: findFavoriteTeam(user.favoriteTeam),
       quizzes: participations.map((participation) => {
         const { event } = participation;
         const answered = event.questions.filter((q) =>
