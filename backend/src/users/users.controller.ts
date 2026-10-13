@@ -4,6 +4,8 @@ import { UsersService } from './users.service';
 import { RegisterNotificationTokenDto } from './dto/register-notification-token.dto';
 import { UpdateNameDto } from './dto/update-name.dto';
 import { UpdateAvatarDto } from './dto/update-avatar.dto';
+import { UpdateFavoriteTeamDto } from './dto/update-favorite-team.dto';
+import { FAVORITE_TEAMS } from './team-catalog';
 import {
   AVATAR_BACKGROUNDS,
   AVATAR_MASCOT_IDS,
@@ -40,6 +42,16 @@ export class UsersController {
   @Patch('me/avatar')
   updateAvatar(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateAvatarDto) {
     return this.usersService.updateAvatar(user.id, dto.mascotId, dto.background);
+  }
+
+  @Get('me/team-catalog')
+  getTeamCatalog() {
+    return { teams: FAVORITE_TEAMS };
+  }
+
+  @Patch('me/favorite-team')
+  updateFavoriteTeam(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateFavoriteTeamDto) {
+    return this.usersService.updateFavoriteTeam(user.id, dto.team);
   }
 
   @Patch('me/tutorial-completed')
