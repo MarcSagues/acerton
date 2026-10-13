@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { xpProgressForLevel } from '../xp/xp.util';
+import { findFavoriteTeam } from '../users/team-catalog';
 
 /**
  * Cuantas jornadas recientes se devuelven en el detalle de un miembro:
@@ -30,6 +31,7 @@ export class MemberProfileService {
             name: true,
             avatarUrl: true,
             avatarBackground: true,
+            favoriteTeam: true,
             experience: true,
           },
         },
@@ -77,6 +79,7 @@ export class MemberProfileService {
       name: membership.user.name,
       avatarUrl: membership.user.avatarUrl,
       avatarBackground: membership.user.avatarBackground,
+      favoriteTeam: findFavoriteTeam(membership.user.favoriteTeam),
       level: xpProgressForLevel(membership.user.experience).level,
       role: membership.role,
       joinedAt: membership.joinedAt,

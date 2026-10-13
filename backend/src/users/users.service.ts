@@ -95,6 +95,15 @@ export class UsersService {
     return toPublicUser(updated);
   }
 
+  /** Elige (o quita, con null) el equipo favorito; el DTO ya limita el nombre al catalogo. */
+  async updateFavoriteTeam(userId: string, team: string | null): Promise<PublicUser> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { favoriteTeam: team },
+    });
+    return toPublicUser(updated);
+  }
+
   /**
    * Marca el tutorial como visto (terminado u omitido) por primera vez.
    * Idempotente: repetirlo no adelanta ni cambia la fecha ya guardada, para

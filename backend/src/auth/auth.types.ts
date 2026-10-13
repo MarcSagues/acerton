@@ -1,3 +1,5 @@
+import { FavoriteTeam } from '../users/team-catalog';
+
 export interface JwtAccessPayload {
   sub: string;
   email: string;
@@ -20,6 +22,8 @@ export interface PublicUser {
   name: string;
   avatarUrl: string | null;
   avatarBackground: string | null;
+  /** Equipo favorito con los colores de su bandera, o null. Visible para quien visite el perfil. */
+  favoriteTeam: FavoriteTeam | null;
   usernameConfirmed: boolean;
   /** Fecha (ISO) a partir de la cual se puede volver a cambiar el nombre, o null si ya se puede ahora. */
   nameChangeAvailableAt: string | null;
