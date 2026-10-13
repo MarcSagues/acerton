@@ -1,7 +1,9 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { Prisma, QuizStatus } from '@prisma/client';
+import { Prisma, QuizOption, QuizStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
+import { xpProgressForLevel } from '../xp/xp.util';
+import { findFavoriteTeam } from '../users/team-catalog';
 import { getCurrentFootballSeason } from '../common/season.util';
 import { isKickoffTimeUnconfirmed } from '../matchdays/matchday.util';
 import { QuizAnswerDto, QuizRankingQueryDto } from './dto/quiz.dto';
@@ -12,6 +14,18 @@ import {
   quizDeadline,
   resolveQuizQuestion,
 } from './quiz.rules';
+
+/**
+ * Las lecturas (abrir el Quiz, la clasificacion) no repiten trabajo que ya hace el cron de cada minuto (QuizJobs.refreshAll):
+ * publicar rondas y refrescar el estado de cada quiz. Las ligas casi no cambian, y publicar o refrescar un quiz se repite como
+ * mucho cada tanto. Las escrituras (responder, terminar) siguen usando `refreshEvent` exacto.
+ */
+const COMPETITIONS_TTL_MS = 60_000;
+const PUBLISH_TTL_MS = 30_000;
+const REFRESH_TTL_MS = 20_000;
+
+/** Cuantos quizzes como maximo se devuelven en el historial (los mas recientes). */
+const HISTORY_LIMIT = 50;
 
 const EVENT_INCLUDE = {
   matchday: { include: { competition: true, matches: true } },
@@ -44,16 +58,75 @@ function fail(code: string, status: number, message: string): never {
 
 @Injectable()
 export class QuizService {
+  private competitionsCache: {
+    at: number;
+    value: Awaited<ReturnType<QuizService['loadCompetitions']>>;
+  } | null = null;
+  private lastPublishAt = 0;
+  private publishInFlight: Promise<void> | null = null;
+  private readonly refreshedAt = new Map<string, number>();
+  private readonly refreshInFlight = new Map<string, Promise<boolean>>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly matchdays: MatchdaysService,
   ) {}
 
-  async competitions() {
+  private loadCompetitions() {
     return this.prisma.competition.findMany({
       where: { code: { in: QUIZ_COMPETITIONS }, externalId: { gt: 0 } },
       orderBy: { code: 'asc' },
     });
+  }
+
+  /** Ligas del Quiz: casi estaticas, se guardan en memoria un minuto en vez de pedirlas en cada lectura. */
+  async competitions() {
+    const now = Date.now();
+    if (this.competitionsCache && now - this.competitionsCache.at < COMPETITIONS_TTL_MS) {
+      return this.competitionsCache.value;
+    }
+    const value = await this.loadCompetitions();
+    this.competitionsCache = { at: now, value };
+    return value;
+  }
+
+  /**
+   * `publishAvailable` para las lecturas: como mucho una vez cada PUBLISH_TTL_MS, y las llamadas a la vez comparten la misma
+   * ejecucion (antes cada apertura del Quiz recorria todas las rondas de todas las ligas).
+   */
+  private publishAvailableIfStale(): Promise<void> {
+    if (this.publishInFlight) return this.publishInFlight;
+    if (Date.now() - this.lastPublishAt < PUBLISH_TTL_MS) return Promise.resolve();
+    const run = this.publishAvailable()
+      .then(() => {
+        this.lastPublishAt = Date.now();
+      })
+      .finally(() => {
+        this.publishInFlight = null;
+      });
+    this.publishInFlight = run;
+    return run;
+  }
+
+  /**
+   * `refreshEvent` para las lecturas: se salta el refresco si el quiz se refresco hace menos de REFRESH_TTL_MS (el cron de cada
+   * minuto ya lo mantiene al dia) y las llamadas a la vez comparten la misma transaccion. Devuelve si hubo refresco.
+   */
+  refreshEventIfStale(id: string): Promise<boolean> {
+    const inFlight = this.refreshInFlight.get(id);
+    if (inFlight) return inFlight;
+    if (Date.now() - (this.refreshedAt.get(id) ?? 0) < REFRESH_TTL_MS)
+      return Promise.resolve(false);
+    const run = this.refreshEvent(id)
+      .then(() => {
+        this.refreshedAt.set(id, Date.now());
+        return true;
+      })
+      .finally(() => {
+        this.refreshInFlight.delete(id);
+      });
+    this.refreshInFlight.set(id, run);
+    return run;
   }
 
   /** Publishes only eligible, not-yet-started rounds already imported locally. No provider request. */
@@ -234,36 +307,48 @@ export class QuizService {
       serverNow: now.toISOString(),
       quiz: this.summary(event, participation),
       canAnswer,
-      questions: event.questions.map((question) => {
-        const answer = participation?.answers.find((a) => a.questionId === question.id);
-        const resolved = event.lockedAt !== null && question.resolution === 'RESOLVED';
-        const match = question.match;
-        return {
-          id: question.id,
-          order: question.order,
-          type: question.type,
-          options: question.options,
-          selectedOption: answer?.option ?? null,
-          resolution: question.resolution,
-          correctOption: resolved ? question.correctOption : null,
-          pointsEarned: resolved ? (answer?.pointsEarned ?? 0) : null,
-          match: {
-            id: match.id,
-            homeTeam: match.homeTeam,
-            awayTeam: match.awayTeam,
-            // dev no guarda todavia los nombres cortos: el cliente usa el completo.
-            homeTeamShort: null,
-            awayTeamShort: null,
-            homeTeamLogo: match.homeTeamLogo,
-            awayTeamLogo: match.awayTeamLogo,
-            kickoff: match.kickoff.toISOString(),
-            kickoffConfirmed: !isKickoffTimeUnconfirmed(match.kickoff),
-            status: match.status,
-            homeScore: match.homeScore,
-            awayScore: match.awayScore,
-          },
-        };
-      }),
+      questions: event.questions.map((question) =>
+        this.questionView(
+          event,
+          question,
+          participation?.answers.find((a) => a.questionId === question.id),
+        ),
+      ),
+    };
+  }
+
+  /** Una pregunta como la ve un jugador: su respuesta y, solo con el quiz cerrado y la pregunta resuelta, la correcta y sus puntos. */
+  private questionView(
+    event: Pick<LoadedEvent, 'lockedAt'>,
+    question: LoadedEvent['questions'][number],
+    answer: { option: QuizOption; pointsEarned: number | null } | undefined,
+  ) {
+    const resolved = event.lockedAt !== null && question.resolution === 'RESOLVED';
+    const match = question.match;
+    return {
+      id: question.id,
+      order: question.order,
+      type: question.type,
+      options: question.options,
+      selectedOption: answer?.option ?? null,
+      resolution: question.resolution,
+      correctOption: resolved ? question.correctOption : null,
+      pointsEarned: resolved ? (answer?.pointsEarned ?? 0) : null,
+      match: {
+        id: match.id,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        // dev no guarda todavia los nombres cortos: el cliente usa el completo.
+        homeTeamShort: null,
+        awayTeamShort: null,
+        homeTeamLogo: match.homeTeamLogo,
+        awayTeamLogo: match.awayTeamLogo,
+        kickoff: match.kickoff.toISOString(),
+        kickoffConfirmed: !isKickoffTimeUnconfirmed(match.kickoff),
+        status: match.status,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+      },
     };
   }
 
@@ -272,46 +357,149 @@ export class QuizService {
     return this.readDetail(id, userId);
   }
 
-  async overview(userId: string) {
-    await this.publishAvailable();
-    const competitions = await this.competitions();
-    const quizzes = [];
-    for (const competition of competitions) {
-      const where: Prisma.QuizEventWhereInput = {
-        matchday: { competitionId: competition.id, season: competition.currentSeason },
-      };
-      // Refresh stale OPEN rows first, otherwise an expired round can hide the next open quiz.
-      const pending = await this.prisma.quizEvent.findMany({
-        where: { ...where, status: { in: ['SCHEDULED', 'OPEN'] } },
-        select: { id: true },
-      });
-      for (const event of pending) await this.refreshEvent(event.id);
-      const next = await this.prisma.quizEvent.findFirst({
-        where: { ...where, status: 'OPEN', closesAt: { gt: new Date() } },
-        orderBy: { closesAt: 'asc' },
-      });
-      const previous = await this.prisma.quizEvent.findFirst({
-        where: {
-          ...where,
-          OR: [{ status: { in: ['CLOSED', 'FINISHED'] } }, { closesAt: { lte: new Date() } }],
+  /**
+   * Perfil de un jugador en el Quiz: sus datos publicos (nombre, avatar, nivel, equipo favorito) y el historial de
+   * quizzes que ya cerraron y en los que respondio algo, del mas reciente al mas antiguo, con sus respuestas y si
+   * acerto. Lo puede ver cualquier jugador (se llega desde la clasificacion del Quiz, que es de toda la comunidad,
+   * con o sin grupo). Nunca enseña un quiz abierto: se filtraria lo que ha respondido a quien aun puede jugarlo.
+   */
+  async history(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        avatarUrl: true,
+        avatarBackground: true,
+        experience: true,
+        favoriteTeam: true,
+      },
+    });
+    if (!user) fail('USER_NOT_FOUND', 404, 'Usuario no encontrado');
+
+    const participations = await this.prisma.quizParticipation.findMany({
+      where: { userId, answers: { some: {} }, event: { lockedAt: { not: null } } },
+      orderBy: { event: { closesAt: 'desc' } },
+      take: HISTORY_LIMIT,
+      include: {
+        answers: true,
+        event: {
+          include: {
+            matchday: { include: { competition: true } },
+            questions: { orderBy: { order: 'asc' }, include: { match: true } },
+          },
         },
-        orderBy: { closesAt: 'desc' },
+      },
+    });
+
+    return {
+      userId: user.id,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      avatarBackground: user.avatarBackground,
+      level: xpProgressForLevel(user.experience).level,
+      favoriteTeam: findFavoriteTeam(user.favoriteTeam),
+      quizzes: participations.map((participation) => {
+        const { event } = participation;
+        const answered = event.questions.filter((q) =>
+          participation.answers.some((a) => a.questionId === q.id),
+        );
+        return {
+          quizId: event.id,
+          competition: { id: event.matchday.competition.id, name: event.matchday.competition.name },
+          seasonLabel: event.seasonLabel,
+          matchdayOrder: event.matchday.order,
+          matchdayName: event.matchday.name,
+          closesAt: event.closesAt.toISOString(),
+          status: event.status,
+          completedAt: participation.completedAt?.toISOString() ?? null,
+          points: participation.points,
+          questionCount: event.questions.length,
+          questions: answered.map((question) =>
+            this.questionView(
+              event,
+              question,
+              participation.answers.find((a) => a.questionId === question.id),
+            ),
+          ),
+        };
+      }),
+    };
+  }
+
+  /**
+   * Resumen del Quiz por liga: el proximo quiz abierto y el ultimo ya cerrado de cada una. Se resuelve con pocas consultas en
+   * lote (la lista ligera de quizzes de la temporada, los quizzes elegidos y mis participaciones) en vez de recorrer cada liga
+   * y cada quiz con varias consultas y un refresco cada uno.
+   */
+  async overview(userId: string) {
+    await this.publishAvailableIfStale();
+    const competitions = await this.competitions();
+    const serverNow = new Date();
+    const competitionsView = competitions.map(({ id, code, name, logoUrl }) => ({
+      id,
+      code,
+      name,
+      logoUrl,
+    }));
+    if (competitions.length === 0)
+      return { serverNow: serverNow.toISOString(), competitions: competitionsView, quizzes: [] };
+
+    const scope: Prisma.QuizEventWhereInput = {
+      OR: competitions.map((c) => ({ matchday: { competitionId: c.id, season: c.currentSeason } })),
+    };
+    const lightEvents = () =>
+      this.prisma.quizEvent.findMany({
+        where: scope,
+        select: {
+          id: true,
+          status: true,
+          closesAt: true,
+          matchday: { select: { competitionId: true } },
+        },
       });
-      for (const id of new Set([next?.id, previous?.id].filter((id): id is string => !!id))) {
-        const detail = await this.detail(id, userId);
-        quizzes.push(detail.quiz);
+    let events = await lightEvents();
+    // Los quizzes sin cerrar se refrescan (si toca) para que un cierre vencido no oculte el siguiente abierto.
+    let refreshed = false;
+    for (const event of events) {
+      if (event.status === 'SCHEDULED' || event.status === 'OPEN') {
+        refreshed = (await this.refreshEventIfStale(event.id)) || refreshed;
       }
     }
-    return {
-      serverNow: new Date().toISOString(),
-      competitions: competitions.map(({ id, code, name, logoUrl }) => ({
-        id,
-        code,
-        name,
-        logoUrl,
-      })),
-      quizzes,
-    };
+    if (refreshed) events = await lightEvents();
+
+    const now = Date.now();
+    const picked: string[] = [];
+    for (const competition of competitions) {
+      const mine = events.filter((e) => e.matchday.competitionId === competition.id);
+      const next = mine
+        .filter((e) => e.status === 'OPEN' && e.closesAt.getTime() > now)
+        .sort((a, b) => a.closesAt.getTime() - b.closesAt.getTime())[0];
+      const previous = mine
+        .filter(
+          (e) => e.status === 'CLOSED' || e.status === 'FINISHED' || e.closesAt.getTime() <= now,
+        )
+        .sort((a, b) => b.closesAt.getTime() - a.closesAt.getTime())[0];
+      for (const id of new Set([next?.id, previous?.id].filter((id): id is string => !!id)))
+        picked.push(id);
+    }
+
+    const [full, participations] = picked.length
+      ? await Promise.all([
+          this.prisma.quizEvent.findMany({ where: { id: { in: picked } }, include: EVENT_INCLUDE }),
+          this.prisma.quizParticipation.findMany({
+            where: { userId, eventId: { in: picked } },
+            include: { answers: true },
+          }),
+        ])
+      : [[], []];
+    const eventById = new Map(full.map((event) => [event.id, event]));
+    const participationByEvent = new Map(participations.map((p) => [p.eventId, p]));
+    const quizzes = picked.flatMap((id) => {
+      const event = eventById.get(id);
+      return event ? [this.summary(event, participationByEvent.get(id) ?? null)] : [];
+    });
+    return { serverNow: serverNow.toISOString(), competitions: competitionsView, quizzes };
   }
 
   private async assertWritable(event: LoadedEvent) {
@@ -433,7 +621,7 @@ export class QuizService {
           WHERE q."eventId" = e.id AND changed."updatedAt" > e."updatedAt"
         ))
     `);
-    for (const event of events) await this.refreshEvent(event.id);
+    for (const event of events) await this.refreshEventIfStale(event.id);
     const ranked = Prisma.sql`
       WITH totals AS (
         SELECT p."userId", SUM(p.points) AS points, COUNT(*) AS "quizzesPlayed"
@@ -465,6 +653,9 @@ export class QuizService {
     );
     const mapRow = (row: RankedUser) => ({
       position: Number(row.position),
+      // Orden total de la fila (los empates comparten `position` pero no `rowNumber`): sirve de cursor, y asi el cliente
+      // pide una ventana alrededor de su puesto sin recorrer la clasificacion entera.
+      rowNumber: Number(row.rowNumber),
       userId: row.userId,
       name: row.name,
       avatarUrl: row.avatarUrl,
