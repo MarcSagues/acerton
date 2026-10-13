@@ -14,6 +14,19 @@ o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de
 (`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
+## 2026-10-13 — Clasificación del Quiz: mi puesto fijo, scroll infinito y salto a mi fila (fuera de sprint)
+
+Petición del usuario. **Mi puesto**: siempre hay una fila fija arriba de la tabla con mi posición y mis puntos (aunque esté en el 200), y al pulsarla
+baja con scroll suave a mi fila en la lista (que se resalta un momento). Si mi fila aún no está cargada, se pide una ventana de 10 jugadores por
+encima y por debajo de mí (los que tengo cerca) y se salta a ella; entre lo cargado al principio y esa ventana queda un hueco
+(«N jugadores más · ver anteriores») que se cierra con el botón del hueco o con el scroll infinito. **Scroll infinito**: un centinela
+(`InViewDirective`) al final de cada tramo carga la página siguiente al verse; sustituye al botón «Ver más». El scroll infinito se pausa durante el
+salto suave para que las filas no se muevan. Para esto el backend manda `rowNumber` (orden total, no se repite con los empates) en cada fila y en
+`me`, y el cliente pide tramos con `cursor`+`limit`; la lógica de tramos está en `features/quiz/domain/ranking-segments.ts`. Tocar la fila de un
+jugador sigue abriendo su perfil. **Verificado**: backend 53 tests de Quiz (2 nuevos) y lint, frontend 261 tests (22 nuevos), y en navegador con 250
+jugadores (puesto 250: 20 filas al abrir, el scroll infinito carga de 20 en 20, y al pulsar mi puesto se carga la ventana 240-250 y se baja con
+scroll suave). **NO** visto en iPhone. **Necesita** backend desplegado y portado a `dev`, y build nueva.
+
 ## 2026-10-13 — El Quiz carga mucho más rápido (fuera de sprint)
 
 Petición del usuario («el quiz carga muy lento al abrir la vista»). **Medido** en local al abrir `/quiz`: **1 346 consultas** a la base de

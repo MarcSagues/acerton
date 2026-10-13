@@ -116,23 +116,128 @@ describe('QuizHubFacade', () => {
     discardPeriodicTasks();
   }));
 
-  it('pagina con el cursor y fija la fila propia si queda fuera de lo cargado', () => {
-    const facade = setup();
-    facade.init();
-    http.expectOne(`${API}/overview`).flush(overview());
-    const me = rankingRow({ userId: 'u1', name: 'Yo', position: 57, points: 3 });
-    rankingReq(null).flush(ranking({ rows: [rankingRow()], me, total: 80, nextCursor: 'c2' }));
+  describe('clasificacion: scroll infinito y salto a mi puesto', () => {
+    const row = (n: number, overrides: Partial<ReturnType<typeof rankingRow>> = {}) =>
+      rankingRow({ userId: `u${n + 100}`, position: n, rowNumber: n, ...overrides });
+    const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => row(from + i));
+    const me = rankingRow({ userId: 'u1', name: 'Yo', position: 57, rowNumber: 57, points: 3 });
+    const rankingAt = (cursor: string) =>
+      http.expectOne((req) => req.url === `${API}/rankings` && req.params.get('cursor') === cursor);
 
-    expect(facade.myRowOutsidePage()?.position).toBe(57);
-    expect(facade.hasMoreRanking()).toBe(true);
+    /** Abre el Quiz con las filas 1 y 2 cargadas y 80 jugadores, yo en la fila 57. */
+    function open(): QuizHubFacade {
+      const facade = setup();
+      facade.init();
+      http.expectOne(`${API}/overview`).flush(overview());
+      rankingReq(null).flush(ranking({ rows: range(1, 2), me, total: 80 }));
+      return facade;
+    }
 
-    facade.loadMoreRanking();
-    const next = http.expectOne((req) => req.url === `${API}/rankings` && req.params.get('cursor') === 'c2');
-    next.flush(ranking({ rows: [rankingRow({ userId: 'u3', position: 2 }), me], me, total: 80, nextCursor: null }));
+    it('el scroll infinito pide la pagina que sigue al final del tramo y la une a lo cargado', () => {
+      const facade = open();
 
-    expect(facade.rankingRows().map((r) => r.userId)).toEqual(['u2', 'u3', 'u1']);
-    expect(facade.myRowOutsidePage()).toBeNull();
-    expect(facade.hasMoreRanking()).toBe(false);
+      facade.loadAfter(2);
+
+      const request = rankingAt('2');
+      expect(request.request.params.get('limit')).toBe('20');
+      request.flush(ranking({ rows: range(3, 4), me, total: 80 }));
+      expect(facade.rankingRows().map((r) => r.rowNumber)).toEqual([1, 2, 3, 4]);
+      const last = facade.rankingItems().at(-1);
+      expect(last).toEqual({ kind: 'more', key: 'more-4', end: 4 });
+    });
+
+    it('no pide dos veces el mismo tramo a la vez', () => {
+      const facade = open();
+
+      facade.loadAfter(2);
+      facade.loadAfter(2);
+
+      const requests = http.match((req) => req.url === `${API}/rankings` && req.params.get('cursor') === '2');
+      expect(requests.length).toBe(1);
+      requests[0].flush(ranking({ rows: range(3, 4), me, total: 80 }));
+    });
+
+    it('con todas las filas cargadas ya no hay centinela', () => {
+      const facade = setup();
+      facade.init();
+      http.expectOne(`${API}/overview`).flush(overview());
+      rankingReq(null).flush(ranking({ rows: range(1, 3), me: null, total: 3 }));
+
+      expect(facade.rankingItems().some((item) => item.kind === 'more')).toBeFalse();
+    });
+
+    it('mi puesto lejos: se carga una ventana alrededor de mi fila y queda un hueco con el principio', async () => {
+      const facade = open();
+      expect(facade.meLoaded()).toBeFalse();
+
+      const loading = facade.ensureMeLoaded();
+
+      const request = rankingAt('46'); // filas 47..67 (10 por encima y 10 por debajo de la 57)
+      expect(request.request.params.get('limit')).toBe('21');
+      request.flush(ranking({ rows: [...range(47, 56), me, ...range(58, 67)], me, total: 80 }));
+      expect(await loading).toBeTrue();
+      expect(facade.meLoaded()).toBeTrue();
+      const gap = facade.rankingItems().find((item) => item.kind === 'gap');
+      expect(gap).toEqual({ kind: 'gap', key: 'gap-47', hidden: 44, before: 47 });
+    });
+
+    it('si mi fila ya esta cargada no pide nada', async () => {
+      const facade = setup();
+      facade.init();
+      http.expectOne(`${API}/overview`).flush(overview());
+      const near = rankingRow({ userId: 'u1', name: 'Yo', position: 2, rowNumber: 2 });
+      rankingReq(null).flush(ranking({ rows: [row(1), near], me: near, total: 80 }));
+
+      expect(await facade.ensureMeLoaded()).toBeTrue();
+
+      http.expectNone((req) => req.url === `${API}/rankings`);
+    });
+
+    it('sin participaciones propias (me es null) no hay a donde saltar', async () => {
+      const facade = setup();
+      facade.init();
+      http.expectOne(`${API}/overview`).flush(overview());
+      rankingReq(null).flush(ranking({ rows: range(1, 2), me: null, total: 80 }));
+
+      expect(await facade.ensureMeLoaded()).toBeFalse();
+    });
+
+    it('el hueco carga las filas que preceden al segundo tramo y, al cerrarse, se unen', async () => {
+      const facade = open();
+      const loading = facade.ensureMeLoaded();
+      rankingAt('46').flush(ranking({ rows: [...range(47, 56), me, ...range(58, 67)], me, total: 80 }));
+      await loading;
+
+      facade.loadBefore(47);
+
+      const request = rankingAt('26'); // filas 27..46
+      expect(request.request.params.get('limit')).toBe('20');
+      request.flush(ranking({ rows: range(27, 46), me, total: 80 }));
+      const gap = facade.rankingItems().find((item) => item.kind === 'gap');
+      expect(gap).toEqual({ kind: 'gap', key: 'gap-27', hidden: 24, before: 27 });
+    });
+
+    it('mientras dura el salto con scroll suave el scroll infinito esta pausado', () => {
+      const facade = open();
+      facade.jumping.set(true);
+
+      facade.loadAfter(2);
+
+      http.expectNone((req) => req.url === `${API}/rankings` && req.params.get('cursor') === '2');
+    });
+
+    it('un error al cargar mas avisa y deja volver a intentarlo', () => {
+      const facade = open();
+
+      facade.loadAfter(2);
+      rankingAt('2').error(new ProgressEvent('error'), { status: 0 });
+
+      expect(toast.show).toHaveBeenCalled();
+      expect(facade.loadingMore()).toBeFalse();
+      facade.loadAfter(2);
+      rankingAt('2').flush(ranking({ rows: range(3, 4), me, total: 80 }));
+      expect(facade.rankingRows().length).toBe(4);
+    });
   });
 
   it('distingue clasificacion vacia, error y sin conexion (sin inventar datos)', () => {

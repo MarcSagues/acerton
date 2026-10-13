@@ -650,6 +650,9 @@ export class QuizService {
     );
     const mapRow = (row: RankedUser) => ({
       position: Number(row.position),
+      // Orden total de la fila (los empates comparten `position` pero no `rowNumber`): sirve de cursor, y asi el cliente
+      // pide una ventana alrededor de su puesto sin recorrer la clasificacion entera.
+      rowNumber: Number(row.rowNumber),
       userId: row.userId,
       name: row.name,
       avatarUrl: row.avatarUrl,

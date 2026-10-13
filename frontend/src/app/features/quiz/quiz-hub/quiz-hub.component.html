@@ -220,8 +220,9 @@
         @if (page.rankingRows().length === 0) {
           <p class="empty">{{ 'quiz.rankingVacio' | t }}</p>
         } @else {
-          @if (page.myRowOutsidePage(); as me) {
-            <a class="row me pinned" [routerLink]="['/player', me.userId]" [attr.aria-label]="'quiz.tuPosicion' | t">
+          @if (page.rankingMe(); as me) {
+            <!-- Mi puesto, siempre arriba: al pulsar baja con scroll suave a mi fila (y si no esta cargada, carga a los que tengo cerca). -->
+            <button type="button" class="row me pinned" (click)="goToMe()" [attr.aria-label]="'quiz.irATuPosicion' | t">
               <span class="col-pos mono">{{ me.position }}</span>
               <span class="col-name">
                 <app-avatar [url]="me.avatarUrl" [background]="me.avatarBackground" [name]="me.name" [size]="28"></app-avatar>
@@ -231,8 +232,8 @@
                 </span>
               </span>
               <span class="col-pts mono">{{ me.points }}</span>
-              <piqo-svg icon="flecha" size="14" class="row-arrow"></piqo-svg>
-            </a>
+              <piqo-svg icon="abajo" size="14" class="row-arrow"></piqo-svg>
+            </button>
           }
           <div class="table-head" aria-hidden="true">
             <span class="col-pos mono">#</span>
@@ -240,31 +241,45 @@
             <span class="col-pts mono">{{ 'quiz.pts' | t }}</span>
           </div>
           <ol class="rows">
-            @for (row of page.rankingRows(); track row.userId) {
-              <li>
-              <a class="row" [class.me]="page.isMe(row)" [routerLink]="['/player', row.userId]">
-                <span class="col-pos mono">{{ row.position }}</span>
-                <span class="col-name">
-                  <app-avatar [url]="row.avatarUrl" [background]="row.avatarBackground" [name]="row.name" [size]="28"></app-avatar>
-                  <span class="name-wrap">
-                    <span class="name">{{ page.isMe(row) ? ('quiz.tu' | t: { name: row.name }) : row.name }}</span>
-                    <span class="played mono">{{ 'quiz.nQuizzes' | t: { count: row.quizzesPlayed } }}</span>
-                  </span>
-                </span>
-                <span class="col-pts mono">{{ row.points }}</span>
-                <piqo-svg icon="flecha" size="14" class="row-arrow"></piqo-svg>
-              </a>
-              </li>
+            @for (item of page.rankingItems(); track item.key) {
+              @if (item.kind === 'row') {
+                <li>
+                  <a
+                    class="row"
+                    [class.me]="page.isMe(item.row)"
+                    [class.flash]="page.flashUserId() === item.row.userId"
+                    [id]="'quiz-row-' + item.row.userId"
+                    [routerLink]="['/player', item.row.userId]"
+                  >
+                    <span class="col-pos mono">{{ item.row.position }}</span>
+                    <span class="col-name">
+                      <app-avatar [url]="item.row.avatarUrl" [background]="item.row.avatarBackground" [name]="item.row.name" [size]="28"></app-avatar>
+                      <span class="name-wrap">
+                        <span class="name">{{ page.isMe(item.row) ? ('quiz.tu' | t: { name: item.row.name }) : item.row.name }}</span>
+                        <span class="played mono">{{ 'quiz.nQuizzes' | t: { count: item.row.quizzesPlayed } }}</span>
+                      </span>
+                    </span>
+                    <span class="col-pts mono">{{ item.row.points }}</span>
+                    <piqo-svg icon="flecha" size="14" class="row-arrow"></piqo-svg>
+                  </a>
+                </li>
+              } @else if (item.kind === 'gap') {
+                <li class="gap-row">
+                  <button type="button" class="gap-btn" [disabled]="page.loadingMore()" (click)="page.loadBefore(item.before)">
+                    <span class="gap-dots" aria-hidden="true">···</span>
+                    {{ 'quiz.nJugadoresMas' | t: { count: item.hidden } }} · {{ 'quiz.verAnteriores' | t }}
+                  </button>
+                </li>
+              } @else {
+                <!-- Scroll infinito: al verse este centinela se carga la pagina que sigue. -->
+                <li class="more-row" appInView (inView)="page.loadAfter(item.end)">
+                  @if (page.loadingMore()) {
+                    <app-spinner [size]="16"></app-spinner>
+                  }
+                </li>
+              }
             }
           </ol>
-          @if (page.hasMoreRanking()) {
-            <button type="button" class="piqo-secondary more-btn" [disabled]="page.loadingMore()" (click)="page.loadMoreRanking()">
-              @if (page.loadingMore()) {
-                <app-spinner [size]="16"></app-spinner>
-              }
-              {{ 'quiz.verMas' | t }}
-            </button>
-          }
           <p class="footnote">
             {{ 'quiz.nJugadores' | t: { count: page.rankingTotal() } }} · {{ 'quiz.notaEmpates' | t }}
           </p>
