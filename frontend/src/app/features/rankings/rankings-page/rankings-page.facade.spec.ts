@@ -74,16 +74,19 @@ describe('RankingsPageFacade — carga de la clasificacion', () => {
     expect(facade.scope()).toBe('laliga');
   });
 
-  it('con varias competiciones activas arranca en la vista general', () => {
+  it('con varias competiciones activas arranca en la primera liga (con su grafica), no en General', () => {
     const facade = setup();
     activeGroups.setGroups([group('g1', ['laliga', 'premier'])]);
     activeGroups.setActive('g1');
 
     TestBed.flushEffects();
 
-    http.expectOne((req) => req.url === `${API}/groups/g1/rankings` && req.params.get('scope') === 'general').flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings` && req.params.get('scope') === 'laliga').flush([]);
     http.expectOne(`${API}/groups/g1/seasons`).flush([]);
-    expect(facade.scope()).toBe('general');
+    // Las jornadas de la liga se piden al entrar: de ahi sale la grafica.
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history` && req.params.get('competitionId') === 'laliga').flush({ matchdays: [] });
+    expect(facade.scope()).toBe('laliga');
+    expect(facade.showEvolution()).toBeTrue();
   });
 
   it('si el grupo activo no esta en memoria (p.ej. recien creado) lo pide antes de la clasificacion', () => {
@@ -268,8 +271,12 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
 
   it('cambiar de competicion reinicia la jornada y pide las jornadas de la nueva', () => {
     const facade = setup(['laliga', 'premier']);
-    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'laliga').flush([]);
     http.expectOne(`${API}/groups/g1/seasons`).flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
+
+    facade.setScope('general');
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
     expect(facade.showMatchdayPicker()).toBeFalse(); // vista general: sin jornadas
 
     facade.setPeriod('WEEKLY'); // la semanal no tiene vista general: pasa a la primera competicion
@@ -285,6 +292,42 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history` && req.params.get('competitionId') === 'premier').flush({ matchdays: [] });
     expect(facade.viewingPastMatchday()).toBeFalse();
     expect(facade.showMatchdayPicker()).toBeFalse(); // sin jornadas finalizadas, nada que elegir
+  });
+
+  it('Total ensena lo mismo al entrar que despues de pasar por Semanal; si venias de General, vuelves a General', () => {
+    const facade = setup(['laliga', 'premier']);
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'laliga').flush([]);
+    http.expectOne(`${API}/groups/g1/seasons`).flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
+
+    // Entras en la primera liga: Semanal y otra vez Total no cambian de liga.
+    facade.setPeriod('WEEKLY');
+    http.expectOne(rankingUrl('g1')).flush([]);
+    facade.setPeriod('TOTAL');
+    http.expectOne(rankingUrl('g1')).flush([]);
+    expect(facade.scope()).toBe('laliga');
+
+    // Si elegiste General, Semanal te lleva a una liga y Total te devuelve a General.
+    facade.setScope('general');
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    facade.setPeriod('WEEKLY');
+    http.expectOne(rankingUrl('g1')).flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
+    expect(facade.scope()).toBe('laliga');
+    facade.setPeriod('TOTAL');
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    expect(facade.scope()).toBe('general');
+
+    // Si en Semanal eliges tu otra liga, Total se queda en ella.
+    facade.setPeriod('WEEKLY');
+    http.expectOne(rankingUrl('g1')).flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
+    facade.setScope('premier');
+    http.expectOne(rankingUrl('g1')).flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history` && req.params.get('competitionId') === 'premier').flush(history);
+    facade.setPeriod('TOTAL');
+    http.expectOne(rankingUrl('g1')).flush([]);
+    expect(facade.scope()).toBe('premier');
   });
 
   it('una respuesta tardia de una jornada ya abandonada no pisa la actual', () => {

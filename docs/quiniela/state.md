@@ -1,5 +1,15 @@
 # Estado actual
 
+## 2026-10-13 — Tabla: se entra en la primera liga y Total no cambia tras pasar por Semanal (fuera de sprint)
+
+Fallo reportado por el usuario en la 1.1.0: en un grupo con varias ligas, de Grupos a Tabla no salía la gráfica y el rey del
+marcador exacto enseñaba unos datos; al pasar a Semanal y volver a Total salía la gráfica y el rey era otro. Causa: se entraba
+en «General» (sin gráfica; el rey suma todas las ligas) y Semanal salta a la primera liga y Total ya no volvía. **Hecho**
+(`RankingsPageFacade`): con varias ligas se entra en la primera (con su gráfica y su selector de jornada); «General» sigue en
+las pestañas. Si el usuario estaba en General, Semanal le lleva a una liga y Total le devuelve a General; si en Semanal elige
+otra liga, Total se queda en ella. **Verificado** en navegador (local, grupo de dos ligas: entrada, Semanal y Total dan la misma
+liga, gráfica y rey) y 218 tests del frontend (1 nuevo).
+
 ## 2026-10-13 — Historial de Quiz (fuera de sprint)
 
 Petición del usuario. En Estadísticas (la propia, `/profile/stats`, y la de un miembro, `.../members/:userId/stats`) y en

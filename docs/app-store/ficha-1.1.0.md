@@ -97,7 +97,7 @@ Los puntos y las insignias no tienen valor monetario ni se pueden canjear por pr
 Disponible en español, inglés, catalán, francés, italiano y alemán.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2307 caracteres
+**Novedades de esta versión (máx. 4000)** — 2482 caracteres
 
 ```
 • NUEVO MODO DE JUEGO: ¡QUIZ! Responde preguntas sobre los partidos de cada liga y compite con toda la comunidad, aunque no tengas grupo. Lo encuentras abajo a la derecha; tu Perfil sigue en tu avatar.
@@ -119,6 +119,7 @@ Disponible en español, inglés, catalán, francés, italiano y alemán.
 • Al crear tu cuenta también puedes entrar con Google o Apple, igual que al iniciar sesión.
 • Cada pantalla se abre desde arriba, sin quedarse en el punto donde estabas en la anterior.
 • Nueva pantalla de Ajustes en tu Perfil, con una pestaña para cada cosa: nombre, equipo, avisos, apariencia, idioma y contraseña.
+• Nuevo Historial de Quiz: en Estadísticas, la tuya y la de otros jugadores, ves todos los quizzes cerrados con lo que se respondió y si se acertó, y puedes filtrar por liga.
 ```
 
 
@@ -179,7 +180,7 @@ Points and badges have no monetary value and can't be exchanged for prizes. Piqo
 Available in English, Spanish, Catalan, French, Italian and German.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2290 caracteres
+**Novedades de esta versión (máx. 4000)** — 2444 caracteres
 
 ```
 • NEW GAME MODE: QUIZ! Answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.
@@ -201,6 +202,7 @@ Available in English, Spanish, Catalan, French, Italian and German.
 • When creating your account you can also continue with Google or Apple, just like when signing in.
 • Every screen now opens from the top instead of staying where you were on the previous one.
 • New Settings screen in your Profile, with a tab for each thing: name, team, notifications, appearance, language and password.
+• New Quiz history: in Statistics, yours and other players’, see every closed quiz with what was answered and whether it was right, and filter by league.
 ```
 
 
@@ -261,7 +263,7 @@ Points and badges have no monetary value and can't be exchanged for prizes. Piqo
 Available in English, Spanish, Catalan, French, Italian and German.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2290 caracteres
+**Novedades de esta versión (máx. 4000)** — 2444 caracteres
 
 ```
 • NEW GAME MODE: QUIZ! Answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.
@@ -283,6 +285,7 @@ Available in English, Spanish, Catalan, French, Italian and German.
 • When creating your account you can also continue with Google or Apple, just like when signing in.
 • Every screen now opens from the top instead of staying where you were on the previous one.
 • New Settings screen in your Profile, with a tab for each thing: name, team, notifications, appearance, language and password.
+• New Quiz history: in Statistics, yours and other players’, see every closed quiz with what was answered and whether it was right, and filter by league.
 ```
 
 
@@ -343,7 +346,7 @@ Els punts i les insígnies no tenen valor monetari ni es poden bescanviar per pr
 Disponible en català, castellà, anglès, francès, italià i alemany.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2262 caracteres
+**Novedades de esta versión (máx. 4000)** — 2440 caracteres
 
 ```
 • NOU MODE DE JOC: QUIZ! Respon preguntes sobre els partits de cada lliga i competeix amb tota la comunitat, encara que no tinguis grup. El trobaràs a baix a la dreta; el teu Perfil continua al teu avatar.
@@ -365,6 +368,7 @@ Disponible en català, castellà, anglès, francès, italià i alemany.
 • En crear el teu compte també pots continuar amb Google o Apple, igual que en iniciar sessió.
 • Cada pantalla s’obre des de dalt, sense quedar-se on eres a l’anterior.
 • Nova pantalla d’Ajustos al teu Perfil, amb una pestanya per a cada cosa: nom, equip, avisos, aparença, idioma i contrasenya.
+• Nou Historial de Quiz: a Estadístiques, la teva i la d’altres jugadors, veus tots els quizzes tancats amb el que es va respondre i si es va encertar, i pots filtrar per lliga.
 ```
 
 
@@ -425,7 +429,7 @@ Les points et les badges n’ont aucune valeur monétaire et ne peuvent pas êtr
 Disponible en français, espagnol, anglais, catalan, italien et allemand.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2509 caracteres
+**Novedades de esta versión (máx. 4000)** — 2706 caracteres
 
 ```
 • NOUVEAU MODE DE JEU : QUIZ ! Réponds à des questions sur les matchs de chaque ligue et affronte toute la communauté, même sans groupe. Il est en bas à droite ; ton Profil reste accessible depuis ton avatar.
@@ -447,6 +451,7 @@ Disponible en français, espagnol, anglais, catalan, italien et allemand.
 • En créant ton compte, tu peux aussi continuer avec Google ou Apple, comme à la connexion.
 • Chaque écran s’ouvre désormais en haut, sans rester là où tu étais sur le précédent.
 • Nouvel écran Réglages dans ton Profil, avec un onglet pour chaque chose : nom, équipe, notifications, apparence, langue et mot de passe.
+• Nouvel historique du Quiz : dans Statistiques, le tien et celui des autres joueurs, tu vois tous les quiz clos avec les réponses données et si elles étaient bonnes, et tu peux filtrer par ligue.
 ```
 
 
@@ -507,7 +512,7 @@ I punti e i badge non hanno valore monetario e non si possono convertire in prem
 Disponibile in italiano, spagnolo, inglese, catalano, francese e tedesco.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2400 caracteres
+**Novedades de esta versión (máx. 4000)** — 2578 caracteres
 
 ```
 • NUOVA MODALITÀ DI GIOCO: QUIZ! Rispondi a domande sulle partite di ogni campionato e sfida tutta la community, anche senza gruppo. Lo trovi in basso a destra; il tuo Profilo resta sul tuo avatar.
@@ -529,6 +534,7 @@ Disponibile in italiano, spagnolo, inglese, catalano, francese e tedesco.
 • Quando crei il tuo account puoi anche continuare con Google o Apple, come all’accesso.
 • Ogni schermata si apre dall’alto, senza restare dov’eri nella precedente.
 • Nuova schermata Impostazioni nel tuo Profilo, con una scheda per ogni cosa: nome, squadra, avvisi, aspetto, lingua e password.
+• Nuovo storico dei Quiz: in Statistiche, il tuo e quello degli altri giocatori, vedi tutti i quiz chiusi con le risposte date e se erano giuste, e puoi filtrare per campionato.
 ```
 
 
@@ -589,7 +595,7 @@ Punkte und Abzeichen haben keinen Geldwert und lassen sich nicht gegen Preise ei
 Verfügbar auf Deutsch, Spanisch, Englisch, Katalanisch, Französisch und Italienisch.
 ```
 
-**Novedades de esta versión (máx. 4000)** — 2618 caracteres
+**Novedades de esta versión (máx. 4000)** — 2799 caracteres
 
 ```
 • NEUER SPIELMODUS: QUIZ! Beantworte Fragen zu den Spielen jeder Liga und miss dich mit der ganzen Community, auch ohne Gruppe. Du findest es unten rechts; dein Profil erreichst du weiter über deinen Avatar.
@@ -611,4 +617,5 @@ Verfügbar auf Deutsch, Spanisch, Englisch, Katalanisch, Französisch und Italie
 • Beim Erstellen deines Kontos kannst du auch mit Google oder Apple fortfahren, genau wie beim Anmelden.
 • Jeder Bildschirm öffnet sich jetzt oben, statt dort zu bleiben, wo du auf dem vorherigen warst.
 • Neuer Einstellungsbildschirm in deinem Profil, mit einem Tab für jedes Thema: Name, Team, Mitteilungen, Darstellung, Sprache und Passwort.
+• Neu: Quiz-Verlauf. In den Statistiken, deinen und denen anderer Spieler, siehst du alle beendeten Quizze mit den Antworten und ob sie richtig waren, und kannst nach Liga filtern.
 ```

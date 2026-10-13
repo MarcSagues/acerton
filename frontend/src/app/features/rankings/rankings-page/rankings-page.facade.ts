@@ -84,6 +84,11 @@ export class RankingsPageFacade {
   readonly currentSeasonLabel = signal<string | null>(null);
   /** La grafica de evolucion que se ve: la del grupo por defecto, la tuya si la eliges. */
   readonly evolutionMode = signal<EvolutionMode>('group');
+  /**
+   * El usuario estaba en "General" y paso a Semanal (que no tiene vista general y salta a la primera liga): al volver a
+   * Total se le devuelve a "General", para que Total ensene siempre lo que eligio y no lo que dejo la semanal.
+   */
+  private returnToGeneralOnTotal = false;
   /** Marcadores exactos de cada jugador en la vista actual; null si no aplica (grupo de 1X2) o no se pudo cargar. */
   readonly exactLeaders = signal<ExactScoreLeader[] | null>(null);
 
@@ -255,7 +260,10 @@ export class RankingsPageFacade {
     const groupId = group.id;
     this.groupDetail.set(group);
     const active = (group.groupCompetitions ?? []).filter((gc) => gc.isActive);
-    this.scope.set(active.length > 1 ? 'general' : (active[0]?.competitionId ?? 'general'));
+    // Se entra en la primera liga, no en "General": solo por liga hay grafica de evolucion y selector de jornada, y asi
+    // Total ensena lo mismo al entrar que despues de pasar por Semanal. "General" sigue a un toque en las pestañas.
+    this.scope.set(active[0]?.competitionId ?? 'general');
+    this.returnToGeneralOnTotal = false;
     this.selectedMatchdayId.set(null);
     this.finishedMatchdaysKey = '';
     this.finishedMatchdays.set([]);
@@ -282,7 +290,11 @@ export class RankingsPageFacade {
     // "General" se cambia a la primera competicion activa en vez de dejar
     // una combinacion sin sentido seleccionada.
     if (period === 'WEEKLY' && this.scope() === 'general') {
+      this.returnToGeneralOnTotal = true;
       this.scope.set(this.activeCompetitions()[0]?.id ?? 'general');
+    } else if (period === 'TOTAL' && this.returnToGeneralOnTotal) {
+      this.returnToGeneralOnTotal = false;
+      this.scope.set('general');
     }
     const groupId = this.activeGroupService.activeId();
     if (groupId) this.fetchRanking(groupId);
@@ -293,6 +305,7 @@ export class RankingsPageFacade {
   }
 
   setScope(scope: string): void {
+    this.returnToGeneralOnTotal = false;
     this.scope.set(scope);
     // Cada competicion tiene su propio calendario de jornadas.
     this.selectedMatchdayId.set(null);
