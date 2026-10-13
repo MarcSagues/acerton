@@ -49,8 +49,9 @@ h1 {
 
 /* Mismas pastillas que la Tabla (rankings-page), con la altura tactil minima. */
 .comp-pills {
-  margin-top: 16px;
-  padding: 0 20px;
+  /* El hueco de arriba deja sitio a .pill-marks: con overflow-x el contenedor recorta lo que sobresale. */
+  margin-top: 10px;
+  padding: 6px 20px 0;
   display: flex;
   gap: 7px;
   overflow-x: auto;
@@ -63,6 +64,7 @@ h1 {
 }
 
 .comp-pill {
+  position: relative;
   min-height: 36px;
   padding: 0 12px;
   border-radius: var(--p4-radius-pill);
@@ -87,6 +89,35 @@ h1 {
     outline: 2px solid var(--p4-accent);
     outline-offset: 2px;
   }
+}
+
+/* Reloj (cierra en menos de 24 h) y punto rojo (por hacer), arriba a la derecha de la pestaña. */
+.pill-marks {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pending-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--p4-error);
+  box-shadow: 0 0 0 2px var(--p4-bg);
+}
+
+.closing-soon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--p4-warning-bg);
+  color: var(--p4-warning);
+  box-shadow: 0 0 0 2px var(--p4-bg);
 }
 
 .comp-logo {

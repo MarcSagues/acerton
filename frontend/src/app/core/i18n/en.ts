@@ -749,6 +749,7 @@ export const en: Catalog = {
   'quiz.cerrando': 'Closing…',
   'quiz.cierraEl': 'closes {date}',
   'quiz.cierraEn': 'Closes in {time}',
+  'quiz.cierraPronto': 'Closes in less than 24 h',
   'quiz.cierreSinConfirmar': 'closes at the first kick-off (time to be confirmed)',
   'quiz.clasificacion': 'Quiz standings',
   'quiz.completado': 'Completed',

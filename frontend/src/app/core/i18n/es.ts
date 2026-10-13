@@ -747,6 +747,7 @@ export const es = {
   'quiz.cerrando': 'Cerrando…',
   'quiz.cierraEl': 'cierra el {date}',
   'quiz.cierraEn': 'Cierra en {time}',
+  'quiz.cierraPronto': 'Cierra en menos de 24 h',
   'quiz.cierreSinConfirmar': 'cierra con el primer partido (hora por confirmar)',
   'quiz.clasificacion': 'Clasificación del quiz',
   'quiz.completado': 'Completado',
