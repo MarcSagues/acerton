@@ -276,6 +276,11 @@ h1 {
   color: var(--p4-muted);
 }
 
+.evolution-sublabel {
+  font-size: 8.5px;
+  color: var(--p4-muted);
+}
+
 .table-head {
   /* Mismo desplazamiento horizontal que el contenido de .row: .rows aporta
      20px de padding y cada .row otros 14px propios (20+14=34) — con solo

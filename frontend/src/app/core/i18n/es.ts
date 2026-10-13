@@ -880,6 +880,7 @@ export const es = {
   'rankingsPage.nadieExacto': 'Todavía nadie ha clavado un marcador exacto.',
   'rankingsPage.nombresYMas': '{names} y {count} más',
   'rankingsPage.notaAcumulado': 'Puntos acumulados tras cada jornada',
+  'rankingsPage.notaGeneral': 'cada punto es una jornada de una liga, por orden de fecha',
   'rankingsPage.notaJornada': 'Puntos de cada jornada',
   'rankingsPage.notaLideres': 'tú y los que van en cabeza',
   'rankingsPage.periodoClasificacion': 'Periodo de clasificación',

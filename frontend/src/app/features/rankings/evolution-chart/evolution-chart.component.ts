@@ -4,6 +4,8 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 const HEIGHT = 172;
 const PAD = { top: 12, right: 14, bottom: 24, left: 30 };
+/** Alto extra para la segunda linea del eje (la liga de cada jornada en "General"). */
+const SUBLABEL_EXTRA = 14;
 
 interface PlottedSeries extends EvolutionSeries {
   path: string;
@@ -28,8 +30,11 @@ export class EvolutionChartComponent {
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly width = signal(320);
-  readonly height = HEIGHT;
+  /** Con segunda linea en el eje (General) la grafica es algo mas alta; la zona de las lineas no cambia. */
+  readonly height = computed(() => HEIGHT + (this.chart().sublabels?.length ? SUBLABEL_EXTRA : 0));
   readonly pad = PAD;
+  /** Linea base del texto del eje (jornada); la segunda linea, si la hay, va debajo. */
+  readonly labelY = HEIGHT - 6;
   /** Jornada con la lectura abierta (indice), o null. */
   readonly activeIndex = signal<number | null>(null);
   /** Jugador resaltado desde la leyenda, o null. */
@@ -89,7 +94,8 @@ export class EvolutionChartComponent {
     // La tarjeta se coloca al lado contrario de la jornada para no taparla.
     const x = this.xs()[index];
     const alignRight = x > PAD.left + this.plotWidth() / 2;
-    return { label: chart.labels[index], rows, x, alignRight };
+    const full = chart.fullLabels?.[index];
+    return { label: full ? `${chart.labels[index]} · ${full}` : chart.labels[index], rows, x, alignRight };
   });
 
   constructor() {

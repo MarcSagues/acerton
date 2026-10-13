@@ -882,6 +882,7 @@ export const it: Catalog = {
   'rankingsPage.nadieExacto': 'Nessuno ha ancora azzeccato un risultato esatto.',
   'rankingsPage.nombresYMas': '{names} e altri {count}',
   'rankingsPage.notaAcumulado': 'Punti totali dopo ogni giornata',
+  'rankingsPage.notaGeneral': 'ogni punto è una giornata di un campionato, in ordine di data',
   'rankingsPage.notaJornada': 'Punti di ogni giornata',
   'rankingsPage.notaLideres': 'tu e chi è in testa',
   'rankingsPage.periodoClasificacion': 'Periodo della classifica',

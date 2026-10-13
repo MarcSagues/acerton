@@ -882,6 +882,7 @@ export const de: Catalog = {
   'rankingsPage.nadieExacto': 'Noch hat niemand ein exaktes Ergebnis getroffen.',
   'rankingsPage.nombresYMas': '{names} und {count} weitere',
   'rankingsPage.notaAcumulado': 'Gesamtpunkte nach jedem Spieltag',
+  'rankingsPage.notaGeneral': 'jeder Punkt ist ein Spieltag einer Liga, nach Datum geordnet',
   'rankingsPage.notaJornada': 'Punkte pro Spieltag',
   'rankingsPage.notaLideres': 'du und die Spitze',
   'rankingsPage.periodoClasificacion': 'Wertungszeitraum',

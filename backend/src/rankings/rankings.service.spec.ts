@@ -70,8 +70,8 @@ describe('RankingsService.getHistoryForCompetition', () => {
   it('devuelve las jornadas finalizadas (mas reciente primero) con el ganador y los puntos del usuario que pide el historico', async () => {
     const prisma = buildPrismaMock();
     prisma.matchday.findMany.mockResolvedValue([
-      { id: 'md-2', order: 2, status: 'FINISHED' },
-      { id: 'md-1', order: 1, status: 'FINISHED' },
+      { id: 'md-2', order: 2, status: 'FINISHED', closesAt: new Date('2026-10-12T18:00:00.000Z') },
+      { id: 'md-1', order: 1, status: 'FINISHED', closesAt: new Date('2026-10-05T18:00:00.000Z') },
     ]);
     prisma.rankingSnapshot.findMany.mockResolvedValue([
       { matchdayId: 'md-1', userId: 'u1', points: 3, user: { name: 'Ana' } },
@@ -91,6 +91,7 @@ describe('RankingsService.getHistoryForCompetition', () => {
       {
         matchdayId: 'md-2',
         order: 2,
+        closesAt: '2026-10-12T18:00:00.000Z',
         winner: { userId: 'u1', name: 'Ana', points: 6 },
         myPoints: 6,
         scores: [
@@ -101,6 +102,7 @@ describe('RankingsService.getHistoryForCompetition', () => {
       {
         matchdayId: 'md-1',
         order: 1,
+        closesAt: '2026-10-05T18:00:00.000Z',
         winner: { userId: 'u2', name: 'Bea', points: 5 },
         myPoints: 3,
         scores: [
@@ -115,7 +117,9 @@ describe('RankingsService.getHistoryForCompetition', () => {
 
   it('myPoints es null si el usuario no tiene snapshot en esa jornada (se unio despues)', async () => {
     const prisma = buildPrismaMock();
-    prisma.matchday.findMany.mockResolvedValue([{ id: 'md-1', order: 1, status: 'FINISHED' }]);
+    prisma.matchday.findMany.mockResolvedValue([
+      { id: 'md-1', order: 1, status: 'FINISHED', closesAt: new Date('2026-10-05T18:00:00.000Z') },
+    ]);
     prisma.rankingSnapshot.findMany.mockResolvedValue([
       { matchdayId: 'md-1', userId: 'u2', points: 5, user: { name: 'Bea' } },
     ]);
