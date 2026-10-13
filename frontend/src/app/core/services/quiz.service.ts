@@ -1,5 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { QuizAnswerInput, QuizDetail, QuizOverview, QuizRanking, QuizRankingQuery } from '../models/quiz.model';
 
@@ -12,8 +13,28 @@ export class QuizService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/quiz`;
 
+  /**
+   * Ultimo resumen recibido, lo pida quien lo pida (el centro del Quiz o la
+   * barra inferior): de aqui sale el punto rojo de "Quiz" en la barra.
+   */
+  private readonly lastOverviewSignal = signal<QuizOverview | null>(null);
+  readonly lastOverview = this.lastOverviewSignal.asReadonly();
+  private lastRefreshAt = 0;
+
   getOverview() {
-    return this.http.get<QuizOverview>(`${this.base}/overview`);
+    return this.http.get<QuizOverview>(`${this.base}/overview`).pipe(tap((overview) => this.lastOverviewSignal.set(overview)));
+  }
+
+  /** Vuelve a pedir el resumen solo para el punto de la barra; si falla, se queda el ultimo conocido. */
+  refreshOverview(): void {
+    this.lastRefreshAt = Date.now();
+    this.getOverview().subscribe({ error: () => undefined });
+  }
+
+  /** Como refreshOverview, pero como mucho una vez cada `maxAgeMs` (la barra lo llama en cada navegacion). */
+  refreshOverviewIfStale(maxAgeMs: number): void {
+    if (Date.now() - this.lastRefreshAt < maxAgeMs) return;
+    this.refreshOverview();
   }
 
   getQuiz(quizId: string) {
@@ -30,7 +51,10 @@ export class QuizService {
   }
 
   complete(quizId: string) {
-    return this.http.post<QuizDetail>(`${this.base}/${encodeURIComponent(quizId)}/complete`, {});
+    // Al terminar, el punto rojo de la barra tiene que apagarse sin esperar a otra navegacion.
+    return this.http
+      .post<QuizDetail>(`${this.base}/${encodeURIComponent(quizId)}/complete`, {})
+      .pipe(tap(() => this.refreshOverview()));
   }
 
   getRanking(query: QuizRankingQuery = {}) {

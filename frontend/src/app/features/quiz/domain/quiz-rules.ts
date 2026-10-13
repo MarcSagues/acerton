@@ -1,4 +1,5 @@
 import {
+  QuizCompetition,
   QuizErrorCode,
   QuizMatch,
   QuizOptionCode,
@@ -29,6 +30,45 @@ export function clockOffsetMs(serverNow: string | null | undefined, deviceNowMs:
 export function isPastClose(closesAt: string, nowMs: number): boolean {
   const close = Date.parse(closesAt);
   return Number.isFinite(close) && nowMs >= close;
+}
+
+/** Por debajo de esto, la pestaña de la liga lleva un reloj: la jornada cierra en nada. */
+export const CLOSING_SOON_MS = 24 * 60 * 60 * 1000;
+
+/** true si la jornada sigue abierta (segun la hora corregida) y cierra en menos de 24 h. */
+export function closesSoon(quiz: QuizSummary, nowMs: number): boolean {
+  if (quiz.status !== 'OPEN') return false;
+  const close = Date.parse(quiz.closesAt);
+  return Number.isFinite(close) && close > nowMs && close - nowMs < CLOSING_SOON_MS;
+}
+
+/**
+ * Ligas ordenadas de la que cierra antes a la que cierra mas tarde. Cuenta la
+ * jornada abierta o programada de cada liga que cierra antes y aun no ha
+ * cerrado; las ligas sin ninguna van al final, en el orden que mando el servidor.
+ */
+export function sortCompetitionsByClose(
+  competitions: readonly QuizCompetition[],
+  quizzes: readonly QuizSummary[],
+  nowMs: number,
+): QuizCompetition[] {
+  const nextClose = new Map<string, number>();
+  for (const quiz of quizzes) {
+    if (quiz.status !== 'OPEN' && quiz.status !== 'SCHEDULED') continue;
+    const close = Date.parse(quiz.closesAt);
+    if (!Number.isFinite(close) || close <= nowMs) continue;
+    const known = nextClose.get(quiz.competition.id);
+    if (known === undefined || close < known) nextClose.set(quiz.competition.id, close);
+  }
+  return competitions
+    .map((competition, index) => ({ competition, index, close: nextClose.get(competition.id) ?? Infinity }))
+    .sort((a, b) => a.close - b.close || a.index - b.index)
+    .map((entry) => entry.competition);
+}
+
+/** true si la jornada esta abierta, no ha cerrado y el usuario aun no la ha terminado: lleva el punto rojo. */
+export function isPendingForUser(quiz: QuizSummary, nowMs: number): boolean {
+  return quiz.status === 'OPEN' && !isPastClose(quiz.closesAt, nowMs) && !quiz.participation?.completedAt;
 }
 
 export type QuizAction = 'START' | 'CONTINUE' | 'REVIEW' | 'RESULTS' | 'NONE';
