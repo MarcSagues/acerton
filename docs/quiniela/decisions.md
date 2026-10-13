@@ -4,6 +4,43 @@ Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
 
+## 2026-10-12 — Tabla: gráfica de líneas del grupo y "Rey del marcador exacto" (fuera de sprint)
+
+Petición explícita del usuario: en Tabla, por defecto, una gráfica de líneas con la evolución de los puntos
+de los jugadores por jornada (un color por jugador), con un botón para cambiar a la gráfica individual de
+barras de antes; también en Semanal (antes allí no había gráfica). Además, en los grupos de resultado
+exacto, un "Rey del marcador exacto" con cuántos exactos ha clavado cada uno en la semana o en total.
+Referencia visual del usuario: una gráfica "Evolución de posiciones" con "líderes + tú".
+
+**Cómo funciona**
+- Backend: el historial (`GET /groups/:id/rankings/history`) manda además `scores` por jornada (puntos de
+  cada jugador, de los `RankingSnapshot` semanales que ya leía). Endpoint nuevo
+  `GET /groups/:id/rankings/exact-scores?period&scope&matchdayId` (`RankingsService.getExactScoreLeaders`).
+- Frontend: `EvolutionChartComponent` (SVG propio, sin librerías) y la lógica en `RankingsPageFacade`
+  (`groupChart`, `evolutionMode`, `exactLeaders`...).
+
+**Decisiones tomadas por defecto (a confirmar por el usuario):**
+1. **Puntos, no posiciones**: el usuario pidió "evolución de los puntos" (la referencia era de posiciones).
+   En Total la línea es el **acumulado** tras cada jornada; en Semanal, los **puntos de cada jornada**.
+   El acumulado sale de sumar las semanales de las jornadas finalizadas: si hay una jornada en juego,
+   la tabla Total puede ir por delante de la última línea.
+2. **Tú + 5 rivales como máximo** (los que van primero en el acumulado de la competición), como "líderes +
+   tú" de la referencia: con más líneas no se distinguen. Son los mismos y con el mismo color en Semanal y
+   en Total. Solo miembros actuales del grupo; quien no tiene puntos en una jornada cuenta 0.
+3. **Últimas 8 jornadas** finalizadas que el grupo jugó (la de barras sigue con 6, como antes).
+4. **Solo por competición**, como antes: en "General" no hay gráfica (no hay jornadas comunes).
+5. La gráfica de grupo es la de por defecto **cada vez que se entra** (no se recuerda la elección).
+6. En Semanal se resalta la jornada que se está viendo (en la de líneas y en la de barras).
+7. **Rey del marcador exacto**: mismo alcance que la tabla (en Semanal, la jornada vista; en Total, el
+   acumulado de la competición o de todo el grupo en "General"). Solo cuentan partidos **terminados**
+   (igual que los puntos). Se ve el rey (o los reyes si empatan), los cuatro siguientes con algún
+   exacto y tu fila si no estás entre ellos. Si nadie tiene ninguno, la tarjeta lo dice.
+8. **Colores**: seis tokens `--p4-series-0..5` (0 = tú, el dorado de la marca), con claro y oscuro,
+   en un orden validado para daltonismo entre vecinos.
+
+**Compatibilidad**: el frontend nuevo con el backend viejo solo enseña la gráfica individual y no enseña
+el rey del exacto (sin errores). Sin migración de base de datos.
+
 ## 2026-10-05 — Catalán, francés, italiano y alemán en toda la app (fuera de sprint)
 
 Petición explícita del usuario: "¿podrías añadir catalán, francés, italiano y alemán?" (a la app entera:

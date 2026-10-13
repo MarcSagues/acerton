@@ -9,7 +9,7 @@ import { TutorialService } from '../../../core/services/tutorial.service';
 import { ActiveGroupService } from '../../../core/services/active-group.service';
 import { SeasonsService } from '../../../core/services/seasons.service';
 import { Group } from '../../../core/models/group.model';
-import { MatchdayHistoryEntry, RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
+import { ExactScoreLeader, MatchdayHistoryEntry, RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
 import { t } from '../../../core/i18n/translate';
 
 export interface EvolutionBar {
@@ -17,7 +17,37 @@ export interface EvolutionBar {
   points: number;
   /** 0-100, para la altura de la barra. */
   heightPct: number;
+  /** La jornada que se esta viendo (en Semanal, la elegida; en Total, la ultima): va resaltada. */
+  active: boolean;
 }
+
+/** Grafica de "Evolucion": la de lineas de todo el grupo (por defecto) o la de barras con solo tus puntos. */
+export type EvolutionMode = 'group' | 'me';
+
+export interface EvolutionSeries {
+  userId: string;
+  name: string;
+  isMe: boolean;
+  /** Color de la linea (0 = tu, 1-5 = rivales en orden): el mismo en Semanal y en Total. */
+  slot: number;
+  values: number[];
+}
+
+export interface EvolutionChart {
+  labels: string[];
+  series: EvolutionSeries[];
+  /** Total: puntos acumulados tras cada jornada. Semanal: los puntos de cada jornada. */
+  cumulative: boolean;
+  /** Indice de la jornada que se esta viendo en Semanal (se resalta), o null. */
+  highlightIndex: number | null;
+}
+
+/** Jornadas que pinta la grafica de lineas (las mas recientes). */
+const GROUP_CHART_MATCHDAYS = 8;
+/** Rivales que salen en la grafica de lineas, ademas de ti: los que van primero en el acumulado. Con mas lineas no se distinguen. */
+const GROUP_CHART_RIVALS = 5;
+/** Filas del "Rey del marcador exacto" ademas del rey (o reyes, si hay empate). */
+const EXACT_RUNNERS_UP = 4;
 
 @Injectable()
 export class RankingsPageFacade {
@@ -52,14 +82,21 @@ export class RankingsPageFacade {
   readonly currentUserId = this.authService.currentUser()?.id;
   /** Etiqueta de la temporada abierta del grupo ("2026/27"), o null si todavia no se ha puntuado ninguna jornada. */
   readonly currentSeasonLabel = signal<string | null>(null);
+  /** La grafica de evolucion que se ve: la del grupo por defecto, la tuya si la eliges. */
+  readonly evolutionMode = signal<EvolutionMode>('group');
+  /** Marcadores exactos de cada jugador en la vista actual; null si no aplica (grupo de 1X2) o no se pudo cargar. */
+  readonly exactLeaders = signal<ExactScoreLeader[] | null>(null);
 
   readonly activeCompetitions = computed(
     () => (this.groupDetail()?.groupCompetitions ?? []).filter((gc) => gc.isActive).map((gc) => gc.competition),
   );
   readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
   readonly myRow = computed(() => this.rows().find((r) => r.userId === this.currentUserId) ?? null);
-  /** Solo tiene sentido por competicion: cada una tiene su propio calendario de jornadas, no hay "jornada combinada" en la vista general. */
-  readonly showEvolution = computed(() => this.period() === 'TOTAL' && this.scope() !== 'general');
+  /**
+   * En Semanal y en Total, pero solo por competicion: cada una tiene su
+   * propio calendario de jornadas, no hay "jornada combinada" en la vista general.
+   */
+  readonly showEvolution = computed(() => this.scope() !== 'general');
   /**
    * Selector de jornada: solo en la clasificacion semanal (en "Total" no hay
    * historial de jornadas: es siempre el acumulado de ahora), por competicion
@@ -75,14 +112,113 @@ export class RankingsPageFacade {
   readonly selectedMatchdayOrder = computed(
     () => this.finishedMatchdays().find((md) => md.matchdayId === this.selectedMatchdayId())?.order ?? null,
   );
+  /** La jornada que se esta viendo en Semanal (la elegida o, si no, la ultima); null en Total. */
+  private readonly viewedMatchdayId = computed(() =>
+    this.period() === 'WEEKLY' ? (this.selectedMatchdayId() ?? this.finishedMatchdays()[0]?.matchdayId ?? null) : null,
+  );
   readonly evolutionBars = computed<EvolutionBar[]>(() => {
     const recent = this.finishedMatchdays().slice(0, 6).reverse();
     const max = Math.max(1, ...recent.map((m) => m.myPoints ?? 0));
-    return recent.map((m) => ({
+    const viewed = this.viewedMatchdayId();
+    return recent.map((m, index) => ({
       label: t('common.jornadaAbrev', { order: m.order }),
       points: m.myPoints ?? 0,
       heightPct: m.myPoints === null ? 0 : Math.max(6, Math.round((m.myPoints / max) * 100)),
+      active: viewed ? m.matchdayId === viewed : index === recent.length - 1,
     }));
+  });
+  /**
+   * Grafica de lineas del grupo: tu y los cinco que van primero en el
+   * acumulado de la competicion (los mismos, con el mismo color, en Semanal y
+   * en Total), en las ultimas jornadas finalizadas. Solo cuentan los miembros
+   * actuales del grupo y las jornadas que el grupo jugo (quien no tiene puntos
+   * en una, 0, como en la tabla de esa jornada). null si el backend no manda los
+   * puntos de todos (version anterior): entonces solo hay grafica individual.
+   */
+  readonly groupChart = computed<EvolutionChart | null>(() => {
+    const played = [...this.finishedMatchdays()]
+      .sort((a, b) => a.order - b.order)
+      .filter((m) => (m.scores?.length ?? 0) > 0);
+    if (played.length === 0) return null;
+
+    const memberNames = new Map(this.rows().map((r) => [r.userId, r.user.name]));
+    const isMember = (userId: string) => memberNames.size === 0 || memberNames.has(userId);
+
+    const totals = new Map<string, number>();
+    const names = new Map<string, string>();
+    const totalsAfter: Map<string, number>[] = [];
+    for (const md of played) {
+      for (const score of md.scores ?? []) {
+        if (!isMember(score.userId)) continue;
+        totals.set(score.userId, (totals.get(score.userId) ?? 0) + score.points);
+        names.set(score.userId, memberNames.get(score.userId) ?? score.name);
+      }
+      totalsAfter.push(new Map(totals));
+    }
+
+    const me = this.currentUserId;
+    const rivals = [...totals.entries()]
+      .filter(([userId]) => userId !== me)
+      .sort((a, b) => b[1] - a[1] || (names.get(a[0]) ?? '').localeCompare(names.get(b[0]) ?? ''))
+      .slice(0, GROUP_CHART_RIVALS)
+      .map(([userId]) => userId);
+    const iAmIn = !!me && (totals.has(me) || memberNames.has(me));
+    const players = iAmIn ? [me!, ...rivals] : rivals;
+
+    const first = Math.max(0, played.length - GROUP_CHART_MATCHDAYS);
+    const shown = played.slice(first);
+    const cumulative = this.period() === 'TOTAL';
+    const viewed = this.viewedMatchdayId();
+    const highlight = viewed ? shown.findIndex((m) => m.matchdayId === viewed) : -1;
+    return {
+      labels: shown.map((m) => t('common.jornadaAbrev', { order: m.order })),
+      cumulative,
+      highlightIndex: highlight >= 0 ? highlight : null,
+      series: players.map((userId, index) => ({
+        userId,
+        name: userId === me ? t('rankingsPage.tuCorto') : (names.get(userId) ?? ''),
+        isMe: userId === me,
+        slot: iAmIn ? index : index + 1,
+        values: shown.map((md, i) =>
+          cumulative
+            ? (totalsAfter[first + i].get(userId) ?? 0)
+            : (md.scores?.find((score) => score.userId === userId)?.points ?? 0),
+        ),
+      })),
+    };
+  });
+  /** La grafica de lineas solo si hay datos de todo el grupo; si no, la individual y sin selector. */
+  readonly effectiveEvolutionMode = computed<EvolutionMode>(() => (this.groupChart() ? this.evolutionMode() : 'me'));
+  readonly hasEvolution = computed(
+    () => this.showEvolution() && (this.groupChart() !== null || this.evolutionBars().length > 0),
+  );
+  /** Primera y ultima jornada de la grafica que se esta viendo, para el "J3 → J7" de la cabecera. */
+  readonly evolutionRange = computed<{ from: string; to: string } | null>(() => {
+    const labels =
+      this.effectiveEvolutionMode() === 'group'
+        ? (this.groupChart()?.labels ?? [])
+        : this.evolutionBars().map((b) => b.label);
+    return labels.length ? { from: labels[0], to: labels[labels.length - 1] } : null;
+  });
+
+  readonly isExactScoreGroup = computed(() => this.groupDetail()?.scoringMode === 'EXACT_SCORE');
+  /** Quien va primero en marcadores exactos (varios si empatan). Vacio si nadie ha clavado ninguno todavia. */
+  readonly exactKings = computed(() => (this.exactLeaders() ?? []).filter((l) => l.position === 1 && l.exactHits > 0));
+  /** Los siguientes con algun exacto, hasta cuatro. */
+  readonly exactRunnersUp = computed(() =>
+    (this.exactLeaders() ?? []).filter((l) => l.position > 1 && l.exactHits > 0).slice(0, EXACT_RUNNERS_UP),
+  );
+  /** Tu fila, si no sales ya entre los de arriba (tambien con 0 exactos). */
+  readonly myExactRow = computed(() => {
+    const shown = [...this.exactKings(), ...this.exactRunnersUp()];
+    if (shown.some((l) => l.userId === this.currentUserId)) return null;
+    return (this.exactLeaders() ?? []).find((l) => l.userId === this.currentUserId) ?? null;
+  });
+  /** Nombres del rey (o reyes) del exacto: "Ana", "Ana y Bea" o "Ana, Bea y 2 más". */
+  readonly exactKingNames = computed(() => {
+    const names = this.exactKings().map((l) => (l.userId === this.currentUserId ? t('rankingsPage.tuCorto') : l.user.name));
+    if (names.length <= 2) return names.join(t('rankingsPage.yNombres'));
+    return t('rankingsPage.nombresYMas', { names: names.slice(0, 2).join(', '), count: names.length - 2 });
   });
 
   constructor() {
@@ -123,6 +259,7 @@ export class RankingsPageFacade {
     this.selectedMatchdayId.set(null);
     this.finishedMatchdaysKey = '';
     this.finishedMatchdays.set([]);
+    this.exactLeaders.set(null);
     this.loading.set(false);
     this.fetchRanking(groupId);
     this.seasonsService.listSeasons(groupId).subscribe({
@@ -149,6 +286,10 @@ export class RankingsPageFacade {
     }
     const groupId = this.activeGroupService.activeId();
     if (groupId) this.fetchRanking(groupId);
+  }
+
+  setEvolutionMode(mode: EvolutionMode): void {
+    this.evolutionMode.set(mode);
   }
 
   setScope(scope: string): void {
@@ -251,7 +392,28 @@ export class RankingsPageFacade {
       },
     });
 
+    this.loadExactLeaders(groupId, request, scope, matchdayId);
     this.loadFinishedMatchdays(groupId, scope);
+  }
+
+  /**
+   * "Rey del marcador exacto", solo en grupos de resultado exacto y con el
+   * mismo alcance que la tabla (la jornada vista en Semanal, el acumulado en
+   * Total). Si falla (o el backend aun no lo tiene) la tarjeta no sale.
+   */
+  private loadExactLeaders(groupId: string, request: number, scope: string, matchdayId: string | null): void {
+    if (!this.isExactScoreGroup() || (this.period() === 'WEEKLY' && scope === 'general')) {
+      this.exactLeaders.set(null);
+      return;
+    }
+    this.rankingsService.getExactScoreLeaders(groupId, this.period(), scope, scope !== 'general' ? matchdayId : null).subscribe({
+      next: (leaders) => {
+        if (request === this.rankingRequestId) this.exactLeaders.set(leaders);
+      },
+      error: () => {
+        if (request === this.rankingRequestId) this.exactLeaders.set(null);
+      },
+    });
   }
 
   /** Una vez por grupo y competicion: la grafica de evolucion y el selector de jornada salen de la misma peticion. */

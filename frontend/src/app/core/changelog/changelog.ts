@@ -44,6 +44,22 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-05',
     changes: [
       {
+        es: 'En Tabla, una gráfica de líneas enseña cómo vais tú y los primeros del grupo jornada a jornada, en Semanal y en Total. Toca «Tú» para ver solo la tuya.',
+        en: 'In Table, a line chart shows how you and the group leaders are doing matchday by matchday, in Weekly and Total. Tap "You" to see just yours.',
+        ca: 'A Taula, una gràfica de línies mostra com aneu tu i els primers del grup jornada a jornada, a Setmanal i a Total. Toca «Tu» per veure només la teva.',
+        fr: 'Dans Classement, un graphique en lignes montre où vous en êtes, toi et les premiers du groupe, journée après journée, en Hebdo et en Total. Touche « Toi » pour ne voir que la tienne.',
+        it: 'In Classifica, un grafico a linee mostra come andate tu e i primi del gruppo giornata dopo giornata, in Settimanale e in Totale. Tocca «Tu» per vedere solo la tua.',
+        de: 'In der Tabelle zeigt ein Liniendiagramm Spieltag für Spieltag, wie es dir und der Spitze der Gruppe läuft, in Woche und Gesamt. Tippe auf „Du“, um nur deine zu sehen.',
+      },
+      {
+        es: 'En los grupos de resultado exacto, Tabla corona al rey del marcador exacto: quién ha clavado más marcadores en la jornada y en total.',
+        en: 'In exact-score groups, Table crowns the exact score king: who has nailed the most scores in the matchday and overall.',
+        ca: 'Als grups de resultat exacte, Taula corona el rei del marcador exacte: qui ha clavat més marcadors a la jornada i en total.',
+        fr: 'Dans les groupes en score exact, Classement couronne le roi du score exact : qui a trouvé le plus de scores sur la journée et au total.',
+        it: 'Nei gruppi a risultato esatto, Classifica incorona il re del risultato esatto: chi ne ha azzeccati di più nella giornata e in totale.',
+        de: 'In Gruppen mit exaktem Ergebnis kürt die Tabelle den König der exakten Ergebnisse: wer am Spieltag und insgesamt die meisten getroffen hat.',
+      },
+      {
         es: 'Ya puedes usar la app en catalán, francés, italiano y alemán: elige el idioma en Perfil > Apariencia.',
         en: 'You can now use the app in Catalan, French, Italian and German: choose the language in Profile > Appearance.',
         ca: 'Ja pots fer servir l’app en català, francès, italià i alemany: tria l’idioma a Perfil > Aparença.',

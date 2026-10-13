@@ -69,23 +69,57 @@
       </button>
     }
 
-    @if (page.showEvolution() && page.evolutionBars().length > 0) {
+    @if (page.hasEvolution()) {
       <div class="evolution-card">
         <div class="evolution-head">
-          <span class="evolution-title">{{ 'rankingsPage.evolucion' | t }}</span>
-          <span class="evolution-sub mono">{{ 'rankingsPage.rarr' | t: { label: (page.evolutionBars()[0].label), label2: page.evolutionBars().at(-1)?.label } }}</span>
-        </div>
-        <div class="evolution-bars">
-          @for (bar of page.evolutionBars(); track bar.label) {
-            <div class="evolution-col">
-              <div class="evolution-bar-track">
-                <div class="evolution-bar" [style.height.%]="bar.heightPct"></div>
-              </div>
-              <span class="evolution-label mono">{{ bar.label }}</span>
-            </div>
+          <span class="evolution-heading">
+            <span class="evolution-title">
+              {{ (page.effectiveEvolutionMode() === 'group' ? 'rankingsPage.evolucionGrupo' : 'rankingsPage.evolucion') | t }}
+            </span>
+            @if (page.evolutionRange(); as range) {
+              <span class="evolution-sub mono">{{ 'rankingsPage.rarr' | t: { label: range.from, label2: range.to } }}</span>
+            }
+          </span>
+          @if (page.groupChart()) {
+            <span class="evolution-toggle" role="group" [attr.aria-label]="'rankingsPage.tipoGrafica' | t">
+              <button type="button" class="toggle-btn" [class.active]="page.effectiveEvolutionMode() === 'group'" [attr.aria-pressed]="page.effectiveEvolutionMode() === 'group'" (click)="page.setEvolutionMode('group')">
+                <piqo-svg icon="grupos" size="14"></piqo-svg>
+                {{ 'rankingsPage.grafGrupo' | t }}
+              </button>
+              <button type="button" class="toggle-btn" [class.active]="page.effectiveEvolutionMode() === 'me'" [attr.aria-pressed]="page.effectiveEvolutionMode() === 'me'" (click)="page.setEvolutionMode('me')">
+                <piqo-svg icon="perfil" size="14"></piqo-svg>
+                {{ 'rankingsPage.tuCorto' | t }}
+              </button>
+            </span>
           }
         </div>
+
+        @if (page.effectiveEvolutionMode() === 'group' && page.groupChart(); as chart) {
+          <app-evolution-chart [chart]="chart"></app-evolution-chart>
+          <p class="evolution-note">
+            {{ (chart.cumulative ? 'rankingsPage.notaAcumulado' : 'rankingsPage.notaJornada') | t }}
+            @if (chart.series.length < page.rows().length) {
+              · {{ 'rankingsPage.notaLideres' | t }}
+            }
+          </p>
+        } @else {
+          <div class="evolution-bars">
+            @for (bar of page.evolutionBars(); track bar.label) {
+              <div class="evolution-col">
+                <span class="evolution-points mono" [class.active]="bar.active">{{ bar.points }}</span>
+                <div class="evolution-bar-track">
+                  <div class="evolution-bar" [class.active]="bar.active" [style.height.%]="bar.heightPct"></div>
+                </div>
+                <span class="evolution-label mono">{{ bar.label }}</span>
+              </div>
+            }
+          </div>
+        }
       </div>
+    }
+
+    @if (page.exactLeaders()?.length) {
+      <app-exact-king-card></app-exact-king-card>
     }
 
     <div class="table-head">

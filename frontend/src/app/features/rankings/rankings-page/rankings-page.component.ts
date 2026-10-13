@@ -5,13 +5,24 @@ import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { SegmentedControlComponent } from '../../../shared/ui/segmented-control/segmented-control.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { RankingsPageFacade } from './rankings-page.facade';
+import { EvolutionChartComponent } from '../evolution-chart/evolution-chart.component';
+import { ExactKingCardComponent } from '../exact-king-card/exact-king-card.component';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { t } from '../../../core/i18n/translate';
 
 @Component({
   selector: 'app-rankings-page',
   standalone: true,
-  imports: [CommonModule, GroupSwitcherComponent, SpinnerComponent, SegmentedControlComponent, AvatarComponent, TranslatePipe],
+  imports: [
+    CommonModule,
+    GroupSwitcherComponent,
+    SpinnerComponent,
+    SegmentedControlComponent,
+    AvatarComponent,
+    EvolutionChartComponent,
+    ExactKingCardComponent,
+    TranslatePipe,
+  ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [RankingsPageFacade],
   templateUrl: './rankings-page.component.html',
