@@ -1,5 +1,13 @@
 # Estado actual
 
+## 2026-10-13 — Barra superior con más margen inferior sin selector de grupo (fuera de sprint)
+
+Petición del usuario. En las pantallas sin selector de grupo debajo (todas salvo Jornada y Tabla) la barra superior deja 14px
+más de margen inferior, para que el contenido no quede pegado. `TopBarFacade.hasGroupSwitcher` mira la ruta (`/matchday`,
+`/rankings` y subrutas) y el host de `app-top-bar` lleva la clase `no-group-switcher`. En Jornada y Tabla no cambia (52px).
+**Verificado** en navegador (local: 66px en Grupos y Perfil, 52px en Tabla) y 222 tests del frontend (4 nuevos).
+**Necesita** build nueva; sin línea en el historial (ajuste visual menor).
+
 ## 2026-10-13 — Tabla: se entra en la primera liga y Total no cambia tras pasar por Semanal (fuera de sprint)
 
 Fallo reportado por el usuario en la 1.1.0: en un grupo con varias ligas, de Grupos a Tabla no salía la gráfica y el rey del

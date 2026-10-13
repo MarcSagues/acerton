@@ -10,6 +10,11 @@
   backdrop-filter: blur(12px);
 }
 
+/* Pantallas sin selector de grupo debajo: mas aire entre la barra y el contenido. */
+:host(.no-group-switcher) {
+  padding-bottom: 14px;
+}
+
 .top-bar {
   padding: 6px 20px 0;
   height: 52px;
