@@ -36,6 +36,21 @@ La decisión «Solo por competición» se matiza: «General» tampoco tiene jorn
 jornadas finalizadas de todas las ligas del grupo y cada punto es una jornada de una liga (número + liga). El selector de
 jornada sigue siendo solo por liga. Coste: una petición de historial por liga al entrar en General.
 
+## 2026-10-13 — El historial de Quiz de un jugador lo ve cualquier jugador (sustituye a «solo quien comparte grupo»)
+
+Primero el historial solo se veía el propio o el de quien comparte grupo. Al poder abrir el perfil de cualquier jugador desde la
+clasificación del Quiz (que es de toda la comunidad) esa restricción dejaba fuera a casi todos. Ahora lo ve cualquier jugador
+autenticado: son solo respuestas a preguntas de fútbol de quizzes ya cerrados (nunca de uno abierto, para no destaparlas), y el nombre
+y los puntos ya eran públicos en la clasificación. Si más adelante se quiere privacidad, el sitio es `QuizService.history`.
+
+## 2026-10-13 — Pulsar a un jugador abre su perfil general (no una vista del Quiz ni del grupo)
+
+Desde la clasificacion del Quiz y desde Tabla se abre `/player/:userId`: un perfil unico por jugador con grupos, Quiz, insignias,
+trofeos y bandera. El detalle de miembro de un grupo (`/groups/:groupId/members/:userId`) sigue existiendo, pero se llega desde
+«Grupos en común» del perfil general. Privacidad: de los grupos solo se enseñan los que compartes con el jugador; el resto del perfil
+(aciertos agregados, racha, Quiz, insignias) y el historial de quizzes cerrados lo ve cualquier jugador. Coste: Tabla ya no abre
+directamente los pronósticos de la ultima jornada del jugador.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).

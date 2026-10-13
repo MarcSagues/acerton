@@ -234,6 +234,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Il grafico di Classifica compare anche in «Generale»: mette in ordine di data le giornate di tutti i campionati (G1 Liga, G1 Champions, G2 Liga...).',
         de: 'Das Diagramm in der Tabelle gibt es jetzt auch unter „Gesamt“: Es ordnet die Spieltage aller Ligen nach Datum (ST1 Liga, ST1 Champions, ST2 Liga ...).',
       },
+      {
+        es: 'Pulsa a cualquier jugador, en el Quiz o en Tabla, para ver su perfil: su bandera, sus aciertos y fallos en grupos, su racha, los marcadores exactos que ha clavado, su posición en el Quiz con su historial, sus insignias y trofeos.',
+        en: 'Tap any player, in the Quiz or in Table, to see their profile: their flag, hits and misses in groups, streak, exact scores nailed, Quiz position with their history, badges and trophies.',
+        ca: 'Toca qualsevol jugador, al Quiz o a Taula, per veure el seu perfil: la seva bandera, encerts i errors en grups, ratxa, marcadors exactes encertats, posició al Quiz amb el seu historial, insígnies i trofeus.',
+        fr: 'Touche n’importe quel joueur, dans le Quiz ou dans Classement, pour voir son profil : son drapeau, ses réussites et ses erreurs en groupes, sa série, ses scores exacts trouvés, sa position au Quiz avec son historique, ses badges et ses trophées.',
+        it: 'Tocca qualsiasi giocatore, nel Quiz o in Classifica, per vedere il suo profilo: la bandiera, esatte e sbagliate nei gruppi, la serie, i risultati esatti azzeccati, la posizione nel Quiz con lo storico, i badge e i trofei.',
+        de: 'Tippe auf einen beliebigen Spieler, im Quiz oder in der Tabelle, um sein Profil zu sehen: Flagge, Treffer und Fehler in Gruppen, Serie, getroffene exakte Ergebnisse, Quiz-Platz mit Verlauf, Abzeichen und Pokale.',
+      },
     ],
   },
   {

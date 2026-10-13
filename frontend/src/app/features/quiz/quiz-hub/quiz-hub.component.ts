@@ -1,4 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
@@ -10,7 +11,7 @@ import { QuizHubFacade } from './quiz-hub.facade';
 @Component({
   selector: 'app-quiz-hub',
   standalone: true,
-  imports: [DatePipe, SpinnerComponent, EmptyStateComponent, AvatarComponent, TranslatePipe],
+  imports: [DatePipe, RouterLink, SpinnerComponent, EmptyStateComponent, AvatarComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [QuizHubFacade],
   templateUrl: './quiz-hub.component.html',

@@ -105,7 +105,7 @@
     }
 
     @if (page.myRow(); as mine) {
-      <button type="button" class="my-row" (click)="page.viewUserPicks(mine.userId)">
+      <button type="button" class="my-row" (click)="page.openProfile(mine.userId)">
         <span class="my-pos mono">{{ mine.position }}</span>
         <span class="my-meta">
           <span class="my-name">{{ 'rankingsPage.tu' | t: { name: mine.user.name } }}</span>
@@ -141,7 +141,7 @@
     } @else {
       <div class="rows">
         @for (row of page.rows(); track row.userId) {
-          <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
+          <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.openProfile(row.userId)">
             <span class="col-pos mono">
               {{ row.position }}
               @if (page.deltaLabel(row.positionDelta); as delta) {

@@ -268,3 +268,20 @@
     color: var(--p4-accent);
   }
 }
+
+/* Quien es: su avatar, nombre y, si lo tiene, la bandera de su equipo favorito. */
+.player {
+  padding: 8px 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.player-name {
+  margin: 0;
+  font: 700 20px/1.1 var(--p4-font-display);
+}
+
+.team-flag {
+  margin: 14px 20px 0;
+}
