@@ -23,6 +23,20 @@ aceptando finales de línea del checkout (`endOfLine: auto`): 0 errores y 0 adve
 en el entorno de integración elegido, revisión móvil y comprobar calendarios del proveedor real.
 No considerar la funcionalidad completa ni desplegada por tener el backend terminado.
 
+## 2026-10-12 — Avisos con el grupo y puntos de toda la jornada (fuera de sprint)
+
+Aviso del usuario: los avisos de un grupo no decían de qué grupo eran, y el de jornada terminada
+("Has ganado X puntos") parecía hablar de un resultado y no de la jornada. **Comprobado** en la BD de
+dev (Neon): el número ya era la suma de toda la jornada en ese grupo (coincide con la Tabla semanal);
+lo confuso era el texto: título "Regular Season - 6 terminada" sin grupo ni liga, idéntico en cada grupo.
+
+**Hecho** (solo backend, `NotificationsService`): título con el nombre del grupo en jornada terminada
+y en partidos por pronosticar ("Los del bar · Jornada 6 terminada"), "Regular Season - N" pasa a
+"Jornada N", y el cuerpo dice la liga y "en total": "Has sumado 7 puntos en total en la jornada 6 de
+La Liga. Vas 1º en la clasificación del grupo." Línea en la 1.0.3 del historial. **Verificado**: tests
+de notificaciones y jobs (54), `tsc`. Funciona al desplegar el backend, sin build. Los avisos siguen
+solo en español (texto generado en el servidor), igual que antes.
+
 ## 2026-10-05 — Catalán, francés, italiano y alemán (fuera de sprint)
 
 A petición explícita del usuario (ver `decisions.md`, misma fecha). **Hecho**: cuatro idiomas nuevos en
