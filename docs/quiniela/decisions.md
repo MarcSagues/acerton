@@ -23,6 +23,13 @@ perfil de alguien. El backend manda ya resueltos los colores, y el frontend los 
 Quiz sigue con su mapa estático (`team-colors.ts`), por lo que los colores de un equipo están en dos sitios; si molesta,
 el Quiz puede leer el mismo catálogo. Equipos nuevos (ascensos, otra temporada) se añaden a mano a ambos.
 
+## 2026-10-13 — Tabla arranca en la primera liga, no en «General» (sustituye a «Solo por competición»)
+
+Con varias ligas, Tabla arrancaba en «General», que no tiene gráfica de evolución ni selector de jornada, y Semanal saltaba a la
+primera liga sin que Total volviera: el mismo «Total» enseñaba cosas distintas según el camino. Ahora se entra en la primera liga
+(la gráfica sale siempre) y General sigue a un toque en las pestañas; Total devuelve a General solo a quien venía de General. La
+gráfica sigue siendo por liga (no hay jornadas comunes), esa parte de la decisión anterior se mantiene.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).

@@ -79,6 +79,28 @@ export interface QuizQuestion {
   pointsEarned: number | null;
 }
 
+/** Un quiz ya cerrado de un jugador, con las preguntas que respondio (ver QuizService.history en el backend). */
+export interface QuizHistoryEntry {
+  quizId: string;
+  competition: QuizCompetition;
+  seasonLabel: string;
+  matchdayOrder: number;
+  matchdayName: string;
+  closesAt: string;
+  status: QuizStatus;
+  completedAt: string | null;
+  points: number;
+  /** Preguntas del quiz; `questions` solo trae las que respondio. */
+  questionCount: number;
+  questions: QuizQuestion[];
+}
+
+export interface QuizHistory {
+  userId: string;
+  name: string;
+  quizzes: QuizHistoryEntry[];
+}
+
 export interface QuizDetail {
   serverNow: string;
   quiz: QuizSummary;

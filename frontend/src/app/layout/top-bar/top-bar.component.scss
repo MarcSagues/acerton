@@ -1,3 +1,15 @@
+:host {
+  /* Barra superior siempre visible: se queda pegada arriba al hacer scroll. El margen de seguridad de iOS va dentro
+     de la barra (antes era del shell) para que la barra fija lo cubra tambien. */
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding-top: env(safe-area-inset-top);
+  background: color-mix(in srgb, var(--p4-bg) 94%, transparent);
+  backdrop-filter: blur(12px);
+}
+
 .top-bar {
   padding: 6px 20px 0;
   height: 52px;

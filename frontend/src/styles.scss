@@ -56,6 +56,8 @@
 
 :root {
   @include light-tokens;
+  /* Alto de la barra superior fija (Piqo, avisos, perfil), con el margen de seguridad de iOS: lo usan las cabeceras que se quedan pegadas debajo. */
+  --p4-topbar-h: calc(52px + env(safe-area-inset-top));
 }
 
 @media (prefers-color-scheme: dark) {

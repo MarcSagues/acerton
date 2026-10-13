@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { QuizAnswerInput, QuizDetail, QuizOverview, QuizRanking, QuizRankingQuery } from '../models/quiz.model';
+import { QuizAnswerInput, QuizDetail, QuizHistory, QuizOverview, QuizRanking, QuizRankingQuery } from '../models/quiz.model';
 
 /**
  * Cliente del Quiz de jornada (contrato v1, docs/quiniela/quiz-jornada-plan.md §6).
@@ -55,6 +55,11 @@ export class QuizService {
     return this.http
       .post<QuizDetail>(`${this.base}/${encodeURIComponent(quizId)}/complete`, {})
       .pipe(tap(() => this.refreshOverview()));
+  }
+
+  /** Historial de quizzes cerrados de un jugador: el propio o el de alguien con quien se comparte grupo. */
+  getHistory(userId: string) {
+    return this.http.get<QuizHistory>(`${this.base}/history/${encodeURIComponent(userId)}`);
   }
 
   getRanking(query: QuizRankingQuery = {}) {

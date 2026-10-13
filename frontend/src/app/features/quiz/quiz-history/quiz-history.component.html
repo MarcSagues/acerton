@@ -1,0 +1,120 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else if (page.error()) {
+  <div class="error-state">
+    <p class="error-msg">{{ 'quizHistory.noCargado' | t }}</p>
+    <button type="button" class="piqo-secondary retry-btn" (click)="page.init()">{{ 'common.reintentar' | t }}</button>
+  </div>
+} @else {
+  @if (page.history(); as history) {
+    <div class="page">
+      <div class="head-row">
+        <button type="button" class="back-btn" (click)="page.goBack()">
+          <piqo-svg icon="atras" size="20"></piqo-svg>{{ 'common.volver2' | t }}
+        </button>
+      </div>
+      <div class="title-row">
+        <h1>{{ 'quizHistory.titulo' | t }}</h1>
+        <p class="lead">
+          {{ (page.isMe() ? 'quizHistory.subtituloPropio' : 'quizHistory.subtituloDe') | t: { name: history.name } }}
+        </p>
+      </div>
+
+      @if (page.quizzes().length === 0) {
+        <app-empty-state
+          icon="objetivo"
+          [title]="'quizHistory.vacioTitulo' | t"
+          [text]="(page.isMe() ? 'quizHistory.vacioPropio' : 'quizHistory.vacioDe') | t: { name: history.name }"
+        ></app-empty-state>
+      } @else {
+        @if (page.competitions().length > 1) {
+          <nav class="filters" [attr.aria-label]="'quizHistory.filtrarLiga' | t">
+            <button type="button" class="filter" [class.active]="page.competitionFilter() === null" (click)="page.selectCompetition(null)">
+              {{ 'quizHistory.todas' | t }}
+            </button>
+            @for (competition of page.competitions(); track competition.id) {
+              <button
+                type="button"
+                class="filter"
+                [class.active]="page.competitionFilter() === competition.id"
+                (click)="page.selectCompetition(competition.id)"
+              >{{ competition.name }}</button>
+            }
+          </nav>
+        }
+
+        <div class="totals">
+          <div class="total-tile">
+            <p class="total-value mono">{{ page.totals().quizzes }}</p>
+            <p class="total-label mono">{{ 'quizHistory.jugados' | t }}</p>
+          </div>
+          <div class="total-tile">
+            <p class="total-value mono hit">{{ page.totals().hits }}</p>
+            <p class="total-label mono">{{ 'quizHistory.aciertos' | t }}</p>
+          </div>
+          <div class="total-tile">
+            <p class="total-value mono miss">{{ page.totals().misses }}</p>
+            <p class="total-label mono">{{ 'quizHistory.fallos' | t }}</p>
+          </div>
+        </div>
+
+        <ul class="quiz-list">
+          @for (quiz of page.quizzes(); track quiz.quizId) {
+            @let stats = page.stats(quiz);
+            <li class="quiz-card">
+              <button
+                type="button"
+                class="quiz-head"
+                [attr.aria-expanded]="page.isExpanded(quiz.quizId)"
+                (click)="page.toggle(quiz.quizId)"
+              >
+                <span class="quiz-title">
+                  <span class="quiz-name">{{ quiz.competition.name }} · {{ 'rankingsPage.jornadaN' | t: { order: quiz.matchdayOrder } }}</span>
+                  <span class="quiz-sub mono">
+                    {{ quiz.seasonLabel }} · {{ 'quizHistory.aciertosDe' | t: { hits: stats.hits, total: quiz.questions.length } }}
+                  </span>
+                </span>
+                <span class="quiz-points">
+                  <span class="points-value mono">{{ quiz.points }}</span>
+                  <span class="points-label mono">{{ 'rankingsPage.pts' | t }}</span>
+                </span>
+                <piqo-svg [attr.icon]="page.isExpanded(quiz.quizId) ? 'arriba' : 'abajo'" size="16"></piqo-svg>
+              </button>
+
+              @if (page.isExpanded(quiz.quizId)) {
+                <ol class="answer-list">
+                  @for (q of quiz.questions; track q.id) {
+                    <li class="result-row" [attr.data-outcome]="page.outcome(q)">
+                      <span class="answer-body">
+                        <span class="answer-match">
+                          {{ page.team(q.match, 'home') }}
+                          @if (q.match.homeScore !== null && q.match.awayScore !== null) {
+                            <span class="mono">{{ q.match.homeScore }}–{{ q.match.awayScore }}</span>
+                          } @else {
+                            –
+                          }
+                          {{ page.team(q.match, 'away') }}
+                        </span>
+                        <span class="answer-question">{{ page.questionText(q) }}</span>
+                        @if (q.selectedOption) {
+                          <span class="answer-line">
+                            {{ (page.isMe() ? 'quiz.tuRespuesta' : 'quizHistory.suRespuesta') | t }}:
+                            <strong>{{ page.optionLabel(q, q.selectedOption) }}</strong>
+                          </span>
+                        }
+                        @if (q.resolution === 'RESOLVED' && q.correctOption) {
+                          <span class="answer-line">{{ 'quiz.respuestaCorrecta' | t }}: <strong>{{ page.optionLabel(q, q.correctOption) }}</strong></span>
+                        }
+                      </span>
+                      <span class="outcome-chip mono" [attr.data-outcome]="page.outcome(q)">{{ page.outcomeLabel(q) }}</span>
+                    </li>
+                  }
+                </ol>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+}

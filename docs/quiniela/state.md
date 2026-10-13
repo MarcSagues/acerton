@@ -1,5 +1,45 @@
 # Estado actual
 
+## 2026-10-13 — Tabla: se entra en la primera liga y Total no cambia tras pasar por Semanal (fuera de sprint)
+
+Fallo reportado por el usuario en la 1.1.0: en un grupo con varias ligas, de Grupos a Tabla no salía la gráfica y el rey del
+marcador exacto enseñaba unos datos; al pasar a Semanal y volver a Total salía la gráfica y el rey era otro. Causa: se entraba
+en «General» (sin gráfica; el rey suma todas las ligas) y Semanal salta a la primera liga y Total ya no volvía. **Hecho**
+(`RankingsPageFacade`): con varias ligas se entra en la primera (con su gráfica y su selector de jornada); «General» sigue en
+las pestañas. Si el usuario estaba en General, Semanal le lleva a una liga y Total le devuelve a General; si en Semanal elige
+otra liga, Total se queda en ella. **Verificado** en navegador (local, grupo de dos ligas: entrada, Semanal y Total dan la misma
+liga, gráfica y rey) y 218 tests del frontend (1 nuevo).
+
+## 2026-10-13 — Historial de Quiz (fuera de sprint)
+
+Petición del usuario. En Estadísticas (la propia, `/profile/stats`, y la de un miembro, `.../members/:userId/stats`) y en
+el detalle de miembro hay un botón «Historial de Quiz» que lleva a `/quiz/history/:userId`: cada quiz ya cerrado en el que
+respondió algo, con sus respuestas, la correcta, acierto o fallo (pendiente/anulada si aún no se resolvió), los puntos y
+totales; se puede filtrar por liga. Backend: `GET quiz/history/:userId` (`QuizService.history`): solo quizzes con
+`lockedAt` (nunca uno abierto, para no filtrar respuestas), el propio o el de quien comparte grupo (403 si no), máximo los
+50 más recientes, y las preguntas con la misma forma que el detalle del quiz (`questionView`, extraído de `readDetail`).
+Sin migración. Línea en la 1.1.0 del historial. **Verificado**: backend 45 tests de Quiz (5 nuevos), frontend 217 (6
+nuevos) y `tsc`; en navegador (local) con el historial propio, el filtro por liga y el de otro jugador (vacío).
+**NO** verificado: el historial de otro jugador con quizzes. Los totales son de los 50 más recientes.
+
+## 2026-10-13 — Barra superior y selector de grupo fijos (fuera de sprint)
+
+Petición del usuario: la barra de arriba (Piqo, avisos, perfil) se queda siempre visible al hacer scroll, y en las
+vistas con selector de grupo (Jornada y Tabla) el selector se queda pegado justo debajo. `app-top-bar` pasa a
+`position: sticky` (el margen de seguridad de iOS va ahora dentro de la barra, no en el shell) y `.head-row` de
+Jornada y Tabla usa `top: var(--p4-topbar-h)` (variable en `styles.scss`: 52px + margen de seguridad). Solo CSS.
+**Verificado** en navegador (local) en Jornada y Tabla y 211 tests del frontend; **NO** en iPhone (margen de
+seguridad y notch).
+
+## 2026-10-13 — Retoques de la 1.1.0 y ficha de la App Store (fuera de sprint)
+
+Equipo favorito: quitarlo es ahora un botón con una X (icono `cerrar`) junto a la bandera, en vez de un texto.
+Historial de la 1.1.0: la línea de los idiomas decía «Perfil > Apariencia» y ahora «Perfil > Ajustes > Idioma», y la
+del equipo favorito «Perfil > Ajustes» (en los 6 idiomas; la entrada 1.0.2, ya publicada, no se toca).
+`docs/app-store/ficha-1.1.0.md` sustituye a la de la 1.0.3: nombres, subtítulos y palabras clave igual (son de la
+app, no de la versión); texto promocional y descripción actualizados (tres formas de jugar con el Quiz, equipo
+favorito) y Novedades copiadas del historial de la 1.1.0 en los 7 idiomas, todo dentro de los límites de Apple.
+
 ## 2026-10-13 — Versión 1.1.0 (fuera de sprint)
 
 Decisión del usuario: con tantos cambios grandes (Quiz, equipo favorito, Ajustes con pestañas, registro con

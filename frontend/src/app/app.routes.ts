@@ -239,6 +239,11 @@ export const routes: Routes = [
           import('./features/quiz/quiz-hub/quiz-hub.component').then((m) => m.QuizHubComponent),
       },
       {
+        path: 'quiz/history/:userId',
+        loadComponent: () =>
+          import('./features/quiz/quiz-history/quiz-history.component').then((m) => m.QuizHistoryComponent),
+      },
+      {
         path: 'quiz/:quizId',
         loadComponent: () =>
           import('./features/quiz/quiz-play/quiz-play.component').then((m) => m.QuizPlayComponent),

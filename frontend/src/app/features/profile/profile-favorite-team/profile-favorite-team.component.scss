@@ -66,12 +66,19 @@
 
 .remove-btn {
   flex: none;
-  min-height: 44px;
-  padding: 0 4px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--p4-border);
   background: none;
-  border: 0;
-  color: var(--p4-accent);
-  font: 600 12px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+
+  &:hover:not(:disabled) {
+    color: var(--p4-text);
+  }
 }
 
 .error {

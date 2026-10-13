@@ -41,6 +41,14 @@
         </div>
       </div>
 
+      <a class="quiz-history-link" [routerLink]="['/quiz/history', p.userId]">
+        <span class="qh-text">
+          <span class="qh-title">{{ 'quizHistory.titulo' | t }}</span>
+          <span class="qh-hint mono">{{ 'quizHistory.botonHint' | t }}</span>
+        </span>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </a>
+
       <div class="section-head">
         <h2>{{ 'memberDetail.trofeos' | t }}</h2>
       </div>

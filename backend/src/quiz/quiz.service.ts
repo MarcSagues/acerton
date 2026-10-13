@@ -1,5 +1,5 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { Prisma, QuizStatus } from '@prisma/client';
+import { Prisma, QuizOption, QuizStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { getCurrentFootballSeason } from '../common/season.util';
@@ -12,6 +12,9 @@ import {
   quizDeadline,
   resolveQuizQuestion,
 } from './quiz.rules';
+
+/** Cuantos quizzes como maximo se devuelven en el historial (los mas recientes). */
+const HISTORY_LIMIT = 50;
 
 const EVENT_INCLUDE = {
   matchday: { include: { competition: true, matches: true } },
@@ -232,41 +235,124 @@ export class QuizService {
       serverNow: now.toISOString(),
       quiz: this.summary(event, participation),
       canAnswer,
-      questions: event.questions.map((question) => {
-        const answer = participation?.answers.find((a) => a.questionId === question.id);
-        const resolved = event.lockedAt !== null && question.resolution === 'RESOLVED';
-        const match = question.match;
-        return {
-          id: question.id,
-          order: question.order,
-          type: question.type,
-          options: question.options,
-          selectedOption: answer?.option ?? null,
-          resolution: question.resolution,
-          correctOption: resolved ? question.correctOption : null,
-          pointsEarned: resolved ? (answer?.pointsEarned ?? 0) : null,
-          match: {
-            id: match.id,
-            homeTeam: match.homeTeam,
-            awayTeam: match.awayTeam,
-            homeTeamShort: match.homeTeamShort,
-            awayTeamShort: match.awayTeamShort,
-            homeTeamLogo: match.homeTeamLogo,
-            awayTeamLogo: match.awayTeamLogo,
-            kickoff: match.kickoff.toISOString(),
-            kickoffConfirmed: !isKickoffTimeUnconfirmed(match.kickoff),
-            status: match.status,
-            homeScore: match.homeScore,
-            awayScore: match.awayScore,
-          },
-        };
-      }),
+      questions: event.questions.map((question) =>
+        this.questionView(
+          event,
+          question,
+          participation?.answers.find((a) => a.questionId === question.id),
+        ),
+      ),
+    };
+  }
+
+  /** Una pregunta como la ve un jugador: su respuesta y, solo con el quiz cerrado y la pregunta resuelta, la correcta y sus puntos. */
+  private questionView(
+    event: Pick<LoadedEvent, 'lockedAt'>,
+    question: LoadedEvent['questions'][number],
+    answer: { option: QuizOption; pointsEarned: number | null } | undefined,
+  ) {
+    const resolved = event.lockedAt !== null && question.resolution === 'RESOLVED';
+    const match = question.match;
+    return {
+      id: question.id,
+      order: question.order,
+      type: question.type,
+      options: question.options,
+      selectedOption: answer?.option ?? null,
+      resolution: question.resolution,
+      correctOption: resolved ? question.correctOption : null,
+      pointsEarned: resolved ? (answer?.pointsEarned ?? 0) : null,
+      match: {
+        id: match.id,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        homeTeamShort: match.homeTeamShort,
+        awayTeamShort: match.awayTeamShort,
+        homeTeamLogo: match.homeTeamLogo,
+        awayTeamLogo: match.awayTeamLogo,
+        kickoff: match.kickoff.toISOString(),
+        kickoffConfirmed: !isKickoffTimeUnconfirmed(match.kickoff),
+        status: match.status,
+        homeScore: match.homeScore,
+        awayScore: match.awayScore,
+      },
     };
   }
 
   async detail(id: string, userId: string) {
     await this.refreshEvent(id);
     return this.readDetail(id, userId);
+  }
+
+  /**
+   * Historial de quizzes de un jugador: los que ya cerraron y en los que respondio algo, del mas reciente al
+   * mas antiguo, con sus respuestas y si acerto. Nunca enseña un quiz abierto (se filtraria lo que ha
+   * respondido a quien aun puede jugarlo). Se puede ver el historial propio o el de quien comparte algun
+   * grupo contigo (los perfiles que se visitan son siempre de un grupo).
+   */
+  async history(requesterId: string, userId: string) {
+    if (requesterId !== userId) {
+      const shared = await this.prisma.groupMembership.findFirst({
+        where: { userId, group: { memberships: { some: { userId: requesterId } } } },
+        select: { id: true },
+      });
+      if (!shared)
+        fail(
+          'QUIZ_HISTORY_FORBIDDEN',
+          403,
+          'Solo puedes ver el historial de quien comparte un grupo contigo',
+        );
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true },
+    });
+    if (!user) fail('USER_NOT_FOUND', 404, 'Usuario no encontrado');
+
+    const participations = await this.prisma.quizParticipation.findMany({
+      where: { userId, answers: { some: {} }, event: { lockedAt: { not: null } } },
+      orderBy: { event: { closesAt: 'desc' } },
+      take: HISTORY_LIMIT,
+      include: {
+        answers: true,
+        event: {
+          include: {
+            matchday: { include: { competition: true } },
+            questions: { orderBy: { order: 'asc' }, include: { match: true } },
+          },
+        },
+      },
+    });
+
+    return {
+      userId: user.id,
+      name: user.name,
+      quizzes: participations.map((participation) => {
+        const { event } = participation;
+        const answered = event.questions.filter((q) =>
+          participation.answers.some((a) => a.questionId === q.id),
+        );
+        return {
+          quizId: event.id,
+          competition: { id: event.matchday.competition.id, name: event.matchday.competition.name },
+          seasonLabel: event.seasonLabel,
+          matchdayOrder: event.matchday.order,
+          matchdayName: event.matchday.name,
+          closesAt: event.closesAt.toISOString(),
+          status: event.status,
+          completedAt: participation.completedAt?.toISOString() ?? null,
+          points: participation.points,
+          questionCount: event.questions.length,
+          questions: answered.map((question) =>
+            this.questionView(
+              event,
+              question,
+              participation.answers.find((a) => a.questionId === question.id),
+            ),
+          ),
+        };
+      }),
+    };
   }
 
   async overview(userId: string) {

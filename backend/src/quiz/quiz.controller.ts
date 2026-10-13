@@ -17,6 +17,12 @@ export class QuizController {
     return this.quiz.rankings(user.id, query);
   }
 
+  /** Historial de quizzes de un jugador (el propio o el de quien comparte grupo contigo). */
+  @Get('history/:userId')
+  history(@Param('userId') userId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.quiz.history(user.id, userId);
+  }
+
   @Get(':quizId')
   detail(@Param('quizId') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.quiz.detail(id, user.id);
