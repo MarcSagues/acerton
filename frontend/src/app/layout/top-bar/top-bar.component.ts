@@ -10,6 +10,7 @@ import { TranslatePipe } from '../../core/i18n/translate.pipe';
   imports: [AvatarComponent, TranslatePipe],
   providers: [TopBarFacade],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  host: { '[class.no-group-switcher]': '!page.hasGroupSwitcher()' },
   templateUrl: './top-bar.component.html',
   styleUrl: './top-bar.component.scss',
 })

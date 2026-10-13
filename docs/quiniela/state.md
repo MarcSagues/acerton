@@ -1,5 +1,19 @@
 # Estado actual
 
+## 2026-10-13 — Barra superior con más margen inferior sin selector de grupo (fuera de sprint)
+
+Petición del usuario. En las pantallas sin selector de grupo debajo (todas salvo Jornada y Tabla) la barra superior deja 14px
+más de margen inferior, para que el contenido no quede pegado. `TopBarFacade.hasGroupSwitcher` mira la ruta (`/matchday`,
+`/rankings` y subrutas) y el host de `app-top-bar` lleva la clase `no-group-switcher`. En Jornada y Tabla no cambia (52px).
+**Verificado** en navegador (local: 66px en Grupos y Perfil, 52px en Tabla) y 222 tests del frontend (4 nuevos).
+Además la barra y el selector de grupo fijos pasan de translúcidos (94% + desenfoque, dejaban ver el fondo punteado) a opacos
+(`var(--p4-bg)`), con un degradado de 14-16px justo debajo (`::after`) para que el contenido que pasa por debajo se desvanezca
+en vez de cortarse de golpe.
+La barra pasa de `sticky` a `fixed` (clase `.bar-fixed`, anclada a la pantalla a 480px de ancho máximo y centrada): al hacer scroll
+o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de `app-top-bar` solo reserva su hueco en el flujo
+(`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
+**Necesita** build nueva; sin línea en el historial (ajuste visual menor).
+
 ## 2026-10-13 — Tabla: la gráfica también sale en «General» (fuera de sprint)
 
 Petición del usuario: en «General» (Total) no había gráfica porque cada liga tiene su calendario de jornadas. Ahora se juntan
