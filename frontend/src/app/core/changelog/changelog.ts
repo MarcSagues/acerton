@@ -92,6 +92,22 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         de: 'Wenn du ein exaktes Ergebnis eingibst, scrollt der Bildschirm nach oben, damit das letzte Spiel nicht von der Tastatur verdeckt wird.',
       },
       {
+        es: 'Al acabar una jornada, en Jornada ya sale la siguiente si está abierta, aunque falte algún resultado o haya un partido aplazado o cancelado.',
+        en: 'When a matchday ends, Matchday now shows the next one if it is already open, even if a result is still missing or a match was postponed or cancelled.',
+        ca: 'Quan s’acaba una jornada, a Jornada ja surt la següent si està oberta, encara que falti algun resultat o hi hagi un partit ajornat o cancel·lat.',
+        fr: 'À la fin d’une journée, Journée affiche déjà la suivante si elle est ouverte, même s’il manque un résultat ou si un match a été reporté ou annulé.',
+        it: 'Quando finisce una giornata, in Giornata compare già la successiva se è aperta, anche se manca un risultato o una partita è stata rinviata o annullata.',
+        de: 'Wenn ein Spieltag vorbei ist, zeigt Spieltag schon den nächsten, sobald er offen ist, auch wenn noch ein Ergebnis fehlt oder ein Spiel verschoben oder abgesagt wurde.',
+      },
+      {
+        es: 'Puedes cambiar tu pronóstico de un partido aplazado o cancelado mientras no se juegue.',
+        en: 'You can change your prediction for a postponed or cancelled match until it is played.',
+        ca: 'Pots canviar el teu pronòstic d’un partit ajornat o cancel·lat mentre no es jugui.',
+        fr: 'Tu peux modifier ton pronostic d’un match reporté ou annulé tant qu’il n’est pas joué.',
+        it: 'Puoi cambiare il tuo pronostico di una partita rinviata o annullata finché non si gioca.',
+        de: 'Du kannst deinen Tipp für ein verschobenes oder abgesagtes Spiel ändern, solange es nicht gespielt wurde.',
+      },
+      {
         es: 'Los avisos de jornada terminada y de partidos por pronosticar dicen de qué grupo y liga son, y el de jornada terminada deja claro que son tus puntos de toda la jornada.',
         en: 'Matchday-finished and matches-to-predict notifications now say which group and league they are about, and the matchday one makes clear the points are your total for the whole matchday.',
         ca: 'Els avisos de jornada acabada i de partits per pronosticar diuen de quin grup i lliga són, i el de jornada acabada deixa clar que són els teus punts de tota la jornada.',

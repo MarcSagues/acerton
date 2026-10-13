@@ -28,6 +28,19 @@ export function isMatchPredictable(match: Match, now: Date): boolean {
   return match.status === 'SCHEDULED' && new Date(match.kickoff).getTime() > now.getTime();
 }
 
+/** Aplazado o cancelado: no se ha jugado ni tiene fecha, asi que el pronostico sigue abierto (ver isMatchEditable). */
+export function isMatchWithoutDate(match: Match): boolean {
+  return match.status === 'POSTPONED' || match.status === 'CANCELLED';
+}
+
+/**
+ * Se puede crear o cambiar el pronostico: por empezar, o aplazado/cancelado.
+ * Misma regla que el servidor (backend matchday.util isMatchEditable).
+ */
+export function isMatchEditable(match: Match, now: Date): boolean {
+  return isMatchPredictable(match, now) || isMatchWithoutDate(match);
+}
+
 export function predictionLabel(selection: PredictionSelection | undefined, exactScore: boolean): string | null {
   if (!selection) return null;
   if (exactScore) {

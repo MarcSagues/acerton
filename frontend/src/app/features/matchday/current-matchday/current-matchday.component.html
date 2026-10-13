@@ -222,6 +222,8 @@
                 <span>{{ 'common.guardando' | t }}</span>
               } @else if (page.stateFor(match.id).saved && !page.isExactScore()) {
                 <span class="points-badge mono" data-tone="hit">{{ 'currentMatchday.guardado' | t }}</span>
+              } @else if (page.isMatchWithoutDate(match)) {
+                <span class="points-badge mono" data-tone="none">{{ page.matchLockedLabel(match) }}</span>
               } @else {
                 <span class="points-badge mono" data-tone="pending">{{ 'currentMatchday.pendienteJugar' | t }}</span>
               }

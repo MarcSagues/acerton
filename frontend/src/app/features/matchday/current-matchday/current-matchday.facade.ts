@@ -27,7 +27,9 @@ import { formatCountdown } from '../../../shared/countdown.util';
 import {
   MatchAccentTone,
   PredictionSelection,
+  isMatchEditable,
   isMatchPredictable as domainIsMatchPredictable,
+  isMatchWithoutDate as domainIsMatchWithoutDate,
   isPredictionHit,
   lockedMatchLabel,
   matchAccentTone as domainMatchAccentTone,
@@ -193,7 +195,8 @@ export class CurrentMatchdayFacade {
   }
 
   private isMatchPendingIn(match: Match, pickingAllowedForEntry: boolean): boolean {
-    if (!pickingAllowedForEntry || this.isMatchLocked(match)) return false;
+    // Un aplazado o cancelado se puede pronosticar, pero sin fecha no es urgente: sin punto rojo.
+    if (!pickingAllowedForEntry || this.isMatchLocked(match) || this.isMatchWithoutDate(match)) return false;
     const state = this.predictionState.get(match.id);
     if (this.isExactScore()) {
       return state?.predictedHomeScore == null || state?.predictedAwayScore == null;
@@ -694,9 +697,16 @@ export class CurrentMatchdayFacade {
     return domainIsMatchPredictable(match, this.now());
   }
 
-  /** No basta con el status persistido: el cron que actualiza resultados puede tardar hasta 10 min en correr. */
+  /**
+   * No basta con el status persistido: el cron que actualiza resultados puede tardar hasta 10 min en correr.
+   * Aplazados y cancelados no se bloquean: se puede cambiar el pronostico hasta que se jueguen (isMatchEditable).
+   */
   isMatchLocked(match: Match): boolean {
-    return !this.isMatchPredictable(match);
+    return !isMatchEditable(match, this.now());
+  }
+
+  isMatchWithoutDate(match: Match): boolean {
+    return domainIsMatchWithoutDate(match);
   }
 
   /** Tu pronostico en formato corto (1/X/2, 1X/X2/12, o "H-A" en modo resultado exacto), o null si no enviaste ninguno. */

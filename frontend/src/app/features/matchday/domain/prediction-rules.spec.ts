@@ -3,7 +3,9 @@ import {
   PredictionSelection,
   exactScorePoints,
   isKickoffTimeTbc,
+  isMatchEditable,
   isMatchPredictable,
+  isMatchWithoutDate,
   isPredictionHit,
   matchAccentTone,
   pointsForPrediction,
@@ -35,6 +37,19 @@ const selection = (overrides: Partial<PredictionSelection> = {}): PredictionSele
 });
 
 describe('prediction rules', () => {
+  it('aplazados y cancelados se pueden pronosticar aunque su fecha original ya haya pasado', () => {
+    const now = new Date('2026-09-13T18:00:00.000Z');
+    for (const status of ['POSTPONED', 'CANCELLED'] as const) {
+      expect(isMatchWithoutDate(match({ status }))).toBeTrue();
+      expect(isMatchEditable(match({ status }), now)).toBeTrue();
+      expect(isMatchPredictable(match({ status }), now)).toBeFalse();
+    }
+    expect(isMatchEditable(match({ status: 'LIVE' }), now)).toBeFalse();
+    expect(isMatchEditable(match({ status: 'FINISHED' }), now)).toBeFalse();
+    expect(isMatchEditable(match({ status: 'SCHEDULED' }), now)).toBeFalse();
+    expect(isMatchEditable(match({ status: 'SCHEDULED', kickoff: '2026-09-14T18:00:00.000Z' }), now)).toBeTrue();
+  });
+
   it('solo permite pronosticar partidos programados antes de su inicio', () => {
     const now = new Date('2026-09-11T18:00:00.000Z');
     expect(isMatchPredictable(match({ status: 'SCHEDULED' }), now)).toBeTrue();

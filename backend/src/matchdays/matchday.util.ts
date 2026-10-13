@@ -58,6 +58,21 @@ export function isMatchPredictable(match: MatchPredictabilityCheck, now: Date): 
 }
 
 /**
+ * true si el usuario puede crear o cambiar su pronostico de este partido: los
+ * que estan por empezar (isMatchPredictable) y tambien los aplazados o
+ * cancelados, que no se han jugado (2026-10-13, peticion del usuario). Un
+ * aplazado que recibe fecha nueva vuelve a SCHEDULED y sigue la regla normal;
+ * uno cancelado no puntua (scoreFinishedMatchday solo puntua FINISHED).
+ * isMatchPredictable se queda para lo que necesita "por empezar de verdad":
+ * cuenta atras, recordatorios, jornada abierta (getOrders) y copiar pronosticos.
+ */
+export function isMatchEditable(match: MatchPredictabilityCheck, now: Date): boolean {
+  return (
+    isMatchPredictable(match, now) || match.status === 'POSTPONED' || match.status === 'CANCELLED'
+  );
+}
+
+/**
  * Margen tras el kickoff durante el que un partido sin resultado todavia
  * cuenta como "en juego": 90' + descanso + añadido, mas el retraso con el que
  * el proveedor publica el final. Pasado esto, aunque siga LIVE o SCHEDULED en

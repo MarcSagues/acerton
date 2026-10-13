@@ -248,10 +248,31 @@ describe('PredictionsService.submit', () => {
     await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).rejects.toThrow();
   });
 
-  it('rechaza un partido que ya no esta SCHEDULED aunque su kickoff este en el futuro (pospuesto)', async () => {
-    const { service } = buildSubmitDeps({ status: 'POSTPONED', kickoff: future });
+  it('rechaza un partido en juego aunque su kickoff figure en el futuro', async () => {
+    const { service } = buildSubmitDeps({ status: 'LIVE', kickoff: future });
 
     await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).rejects.toThrow();
+  });
+
+  it('deja cambiar el pronostico de un partido aplazado o cancelado aunque su fecha original ya haya pasado', async () => {
+    // Peticion del usuario (2026-10-13): no se ha jugado, asi que el pronostico sigue abierto.
+    for (const status of ['POSTPONED', 'CANCELLED']) {
+      const { service, prisma } = buildSubmitDeps({ status, kickoff: past });
+
+      await service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' });
+
+      expect(prisma.prediction.upsert).toHaveBeenCalled();
+    }
+  });
+
+  it('un aplazado sigue respetando la regla de jornadas abiertas', async () => {
+    const { service, prisma } = buildSubmitDeps(
+      { status: 'POSTPONED', kickoff: past },
+      { canAcceptPredictions: false },
+    );
+
+    await expect(service.submit('u1', 'g1', { matchId: 'm1', choice: 'HOME' })).rejects.toThrow();
+    expect(prisma.prediction.upsert).not.toHaveBeenCalled();
   });
 
   it('deja predecir un partido de la misma jornada que otro ya adelantado y jugado', async () => {
