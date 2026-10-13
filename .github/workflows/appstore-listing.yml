@@ -1,0 +1,44 @@
+name: App Store listing
+
+# Deja la ficha de la App Store lista en App Store Connect (version, nombre y subtitulo por idioma, textos y
+# compilacion) a partir de docs/app-store/ficha-<version>.md. No envia a revision: eso lo pulsas tu.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version de la ficha (docs/app-store/ficha-<version>.md)'
+        default: '1.1.0'
+      build:
+        description: 'Numero de compilacion a asociar (vacio = la mas reciente de esa version)'
+        default: ''
+      wait_build_minutes:
+        description: 'Minutos a esperar a que Apple termine de procesar la compilacion'
+        default: '45'
+      dry_run:
+        description: 'Solo leer App Store Connect y contar lo que se haria, sin cambiar nada'
+        type: boolean
+        default: false
+
+jobs:
+  listing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Dejar la ficha lista
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+          VERSION: ${{ inputs.version }}
+          BUILD: ${{ inputs.build }}
+          WAIT_MINUTES: ${{ inputs.wait_build_minutes }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          export APPSTORE_API_KEY_P8="$(echo "$APPSTORE_API_KEY_BASE64" | base64 --decode)"
+          args=(--version="$VERSION" --build="$BUILD" --wait-build="$WAIT_MINUTES")
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          node scripts/appstore-listing.mjs "${args[@]}"
