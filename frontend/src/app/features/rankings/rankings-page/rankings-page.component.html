@@ -45,30 +45,6 @@
       </div>
     }
 
-    @if (page.myRow(); as mine) {
-      <button type="button" class="my-row" (click)="page.viewUserPicks(mine.userId)">
-        <span class="my-pos mono">{{ mine.position }}</span>
-        <span class="my-meta">
-          <span class="my-name">{{ 'rankingsPage.tu' | t: { name: mine.user.name } }}</span>
-          <span class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
-            @if (page.viewingPastMatchday()) {
-              {{ 'rankingsPage.jornadaN' | t: { order: page.selectedMatchdayOrder() } }}
-            } @else {
-              @if (page.deltaLabel(mine.positionDelta); as delta) {
-                {{ 'rankingsPage.estaSemana' | t: { delta: delta } }}
-              } @else {
-                {{ 'rankingsPage.estaSemana2' | t }}
-              }
-            }
-          </span>
-        </span>
-        <span class="my-pts">
-          <span class="pts-value mono">{{ mine.points }}</span>
-          <span class="pts-label mono">{{ 'rankingsPage.pts' | t }}</span>
-        </span>
-      </button>
-    }
-
     @if (page.hasEvolution()) {
       <div class="evolution-card">
         <div class="evolution-head">
@@ -120,6 +96,30 @@
 
     @if (page.exactLeaders()?.length) {
       <app-exact-king-card></app-exact-king-card>
+    }
+
+    @if (page.myRow(); as mine) {
+      <button type="button" class="my-row" (click)="page.viewUserPicks(mine.userId)">
+        <span class="my-pos mono">{{ mine.position }}</span>
+        <span class="my-meta">
+          <span class="my-name">{{ 'rankingsPage.tu' | t: { name: mine.user.name } }}</span>
+          <span class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
+            @if (page.viewingPastMatchday()) {
+              {{ 'rankingsPage.jornadaN' | t: { order: page.selectedMatchdayOrder() } }}
+            } @else {
+              @if (page.deltaLabel(mine.positionDelta); as delta) {
+                {{ 'rankingsPage.estaSemana' | t: { delta: delta } }}
+              } @else {
+                {{ 'rankingsPage.estaSemana2' | t }}
+              }
+            }
+          </span>
+        </span>
+        <span class="my-pts">
+          <span class="pts-value mono">{{ mine.points }}</span>
+          <span class="pts-label mono">{{ 'rankingsPage.pts' | t }}</span>
+        </span>
+      </button>
     }
 
     <div class="table-head">

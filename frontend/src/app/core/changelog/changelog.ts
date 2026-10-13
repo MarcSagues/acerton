@@ -11,23 +11,38 @@
  *   al subir de versión se crea una entrada nueva ARRIBA (la anterior no se toca).
  * - Cada cambio va en español e inglés. Texto corto y en positivo, pensado para
  *   quien juega, no para quien programa ("Puedes copiar...", no "Endpoint nuevo...").
+ * - Una novedad grande (un modo de juego nuevo) puede llevar `headline`: sale destacada arriba del
+ *   pop-up, con el titular y la descripción debajo.
  * - `date` es la de la publicación (AAAA-MM-DD).
  */
 import type { Lang } from '../i18n/translate';
 
-export interface ChangelogChange {
+/** Un texto en varios idiomas: es y en obligatorios, el resto opcional (si falta, se usa el ingles). */
+export interface LocalizedText {
   es: string;
   en: string;
-  /** Opcionales: si falta el del idioma de la app, el pop-up usa el ingles (ver changeText). */
   ca?: string;
   fr?: string;
   it?: string;
   de?: string;
 }
 
+export interface ChangelogChange extends LocalizedText {
+  /**
+   * Opcional: titular. Con el, el cambio sale destacado arriba del pop-up (titular en grande y el texto
+   * debajo como descripcion) en vez de como una linea mas de la lista. Solo para novedades grandes.
+   */
+  headline?: LocalizedText;
+}
+
+/** Texto en un idioma, o en ingles si todavia no esta traducido a ese. */
+export function localized(text: LocalizedText, lang: Lang): string {
+  return text[lang] ?? text.en;
+}
+
 /** Texto de un cambio en un idioma, o en ingles si todavia no esta traducido a ese. */
 export function changeText(change: ChangelogChange, lang: Lang): string {
-  return change[lang] ?? change.en;
+  return localized(change, lang);
 }
 
 export interface ChangelogEntry {
@@ -40,24 +55,32 @@ export interface ChangelogEntry {
 /** De la más nueva a la más antigua. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
-    version: '1.0.3',
-    date: '2026-10-05',
+    version: '1.1.0',
+    date: '2026-10-13',
     changes: [
       {
-        es: 'Nuevo Quiz de jornada: responde preguntas sobre los partidos de cada liga y compite con toda la comunidad, aunque no tengas grupo. Lo encuentras abajo a la derecha; tu Perfil sigue en tu avatar.',
-        en: "New Matchday quiz: answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.",
-        ca: 'Nou Quiz de jornada: respon preguntes sobre els partits de cada lliga i competeix amb tota la comunitat, encara que no tinguis grup. El trobaràs a baix a la dreta; el teu Perfil continua al teu avatar.',
-        fr: 'Nouveau Quiz de la journée : réponds à des questions sur les matchs de chaque ligue et affronte toute la communauté, même sans groupe. Il est en bas à droite ; ton Profil reste accessible depuis ton avatar.',
-        it: 'Nuovo Quiz della giornata: rispondi a domande sulle partite di ogni campionato e sfida tutta la community, anche senza gruppo. Lo trovi in basso a destra; il tuo Profilo resta sul tuo avatar.',
-        de: 'Neu: das Spieltags-Quiz. Beantworte Fragen zu den Spielen jeder Liga und miss dich mit der ganzen Community, auch ohne Gruppe. Du findest es unten rechts; dein Profil erreichst du weiter über deinen Avatar.',
+        headline: {
+          es: 'NUEVO MODO DE JUEGO: ¡QUIZ!',
+          en: 'NEW GAME MODE: QUIZ!',
+          ca: 'NOU MODE DE JOC: QUIZ!',
+          fr: 'NOUVEAU MODE DE JEU : QUIZ !',
+          it: 'NUOVA MODALITÀ DI GIOCO: QUIZ!',
+          de: 'NEUER SPIELMODUS: QUIZ!',
+        },
+        es: 'Responde preguntas sobre los partidos de cada liga y compite con toda la comunidad, aunque no tengas grupo. Lo encuentras abajo a la derecha; tu Perfil sigue en tu avatar.',
+        en: "Answer questions about each league's games and compete with the whole community, even without a group. Find it at the bottom right; your Profile is still behind your avatar.",
+        ca: 'Respon preguntes sobre els partits de cada lliga i competeix amb tota la comunitat, encara que no tinguis grup. El trobaràs a baix a la dreta; el teu Perfil continua al teu avatar.',
+        fr: 'Réponds à des questions sur les matchs de chaque ligue et affronte toute la communauté, même sans groupe. Il est en bas à droite ; ton Profil reste accessible depuis ton avatar.',
+        it: 'Rispondi a domande sulle partite di ogni campionato e sfida tutta la community, anche senza gruppo. Lo trovi in basso a destra; il tuo Profilo resta sul tuo avatar.',
+        de: 'Beantworte Fragen zu den Spielen jeder Liga und miss dich mit der ganzen Community, auch ohne Gruppe. Du findest es unten rechts; dein Profil erreichst du weiter über deinen Avatar.',
       },
       {
-        es: 'Avisos del Quiz, si los quieres: cuando se abre, 24 horas antes del cierre y 1 hora antes. Actívalos en Perfil > Preferencias de avisos.',
-        en: 'Quiz notifications, if you want them: when it opens, 24 hours before it closes and 1 hour before. Turn them on in Profile > Notification preferences.',
-        ca: 'Avisos del Quiz, si els vols: quan s’obre, 24 hores abans del tancament i 1 hora abans. Activa’ls a Perfil > Preferències d’avisos.',
-        fr: 'Notifications du Quiz, si tu le souhaites : à l’ouverture, 24 heures avant la clôture et 1 heure avant. Active-les dans Profil > Préférences de notifications.',
-        it: 'Avvisi del Quiz, se li vuoi: quando si apre, 24 ore prima della chiusura e 1 ora prima. Attivali in Profilo > Preferenze avvisi.',
-        de: 'Quiz-Mitteilungen, wenn du sie willst: beim Öffnen, 24 Stunden und 1 Stunde vor Schluss. Schalte sie unter Profil > Mitteilungseinstellungen ein.',
+        es: 'Avisos del Quiz, si los quieres: cuando se abre, 24 horas antes del cierre y 1 hora antes. Actívalos en Perfil > Ajustes > Avisos.',
+        en: 'Quiz notifications, if you want them: when it opens, 24 hours before it closes and 1 hour before. Turn them on in Profile > Settings > Notifications.',
+        ca: 'Avisos del Quiz, si els vols: quan s’obre, 24 hores abans del tancament i 1 hora abans. Activa’ls a Perfil > Ajustos > Avisos.',
+        fr: 'Notifications du Quiz, si tu le souhaites : à l’ouverture, 24 heures avant la clôture et 1 heure avant. Active-les dans Profil > Réglages > Notifications.',
+        it: 'Avvisi del Quiz, se li vuoi: quando si apre, 24 ore prima della chiusura e 1 ora prima. Attivali in Profilo > Impostazioni > Avvisi.',
+        de: 'Quiz-Mitteilungen, wenn du sie willst: beim Öffnen, 24 Stunden und 1 Stunde vor Schluss. Schalte sie unter Profil > Einstellungen > Mitteilungen ein.',
       },
       {
         es: 'En Tabla, una gráfica de líneas enseña cómo vais tú y los primeros del grupo jornada a jornada, en Semanal y en Total. Toca «Tú» para ver solo la tuya.',
@@ -162,6 +185,38 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         fr: 'Correction : le compteur de badges compte les badges distincts, plus les mêmes badges répétés dans chaque groupe.',
         it: 'Correzione: il contatore dei badge conta quelli diversi, non quelli ripetuti in ogni gruppo.',
         de: 'Behoben: Der Abzeichen-Zähler zählt jetzt verschiedene Abzeichen und nicht dasselbe Abzeichen in jeder Gruppe mehrfach.',
+      },
+      {
+        es: 'Elige tu equipo favorito en Perfil: su bandera, con los colores del club, sale en tu perfil y la ven quienes lo visiten.',
+        en: 'Pick your favorite team in Profile: its flag, in the club colors, shows on your profile for anyone who visits it.',
+        ca: 'Tria el teu equip preferit a Perfil: la seva bandera, amb els colors del club, surt al teu perfil i la veu qui el visiti.',
+        fr: 'Choisis ton équipe préférée dans Profil : son drapeau, aux couleurs du club, s’affiche sur ton profil, visible par ceux qui le visitent.',
+        it: 'Scegli la tua squadra del cuore in Profilo: la sua bandiera, con i colori del club, appare sul tuo profilo e la vede chi lo visita.',
+        de: 'Wähle in deinem Profil dein Lieblingsteam: Seine Flagge in den Vereinsfarben erscheint auf deinem Profil und ist für alle sichtbar, die es besuchen.',
+      },
+      {
+        es: 'Al crear tu cuenta también puedes entrar con Google o Apple, igual que al iniciar sesión.',
+        en: 'When creating your account you can also continue with Google or Apple, just like when signing in.',
+        ca: 'En crear el teu compte també pots continuar amb Google o Apple, igual que en iniciar sessió.',
+        fr: 'En créant ton compte, tu peux aussi continuer avec Google ou Apple, comme à la connexion.',
+        it: 'Quando crei il tuo account puoi anche continuare con Google o Apple, come all’accesso.',
+        de: 'Beim Erstellen deines Kontos kannst du auch mit Google oder Apple fortfahren, genau wie beim Anmelden.',
+      },
+      {
+        es: 'Cada pantalla se abre desde arriba, sin quedarse en el punto donde estabas en la anterior.',
+        en: 'Every screen now opens from the top instead of staying where you were on the previous one.',
+        ca: 'Cada pantalla s’obre des de dalt, sense quedar-se on eres a l’anterior.',
+        fr: 'Chaque écran s’ouvre désormais en haut, sans rester là où tu étais sur le précédent.',
+        it: 'Ogni schermata si apre dall’alto, senza restare dov’eri nella precedente.',
+        de: 'Jeder Bildschirm öffnet sich jetzt oben, statt dort zu bleiben, wo du auf dem vorherigen warst.',
+      },
+      {
+        es: 'Nueva pantalla de Ajustes en tu Perfil, con una pestaña para cada cosa: nombre, equipo, avisos, apariencia, idioma y contraseña.',
+        en: 'New Settings screen in your Profile, with a tab for each thing: name, team, notifications, appearance, language and password.',
+        ca: 'Nova pantalla d’Ajustos al teu Perfil, amb una pestanya per a cada cosa: nom, equip, avisos, aparença, idioma i contrasenya.',
+        fr: 'Nouvel écran Réglages dans ton Profil, avec un onglet pour chaque chose : nom, équipe, notifications, apparence, langue et mot de passe.',
+        it: 'Nuova schermata Impostazioni nel tuo Profilo, con una scheda per ogni cosa: nome, squadra, avvisi, aspetto, lingua e password.',
+        de: 'Neuer Einstellungsbildschirm in deinem Profil, mit einem Tab für jedes Thema: Name, Team, Mitteilungen, Darstellung, Sprache und Passwort.',
       },
     ],
   },

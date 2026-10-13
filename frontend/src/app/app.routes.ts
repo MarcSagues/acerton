@@ -270,19 +270,63 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'profile/appearance',
+        // Ajustes: una pagina con una pestaña por cada ruta hija.
+        path: 'profile/settings',
         loadComponent: () =>
-          import('./features/profile/profile-appearance/profile-appearance.component').then(
-            (m) => m.ProfileAppearanceComponent,
+          import('./features/profile/profile-settings/profile-settings.component').then(
+            (m) => m.ProfileSettingsComponent,
           ),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'name' },
+          {
+            path: 'name',
+            loadComponent: () =>
+              import('./features/profile/profile-settings/profile-name/profile-name.component').then(
+                (m) => m.ProfileNameComponent,
+              ),
+          },
+          {
+            path: 'favorite-team',
+            loadComponent: () =>
+              import('./features/profile/profile-favorite-team/profile-favorite-team.component').then(
+                (m) => m.ProfileFavoriteTeamComponent,
+              ),
+          },
+          {
+            path: 'notifications',
+            loadComponent: () =>
+              import('./features/notifications/notification-settings/notification-settings.component').then(
+                (m) => m.NotificationSettingsComponent,
+              ),
+          },
+          {
+            path: 'appearance',
+            loadComponent: () =>
+              import('./features/profile/profile-appearance/profile-appearance.component').then(
+                (m) => m.ProfileAppearanceComponent,
+              ),
+          },
+          {
+            path: 'language',
+            loadComponent: () =>
+              import('./features/profile/profile-language/profile-language.component').then(
+                (m) => m.ProfileLanguageComponent,
+              ),
+          },
+          {
+            path: 'password',
+            loadComponent: () =>
+              import('./features/profile/profile-change-password/profile-change-password.component').then(
+                (m) => m.ProfileChangePasswordComponent,
+              ),
+          },
+        ],
       },
-      {
-        path: 'profile/change-password',
-        loadComponent: () =>
-          import('./features/profile/profile-change-password/profile-change-password.component').then(
-            (m) => m.ProfileChangePasswordComponent,
-          ),
-      },
+      // Rutas antiguas (marcadores, enlaces): ahora son pestañas de Ajustes.
+      { path: 'profile/favorite-team', redirectTo: 'profile/settings/favorite-team' },
+      { path: 'profile/appearance', redirectTo: 'profile/settings/appearance' },
+      { path: 'profile/change-password', redirectTo: 'profile/settings/password' },
+      { path: 'notifications/preferences', redirectTo: 'profile/settings/notifications' },
       {
         path: 'profile/delete-account',
         loadComponent: () =>
@@ -339,13 +383,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/notifications/notifications-page/notifications-page.component').then(
             (m) => m.NotificationsPageComponent,
-          ),
-      },
-      {
-        path: 'notifications/preferences',
-        loadComponent: () =>
-          import('./features/notifications/notification-settings/notification-settings.component').then(
-            (m) => m.NotificationSettingsComponent,
           ),
       },
       {

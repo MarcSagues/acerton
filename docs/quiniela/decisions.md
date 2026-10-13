@@ -8,6 +8,21 @@ copyright de cada club; que el proveedor (football-data.org) nos dé la URL no d
 competiciones en ninguna pantalla mientras no haya licencia; nombres de equipos y resultados sí (uso
 descriptivo de datos). Para competiciones se usan los trofeos propios de Piqo.
 
+## 2026-10-13 — Colores de los clubes en el Quiz, en un mapa estático
+
+Para sustituir el escudo se usan solo los colores del club (dato descriptivo, no la marca gráfica). Se guardan en
+un mapa estático del frontend en vez de en la BD: los partidos solo guardan nombres como texto, el endpoint de
+partidos no devuelve colores y una columna nueva obligaría a migrar MySQL (prod) y Postgres (dev). Coste: al
+cambiar de temporada hay que añadir los equipos nuevos a mano (releer `clubColors` y regenerar el mapa).
+
+## 2026-10-13 — Equipo favorito: catálogo en el backend y solo nombres validados
+
+El favorito se guarda como el nombre completo del equipo y el servidor solo acepta los del catálogo
+(`users/team-catalog.ts`): se muestra a otros usuarios, así que un texto libre permitiría meter cualquier cosa en el
+perfil de alguien. El backend manda ya resueltos los colores, y el frontend los pinta sin tener su propio mapa. El
+Quiz sigue con su mapa estático (`team-colors.ts`), por lo que los colores de un equipo están en dos sitios; si molesta,
+el Quiz puede leer el mismo catálogo. Equipos nuevos (ascensos, otra temporada) se añaden a mano a ambos.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).

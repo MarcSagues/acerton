@@ -6,6 +6,7 @@ import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { isKickoffTimeTbc } from '../../matchday/domain/prediction-rules';
 import { QuizMatch } from '../../../core/models/quiz.model';
 import { teamName } from '../domain/quiz-rules';
+import { teamColors, teamDiscBackground } from '../domain/team-colors';
 import { QuizPlayFacade } from './quiz-play.facade';
 
 /** Recorrido de un quiz: una pregunta por paso, resumen y resultados de solo lectura. */
@@ -27,6 +28,12 @@ export class QuizPlayComponent implements OnInit {
 
   team(match: QuizMatch, side: 'home' | 'away'): string {
     return teamName(match, side);
+  }
+
+  /** Fondo del disco con los colores del club, o null (disco neutro) si no los tenemos. */
+  disc(match: QuizMatch, side: 'home' | 'away'): string | null {
+    const colors = teamColors(side === 'home' ? match.homeTeam : match.awayTeam);
+    return colors ? teamDiscBackground(colors) : null;
   }
 
   /** Hora sin confirmar: o lo dice el servidor, o es la de relleno del proveedor (00:00 UTC). */

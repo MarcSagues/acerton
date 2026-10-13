@@ -40,12 +40,9 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useFactory: currentLocale },
     provideRouter(
       routes,
-      // 'enabled': al volver atras (boton, gesto o navegador) restaura el
-      // scroll donde estaba esa vista; al ir hacia adelante (navegacion
-      // nueva) empieza arriba, como es de esperar. El scroll de las
-      // pantallas es el del documento (el layout del shell crece con el
-      // contenido, sin un contenedor interno con su propio overflow), asi
-      // que esta opcion de Angular Router basta sin nada mas a medida.
+      // Sin efecto real mientras el scroll sea el de `body` y no el de la ventana (ver
+      // ScrollTopService, que es quien sube cada pantalla al abrirla): se deja por si el layout
+      // vuelve a hacer scroll en el documento.
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
       // Solo anima la navegacion que viene del gesto de deslizar desde el
       // borde (ver EdgeSwipeBackService): el resto de navegaciones (enlaces,

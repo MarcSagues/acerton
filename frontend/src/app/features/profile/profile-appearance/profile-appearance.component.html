@@ -1,11 +1,4 @@
 <div class="page">
-  <div class="head-row">
-    <button type="button" class="back-btn" [attr.aria-label]="'common.volver2' | t" (click)="page.goBack()">
-      <piqo-svg icon="atras" size="20"></piqo-svg>
-    </button>
-    <h1>{{ 'common.apariencia' | t }}</h1>
-  </div>
-
   <div class="cards">
     @for (opt of page.options; track opt.value) {
       <button type="button" class="theme-card" [class.active]="page.theme() === opt.value" (click)="page.setTheme(opt.value)">
@@ -20,19 +13,4 @@
       </button>
     }
   </div>
-
-  <h2 class="section-title">{{ 'profileAppearance.idioma' | t }}</h2>
-  <div class="cards">
-    @for (option of page.languages; track option.code) {
-      <button type="button" class="theme-card lang-card" [class.active]="page.lang === option.code" [attr.lang]="option.code" (click)="page.setLanguage(option.code)">
-        <span class="meta">
-          <span class="name">{{ option.name }}</span>
-        </span>
-        <span class="radio" [class.checked]="page.lang === option.code">
-          <span class="dot"></span>
-        </span>
-      </button>
-    }
-  </div>
-  <p class="lang-note">{{ 'profileAppearance.idiomaNota' | t }}</p>
 </div>

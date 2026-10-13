@@ -220,6 +220,13 @@
     border-radius: 50%;
     background: var(--p4-soft);
     color: var(--p4-accent);
+    font: 700 16px/1 var(--p4-font-display);
+    text-transform: uppercase;
+
+    // Con los colores del club el disco va solo, con un borde fino que se ve en tema claro y oscuro.
+    &.colored {
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p4-text) 30%, transparent);
+    }
   }
 }
 

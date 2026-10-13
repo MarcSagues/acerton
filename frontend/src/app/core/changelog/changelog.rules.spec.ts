@@ -1,4 +1,4 @@
-import { ChangelogEntry } from './changelog';
+import { CHANGELOG as REAL_CHANGELOG, ChangelogEntry } from './changelog';
 import { compareVersions, decideWhatsNew, parseVersion } from './changelog.rules';
 
 const entry = (version: string): ChangelogEntry => ({ version, date: '2026-01-01', changes: [{ es: 'a', en: 'b' }] });
@@ -69,5 +69,27 @@ describe('decideWhatsNew', () => {
   it('una versión sin entrada en el historial ni novedades entre medias se apunta y no se enseña nada', () => {
     expect(decide('1.0.3', '1.0.2')).toEqual({ action: 'remember' });
     expect(decide('1.0.1', null)).toEqual({ action: 'remember' });
+  });
+});
+
+describe('el titular del Quiz (1.1.0, historial real)', () => {
+  const quizEntries = (decision: ReturnType<typeof decideWhatsNew>) =>
+    decision.action === 'show' ? decision.entries.filter((e) => e.changes.some((c) => c.headline)) : [];
+
+  it('sale al actualizar a la 1.1.0 desde una anterior', () => {
+    const decision = decideWhatsNew({ changelog: REAL_CHANGELOG, currentVersion: '1.1.0', lastSeenVersion: '1.0.2', isNewUser: false });
+    expect(quizEntries(decision).map((e) => e.version)).toEqual(['1.1.0']);
+  });
+
+  it('no sale a quien ya vio la 1.1.0, ni al pasar a una versión posterior', () => {
+    const again = decideWhatsNew({ changelog: REAL_CHANGELOG, currentVersion: '1.1.0', lastSeenVersion: '1.1.0', isNewUser: false });
+    const later = decideWhatsNew({ changelog: REAL_CHANGELOG, currentVersion: '1.1.1', lastSeenVersion: '1.1.0', isNewUser: false });
+    expect(quizEntries(again)).toEqual([]);
+    expect(quizEntries(later)).toEqual([]);
+  });
+
+  it('tampoco sale a un usuario nuevo', () => {
+    const decision = decideWhatsNew({ changelog: REAL_CHANGELOG, currentVersion: '1.1.0', lastSeenVersion: null, isNewUser: true });
+    expect(quizEntries(decision)).toEqual([]);
   });
 });

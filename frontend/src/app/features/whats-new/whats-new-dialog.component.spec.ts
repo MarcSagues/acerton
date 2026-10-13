@@ -52,6 +52,47 @@ describe('WhatsNewDialogComponent', () => {
     expect(Array.from(el.querySelectorAll('li')).map((li) => li.textContent?.trim())).toEqual(['New thing']);
   });
 
+  it('una novedad con titular sale destacada arriba, con su descripción debajo, y no en la lista', () => {
+    const featured = {
+      headline: { es: 'NUEVO MODO', en: 'NEW MODE' },
+      es: 'Descripción del modo',
+      en: 'Mode description',
+    };
+    const el = render({
+      version: '1.1.0',
+      entries: [{ version: '1.1.0', date: '2026-01-01', changes: [{ es: 'Otra cosa', en: 'Other' }, featured] }],
+    });
+
+    expect(el.querySelector('.featured-headline')?.textContent?.trim()).toBe('NUEVO MODO');
+    expect(el.querySelector('.featured-text')?.textContent?.trim()).toBe('Descripción del modo');
+    expect(Array.from(el.querySelectorAll('li')).map((li) => li.textContent?.trim())).toEqual(['Otra cosa']);
+  });
+
+  it('el titular sigue el idioma de la app y cae al inglés si falta', () => {
+    setLanguageForTests('de');
+    const el = render({
+      version: '1.1.0',
+      entries: [
+        {
+          version: '1.1.0',
+          date: '2026-01-01',
+          changes: [{ headline: { es: 'NUEVO', en: 'NEW' }, es: 'a', en: 'b' }],
+        },
+      ],
+    });
+
+    expect(el.querySelector('.featured-headline')?.textContent?.trim()).toBe('NEW');
+  });
+
+  it('sin novedades normales no pinta la lista vacía', () => {
+    const el = render({
+      version: '1.1.0',
+      entries: [{ version: '1.1.0', date: '2026-01-01', changes: [{ headline: { es: 'N', en: 'N' }, es: 'a', en: 'b' }] }],
+    });
+
+    expect(el.querySelector('ul.changes')).toBeNull();
+  });
+
   it('el botón cierra el aviso', () => {
     const el = render({ version: '1.1.0', entries: [entry('1.1.0', 'a', 'b')] });
 

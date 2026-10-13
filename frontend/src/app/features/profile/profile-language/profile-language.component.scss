@@ -1,0 +1,78 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  color: var(--p4-text);
+  padding-bottom: 28px;
+}
+
+.cards {
+  padding: 20px 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lang-note {
+  margin: 12px 20px 0;
+  max-width: 350px;
+  font: 400 12px/1.4 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.lang-card {
+  width: 100%;
+  max-width: 350px;
+  height: 60px;
+  border-radius: 16px;
+  background: var(--p4-surface);
+  border: 1px solid transparent;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--p4-text);
+  text-align: left;
+
+  &.active {
+    border-color: var(--p4-accent);
+  }
+}
+
+.name {
+  flex: 1;
+  font: 600 15px/1 var(--p4-font-ui);
+}
+
+.radio {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--p4-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.checked {
+    border-color: var(--p4-accent);
+  }
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.radio.checked .dot {
+  background: var(--p4-accent);
+}

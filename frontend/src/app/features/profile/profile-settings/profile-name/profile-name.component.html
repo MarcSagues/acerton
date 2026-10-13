@@ -1,0 +1,31 @@
+<div class="section">
+  <div class="card">
+    <p class="card-title">{{ 'profilePage.nombre' | t }}</p>
+    <div class="name-edit-row">
+      <input
+        class="name-input mono"
+        type="text"
+        maxlength="24"
+        [disabled]="!!page.nameChangeAvailableAt()"
+        [ngModel]="page.nameInput()"
+        (ngModelChange)="page.nameInput.set($event)"
+        (keydown.enter)="page.saveName()"
+      />
+      @if (!page.nameChangeAvailableAt()) {
+        <button type="button" class="piqo-primary save-btn" [disabled]="!page.canSaveName()" (click)="page.saveName()">
+          {{ page.nameSaving() ? ('common.guardando' | t) : ('common.guardar' | t) }}
+        </button>
+      }
+    </div>
+    @if (page.nameChangeAvailableAt(); as availableAt) {
+      <p class="hint mono">{{ 'profilePage.yaHasCambiadoPodras' | t: { availableAt: (availableAt | date: 'dd/MM/yyyy') } }}</p>
+    } @else {
+      @if (page.nameHint(); as hint) {
+        <p class="error mono">{{ hint }}</p>
+      }
+    }
+    @if (page.nameError()) {
+      <p class="error mono">{{ page.nameError() }}</p>
+    }
+  </div>
+</div>
