@@ -882,6 +882,7 @@ export const en: Catalog = {
   'rankingsPage.nadieExacto': 'Nobody has nailed an exact score yet.',
   'rankingsPage.nombresYMas': '{names} and {count} more',
   'rankingsPage.notaAcumulado': 'Running total after each matchday',
+  'rankingsPage.notaGeneral': 'each point is a league matchday, in date order',
   'rankingsPage.notaJornada': 'Points in each matchday',
   'rankingsPage.notaLideres': 'you and the leaders',
   'rankingsPage.periodoClasificacion': 'Standings period',

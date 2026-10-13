@@ -226,6 +226,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Nuovo storico dei Quiz: in Statistiche, il tuo e quello degli altri giocatori, vedi tutti i quiz chiusi con le risposte date e se erano giuste, e puoi filtrare per campionato.',
         de: 'Neu: Quiz-Verlauf. In den Statistiken, deinen und denen anderer Spieler, siehst du alle beendeten Quizze mit den Antworten und ob sie richtig waren, und kannst nach Liga filtern.',
       },
+      {
+        es: 'La gráfica de Tabla también sale en «General»: junta las jornadas de todas las ligas por orden de fecha (J1 Liga, J1 Champions, J2 Liga...).',
+        en: 'The Table chart now also shows in "General": it puts the matchdays of every league in date order (MD1 La Liga, MD1 Champions, MD2 La Liga...).',
+        ca: 'La gràfica de Taula també surt a «General»: ajunta les jornades de totes les lligues per ordre de data (J1 Lliga, J1 Champions, J2 Lliga...).',
+        fr: 'Le graphique de Classement apparaît aussi dans « Général » : il met les journées de toutes les ligues par ordre de date (J1 Liga, J1 Champions, J2 Liga...).',
+        it: 'Il grafico di Classifica compare anche in «Generale»: mette in ordine di data le giornate di tutti i campionati (G1 Liga, G1 Champions, G2 Liga...).',
+        de: 'Das Diagramm in der Tabelle gibt es jetzt auch unter „Gesamt“: Es ordnet die Spieltage aller Ligen nach Datum (ST1 Liga, ST1 Champions, ST2 Liga ...).',
+      },
     ],
   },
   {

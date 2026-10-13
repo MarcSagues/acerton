@@ -359,6 +359,8 @@ export class RankingsService {
       return {
         matchdayId: matchday.id,
         order: matchday.order,
+        // Fecha de la jornada (primer partido): ordena las jornadas de varias ligas en la grafica de "General".
+        closesAt: matchday.closesAt.toISOString(),
         winner: winner
           ? { userId: winner.userId, name: winner.user.name, points: winner.points }
           : null,

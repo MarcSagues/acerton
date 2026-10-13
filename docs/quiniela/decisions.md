@@ -30,6 +30,12 @@ primera liga sin que Total volviera: el mismo «Total» enseñaba cosas distinta
 (la gráfica sale siempre) y General sigue a un toque en las pestañas; Total devuelve a General solo a quien venía de General. La
 gráfica sigue siendo por liga (no hay jornadas comunes), esa parte de la decisión anterior se mantiene.
 
+## 2026-10-13 — Gráfica de «General»: jornadas de todas las ligas por fecha
+
+La decisión «Solo por competición» se matiza: «General» tampoco tiene jornadas comunes, pero sí fechas. Se ordenan por fecha las
+jornadas finalizadas de todas las ligas del grupo y cada punto es una jornada de una liga (número + liga). El selector de
+jornada sigue siendo solo por liga. Coste: una petición de historial por liga al entrar en General.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).

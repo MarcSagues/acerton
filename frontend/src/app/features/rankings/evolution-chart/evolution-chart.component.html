@@ -1,8 +1,8 @@
 <div class="plot">
   <svg
     [attr.width]="width()"
-    [attr.height]="height"
-    [attr.viewBox]="'0 0 ' + width() + ' ' + height"
+    [attr.height]="height()"
+    [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
     role="img"
     tabindex="0"
     [attr.aria-label]="(chart().cumulative ? 'rankingsPage.graficaAcumuladoAria' : 'rankingsPage.graficaJornadaAria') | t"
@@ -33,9 +33,15 @@
         class="x-label"
         [class.viewed]="$index === chart().highlightIndex"
         [attr.x]="xs()[$index]"
-        [attr.y]="height - 6"
+        [attr.y]="labelY"
         text-anchor="middle"
       >{{ label }}</text>
+    }
+
+    @if (chart().sublabels; as sublabels) {
+      @for (sublabel of sublabels; track $index) {
+        <text class="x-sublabel" [attr.x]="xs()[$index]" [attr.y]="height() - 4" text-anchor="middle">{{ sublabel }}</text>
+      }
     }
 
     @if (readout(); as r) {
