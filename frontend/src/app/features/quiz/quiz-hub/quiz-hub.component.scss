@@ -374,6 +374,9 @@ h1 {
 
   &.pinned {
     margin: 12px 20px 0;
+    /* Mismo ancho que la tabla: es un boton con width 100% y los margenes laterales lo sacaban 40px de ella. */
+    width: calc(100% - 40px);
+    box-sizing: border-box;
   }
 }
 
