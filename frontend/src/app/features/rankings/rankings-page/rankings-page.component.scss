@@ -21,27 +21,6 @@
   justify-content: center;
 }
 
-.head-row {
-  /* Fijo bajo la barra superior (ver --p4-topbar-h en styles.scss): el selector de grupo no se va al hacer scroll. */
-  position: sticky;
-  top: var(--p4-topbar-h);
-  z-index: 15;
-  padding: 12px 20px 8px;
-  background: var(--p4-bg);
-}
-
-/* Degradado justo debajo: lo que pasa por debajo se desvanece en vez de cortarse de golpe. */
-.head-row::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  height: 14px;
-  background: linear-gradient(var(--p4-bg), transparent);
-  pointer-events: none;
-}
-
 .title-row {
   padding: 14px 20px 0;
 }

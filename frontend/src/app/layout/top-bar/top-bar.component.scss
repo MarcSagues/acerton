@@ -4,9 +4,16 @@
   height: calc(var(--p4-topbar-h) + var(--topbar-extra, 0px));
 }
 
-/* Pantallas sin selector de grupo debajo: mas aire entre la barra y el contenido. */
+/* Pantallas sin selector de grupo: mas aire entre la barra y el contenido. */
 :host(.no-group-switcher) {
   --topbar-extra: 14px;
+  --topbar-pad: 14px;
+}
+
+/* Jornada y Tabla: el selector de grupo va dentro de la barra, fijo con ella (12px de aire bajo el logo + 54px del selector + 10px). */
+:host(.with-group-switcher) {
+  --topbar-extra: 76px;
+  --topbar-pad: 0px;
 }
 
 /* Barra inamovible: `fixed` la ancla a la pantalla, asi que al hacer scroll (o al tirar hacia abajo en iOS) solo se mueve la
@@ -20,7 +27,7 @@
   margin: 0 auto;
   z-index: 20;
   padding-top: env(safe-area-inset-top);
-  padding-bottom: var(--topbar-extra, 0px);
+  padding-bottom: var(--topbar-pad, 0px);
   background: var(--p4-bg);
 }
 
@@ -91,4 +98,8 @@
   border-radius: 50%;
   background: var(--p4-error);
   border: 2px solid var(--p4-bg);
+}
+
+.switcher-row {
+  padding: 12px 20px 10px;
 }

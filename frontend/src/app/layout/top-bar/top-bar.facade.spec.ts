@@ -6,8 +6,10 @@ describe('routeHasGroupSwitcher', () => {
     expect(routeHasGroupSwitcher('/rankings')).toBeTrue();
   });
 
-  it('las subrutas de esas pantallas tambien (p. ej. los resultados de una jornada)', () => {
-    expect(routeHasGroupSwitcher('/matchday/abc/results')).toBeTrue();
+  it('sus subpantallas no lo llevan (resultados, calendario, historial...)', () => {
+    for (const path of ['/matchday/abc/results', '/matchday/calendar', '/matchday/history']) {
+      expect(routeHasGroupSwitcher(path)).withContext(path).toBeFalse();
+    }
   });
 
   it('el resto de pantallas no lo llevan', () => {
