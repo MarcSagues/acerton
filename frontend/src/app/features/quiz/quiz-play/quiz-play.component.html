@@ -97,15 +97,15 @@
                   </div>
                 </div>
 
-                <!-- Sin escudos de los clubes: son marcas y obras protegidas y no tenemos licencia (2026-10-13). -->
+                <!-- Sin escudos de los clubes (marcas y obras protegidas, sin licencia, 2026-10-13): disco con los colores del club. -->
                 <div class="match">
                   <div class="team">
-                    <span class="crest placeholder" aria-hidden="true"><piqo-svg icon="futbol" size="18"></piqo-svg></span>
+                    <span class="crest placeholder" [class.colored]="!!disc(q.match, 'home')" [style.background]="disc(q.match, 'home')" aria-hidden="true"><piqo-svg icon="futbol" size="18"></piqo-svg></span>
                     <span class="team-name">{{ team(q.match, 'home') }}</span>
                   </div>
                   <span class="vs mono">vs</span>
                   <div class="team">
-                    <span class="crest placeholder" aria-hidden="true"><piqo-svg icon="futbol" size="18"></piqo-svg></span>
+                    <span class="crest placeholder" [class.colored]="!!disc(q.match, 'away')" [style.background]="disc(q.match, 'away')" aria-hidden="true"><piqo-svg icon="futbol" size="18"></piqo-svg></span>
                     <span class="team-name">{{ team(q.match, 'away') }}</span>
                   </div>
                 </div>

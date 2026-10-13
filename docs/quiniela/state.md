@@ -1,5 +1,15 @@
 # Estado actual
 
+## 2026-10-13 — Quiz: disco con los colores del club (fuera de sprint)
+
+Petición del usuario tras quitar los escudos: el icono de balón del Quiz sale ahora sobre un disco partido en
+diagonal con los dos colores del club. Los colores salen de `clubColors` de football-data.org (endpoint
+`/competitions/{id}/teams`; el de partidos no los trae), volcados una vez a un mapa estático por nombre completo
+en `frontend/src/app/features/quiz/domain/team-colors.ts` (110 equipos de PL, Liga, Serie A, Bundesliga, Ligue 1
+y Champions). Sin cambios de backend ni migración. Un equipo que no esté en el mapa (ascensos, otra temporada)
+se queda con el disco neutro de antes. **Verificado**: 199 tests del frontend y `tsc`; no se ha visto en pantalla.
+**Necesita**: build nueva. Sin línea en el historial (el Quiz es nuevo en la 1.0.3).
+
 ## 2026-10-13 — Quiz sin escudos de los clubes (fuera de sprint)
 
 Decisión del usuario tras preguntar por derechos: los escudos (marcas y obras de los clubes, servidos por
