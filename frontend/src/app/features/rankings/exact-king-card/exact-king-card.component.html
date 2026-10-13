@@ -1,0 +1,62 @@
+<section class="exact-card" aria-labelledby="exact-title">
+  <div class="exact-head">
+    <piqo-svg icon="corona" size="16"></piqo-svg>
+    <span id="exact-title" class="exact-title">{{ 'rankingsPage.reyExacto' | t }}</span>
+    <span class="exact-sub mono">
+      @if (page.period() === 'TOTAL') {
+        {{ 'rankingsPage.acumulado' | t }}
+      } @else if (page.viewingPastMatchday()) {
+        {{ 'rankingsPage.jornadaN' | t: { order: page.selectedMatchdayOrder() } }}
+      } @else {
+        {{ 'rankingsPage.estaSemana2' | t }}
+      }
+    </span>
+  </div>
+
+  @if (page.exactKings().length > 0) {
+    <div class="exact-king">
+      @if (page.exactKings().length === 1) {
+        <app-avatar
+          [url]="page.exactKings()[0].user.avatarUrl"
+          [background]="page.exactKings()[0].user.avatarBackground"
+          [name]="page.exactKings()[0].user.name"
+          [level]="page.exactKings()[0].user.level"
+          [size]="40"
+        ></app-avatar>
+      } @else {
+        <span class="king-icon"><piqo-svg icon="objetivo" size="22"></piqo-svg></span>
+      }
+      <span class="king-meta">
+        <span class="king-name">{{ page.exactKingNames() }}</span>
+        <span class="king-count">
+          {{ 'rankingsPage.marcadoresExactos' | t: { count: page.exactKings()[0].exactHits } }}
+          @if (page.exactKings().length > 1) {
+            · {{ 'rankingsPage.empate' | t }}
+          }
+        </span>
+      </span>
+      <span class="king-hits mono">{{ page.exactKings()[0].exactHits }}</span>
+    </div>
+
+    @if (page.exactRunnersUp().length > 0 || page.myExactRow()) {
+      <ol class="exact-list">
+        @for (leader of page.exactRunnersUp(); track leader.userId) {
+          <li class="exact-row" [class.me]="leader.userId === page.currentUserId">
+            <span class="exact-pos mono">{{ leader.position }}.</span>
+            <span class="exact-name">{{ leader.user.name }}</span>
+            <span class="exact-hits mono">{{ leader.exactHits }}</span>
+          </li>
+        }
+        @if (page.myExactRow(); as mine) {
+          <li class="exact-row me mine">
+            <span class="exact-pos mono">{{ mine.position }}.</span>
+            <span class="exact-name">{{ 'rankingsPage.tu' | t: { name: mine.user.name } }}</span>
+            <span class="exact-hits mono">{{ mine.exactHits }}</span>
+          </li>
+        }
+      </ol>
+    }
+  } @else {
+    <p class="exact-empty">{{ 'rankingsPage.nadieExacto' | t }}</p>
+  }
+</section>

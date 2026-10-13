@@ -23,6 +23,32 @@ aceptando finales de línea del checkout (`endOfLine: auto`): 0 errores y 0 adve
 en el entorno de integración elegido, revisión móvil y comprobar calendarios del proveedor real.
 No considerar la funcionalidad completa ni desplegada por tener el backend terminado.
 
+## 2026-10-12 — Tabla: gráfica de líneas del grupo y "Rey del marcador exacto" (fuera de sprint)
+
+A petición explícita del usuario (ver `decisions.md`, misma fecha). Rama `claude/clasificacion-grafica-lineas`.
+
+**Hecho**: backend (`scores` en el historial y endpoint `rankings/exact-scores`, sin migración) y frontend
+(gráfica de líneas por defecto en Semanal y en Total con selector Grupo/Tú, la de barras como modo
+individual, tarjeta del rey del exacto en grupos de resultado exacto, textos en los seis idiomas, tokens de
+color en claro y oscuro). Dos líneas de historial en la 1.0.3.
+
+**Verificado**: backend 6 tests nuevos (`scores` del historial; exactos: grupo 1X2, solo marcadores
+clavados y miembros actuales, empates, total por competición y "general", semanal con la última jornada o
+la elegida) y lint; frontend 11 tests nuevos del facade (154 en total), `tsc`, `ng build` y
+`check-changelog`. En el navegador (móvil, claro y oscuro, español y alemán) con una **API simulada**
+(Docker/WSL no arrancaba en esta máquina, sin MySQL local): líneas en Total y Semanal, resalte de la
+jornada elegida, lectura de puntos al tocar una jornada, leyenda que resalta una línea, cambio Grupo/Tú,
+rey del exacto (acumulado y por jornada) y que en un grupo 1X2 no sale.
+
+Después, backend contra **MySQL local** (Docker) con datos sembrados (2 grupos, 9 jugadores, 7 jornadas;
+borrados al acabar): `scores` del historial, exactos en Total por liga y "general" y en Semanal, lista vacía
+en el grupo 1X2; los recuentos coinciden con una consulta SQL independiente.
+
+**NO verificado**: en iOS/Android.
+
+**Necesita**: desplegar el backend (sin él, solo sale la gráfica individual y no sale el rey del exacto) y
+build nueva del frontend. El backend de `dev` (Postgres) necesita el mismo cambio a mano.
+
 ## 2026-10-12 — Avisos con el grupo y puntos de toda la jornada (fuera de sprint)
 
 Aviso del usuario: los avisos de un grupo no decían de qué grupo eran, y el de jornada terminada

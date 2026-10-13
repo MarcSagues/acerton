@@ -113,6 +113,14 @@
   --p4-info-bg: #e3edf8;
   --p4-disabled: #788184;
   --p4-disabled-bg: #e2e5e4;
+  /* Lineas de la grafica de la clasificacion (0 = tu). Orden validado para que
+     se distingan entre vecinas tambien con daltonismo. */
+  --p4-series-0: #8a5a12;
+  --p4-series-1: #e87ba4;
+  --p4-series-2: #2a78d6;
+  --p4-series-3: #e34948;
+  --p4-series-4: #4a3aa7;
+  --p4-series-5: #0e8a6a;
 }
 
 @mixin piqo4-oscuro {
@@ -144,6 +152,12 @@
   --p4-info-bg: #203247;
   --p4-disabled: #718083;
   --p4-disabled-bg: #273033;
+  --p4-series-0: #b8862f;
+  --p4-series-1: #d55181;
+  --p4-series-2: #3987e5;
+  --p4-series-3: #e66767;
+  --p4-series-4: #9085e9;
+  --p4-series-5: #199e70;
 }
 
 :root {
