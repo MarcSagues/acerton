@@ -1,6 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { GroupSwitcherComponent } from '../../../layout/group-switcher/group-switcher.component';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { SegmentedControlComponent } from '../../../shared/ui/segmented-control/segmented-control.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
@@ -15,7 +14,7 @@ import { t } from '../../../core/i18n/translate';
   standalone: true,
   imports: [
     CommonModule,
-    GroupSwitcherComponent,
+   
     SpinnerComponent,
     SegmentedControlComponent,
     AvatarComponent,

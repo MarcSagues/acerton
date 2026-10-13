@@ -17,4 +17,9 @@
       }
     </button>
   </div>
+  @if (page.hasGroupSwitcher()) {
+    <div class="switcher-row">
+      <app-group-switcher></app-group-switcher>
+    </div>
+  }
 </div>

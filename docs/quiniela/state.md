@@ -41,6 +41,15 @@ segunda (incluyen el arranque de la app y el cron), `overview` en ~100 ms y la c
 puede tardar hasta ~30 s en verse en la pantalla (antes, al instante); las cachés son por proceso del backend. **Verificado**: backend 51 tests de
 Quiz (6 nuevos) y lint, frontend 239 tests (3 nuevos), y en navegador (la pantalla muestra lo mismo). **Necesita** backend desplegado y portado a `dev`.
 
+## 2026-10-13 — El selector de grupo va dentro de la barra superior, fijo con ella (fuera de sprint)
+
+Petición del usuario: el selector de grupo ya no sube con el contenido. `app-top-bar` lo lleva dentro, bajo la fila del logo (12px de aire), y
+solo en Jornada (`/matchday`) y Tabla (`/rankings`) exactas: sus subpantallas (resultados, calendario, historial) no lo llevan, como antes.
+Se quitan los `app-group-switcher` y las cabeceras fijas `.head-row` de `current-matchday` y `rankings-page`. El hueco que reserva la barra en
+el flujo es 52px + 76px con selector (`--topbar-extra`) o + 14px sin él. **Verificado** en navegador (local: la barra mide 128px, el selector
+queda a 64-118px y no se mueve al hacer scroll; en Grupos, Quiz y Perfil no sale) y 236 tests del frontend. **NO** visto en iPhone.
+**Necesita** build nueva.
+
 ## 2026-10-13 — Perfil general de un jugador (desde el Quiz, Tabla...) (fuera de sprint)
 
 Petición del usuario: al pulsar a un jugador debe abrirse siempre su **perfil general**, no una vista suelta del Quiz. Nueva
