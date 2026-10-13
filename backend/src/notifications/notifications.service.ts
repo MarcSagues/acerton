@@ -333,6 +333,24 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
+   * Avisos opcionales del Quiz de jornada (apertura y cierre). Como el Quiz no
+   * es de ningun grupo, no hay silenciados que mirar: QuizRemindersService ya
+   * elige a los destinatarios por su preferencia (y quita a quien ya lo
+   * termino); aqui solo se manda el push y se guarda en el buzon.
+   */
+  async notifyQuiz(
+    userIds: string[],
+    type: 'QUIZ_OPENED' | 'QUIZ_CLOSING_SOON',
+    title: string,
+    body: string,
+    quizId: string,
+  ): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.sendToUsers(userIds, { title, body, data: { type, quizId } });
+    await this.recordMany(userIds, NotificationType[type], title, body);
+  }
+
+  /**
    * "Piqo te echa de menos": no depende de ningun grupo (a diferencia del
    * resto de avisos), asi que solo se filtra por la preferencia `reengagement`
    * de cada destinatario, sin comprobar silenciados de grupo. JobsService.

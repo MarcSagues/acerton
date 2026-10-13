@@ -21,6 +21,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferenceFields = {
   seasonFinishedTrophies: true,
   reengagement: true,
   levelUp: true,
+  quizOpening: false,
+  quizReminder24h: false,
+  quizReminder1h: false,
 };
 
 /**
