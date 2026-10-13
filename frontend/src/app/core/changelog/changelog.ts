@@ -242,6 +242,22 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Tocca qualsiasi giocatore, nel Quiz o in Classifica, per vedere il suo profilo: la bandiera, esatte e sbagliate nei gruppi, la serie, i risultati esatti azzeccati, la posizione nel Quiz con lo storico, i badge e i trofei.',
         de: 'Tippe auf einen beliebigen Spieler, im Quiz oder in der Tabelle, um sein Profil zu sehen: Flagge, Treffer und Fehler in Gruppen, Serie, getroffene exakte Ergebnisse, Quiz-Platz mit Verlauf, Abzeichen und Pokale.',
       },
+      {
+        es: 'El Quiz abre mucho más rápido. En su clasificación tu puesto y tus puntos quedan siempre arriba (púlsalo para bajar a tu fila), y las filas se cargan solas al bajar; si estás lejos, ves a los jugadores que tienes cerca.',
+        en: 'The Quiz opens much faster. In its ranking your position and points always stay on top (tap it to scroll to your row), rows load as you scroll, and if you are far down you see the players around you.',
+        ca: 'El Quiz s’obre molt més ràpid. A la seva classificació el teu lloc i els teus punts queden sempre a dalt (toca’l per baixar a la teva fila), les files es carreguen soles en baixar i, si ets lluny, veus els jugadors que tens a prop.',
+        fr: 'Le Quiz s’ouvre bien plus vite. Dans son classement, ta place et tes points restent toujours en haut (touche-les pour descendre à ta ligne), les lignes se chargent en défilant et, si tu es loin, tu vois les joueurs autour de toi.',
+        it: 'Il Quiz si apre molto più velocemente. Nella sua classifica la tua posizione e i tuoi punti restano sempre in alto (toccali per scendere alla tua riga), le righe si caricano mentre scorri e, se sei lontano, vedi i giocatori vicino a te.',
+        de: 'Das Quiz öffnet sich deutlich schneller. In seiner Rangliste bleiben dein Platz und deine Punkte immer oben (tippe darauf, um zu deiner Zeile zu scrollen), Zeilen laden beim Scrollen nach und bist du weit hinten, siehst du die Spieler in deiner Nähe.',
+      },
+      {
+        es: 'El selector de grupo ahora va fijo en la barra de arriba, y solo aparece en Jornada y Tabla.',
+        en: 'The group selector is now pinned in the top bar, and only shows in Matchday and Table.',
+        ca: 'El selector de grup ara va fix a la barra de dalt, i només surt a Jornada i Taula.',
+        fr: 'Le sélecteur de groupe est désormais fixé dans la barre du haut, et n’apparaît que dans Journée et Classement.',
+        it: 'Il selettore del gruppo ora è fisso nella barra in alto e compare solo in Giornata e Classifica.',
+        de: 'Die Gruppenauswahl ist jetzt fest in der oberen Leiste und erscheint nur unter Spieltag und Tabelle.',
+      },
     ],
   },
   {
