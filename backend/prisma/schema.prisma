@@ -98,6 +98,10 @@ model User {
   /// (fondo neutro por defecto en el render). Restringido a la paleta de
   /// AVATAR_BACKGROUNDS (ver users.constants.ts) — validado en el DTO.
   avatarBackground          String?
+  /// Equipo favorito elegido en Perfil: nombre completo tal como lo manda el proveedor, restringido al
+  /// catalogo de users/team-catalog.ts (validado en el DTO). Sus colores salen como bandera en el perfil,
+  /// tambien para quien visite el perfil. Null = sin equipo favorito.
+  favoriteTeam              String?   @db.VarChar(100)
   /// Cuando el usuario termino u omitio el tutorial por primera vez — no se
   /// reinicia al repetirlo manualmente desde Perfil (ver TutorialService),
   /// solo marca que ya no debe aparecer solo al entrar a un grupo.

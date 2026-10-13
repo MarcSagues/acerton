@@ -1,5 +1,6 @@
 import { PublicUser } from './auth.types';
 import { xpProgressForLevel } from '../xp/xp.util';
+import { findFavoriteTeam } from '../users/team-catalog';
 
 /** Cuanto hay que esperar entre dos cambios de nombre (ver UsersService.updateName). */
 export const NAME_CHANGE_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
@@ -10,6 +11,7 @@ type UserForPublic = {
   name: string;
   avatarUrl: string | null;
   avatarBackground: string | null;
+  favoriteTeam: string | null;
   usernameConfirmed: boolean;
   nameChangedAt: Date | null;
   tutorialCompletedAt: Date | null;
@@ -29,6 +31,7 @@ export function toPublicUser(user: UserForPublic): PublicUser {
     name: user.name,
     avatarUrl: user.avatarUrl,
     avatarBackground: user.avatarBackground,
+    favoriteTeam: findFavoriteTeam(user.favoriteTeam),
     usernameConfirmed: user.usernameConfirmed,
     nameChangeAvailableAt:
       nameChangeAvailableAt && nameChangeAvailableAt.getTime() > Date.now()

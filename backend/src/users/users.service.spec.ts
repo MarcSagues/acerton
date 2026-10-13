@@ -126,3 +126,57 @@ describe('UsersService.updateAvatar', () => {
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });
+
+describe('UsersService.updateFavoriteTeam', () => {
+  it('guarda el equipo y lo devuelve con los colores de su bandera', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.update.mockResolvedValue({
+      id: 'u1',
+      email: 'a@a.com',
+      name: 'Marta',
+      favoriteTeam: 'Borussia Dortmund',
+      experience: 0,
+    });
+
+    const service = new UsersService(prisma as never);
+    const result = await service.updateFavoriteTeam('u1', 'Borussia Dortmund');
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { favoriteTeam: 'Borussia Dortmund' },
+    });
+    expect(result.favoriteTeam).toEqual({
+      name: 'Borussia Dortmund',
+      primary: '#1a1a1a',
+      secondary: '#fdd835',
+    });
+  });
+
+  it('con null quita el equipo favorito', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.update.mockResolvedValue({ id: 'u1', favoriteTeam: null, experience: 0 });
+
+    const service = new UsersService(prisma as never);
+    const result = await service.updateFavoriteTeam('u1', null);
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { favoriteTeam: null },
+    });
+    expect(result.favoriteTeam).toBeNull();
+  });
+
+  it('un equipo guardado que ya no esta en el catalogo sale como sin equipo', async () => {
+    const prisma = buildPrismaMock();
+    prisma.user.update.mockResolvedValue({
+      id: 'u1',
+      favoriteTeam: 'Equipo Antiguo',
+      experience: 0,
+    });
+
+    const service = new UsersService(prisma as never);
+    const result = await service.updateFavoriteTeam('u1', null);
+
+    expect(result.favoriteTeam).toBeNull();
+  });
+});
