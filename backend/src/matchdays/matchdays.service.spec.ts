@@ -347,6 +347,97 @@ describe('MatchdaysService.getCurrentMatchdayForCompetition', () => {
     expect(new Date(result!.opensAt).getTime()).toBeLessThanOrEqual(Date.now());
   });
 
+  it('una jornada jugada cuyo ultimo partido sigue sin resultado horas despues deja paso a la siguiente ya abierta', async () => {
+    // Caso real (dev, 2026-10-13): Premier J6 con 9 terminados y 1 LIVE desde
+    // la noche anterior (el resultado aun no habia llegado); se veia la J6 en
+    // vez de la J7, ya abierta.
+    const now = Date.now();
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 6, matches: [{ kickoff: new Date(now - 13 * 3600_000), status: 'LIVE' }] },
+      { order: 7, matches: [{ kickoff: new Date(now + 4 * 24 * 3600_000), status: 'SCHEDULED' }] },
+    ]);
+    prisma.matchday.findFirst.mockResolvedValue({
+      id: 'jornada-7',
+      order: 7,
+      closesAt: new Date(),
+    });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { competitionId: 'c1', order: 7 } }),
+    );
+  });
+
+  it('mientras el partido se esta jugando (dentro de la ventana), su jornada sigue siendo la actual', async () => {
+    const now = Date.now();
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 6, matches: [{ kickoff: new Date(now - 3600_000), status: 'LIVE' }] },
+      { order: 7, matches: [{ kickoff: new Date(now + 4 * 24 * 3600_000), status: 'SCHEDULED' }] },
+    ]);
+    prisma.matchday.findFirst.mockResolvedValue({
+      id: 'jornada-6',
+      order: 6,
+      closesAt: new Date(),
+    });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { competitionId: 'c1', order: 6 } }),
+    );
+  });
+
+  it('un partido cancelado o aplazado sin fecha no retiene su jornada como la actual', async () => {
+    // Caso real (dev, 2026-10-13): LaLiga J8 con un partido CANCELLED.
+    const now = Date.now();
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      {
+        order: 8,
+        matches: [
+          { kickoff: new Date(now - 3 * 24 * 3600_000), status: 'CANCELLED' },
+          { kickoff: new Date(now - 2 * 24 * 3600_000), status: 'POSTPONED' },
+        ],
+      },
+      { order: 9, matches: [{ kickoff: new Date(now + 5 * 24 * 3600_000), status: 'SCHEDULED' }] },
+    ]);
+    prisma.matchday.findFirst.mockResolvedValue({
+      id: 'jornada-9',
+      order: 9,
+      closesAt: new Date(),
+    });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { competitionId: 'c1', order: 9 } }),
+    );
+  });
+
+  it('sin ninguna pendiente, la ultima jugada puede ser una CLOSED que aun espera un resultado', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      { order: 38, matches: [{ kickoff: new Date(Date.now() - 24 * 3600_000), status: 'LIVE' }] },
+    ]);
+    prisma.matchday.findFirst.mockResolvedValue({ id: 'jornada-38', closesAt: new Date() });
+
+    const service = new MatchdaysService(prisma as never, {} as never);
+    const result = await service.getCurrentMatchdayForCompetition('c1');
+
+    expect(result).toMatchObject({ id: 'jornada-38' });
+    expect(prisma.matchday.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { competitionId: 'c1', status: { in: ['FINISHED', 'CLOSED'] } },
+      }),
+    );
+  });
+
   it('si todas estan finalizadas, devuelve la ultima jugada', async () => {
     const prisma = buildPrismaMock();
     prisma.matchday.findMany.mockResolvedValue([]); // no hay ninguna pendiente
@@ -701,6 +792,30 @@ describe('MatchdaysService.syncResultsForClosedMatchdays (una sola tanda de peti
     expect(prisma.matchday.update).not.toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'md-2' } }),
     );
+  });
+
+  it('un partido cancelado cuenta como resuelto: no deja la jornada abierta ni se vuelve a preguntar por el', async () => {
+    const prisma = buildPrismaMock();
+    prisma.matchday.findMany.mockResolvedValue([
+      {
+        id: 'md-1',
+        matches: [
+          { externalId: 1, status: 'FINISHED', kickoff: new Date('2020-01-01') },
+          { externalId: 2, status: 'CANCELLED', kickoff: new Date('2020-01-01') },
+        ],
+      },
+    ]);
+    prisma.match.findMany.mockResolvedValue([{ status: 'FINISHED' }, { status: 'CANCELLED' }]);
+    const footballProvider = {
+      getCurrentRoundFixtures: jest.fn(),
+      getFixturesByIds: jest.fn().mockResolvedValue([]),
+    };
+
+    const service = new MatchdaysService(prisma as never, footballProvider as never);
+    const result = await service.syncResultsForClosedMatchdays();
+
+    expect(footballProvider.getFixturesByIds).not.toHaveBeenCalled();
+    expect(result).toEqual({ newlyFinished: ['md-1'], inProgress: [] });
   });
 });
 

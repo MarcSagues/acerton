@@ -10,6 +10,8 @@ import {
   computeMatchResult,
   isKickoffTimeUnconfirmed,
   isMatchPredictable,
+  isMatchResolved,
+  keepsMatchdayCurrent,
   parseRoundOrder,
   shouldCloseMatchday,
 } from './matchday.util';
@@ -432,7 +434,7 @@ export class MatchdaysService {
     const now = new Date();
     const pendingFixtureIds = closedMatchdays
       .flatMap((matchday) => matchday.matches)
-      .filter((match) => match.status !== 'FINISHED' && match.kickoff.getTime() <= now.getTime())
+      .filter((match) => !isMatchResolved(match) && match.kickoff.getTime() <= now.getTime())
       .map((match) => match.externalId);
 
     if (pendingFixtureIds.length > 0) {
@@ -446,7 +448,9 @@ export class MatchdaysService {
       const refreshedMatches = await this.prisma.match.findMany({
         where: { matchdayId: matchday.id },
       });
-      const allFinished = refreshedMatches.every((m) => m.status === 'FINISHED');
+      // Un partido cancelado no se va a jugar: no puede dejar la jornada abierta para siempre
+      // (se puntua sin el, como ya hace scoreFinishedMatchday con lo no terminado).
+      const allFinished = refreshedMatches.every(isMatchResolved);
 
       if (allFinished) {
         await this.prisma.matchday.update({
@@ -479,7 +483,11 @@ export class MatchdaysService {
    *
    * - `referenceOrder`: la jornada con el proximo partido SIN TERMINAR mas
    *   cercano en el tiempo (la "actual" que se muestra por defecto). Null si
-   *   no queda ninguna pendiente. Decision explicita del usuario
+   *   no queda ninguna pendiente. Solo cuentan los partidos que de verdad
+   *   mantienen viva la jornada (ver keepsMatchdayCurrent): ni aplazados, ni
+   *   cancelados, ni los que empezaron hace mas de MATCH_IN_PLAY_WINDOW_MS y
+   *   aun no tienen resultado; asi, cuando se acaba una jornada y la siguiente
+   *   ya esta abierta, se ve la siguiente (2026-10-13). Decision explicita del usuario
    *   (2026-09-19, ver decisions.md): sustituye un calculo anterior basado
    *   en `matchday.closesAt` (el kickoff del PRIMER partido de la ronda,
    *   fijado al crearla) — ese campo no se mueve cuando se aplaza un partido
@@ -515,7 +523,9 @@ export class MatchdaysService {
     let reference: { order: number; kickoff: Date } | null = null;
     let nextUpcoming: { order: number; kickoff: Date } | null = null;
     for (const matchday of pending) {
-      const nextKickoff = matchday.matches[0]?.kickoff;
+      const nextKickoff = matchday.matches.find((match) =>
+        keepsMatchdayCurrent(match, now),
+      )?.kickoff;
       if (nextKickoff && (!reference || nextKickoff.getTime() < reference.kickoff.getTime())) {
         reference = { order: matchday.order, kickoff: nextKickoff };
       }
@@ -539,8 +549,8 @@ export class MatchdaysService {
   /**
    * Jornada relevante "actual" de una competicion para mostrar por defecto:
    * la de la orden de referencia (ver getOrders, el proximo partido sin
-   * terminar mas cercano), o si no hay ninguna pendiente, la ultima
-   * finalizada. Si un partido de una jornada se aplaza mucho, esa jornada
+   * terminar mas cercano), o si no hay ninguna pendiente, la ultima jugada
+   * (FINISHED, o CLOSED si aun espera algun resultado o un aplazado). Si un partido de una jornada se aplaza mucho, esa jornada
    * deja de ser "la actual" a mostrar/puntuar y pasa a serlo la siguiente
    * cuyo partido este mas cerca en el tiempo — la aplazada no desaparece,
    * sigue aceptando pronosticos (ver canAcceptPredictions), solo deja de
@@ -562,7 +572,7 @@ export class MatchdaysService {
     }
 
     const finished = await this.prisma.matchday.findFirst({
-      where: { competitionId, status: 'FINISHED' },
+      where: { competitionId, status: { in: ['FINISHED', 'CLOSED'] } },
       orderBy: { closesAt: 'desc' },
       include: { matches: { orderBy: { kickoff: 'asc' } } },
     });

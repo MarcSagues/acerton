@@ -57,6 +57,41 @@ export function isMatchPredictable(match: MatchPredictabilityCheck, now: Date): 
   return match.kickoff.getTime() > now.getTime();
 }
 
+/**
+ * Margen tras el kickoff durante el que un partido sin resultado todavia
+ * cuenta como "en juego": 90' + descanso + añadido, mas el retraso con el que
+ * el proveedor publica el final. Pasado esto, aunque siga LIVE o SCHEDULED en
+ * la BD (el resultado aun no ha llegado), ya no retiene su jornada como "la
+ * actual".
+ */
+export const MATCH_IN_PLAY_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+export interface MatchCurrentCheck {
+  status: MatchStatus;
+  kickoff: Date;
+}
+
+/**
+ * true si este partido mantiene su jornada como "la actual" (ver
+ * MatchdaysService.getOrders): no ha terminado, no esta aplazado ni cancelado,
+ * y esta por empezar o empezo hace menos de MATCH_IN_PLAY_WINDOW_MS. Sin esto,
+ * una jornada ya jugada se quedaba como "la actual" hasta que llegaba el
+ * resultado del ultimo partido, o para siempre si uno estaba aplazado sin fecha
+ * o cancelado, aunque la siguiente ya estuviera abierta (2026-10-13, peticion
+ * del usuario).
+ */
+export function keepsMatchdayCurrent(match: MatchCurrentCheck, now: Date): boolean {
+  if (match.status === 'FINISHED' || match.status === 'POSTPONED' || match.status === 'CANCELLED') {
+    return false;
+  }
+  return match.kickoff.getTime() + MATCH_IN_PLAY_WINDOW_MS > now.getTime();
+}
+
+/** Estados con los que un partido ya no se va a jugar en esta jornada: FINISHED o CANCELLED (ver syncResultsForClosedMatchdays). */
+export function isMatchResolved(match: { status: MatchStatus }): boolean {
+  return match.status === 'FINISHED' || match.status === 'CANCELLED';
+}
+
 export interface MatchReminderCheck {
   status: MatchStatus;
   kickoff: Date;
