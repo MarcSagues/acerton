@@ -749,6 +749,7 @@ export const ca: Catalog = {
   'quiz.cerrando': 'Tancant…',
   'quiz.cierraEl': 'tanca el {date}',
   'quiz.cierraEn': 'Tanca en {time}',
+  'quiz.cierraPronto': 'Tanca en menys de 24 h',
   'quiz.cierreSinConfirmar': 'tanca amb el primer partit (hora per confirmar)',
   'quiz.clasificacion': 'Classificació del quiz',
   'quiz.completado': 'Completat',

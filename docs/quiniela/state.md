@@ -18,6 +18,17 @@ llevan la etiqueta «Aplazado»/«Cancelado» y no encienden el punto rojo. Dos 
 **Necesita**: desplegar el backend (lo de «la siguiente jornada» funciona ya con la app instalada; lo de los
 aplazados necesita además build nueva). `dev` (Postgres) necesita el mismo cambio portado a mano.
 
+## 2026-10-13 — Quiz: pestañas por cierre, reloj de menos de 24 h y punto rojo (fuera de sprint)
+
+Petición del usuario. **Hecho** (solo frontend): las pestañas de liga del centro del Quiz van de la que
+cierra antes a la que cierra más tarde (jornada abierta o programada con el cierre más próximo; las ligas sin
+ninguna, al final) y la liga por defecto es la abierta que cierra antes. Reloj arriba a la derecha de la
+pestaña si su jornada abierta cierra en menos de 24 h, y punto rojo (el mismo de Jornada) si el usuario no la
+ha terminado. Punto rojo también en «Quiz» de la barra inferior: `QuizService` guarda el último resumen y la
+barra lo vuelve a pedir al arrancar y al navegar (como mucho una vez por minuto) y al terminar un quiz.
+**Verificado**: tests de las reglas nuevas, 195 tests del frontend y `tsc`. **NO verificado** en navegador
+ni en iOS. Sin línea nueva en el historial: el Quiz entero es nuevo en la 1.0.3 y ya tiene la suya.
+
 ## 2026-10-12 — Quiz de jornada global: backend (fuera de sprint)
 
 Petición explícita del usuario: evento por liga/jornada, preguntas variadas, partidos destacados,

@@ -22,7 +22,7 @@
         <app-empty-state icon="objetivo" [title]="'quiz.sinLigasTitulo' | t" [text]="'quiz.sinLigasTexto' | t"></app-empty-state>
       } @else {
         <div class="comp-pills" role="group" [attr.aria-label]="'quiz.elegirLiga' | t">
-          @for (competition of page.competitions(); track competition.id) {
+          @for (competition of page.sortedCompetitions(); track competition.id) {
             <button
               type="button"
               class="comp-pill"
@@ -36,6 +36,20 @@
                 <img class="comp-logo" [src]="competition.logoUrl" alt="" />
               }
               <span>{{ competition.name }}</span>
+              @let closingSoon = page.closingSoonIds().has(competition.id);
+              @let pending = page.pendingIds().has(competition.id);
+              @if (closingSoon || pending) {
+                <span class="pill-marks">
+                  @if (closingSoon) {
+                    <span class="closing-soon" role="img" [attr.aria-label]="'quiz.cierraPronto' | t" [attr.title]="'quiz.cierraPronto' | t">
+                      <piqo-svg icon="reloj" size="10"></piqo-svg>
+                    </span>
+                  }
+                  @if (pending) {
+                    <span class="pending-dot" aria-hidden="true"></span>
+                  }
+                </span>
+              }
             </button>
           }
         </div>

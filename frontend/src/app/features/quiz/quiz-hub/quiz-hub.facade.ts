@@ -12,6 +12,8 @@ import {
   LoadFailure,
   QuizAction,
   clockOffsetMs,
+  closesSoon,
+  isPendingForUser,
   isClosedError,
   isPastClose,
   loadFailureOf,
@@ -21,6 +23,7 @@ import {
   quizErrorCode,
   quizErrorMessage,
   quizStatusLabel,
+  sortCompetitionsByClose,
 } from '../domain/quiz-rules';
 
 export type LoadState = 'loading' | 'ready' | LoadFailure;
@@ -51,6 +54,19 @@ export class QuizHubFacade {
   /** Cierres por los que ya se volvio a pedir el resumen: uno por cierre, nunca uno por segundo. */
   private readonly refreshedCloses = new Set<string>();
   private overviewRequestId = 0;
+
+  /** Pestañas de liga: primero la que cierra antes. */
+  readonly sortedCompetitions = computed(() =>
+    sortCompetitionsByClose(this.competitions(), this.quizzes(), this.now()),
+  );
+  /** Ligas con una jornada abierta que el usuario no ha terminado: su pestaña lleva el punto rojo. */
+  readonly pendingIds = computed(
+    () => new Set(this.quizzes().filter((q) => isPendingForUser(q, this.now())).map((q) => q.competition.id)),
+  );
+  /** Ligas con una jornada abierta que cierra en menos de 24 h: su pestaña lleva un reloj. */
+  readonly closingSoonIds = computed(
+    () => new Set(this.quizzes().filter((q) => closesSoon(q, this.now())).map((q) => q.competition.id)),
+  );
 
   readonly selectedCompetition = computed(
     () => this.competitions().find((c) => c.id === this.selectedCompetitionId()) ?? null,
@@ -131,14 +147,18 @@ export class QuizHubFacade {
     this.overviewState.set('ready');
   }
 
-  /** La recordada si sigue existiendo; si no, la primera con una jornada abierta; si no, la primera. */
+  /**
+   * La recordada si sigue existiendo; si no, la que tiene abierta la jornada
+   * que cierra antes; si no, la primera de las pestañas.
+   */
   private defaultCompetitionId(overview: QuizOverview): string | null {
     const stored = readStoredCompetition();
     if (stored && overview.competitions.some((c) => c.id === stored)) return stored;
-    const withOpen = overview.competitions.find((c) =>
+    const sorted = sortCompetitionsByClose(overview.competitions, overview.quizzes, this.now());
+    const withOpen = sorted.find((c) =>
       overview.quizzes.some((q) => q.competition.id === c.id && q.status === 'OPEN'),
     );
-    return withOpen?.id ?? overview.competitions[0]?.id ?? null;
+    return withOpen?.id ?? sorted[0]?.id ?? null;
   }
 
   selectCompetition(competitionId: string): void {
