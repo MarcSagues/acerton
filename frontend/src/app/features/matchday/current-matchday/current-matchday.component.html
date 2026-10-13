@@ -2,9 +2,6 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else if (page.entries().length === 0) {
   <div class="page">
-    <div class="head-row">
-      <app-group-switcher></app-group-switcher>
-    </div>
     <app-empty-state
       icon="jornada"
       [title]="'currentMatchday.todaviaHayJornadaSincronizada' | t"
@@ -52,9 +49,6 @@
   @let comebackBannerText = page.comebackBanner(page.activeEntry());
   @let showAdRewardBanner = page.showAdRewardBanner(page.activeEntry());
   <div class="page" [class.has-comeback-banner]="!!comebackBannerText || showAdRewardBanner">
-    <div class="head-row">
-      <app-group-switcher></app-group-switcher>
-    </div>
 
     @if (page.activeEntry(); as entry) {
       <div class="title-row">

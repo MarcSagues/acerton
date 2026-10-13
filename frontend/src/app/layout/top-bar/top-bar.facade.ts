@@ -4,11 +4,11 @@ import { filter } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
 
-/** Pantallas que llevan el selector de grupo justo debajo de la barra (Jornada y Tabla). */
+/** Pantallas que llevan el selector de grupo en la barra (Jornada y Tabla; no sus subpantallas, como los resultados). */
 const ROUTES_WITH_GROUP_SWITCHER = ['/matchday', '/rankings'];
 
 export function routeHasGroupSwitcher(path: string): boolean {
-  return ROUTES_WITH_GROUP_SWITCHER.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
+  return ROUTES_WITH_GROUP_SWITCHER.includes(path);
 }
 
 @Injectable()
@@ -23,7 +23,7 @@ export class TopBarFacade {
   readonly hasUnreadLevelUp = computed(() => this.notificationsFeed.unreadLevelUps().length > 0);
 
   private readonly currentPath = signal(this.router.url.split('?')[0]);
-  /** Sin selector de grupo debajo, la barra deja mas margen inferior para que el contenido no quede pegado. */
+  /** Con selector de grupo la barra lo lleva dentro (fijo con ella); sin el, deja mas margen inferior para que el contenido no quede pegado. */
   readonly hasGroupSwitcher = computed(() => routeHasGroupSwitcher(this.currentPath()));
 
   constructor() {
