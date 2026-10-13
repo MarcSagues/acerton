@@ -19,10 +19,10 @@ o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de
 Petición del usuario: al pulsar a un jugador debe abrirse siempre su **perfil general**, no una vista suelta del Quiz. Nueva
 pantalla `/player/:userId` (`PlayerProfileComponent`), a la que llevan cada fila de la clasificación del Quiz (y la tuya fijada) y
 cada fila de Tabla: avatar con nivel, nombre, bandera del equipo favorito; **Grupos** (aciertos, fallos, % de acierto y racha
-global en todos sus grupos, los **marcadores exactos que ha clavado** (cuántos, de cuántos pronósticos de marcador, y los 5 últimos partidos),
+global en todos sus grupos, los **marcadores exactos que ha clavado** (cuántos, de cuántos pronósticos de marcador, su % de acierto, y los 5 últimos partidos),
 cómo va su racha, en cuántos juega, y los grupos en común con aciertos y racha de cada uno, que enlazan al detalle de
 miembro de ese grupo); **Quiz** (posición de la temporada, puntos, jugados, aciertos y fallos, y el botón al Historial de Quiz
-con filtro por liga); **Insignias** (las distintas que ha ganado) y **Trofeos** (la vitrina; todos bloqueados porque Piqo aún no
+con filtro por liga); **Insignias** (las distintas que ha ganado; se pueden pulsar y abren el mismo detalle que en tu perfil, con el % de jugadores que la tienen) y **Trofeos** (la vitrina; todos bloqueados porque Piqo aún no
 tiene datos reales de trofeos). Backend: `GET players/:userId` (`PlayersModule`/`PlayersService`), una sola respuesta; los grupos
 solo son los que compartes con el jugador (los suyos todos, si es el tuyo). `QuizService.history` ya no pide compartir grupo y
 devuelve avatar, nivel y equipo favorito. Tabla ya no abre directamente los pronósticos de la última jornada (`openProfile`

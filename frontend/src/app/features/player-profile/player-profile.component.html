@@ -59,6 +59,7 @@
         <div class="exact-summary">
           <span class="exact-value mono">{{ p.exactScores.hits }}</span>
           <span class="exact-of mono">{{ 'playerProfile.exactosDe' | t: { total: p.exactScores.played } }}</span>
+          <span class="exact-pct mono">{{ page.exactRatePercent() }}% <span class="exact-pct-label">{{ 'playerProfile.acierto' | t }}</span></span>
         </div>
         @if (p.exactScores.recent.length > 0) {
           <ul class="exact-list">
@@ -142,13 +143,13 @@
       } @else {
         <div class="badges-row">
           @for (badge of p.badges; track badge.code) {
-            <span class="badge-item" [attr.title]="badge.name" [attr.aria-label]="badge.name">
+            <button type="button" class="badge-item" [attr.aria-label]="page.badgeLabel(badge)" (click)="page.openBadge(badge)">
               @if (page.artId(badge.code); as artId) {
-                <img class="badge-art" [src]="page.artSrc(artId)" [alt]="badge.name" />
+                <img class="badge-art" [src]="page.artSrc(artId)" [alt]="page.badgeLabel(badge)" />
               } @else {
                 <piqo-svg icon="medalla" size="26"></piqo-svg>
               }
-            </span>
+            </button>
           }
         </div>
       }

@@ -621,6 +621,7 @@ export const it: Catalog = {
   'onboardingStep.quiniela1x2ElegirLocal': 'Schedina 1X2 per scegliere casa, pareggio o ospite; risultato esatto per centrare il punteggio.',
   'onboardingStep.temporadaRecordar': 'Una stagione\nda ricordare.',
   'onboardingStep.todoQuedaEntreVosotros': 'Tutto resta tra voi',
+  'playerProfile.acierto': 'esatte',
   'playerProfile.enNGrupos': { one: 'In {count} gruppo', other: 'In {count} gruppi' },
   'playerProfile.exactos': 'Risultati esatti',
   'playerProfile.exactosDe': 'su {total} pronostici di risultato',

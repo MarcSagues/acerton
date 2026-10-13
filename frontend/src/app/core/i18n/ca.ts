@@ -621,6 +621,7 @@ export const ca: Catalog = {
   'onboardingStep.quiniela1x2ElegirLocal': 'Quiniela 1X2 per triar local, empat o visitant; resultat exacte per clavar el marcador.',
   'onboardingStep.temporadaRecordar': 'Una temporada\nper recordar.',
   'onboardingStep.todoQuedaEntreVosotros': 'Tot queda entre vosaltres',
+  'playerProfile.acierto': 'encert',
   'playerProfile.enNGrupos': { one: 'A {count} grup', other: 'A {count} grups' },
   'playerProfile.exactos': 'Marcadors exactes',
   'playerProfile.exactosDe': 'de {total} pronòstics de marcador',

@@ -621,6 +621,7 @@ export const fr: Catalog = {
   'onboardingStep.quiniela1x2ElegirLocal': 'Pronostic 1X2 pour choisir domicile, nul ou extérieur ; score exact pour taper pile.',
   'onboardingStep.temporadaRecordar': 'Une saison\ninoubliable.',
   'onboardingStep.todoQuedaEntreVosotros': 'Tout reste entre vous',
+  'playerProfile.acierto': 'réussite',
   'playerProfile.enNGrupos': { one: 'Dans {count} groupe', other: 'Dans {count} groupes' },
   'playerProfile.exactos': 'Scores exacts',
   'playerProfile.exactosDe': 'sur {total} pronostics de score',

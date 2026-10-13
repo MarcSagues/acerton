@@ -621,6 +621,7 @@ export const en: Catalog = {
   'onboardingStep.quiniela1x2ElegirLocal': '1X2 Pool to pick home, draw or away; exact score to nail the scoreline.',
   'onboardingStep.temporadaRecordar': 'A season\nto remember.',
   'onboardingStep.todoQuedaEntreVosotros': 'It all stays between you',
+  'playerProfile.acierto': 'correct',
   'playerProfile.enNGrupos': { one: 'In {count} group', other: 'In {count} groups' },
   'playerProfile.exactos': 'Exact scores',
   'playerProfile.exactosDe': 'out of {total} score predictions',

@@ -619,6 +619,7 @@ export const es = {
   'onboardingStep.quiniela1x2ElegirLocal': 'Quiniela 1X2 para elegir local, empate o visitante; resultado exacto para clavar el marcador.',
   'onboardingStep.temporadaRecordar': 'Una temporada\npara recordar.',
   'onboardingStep.todoQuedaEntreVosotros': 'Todo queda entre vosotros',
+  'playerProfile.acierto': 'acierto',
   'playerProfile.enNGrupos': { one: 'En {count} grupo', other: 'En {count} grupos' },
   'playerProfile.exactos': 'Marcadores exactos',
   'playerProfile.exactosDe': 'de {total} pronósticos de marcador',
