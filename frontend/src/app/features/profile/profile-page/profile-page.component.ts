@@ -1,7 +1,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import { TeamFlagComponent } from '../../../shared/ui/team-flag/team-flag.component';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { ProfilePageFacade } from './profile-page.facade';
@@ -11,7 +11,7 @@ import { BadgeNamePipe } from '../../../shared/utils/badge-text';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, SpinnerComponent, AvatarComponent, TranslatePipe, BadgeNamePipe],
+  imports: [CommonModule, RouterLink, SpinnerComponent, AvatarComponent, TeamFlagComponent, TranslatePipe, BadgeNamePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [ProfilePageFacade],
   templateUrl: './profile-page.component.html',

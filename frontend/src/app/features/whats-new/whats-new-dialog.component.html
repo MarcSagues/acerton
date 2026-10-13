@@ -11,11 +11,19 @@
         @if (data.entries.length > 1) {
           <h3 class="entry-version">{{ 'whatsNew.version' | t: { version: entry.version } }}</h3>
         }
-        <ul class="changes">
-          @for (change of entry.changes; track $index) {
-            <li>{{ text(change) }}</li>
-          }
-        </ul>
+        @for (change of featured(entry); track $index) {
+          <div class="featured">
+            <p class="featured-headline">{{ headline(change) }}</p>
+            <p class="featured-text">{{ text(change) }}</p>
+          </div>
+        }
+        @if (regular(entry).length > 0) {
+          <ul class="changes">
+            @for (change of regular(entry); track $index) {
+              <li>{{ text(change) }}</li>
+            }
+          </ul>
+        }
       </section>
     }
   </div>

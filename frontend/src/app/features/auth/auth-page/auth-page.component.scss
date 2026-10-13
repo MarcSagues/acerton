@@ -261,6 +261,29 @@
   }
 }
 
+/* "o" entre Crear cuenta y los botones de Google/Apple. */
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--p4-muted);
+  font: 500 12px/1 var(--p4-font-ui);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--p4-border);
+  }
+}
+
+.social {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* Solo reserva el hueco (mismo alto que .cta) del boton nativo de Sign in
    with Apple, que iOS dibuja encima — ver NativeAppleButtonDirective. */
 .apple-cta-slot {

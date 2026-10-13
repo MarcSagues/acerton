@@ -1,0 +1,13 @@
+<div class="page">
+  <div class="cards">
+    @for (option of page.languages; track option.code) {
+      <button type="button" class="lang-card" [class.active]="page.lang === option.code" [attr.lang]="option.code" (click)="page.setLanguage(option.code)">
+        <span class="name">{{ option.name }}</span>
+        <span class="radio" [class.checked]="page.lang === option.code">
+          <span class="dot"></span>
+        </span>
+      </button>
+    }
+  </div>
+  <p class="lang-note">{{ 'profileAppearance.idiomaNota' | t }}</p>
+</div>

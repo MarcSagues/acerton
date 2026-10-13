@@ -1,5 +1,4 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { NotificationPreferencesService } from '../../../core/services/notification-preferences.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { PushNotificationsService } from '../../../core/services/push-notifications.service';
@@ -7,7 +6,6 @@ import { NotificationPreferenceKey, NotificationPreferences } from '../../../cor
 
 @Injectable()
 export class NotificationSettingsFacade {
-  private readonly router = inject(Router);
   private readonly preferencesService = inject(NotificationPreferencesService);
   private readonly groupsService = inject(GroupsService);
   readonly pushNotifications = inject(PushNotificationsService);
@@ -29,9 +27,6 @@ export class NotificationSettingsFacade {
     });
   }
 
-  goBack(): void {
-    this.router.navigate(['/profile']);
-  }
 
   isSaving(key: string): boolean {
     return this.savingKeys().has(key);

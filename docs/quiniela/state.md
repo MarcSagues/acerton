@@ -1,5 +1,61 @@
 # Estado actual
 
+## 2026-10-13 — Versión 1.1.0 (fuera de sprint)
+
+Decisión del usuario: con tantos cambios grandes (Quiz, equipo favorito, Ajustes con pestañas, registro con
+Google/Apple, pantallas desde arriba, gráfica de Tabla) la siguiente versión es la **1.1.0**, no la 1.0.3. La 1.0.3
+nunca salió (el último tag es `v1.0.2`), así que su entrada del historial pasó a ser la 1.1.0 (fecha 2026-10-13) y
+`MARKETING_VERSION` del proyecto iOS también. Donde estas notas dicen «1.0.3», léase 1.1.0.
+
+## 2026-10-13 — Tabla: tu posición justo encima de la tabla (fuera de sprint)
+
+Petición del usuario: la tarjeta «Tú · posición · puntos» salía arriba de las gráficas y no se entendía. Ahora va
+entre las gráficas (evolución y rey del marcador exacto) y la cabecera de la tabla, pegada a la lista de jugadores.
+Solo cambia el orden en `rankings-page.component.html`. **Verificado** en navegador (local) y `tsc`.
+
+## 2026-10-13 — Ajustes con pestañas dentro del Perfil (fuera de sprint)
+
+Petición del usuario. **Hecho**: `/profile/settings` es una página con una pestaña por cada ruta hija: Nombre
+(`profile-name`, extraído de la pantalla de Perfil), Equipo (favorito), Avisos, Apariencia (solo tema), Idioma
+(`profile-language`, ya no va con la apariencia) y Contraseña (solo cuentas con contraseña). Perfil deja una sola
+tarjeta «Ajustes» en lugar de las cuatro de antes y de la tarjeta del nombre. Cada pestaña es la pantalla de
+siempre sin su cabecera propia; elegir equipo ya no vuelve a Perfil. Las rutas antiguas (`/profile/appearance`,
+`/profile/change-password`, `/profile/favorite-team`, `/notifications/preferences`) redirigen a su pestaña.
+El texto del historial sobre los avisos del Quiz ahora dice «Perfil > Ajustes > Avisos». Línea nueva en la 1.0.3.
+**Verificado** en navegador (local, todas las pestañas y una redirección) y 211 tests del frontend.
+
+## 2026-10-13 — Pantallas desde arriba y Quiz sin balón ni «Guardado» (fuera de sprint)
+
+Peticiones del usuario. **Scroll**: el scroll de la app es el de `body` (html y body a `height:100%` con
+`overflow-x:hidden`), no el de la ventana, así que `withInMemoryScrolling` del router no hacía nada y cada pantalla
+heredaba el scroll de la anterior. `ScrollTopService` (arrancado en `AppComponent`) sube `body` en cada cambio de
+ruta, también al volver atrás; cambiar solo query/fragmento no sube. **Quiz**: el disco de color ya no lleva balón
+(con equipo sin colores en el catálogo sale su inicial) y fuera el «✓ Guardado» bajo la pregunta (siguen
+«Guardando…» y los errores); borrada la clave `quiz.guardado`. Borde del disco/bandera/lista visible en tema
+claro y oscuro. Línea en la 1.0.3 del historial. **Verificado** en navegador (local) y 205 tests del frontend.
+
+## 2026-10-13 — Equipo favorito con bandera en el perfil (fuera de sprint)
+
+Petición del usuario. **Hecho**: en Perfil > «Equipo favorito» (`/profile/favorite-team`, con buscador sin tildes) se
+elige o se quita el equipo; al tocar uno se guarda y se vuelve a Perfil. Su bandera (franja fina y larga con los dos
+colores del club, y debajo «Equipo favorito: X») sale en el perfil propio y en el detalle de miembro de un grupo, que es
+lo que ven los demás. Backend: columna `User.favoriteTeam` (nombre completo, `VARCHAR(100)`), catálogo cerrado de 110
+equipos con colores en `users/team-catalog.ts` (validado en el DTO, null para quitar), `GET users/me/team-catalog`,
+`PATCH users/me/favorite-team`; `toPublicUser` y el perfil de miembro devuelven `favoriteTeam {name, primary,
+secondary}`. Un equipo guardado que salga del catálogo se ve como «sin equipo». Migración `20261013180000_favorite_team`.
+Línea en la 1.0.3 del historial.
+
+**Verificado**: backend 508 tests y `tsc` (el lint solo da avisos de saltos de línea CRLF que ya existían), frontend 203
+tests, `tsc` y build, `prisma validate`. **NO verificado**: la migración sobre una BD real, ni las pantallas en
+navegador/iOS. **Necesita**: migración en prod ANTES de desplegar, build nueva y port a `dev` (Postgres).
+
+## 2026-10-13 — Registro con Google y Apple (fuera de sprint)
+
+Petición del usuario: la pantalla de «Crear cuenta» enseña ahora los botones de Google y Apple (este último solo en
+iOS, como en el acceso) bajo el de crear cuenta, separados por una «o». Los botones viven en dos `ng-template` que
+reutilizan acceso y registro. Línea en la 1.0.3 del historial. **Verificado**: `tsc`, build y tests; **NO** visto en
+pantalla.
+
 ## 2026-10-13 — Quiz: disco con los colores del club (fuera de sprint)
 
 Petición del usuario tras quitar los escudos: el icono de balón del Quiz sale ahora sobre un disco partido en

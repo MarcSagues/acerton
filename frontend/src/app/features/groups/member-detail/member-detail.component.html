@@ -22,6 +22,10 @@
         </div>
       </div>
 
+      @if (p.favoriteTeam) {
+        <app-team-flag class="team-flag" [team]="p.favoriteTeam"></app-team-flag>
+      }
+
       <div class="stats">
         <div class="stat-tile">
           <p class="stat-value mono accent">{{ p.streak.currentStreak > 0 ? p.streak.currentStreak : '0' }}</p>

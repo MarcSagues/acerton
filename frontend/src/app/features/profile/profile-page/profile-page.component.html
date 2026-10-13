@@ -26,6 +26,10 @@
       </span>
     </div>
 
+    @if (page.authService.currentUser()?.favoriteTeam; as favoriteTeam) {
+      <app-team-flag class="team-flag" [team]="favoriteTeam"></app-team-flag>
+    }
+
     <div class="stats-row">
       <div class="stat-card">
         <p class="stat-label">{{ 'profilePage.rachaActual' | t }}</p>
@@ -140,55 +144,11 @@
       </div>
     }
 
-    <div class="section-head">
-      <h2>{{ 'profilePage.ajustes' | t }}</h2>
-    </div>
     <div class="section">
-      <div class="card">
-        <p class="card-title">{{ 'profilePage.nombre' | t }}</p>
-        <div class="name-edit-row">
-          <input
-            class="name-input mono"
-            type="text"
-            maxlength="24"
-            [disabled]="!!page.nameChangeAvailableAt()"
-            [ngModel]="page.nameInput()"
-            (ngModelChange)="page.nameInput.set($event)"
-            (keydown.enter)="page.saveName()"
-          />
-          @if (!page.nameChangeAvailableAt()) {
-            <button type="button" class="piqo-primary save-btn" [disabled]="!page.canSaveName()" (click)="page.saveName()">
-              {{ page.nameSaving() ? ('common.guardando' | t) : ('common.guardar' | t) }}
-            </button>
-          }
-        </div>
-        @if (page.nameChangeAvailableAt(); as availableAt) {
-          <p class="hint mono">{{ 'profilePage.yaHasCambiadoPodras' | t: { availableAt: (availableAt | date: 'dd/MM/yyyy') } }}</p>
-        } @else {
-          @if (page.nameHint(); as hint) {
-            <p class="error mono">{{ hint }}</p>
-          }
-        }
-        @if (page.nameError()) {
-          <p class="error mono">{{ page.nameError() }}</p>
-        }
-      </div>
-    </div>
-
-    <div class="section">
-      <a class="card settings-link" routerLink="/profile/appearance">
+      <a class="card settings-link" routerLink="/profile/settings">
         <div>
-          <p class="card-title">{{ 'common.apariencia' | t }}</p>
-          <p class="hint mono">{{ 'profilePage.claroOscuroSegunSistema' | t }}</p>
-        </div>
-        <piqo-svg icon="flecha" size="18"></piqo-svg>
-      </a>
-    </div>
-    <div class="section">
-      <a class="card settings-link" routerLink="/notifications/preferences">
-        <div>
-          <p class="card-title">{{ 'common.preferenciasAvisos' | t }}</p>
-          <p class="hint mono">{{ 'profilePage.avisosRecibirGruposSilenciar' | t }}</p>
+          <p class="card-title">{{ 'profilePage.ajustes' | t }}</p>
+          <p class="hint mono">{{ 'profilePage.ajustesHint' | t }}</p>
         </div>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
@@ -213,17 +173,6 @@
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </a>
     </div>
-    @if (page.authService.currentUser()?.hasPassword) {
-      <div class="section">
-        <a class="card settings-link" routerLink="/profile/change-password">
-          <div>
-            <p class="card-title">{{ 'common.cambiarContrasena' | t }}</p>
-            <p class="hint mono">{{ 'profilePage.actualizaContrasenaCuenta' | t }}</p>
-          </div>
-          <piqo-svg icon="flecha" size="18"></piqo-svg>
-        </a>
-      </div>
-    }
 
     @if (page.hasGroups()) {
         <button type="button" class="piqo-secondary replay-btn" (click)="page.replayTutorial()">{{ 'profilePage.verTutorialNuevo' | t }}</button>

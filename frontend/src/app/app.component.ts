@@ -8,6 +8,7 @@ import { ThemeService } from './core/services/theme.service';
 import { DeepLinkService } from './core/services/deep-link.service';
 import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
+import { ScrollTopService } from './core/services/scroll-top.service';
 import { KeyboardAccessoryComponent } from './shared/ui/keyboard-accessory/keyboard-accessory.component';
 
 @Component({
@@ -31,10 +32,12 @@ export class AppComponent {
   private readonly deepLinkService = inject(DeepLinkService);
   private readonly edgeSwipeBackService = inject(EdgeSwipeBackService);
   private readonly keyboardInsetService = inject(KeyboardInsetService);
+  private readonly scrollTopService = inject(ScrollTopService);
 
   constructor() {
     this.deepLinkService.init();
     this.edgeSwipeBackService.init();
     this.keyboardInsetService.init();
+    this.scrollTopService.init();
   }
 }

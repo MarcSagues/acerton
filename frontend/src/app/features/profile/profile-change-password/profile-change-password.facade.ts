@@ -1,6 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
@@ -8,7 +7,6 @@ import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ProfileChangePasswordFacade {
-  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
@@ -40,10 +38,6 @@ export class ProfileChangePasswordFacade {
     });
   }
 
-  goBack(): void {
-    this.router.navigate(['/profile']);
-  }
-
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -62,7 +56,7 @@ export class ProfileChangePasswordFacade {
       next: () => {
         this.loading.set(false);
         this.toast.show(t('resetPassword.contrasenaActualizada'));
-        this.goBack();
+        this.form.reset();
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
