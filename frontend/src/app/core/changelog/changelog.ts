@@ -68,6 +68,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         de: 'Du kannst die App jetzt auf Katalanisch, Französisch, Italienisch und Deutsch nutzen: Wähle die Sprache unter Profil > Darstellung.',
       },
       {
+        es: 'En la comparativa del grupo, los resultados exactos salen en dorado para distinguirlos de los aciertos de ganador.',
+        en: 'In the group comparison, exact scores now show in gold so you can tell them apart from correct winners.',
+        ca: 'A la comparativa del grup, els resultats exactes surten en daurat per distingir-los dels encerts de guanyador.',
+        fr: 'Dans la comparaison du groupe, les scores exacts s’affichent en doré pour les distinguer des bons vainqueurs.',
+        it: 'Nel confronto del gruppo, i risultati esatti appaiono in oro per distinguerli dai vincitori azzeccati.',
+        de: 'Im Gruppenvergleich werden exakte Ergebnisse jetzt in Gold angezeigt, damit du sie von richtigen Siegertipps unterscheiden kannst.',
+      },
+      {
         es: 'Al escribir un resultado exacto, la pantalla sube para que el último partido no quede tapado por el teclado.',
         en: "When you type an exact score, the screen scrolls up so the last match isn't hidden behind the keyboard.",
         ca: 'En escriure un resultat exacte, la pantalla puja perquè l’últim partit no quedi tapat pel teclat.',
