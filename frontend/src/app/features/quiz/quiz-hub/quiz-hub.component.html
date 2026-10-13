@@ -32,8 +32,6 @@
             >
               @if (page.trophyId(competition); as trophy) {
                 <piqo-svg [attr.trophy]="trophy" variant="mini" size="18"></piqo-svg>
-              } @else if (competition.logoUrl) {
-                <img class="comp-logo" [src]="competition.logoUrl" alt="" />
               }
               <span>{{ competition.name }}</span>
               @let closingSoon = page.closingSoonIds().has(competition.id);

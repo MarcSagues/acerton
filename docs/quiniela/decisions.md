@@ -1,5 +1,13 @@
 # Decisiones
 
+## 2026-10-13 — Sin escudos de clubes ni logos de competiciones
+
+El usuario preguntó si usar los escudos en el Quiz infringía derechos. Son marcas registradas y obras con
+copyright de cada club; que el proveedor (football-data.org) nos dé la URL no da derecho a usarlas, y Apple
+(5.2.1) puede rechazar o retirar la app si un titular se queja. Decisión: no mostrar escudos ni logos de
+competiciones en ninguna pantalla mientras no haya licencia; nombres de equipos y resultados sí (uso
+descriptivo de datos). Para competiciones se usan los trofeos propios de Piqo.
+
 Decisiones de producto o técnicas tomadas durante la implementación del
 roadmap, con su motivo. Las decisiones sustituidas se marcan como tales
 (no se borran, para conservar el porqué de cada cambio de rumbo).
