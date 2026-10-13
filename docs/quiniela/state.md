@@ -14,6 +14,20 @@ o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de
 (`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
+## 2026-10-13 — El Quiz carga mucho más rápido (fuera de sprint)
+
+Petición del usuario («el quiz carga muy lento al abrir la vista»). **Medido** en local al abrir `/quiz`: **1 346 consultas** a la base de
+datos y dos `GET /quiz/overview` a la vez (223 y 516 ms). Causas: `overview` publicaba rondas de todas las ligas en cada apertura, y por cada
+liga hacía varias consultas, un refresco (transacción con bloqueo) y luego `detail()` con otro refresco por quiz; además la pantalla y la barra
+inferior pedían el resumen a la vez. **Hecho (backend)**: `overview` se resuelve en lote (lista ligera de quizzes de la temporada, los elegidos y
+mis participaciones: 2-3 consultas en lugar de cientos); `competitions()` se guarda 60 s; `publishAvailable` desde las lecturas como mucho cada 30 s
+(`publishAvailableIfStale`) y `refreshEventIfStale` (20 s, comparten ejecución las llamadas a la vez) en `overview` y `rankings`; el cron de cada
+minuto (`QuizJobs.refreshAll`) ya mantiene todo al día y las escrituras (responder, terminar) siguen con `refreshEvent` exacto. **Hecho (frontend)**:
+`QuizService.getOverview()` comparte la petición en vuelo. **Resultado** (mismo escenario): 83 consultas en la primera apertura y ~133 en la
+segunda (incluyen el arranque de la app y el cron), `overview` en ~100 ms y la clasificación en ~87 ms. **Coste**: una ronda nueva o un cierre
+puede tardar hasta ~30 s en verse en la pantalla (antes, al instante); las cachés son por proceso del backend. **Verificado**: backend 51 tests de
+Quiz (6 nuevos) y lint, frontend 239 tests (3 nuevos), y en navegador (la pantalla muestra lo mismo). **Necesita** backend desplegado y portado a `dev`.
+
 ## 2026-10-13 — El selector de grupo va dentro de la barra superior, fijo con ella (fuera de sprint)
 
 Petición del usuario: el selector de grupo ya no sube con el contenido. `app-top-bar` lo lleva dentro, bajo la fila del logo (12px de aire), y

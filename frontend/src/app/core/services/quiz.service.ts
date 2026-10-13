@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { tap } from 'rxjs';
+import { Observable, finalize, share, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { QuizAnswerInput, QuizDetail, QuizHistory, QuizOverview, QuizRanking, QuizRankingQuery } from '../models/quiz.model';
 
@@ -21,8 +21,20 @@ export class QuizService {
   readonly lastOverview = this.lastOverviewSignal.asReadonly();
   private lastRefreshAt = 0;
 
-  getOverview() {
-    return this.http.get<QuizOverview>(`${this.base}/overview`).pipe(tap((overview) => this.lastOverviewSignal.set(overview)));
+  /** El resumen que esta en vuelo: al abrir el Quiz lo piden a la vez la pantalla y la barra inferior, y comparten una sola peticion. */
+  private overviewInFlight: Observable<QuizOverview> | null = null;
+
+  getOverview(): Observable<QuizOverview> {
+    if (!this.overviewInFlight) {
+      this.overviewInFlight = this.http.get<QuizOverview>(`${this.base}/overview`).pipe(
+        tap((overview) => this.lastOverviewSignal.set(overview)),
+        finalize(() => {
+          this.overviewInFlight = null;
+        }),
+        share(),
+      );
+    }
+    return this.overviewInFlight;
   }
 
   /** Vuelve a pedir el resumen solo para el punto de la barra; si falla, se queda el ultimo conocido. */
