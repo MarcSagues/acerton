@@ -23,6 +23,7 @@ import { BadgesModule } from './badges/badges.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 import { QuizModule } from './quiz/quiz.module';
+import { PlayersModule } from './players/players.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
@@ -47,6 +48,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
     BadgesModule,
     NotificationsModule,
     JobsModule,
+    PlayersModule,
     QuizModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
