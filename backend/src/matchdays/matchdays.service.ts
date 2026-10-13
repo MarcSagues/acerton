@@ -6,7 +6,13 @@ import {
   FootballProvider,
   ProviderFixture,
 } from '../football-data/football-provider.interface';
-import { computeMatchResult, parseRoundOrder, shouldCloseMatchday } from './matchday.util';
+import {
+  computeMatchResult,
+  isMatchResolved,
+  keepsMatchdayCurrent,
+  parseRoundOrder,
+  shouldCloseMatchday,
+} from './matchday.util';
 
 /** Las predicciones de una jornada se abren como mucho 4 dias antes de su primer partido, no en cuanto termina la anterior. */
 export const PREDICTIONS_OPEN_BEFORE_MS = 4 * 24 * 60 * 60 * 1000;
@@ -330,7 +336,7 @@ export class MatchdaysService {
     const now = new Date();
     const pendingFixtureIds = closedMatchdays
       .flatMap((matchday) => matchday.matches)
-      .filter((match) => match.status !== 'FINISHED' && match.kickoff.getTime() <= now.getTime())
+      .filter((match) => !isMatchResolved(match) && match.kickoff.getTime() <= now.getTime())
       .map((match) => match.externalId);
 
     if (pendingFixtureIds.length > 0) {
@@ -344,7 +350,8 @@ export class MatchdaysService {
       const refreshedMatches = await this.prisma.match.findMany({
         where: { matchdayId: matchday.id },
       });
-      const allFinished = refreshedMatches.every((m) => m.status === 'FINISHED');
+      // Un partido cancelado no se va a jugar: no puede dejar la jornada abierta para siempre.
+      const allFinished = refreshedMatches.every(isMatchResolved);
 
       if (allFinished) {
         await this.prisma.matchday.update({
@@ -396,16 +403,21 @@ export class MatchdaysService {
         order: true,
         matches: {
           where: { status: { not: 'FINISHED' } },
-          select: { kickoff: true },
+          select: { kickoff: true, status: true },
           orderBy: { kickoff: 'asc' },
-          take: 1,
         },
       },
     });
 
+    // Solo cuentan los partidos que mantienen viva la jornada (keepsMatchdayCurrent): ni
+    // aplazados, ni cancelados, ni empezados hace mas de 3 h sin resultado. Asi, al acabar
+    // una jornada se ve la siguiente (port de main, 2026-10-13).
+    const now = new Date();
     let best: { order: number; kickoff: Date } | null = null;
     for (const matchday of pending) {
-      const nextKickoff = matchday.matches[0]?.kickoff;
+      const nextKickoff = matchday.matches.find((match) =>
+        keepsMatchdayCurrent(match, now),
+      )?.kickoff;
       if (!nextKickoff) {
         continue;
       }
@@ -443,7 +455,7 @@ export class MatchdaysService {
     }
 
     const finished = await this.prisma.matchday.findFirst({
-      where: { competitionId, status: 'FINISHED' },
+      where: { competitionId, status: { in: ['FINISHED', 'CLOSED'] } },
       orderBy: { closesAt: 'desc' },
       include: { matches: { orderBy: { kickoff: 'asc' } } },
     });

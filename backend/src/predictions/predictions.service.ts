@@ -14,7 +14,7 @@ import { XpService } from '../xp/xp.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SubmitPredictionDto } from './dto/submit-prediction.dto';
 import { calculateExactScorePoints, calculatePoints } from './scoring.util';
-import { isMatchPredictable } from '../matchdays/matchday.util';
+import { isMatchEditable } from '../matchdays/matchday.util';
 import { xpProgressForLevel } from '../xp/xp.util';
 
 @Injectable()
@@ -38,7 +38,7 @@ export class PredictionsService {
     if (!match) {
       throw new NotFoundException('Partido no encontrado');
     }
-    if (!isMatchPredictable(match, new Date())) {
+    if (!isMatchEditable(match, new Date())) {
       throw new ForbiddenException('Este partido ya ha empezado, no se admiten más predicciones');
     }
     if (!(await this.matchdaysService.canAcceptPredictions(match.matchdayId))) {
