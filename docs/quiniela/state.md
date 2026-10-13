@@ -1,5 +1,23 @@
 # Estado actual
 
+## 2026-10-13 — Jornada: se ve la siguiente al acabar y aplazados/cancelados editables (fuera de sprint)
+
+Dos peticiones del usuario con la misma raíz. **Comprobado** en la BD de dev: Premier J6 y Serie A J6 con 9
+terminados y 1 LIVE desde la noche anterior (sin resultado aún), y LaLiga J8 con un CANCELLED; las tres
+seguían siendo «la actual» aunque la siguiente ya estuviera abierta.
+
+**Hecho (backend)**: `getOrders` solo cuenta los partidos que mantienen viva la jornada
+(`keepsMatchdayCurrent`: ni aplazados, ni cancelados, ni empezados hace más de 3 h sin resultado); la de
+respaldo puede ser una CLOSED; un CANCELLED cuenta como resuelto al cerrar la jornada (antes la dejaba CLOSED
+para siempre) y ya no se pregunta por él al proveedor. Pronósticos: `isMatchEditable` deja crear o cambiar el
+de un aplazado o cancelado (sigue mandando `canAcceptPredictions`); copiar pronósticos, recordatorios y la
+jornada abierta siguen con `isMatchPredictable`. **Hecho (frontend)**: esos partidos ya no salen bloqueados,
+llevan la etiqueta «Aplazado»/«Cancelado» y no encienden el punto rojo. Dos líneas en la 1.0.3 del historial.
+
+**Verificado**: backend 493 tests y lint, frontend 192 tests y `tsc`. **NO verificado** en navegador ni iOS.
+**Necesita**: desplegar el backend (lo de «la siguiente jornada» funciona ya con la app instalada; lo de los
+aplazados necesita además build nueva). `dev` (Postgres) necesita el mismo cambio portado a mano.
+
 ## 2026-10-13 — Quiz: pestañas por cierre, reloj de menos de 24 h y punto rojo (fuera de sprint)
 
 Petición del usuario. **Hecho** (solo frontend): las pestañas de liga del centro del Quiz van de la que
