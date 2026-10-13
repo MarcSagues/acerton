@@ -882,6 +882,7 @@ export const ca: Catalog = {
   'rankingsPage.nadieExacto': 'Encara ningú no ha clavat un marcador exacte.',
   'rankingsPage.nombresYMas': '{names} i {count} més',
   'rankingsPage.notaAcumulado': 'Punts acumulats després de cada jornada',
+  'rankingsPage.notaGeneral': 'cada punt és una jornada d’una lliga, per ordre de data',
   'rankingsPage.notaJornada': 'Punts de cada jornada',
   'rankingsPage.notaLideres': 'tu i els que van al capdavant',
   'rankingsPage.periodoClasificacion': 'Període de classificació',

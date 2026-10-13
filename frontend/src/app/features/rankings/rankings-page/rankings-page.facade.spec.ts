@@ -22,7 +22,7 @@ function group(id: string, competitionIds: string[] = ['laliga']): Group {
       groupId: id,
       competitionId,
       isActive: true,
-      competition: { id: competitionId, name: competitionId },
+      competition: { id: competitionId, name: competitionId, code: competitionId === 'laliga' ? 'LA_LIGA' : 'PREMIER_LEAGUE' },
     })),
   } as unknown as Group;
 }
@@ -179,6 +179,13 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
   }
 
+  /** "General" pide el historial de cada liga activa del grupo (para su grafica): atiende las dos. */
+  function flushGeneralHistory(): void {
+    const requests = http.match((req) => req.url === `${API}/groups/g1/rankings/history`);
+    expect(requests.length).toBe(2);
+    requests.forEach((request) => request.flush({ matchdays: [] }));
+  }
+
   /** Pasa a la clasificacion semanal (la unica con selector de jornada) y atiende su peticion. */
   function viewWeekly(facade: RankingsPageFacade): void {
     facade.setPeriod('WEEKLY');
@@ -277,6 +284,7 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
 
     facade.setScope('general');
     http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    flushGeneralHistory();
     expect(facade.showMatchdayPicker()).toBeFalse(); // vista general: sin jornadas
 
     facade.setPeriod('WEEKLY'); // la semanal no tiene vista general: pasa a la primera competicion
@@ -310,12 +318,14 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     // Si elegiste General, Semanal te lleva a una liga y Total te devuelve a General.
     facade.setScope('general');
     http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    flushGeneralHistory();
     facade.setPeriod('WEEKLY');
     http.expectOne(rankingUrl('g1')).flush([]);
     http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
     expect(facade.scope()).toBe('laliga');
     facade.setPeriod('TOTAL');
     http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    flushGeneralHistory();
     expect(facade.scope()).toBe('general');
 
     // Si en Semanal eliges tu otra liga, Total se queda en ella.
@@ -328,6 +338,43 @@ describe('RankingsPageFacade — clasificacion de jornadas anteriores', () => {
     facade.setPeriod('TOTAL');
     http.expectOne(rankingUrl('g1')).flush([]);
     expect(facade.scope()).toBe('premier');
+  });
+
+  it('en General la grafica junta las jornadas de todas las ligas por fecha, con la liga bajo cada una', () => {
+    const facade = setup(['laliga', 'premier']);
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'laliga').flush([]);
+    http.expectOne(`${API}/groups/g1/seasons`).flush([]);
+    http.expectOne((req) => req.url === `${API}/groups/g1/rankings/history`).flush(history);
+
+    facade.setScope('general');
+    http.expectOne((req) => rankingUrl('g1')(req) && req.params.get('scope') === 'general').flush([]);
+    const entry = (matchdayId: string, order: number, closesAt: string, points: number) => ({
+      matchdayId,
+      order,
+      closesAt,
+      winner: null,
+      myPoints: points,
+      scores: [{ userId: 'u1', name: 'Ana', points }],
+    });
+    for (const request of http.match((req) => req.url === `${API}/groups/g1/rankings/history`)) {
+      const competitionId = request.request.params.get('competitionId');
+      request.flush({
+        matchdays:
+          competitionId === 'laliga'
+            ? [entry('l2', 2, '2026-09-15T18:00:00.000Z', 4), entry('l1', 1, '2026-09-01T18:00:00.000Z', 3)]
+            : [entry('p1', 1, '2026-09-08T18:00:00.000Z', 5)],
+      });
+    }
+
+    const chart = facade.groupChart()!;
+    // Por fecha, no por numero: J1 Liga, J1 Premier, J2 Liga.
+    expect(chart.labels).toEqual(['J1', 'J1', 'J2']);
+    expect(chart.sublabels).toEqual(['Liga', 'Prem', 'Liga']);
+    expect(chart.fullLabels).toEqual(['laliga', 'premier', 'laliga']);
+    expect(chart.cumulative).toBeTrue();
+    expect(chart.series[0].values).toEqual([3, 8, 12]);
+    expect(facade.showEvolution()).toBeTrue();
+    expect(facade.evolutionRange()).toEqual({ from: 'J1 Liga', to: 'J2 Liga' });
   });
 
   it('una respuesta tardia de una jornada ya abandonada no pisa la actual', () => {

@@ -882,6 +882,7 @@ export const fr: Catalog = {
   'rankingsPage.nadieExacto': 'Personne n’a encore trouvé un score exact.',
   'rankingsPage.nombresYMas': '{names} et {count} de plus',
   'rankingsPage.notaAcumulado': 'Points cumulés après chaque journée',
+  'rankingsPage.notaGeneral': 'chaque point est une journée d’une ligue, par ordre de date',
   'rankingsPage.notaJornada': 'Points de chaque journée',
   'rankingsPage.notaLideres': 'toi et les premiers',
   'rankingsPage.periodoClasificacion': 'Période du classement',

@@ -1,5 +1,17 @@
 # Estado actual
 
+## 2026-10-13 — Tabla: la gráfica también sale en «General» (fuera de sprint)
+
+Petición del usuario: en «General» (Total) no había gráfica porque cada liga tiene su calendario de jornadas. Ahora se juntan
+las jornadas finalizadas de todas las ligas activas del grupo **por fecha**: cada punto es una jornada de una liga, con el
+número encima y la liga debajo (J1 Liga, J1 UCL, J2 Liga...), puntos acumulados; al tocar un punto sale el nombre completo de
+la liga. Backend: el historial de cada liga (`GET groups/:id/rankings/history`) manda ahora `closesAt` de cada jornada (para
+ordenar entre ligas). Frontend: `mergeCompetitionHistories` (una petición por liga, una vez por grupo y en paralelo),
+`EvolutionChart.sublabels/fullLabels` y una segunda línea en el eje; las barras de «Tú» llevan la liga debajo. Si un backend
+no manda `closesAt` no hay gráfica en General (no se mezcla mal). **Verificado**: backend 18 tests de Rankings y lint, frontend
+224 tests (6 nuevos) y en navegador (local, grupo con La Liga y Bundesliga: J2 Liga, J3 Liga, J2 Bund, J4 Liga...). **Necesita**
+backend desplegado en main (producción) y portado a `dev`; línea en la 1.1.0 del historial.
+
 ## 2026-10-13 — Tabla: se entra en la primera liga y Total no cambia tras pasar por Semanal (fuera de sprint)
 
 Fallo reportado por el usuario en la 1.1.0: en un grupo con varias ligas, de Grupos a Tabla no salía la gráfica y el rey del

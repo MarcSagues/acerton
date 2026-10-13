@@ -1,5 +1,6 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin, map } from 'rxjs';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { RankingsService } from '../../../core/services/rankings.service';
@@ -11,9 +12,12 @@ import { SeasonsService } from '../../../core/services/seasons.service';
 import { Group } from '../../../core/models/group.model';
 import { ExactScoreLeader, MatchdayHistoryEntry, RankingPeriod, RankingRow } from '../../../core/models/ranking.model';
 import { t } from '../../../core/i18n/translate';
+import { competitionShortName, mergeCompetitionHistories } from './competition-history';
 
 export interface EvolutionBar {
   label: string;
+  /** Solo en "General": la liga de esa jornada, debajo del numero. */
+  sublabel?: string;
   points: number;
   /** 0-100, para la altura de la barra. */
   heightPct: number;
@@ -35,6 +39,10 @@ export interface EvolutionSeries {
 
 export interface EvolutionChart {
   labels: string[];
+  /** Solo en "General": la liga de cada jornada, en corto, bajo el numero en el eje. */
+  sublabels?: string[];
+  /** Solo en "General": el nombre completo de la liga de cada jornada, para la lectura al tocar un punto. */
+  fullLabels?: string[];
   series: EvolutionSeries[];
   /** Total: puntos acumulados tras cada jornada. Semanal: los puntos de cada jornada. */
   cumulative: boolean;
@@ -101,7 +109,7 @@ export class RankingsPageFacade {
    * En Semanal y en Total, pero solo por competicion: cada una tiene su
    * propio calendario de jornadas, no hay "jornada combinada" en la vista general.
    */
-  readonly showEvolution = computed(() => this.scope() !== 'general');
+  readonly showEvolution = computed(() => this.period() === 'TOTAL' || this.scope() !== 'general');
   /**
    * Selector de jornada: solo en la clasificacion semanal (en "Total" no hay
    * historial de jornadas: es siempre el acumulado de ahora), por competicion
@@ -127,6 +135,7 @@ export class RankingsPageFacade {
     const viewed = this.viewedMatchdayId();
     return recent.map((m, index) => ({
       label: t('common.jornadaAbrev', { order: m.order }),
+      sublabel: m.competition ? competitionShortName(m.competition.code, m.competition.name) : undefined,
       points: m.myPoints ?? 0,
       heightPct: m.myPoints === null ? 0 : Math.max(6, Math.round((m.myPoints / max) * 100)),
       active: viewed ? m.matchdayId === viewed : index === recent.length - 1,
@@ -141,8 +150,9 @@ export class RankingsPageFacade {
    * puntos de todos (version anterior): entonces solo hay grafica individual.
    */
   readonly groupChart = computed<EvolutionChart | null>(() => {
+    // En "General" las jornadas son de varias ligas: van por fecha (J1 Liga, J1 Champions, J2 Liga...) y no por numero.
     const played = [...this.finishedMatchdays()]
-      .sort((a, b) => a.order - b.order)
+      .sort((a, b) => (a.competition ? Date.parse(a.closesAt ?? '') - Date.parse(b.closesAt ?? '') : a.order - b.order))
       .filter((m) => (m.scores?.length ?? 0) > 0);
     if (played.length === 0) return null;
 
@@ -175,8 +185,11 @@ export class RankingsPageFacade {
     const cumulative = this.period() === 'TOTAL';
     const viewed = this.viewedMatchdayId();
     const highlight = viewed ? shown.findIndex((m) => m.matchdayId === viewed) : -1;
+    const general = shown.every((m) => !!m.competition);
     return {
       labels: shown.map((m) => t('common.jornadaAbrev', { order: m.order })),
+      sublabels: general ? shown.map((m) => competitionShortName(m.competition!.code, m.competition!.name)) : undefined,
+      fullLabels: general ? shown.map((m) => m.competition!.name) : undefined,
       cumulative,
       highlightIndex: highlight >= 0 ? highlight : null,
       series: players.map((userId, index) => ({
@@ -199,10 +212,12 @@ export class RankingsPageFacade {
   );
   /** Primera y ultima jornada de la grafica que se esta viendo, para el "J3 → J7" de la cabecera. */
   readonly evolutionRange = computed<{ from: string; to: string } | null>(() => {
+    const withLeague = (label: string, league?: string) => (league ? `${label} ${league}` : label);
+    const chart = this.groupChart();
     const labels =
       this.effectiveEvolutionMode() === 'group'
-        ? (this.groupChart()?.labels ?? [])
-        : this.evolutionBars().map((b) => b.label);
+        ? (chart?.labels ?? []).map((label, i) => withLeague(label, chart?.sublabels?.[i]))
+        : this.evolutionBars().map((b) => withLeague(b.label, b.sublabel));
     return labels.length ? { from: labels[0], to: labels[labels.length - 1] } : null;
   });
 
@@ -429,11 +444,45 @@ export class RankingsPageFacade {
     });
   }
 
+  /**
+   * "General": las jornadas finalizadas de todas las ligas activas del grupo juntas, por fecha, para la grafica de
+   * evolucion (no hay selector de jornada: cada liga tiene su calendario). Una peticion por liga, una vez por grupo.
+   */
+  private loadGeneralMatchdays(groupId: string): void {
+    const competitions = this.activeCompetitions();
+    if (competitions.length === 0) {
+      this.finishedMatchdaysKey = '';
+      this.finishedMatchdays.set([]);
+      return;
+    }
+    const key = `${groupId}:general`;
+    if (key === this.finishedMatchdaysKey) return;
+    this.finishedMatchdaysKey = key;
+    this.finishedMatchdays.set([]);
+    forkJoin(
+      competitions.map((competition) =>
+        this.rankingsService.getHistory(groupId, competition.id).pipe(
+          map((history) => ({
+            competition: { id: competition.id, name: competition.name, code: competition.code as string },
+            matchdays: history.matchdays,
+          })),
+        ),
+      ),
+    ).subscribe({
+      next: (parts) => {
+        if (key === this.finishedMatchdaysKey) this.finishedMatchdays.set(mergeCompetitionHistories(parts));
+      },
+      error: () => {
+        // Se vuelve a intentar la proxima vez que se pida la clasificacion.
+        if (key === this.finishedMatchdaysKey) this.finishedMatchdaysKey = '';
+      },
+    });
+  }
+
   /** Una vez por grupo y competicion: la grafica de evolucion y el selector de jornada salen de la misma peticion. */
   private loadFinishedMatchdays(groupId: string, scope: string): void {
     if (scope === 'general') {
-      this.finishedMatchdaysKey = '';
-      this.finishedMatchdays.set([]);
+      this.loadGeneralMatchdays(groupId);
       return;
     }
     const key = `${groupId}:${scope}`;
