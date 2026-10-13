@@ -14,6 +14,15 @@ o al tirar hacia abajo en iOS solo se mueve la vista, nunca la barra. El host de
 (`--p4-topbar-h` + `--topbar-extra`), así que el contenido empieza justo debajo y el selector de grupo sigue pegado con `sticky`.
 **Necesita** build nueva; sin línea en el historial (ajuste visual menor).
 
+## 2026-10-13 — El selector de grupo va dentro de la barra superior, fijo con ella (fuera de sprint)
+
+Petición del usuario: el selector de grupo ya no sube con el contenido. `app-top-bar` lo lleva dentro, bajo la fila del logo (12px de aire), y
+solo en Jornada (`/matchday`) y Tabla (`/rankings`) exactas: sus subpantallas (resultados, calendario, historial) no lo llevan, como antes.
+Se quitan los `app-group-switcher` y las cabeceras fijas `.head-row` de `current-matchday` y `rankings-page`. El hueco que reserva la barra en
+el flujo es 52px + 76px con selector (`--topbar-extra`) o + 14px sin él. **Verificado** en navegador (local: la barra mide 128px, el selector
+queda a 64-118px y no se mueve al hacer scroll; en Grupos, Quiz y Perfil no sale) y 236 tests del frontend. **NO** visto en iPhone.
+**Necesita** build nueva.
+
 ## 2026-10-13 — Perfil general de un jugador (desde el Quiz, Tabla...) (fuera de sprint)
 
 Petición del usuario: al pulsar a un jugador debe abrirse siempre su **perfil general**, no una vista suelta del Quiz. Nueva
