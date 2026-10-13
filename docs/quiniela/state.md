@@ -1,5 +1,17 @@
 # Estado actual
 
+## 2026-10-13 — Historial de Quiz (fuera de sprint)
+
+Petición del usuario. En Estadísticas (la propia, `/profile/stats`, y la de un miembro, `.../members/:userId/stats`) y en
+el detalle de miembro hay un botón «Historial de Quiz» que lleva a `/quiz/history/:userId`: cada quiz ya cerrado en el que
+respondió algo, con sus respuestas, la correcta, acierto o fallo (pendiente/anulada si aún no se resolvió), los puntos y
+totales; se puede filtrar por liga. Backend: `GET quiz/history/:userId` (`QuizService.history`): solo quizzes con
+`lockedAt` (nunca uno abierto, para no filtrar respuestas), el propio o el de quien comparte grupo (403 si no), máximo los
+50 más recientes, y las preguntas con la misma forma que el detalle del quiz (`questionView`, extraído de `readDetail`).
+Sin migración. Línea en la 1.1.0 del historial. **Verificado**: backend 45 tests de Quiz (5 nuevos), frontend 217 (6
+nuevos) y `tsc`; en navegador (local) con el historial propio, el filtro por liga y el de otro jugador (vacío).
+**NO** verificado: el historial de otro jugador con quizzes. Los totales son de los 50 más recientes.
+
 ## 2026-10-13 — Barra superior y selector de grupo fijos (fuera de sprint)
 
 Petición del usuario: la barra de arriba (Piqo, avisos, perfil) se queda siempre visible al hacer scroll, y en las

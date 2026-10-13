@@ -218,6 +218,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Nuova schermata Impostazioni nel tuo Profilo, con una scheda per ogni cosa: nome, squadra, avvisi, aspetto, lingua e password.',
         de: 'Neuer Einstellungsbildschirm in deinem Profil, mit einem Tab für jedes Thema: Name, Team, Mitteilungen, Darstellung, Sprache und Passwort.',
       },
+      {
+        es: 'Nuevo Historial de Quiz: en Estadísticas, la tuya y la de otros jugadores, ves todos los quizzes cerrados con lo que se respondió y si se acertó, y puedes filtrar por liga.',
+        en: 'New Quiz history: in Statistics, yours and other players’, see every closed quiz with what was answered and whether it was right, and filter by league.',
+        ca: 'Nou Historial de Quiz: a Estadístiques, la teva i la d’altres jugadors, veus tots els quizzes tancats amb el que es va respondre i si es va encertar, i pots filtrar per lliga.',
+        fr: 'Nouvel historique du Quiz : dans Statistiques, le tien et celui des autres joueurs, tu vois tous les quiz clos avec les réponses données et si elles étaient bonnes, et tu peux filtrer par ligue.',
+        it: 'Nuovo storico dei Quiz: in Statistiche, il tuo e quello degli altri giocatori, vedi tutti i quiz chiusi con le risposte date e se erano giuste, e puoi filtrare per campionato.',
+        de: 'Neu: Quiz-Verlauf. In den Statistiken, deinen und denen anderer Spieler, siehst du alle beendeten Quizze mit den Antworten und ob sie richtig waren, und kannst nach Liga filtern.',
+      },
     ],
   },
   {
