@@ -275,9 +275,8 @@ export class RankingsPageFacade {
     const groupId = group.id;
     this.groupDetail.set(group);
     const active = (group.groupCompetitions ?? []).filter((gc) => gc.isActive);
-    // Se entra en la primera liga, no en "General": solo por liga hay grafica de evolucion y selector de jornada, y asi
-    // Total ensena lo mismo al entrar que despues de pasar por Semanal. "General" sigue a un toque en las pestañas.
-    this.scope.set(active[0]?.competitionId ?? 'general');
+    // Con varias ligas se abre el acumulado general; en Semanal cada liga tiene su propio calendario.
+    this.scope.set(active.length > 1 && this.period() === 'TOTAL' ? 'general' : (active[0]?.competitionId ?? 'general'));
     this.returnToGeneralOnTotal = false;
     this.selectedMatchdayId.set(null);
     this.finishedMatchdaysKey = '';
