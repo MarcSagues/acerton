@@ -17,8 +17,9 @@ import { Prediction } from '../../../core/models/prediction.model';
 import { UserBadge } from '../../../core/models/profile.model';
 import { Competition } from '../../../core/models/competition.model';
 import { ScoringMode } from '../../../core/models/group.model';
-import { badgeArtId } from '../../../shared/utils/badge-art';
+import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
 import { MatchdayShareCardComponent, ShareCardData } from './matchday-share-card.component';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class MatchdayResultsFacade {
@@ -76,7 +77,7 @@ export class MatchdayResultsFacade {
   readonly noPreviousAvailable = signal(false);
 
   readonly resultOwnerName = computed(
-    () => this.targetUserName() ?? (this.viewingSelf ? this.authService.currentUser()?.name : null) ?? 'Jugador',
+    () => this.targetUserName() ?? (this.viewingSelf ? this.authService.currentUser()?.name : null) ?? t('currentMatchday.jugador'),
   );
 
   readonly hasMultipleCompetitions = computed(() => this.activeCompetitions().length > 1);
@@ -148,7 +149,7 @@ export class MatchdayResultsFacade {
       next: (matchday) => {
         this.switchingCompetition.set(false);
         if (!matchday) {
-          this.toast.show('Todavía no hay jornadas cerradas para esa competición');
+          this.toast.show(t('matchdayResults.todaviaHayJornadasCerradas'));
           return;
         }
         this.noNextAvailable.set(false);
@@ -158,7 +159,7 @@ export class MatchdayResultsFacade {
       },
       error: () => {
         this.switchingCompetition.set(false);
-        this.toast.show('No se pudo cargar la competición');
+        this.toast.show(t('matchdayResults.pudoCargarCompeticion'));
       },
     });
   }
@@ -229,7 +230,7 @@ export class MatchdayResultsFacade {
             this.noPreviousAvailable.set(true);
           }
           this.toast.show(
-            direction === 'previous' ? 'No hay jornada anterior cerrada' : 'La siguiente jornada todavía no ha cerrado',
+            direction === 'previous' ? t('matchdayResults.hayJornadaAnteriorCerrada') : t('matchdayResults.siguienteJornadaTodaviaHa'),
           );
           return;
         }
@@ -240,7 +241,7 @@ export class MatchdayResultsFacade {
       },
       error: () => {
         this.navigating.set(false);
-        this.toast.show('No se pudo cargar la jornada');
+        this.toast.show(t('currentMatchday.pudoCargarJornada'));
       },
     });
   }
@@ -332,7 +333,7 @@ export class MatchdayResultsFacade {
   scoreLabel(prediction: Prediction, matchday: Matchday): string {
     const match = matchday.matches.find((m) => m.id === prediction.matchId);
     if (!match) return '';
-    if (match.homeScore == null || match.awayScore == null) return 'No participado';
+    if (match.homeScore == null || match.awayScore == null) return t('currentMatchday.participado');
     return `${match.homeScore} - ${match.awayScore}`;
   }
 
@@ -372,6 +373,10 @@ export class MatchdayResultsFacade {
 
   artId(code: string): string | null {
     return badgeArtId(code);
+  }
+
+  artSrc(artId: string): string {
+    return badgeArtSrc(artId);
   }
 
   predictionFor(matchId: string, userId: string): Prediction | undefined {

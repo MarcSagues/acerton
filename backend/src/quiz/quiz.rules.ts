@@ -75,8 +75,7 @@ function normalize(name: string): string {
 
 function teamIn(match: Match, side: 'home' | 'away', aliases: string[]): boolean {
   const names =
-    // dev no tiene todavia los nombres cortos del proveedor (homeTeamShort): solo el completo.
-    side === 'home' ? [match.homeTeam] : [match.awayTeam];
+    side === 'home' ? [match.homeTeam, match.homeTeamShort] : [match.awayTeam, match.awayTeamShort];
   return names.some((name) => name !== null && aliases.includes(normalize(name)));
 }
 

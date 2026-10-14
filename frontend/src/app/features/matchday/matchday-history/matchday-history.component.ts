@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { MatchdayHistoryFacade } from './matchday-history.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-matchday-history',
   standalone: true,
-  imports: [RouterLink, DecimalPipe, SpinnerComponent, EmptyStateComponent],
+  imports: [RouterLink, DecimalPipe, SpinnerComponent, EmptyStateComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [MatchdayHistoryFacade],
   templateUrl: './matchday-history.component.html',

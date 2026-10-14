@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prediction } from '@prisma/client';
+import { Prediction, ScoringMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WildcardsService } from '../wildcards/wildcards.service';
 import { GroupsService } from '../groups/groups.service';
@@ -14,8 +14,36 @@ import { XpService } from '../xp/xp.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SubmitPredictionDto } from './dto/submit-prediction.dto';
 import { calculateExactScorePoints, calculatePoints } from './scoring.util';
-import { isMatchEditable } from '../matchdays/matchday.util';
+import { isMatchEditable, isMatchPredictable } from '../matchdays/matchday.util';
 import { xpProgressForLevel } from '../xp/xp.util';
+import { CopySkipReason, canCopyBetweenModes, planCopy } from './copy-predictions.util';
+
+/** Por que no se puede copiar de un grupo en el que el usuario si ha marcado pronosticos de esa jornada. */
+export type CopyUnavailableReason = 'DIFFERENT_MODE' | 'ALL_STARTED';
+
+/** Otro grupo del usuario con pronosticos suyos de la jornada (ver PredictionsService.getCopySources). */
+export interface CopySource {
+  groupId: string;
+  name: string;
+  scoringMode: ScoringMode;
+  /** Cuantos de sus pronosticos de esa jornada siguen abiertos (los que ya empezaron no se copian). */
+  copyableCount: number;
+  /**
+   * null = se puede copiar. Si no, el motivo: otro modo de puntuacion (no se
+   * copia entre 1X2 y resultado exacto) o todos sus pronosticos son de
+   * partidos que ya empezaron. Se lista igualmente para que el usuario vea
+   * por que un grupo en el que ha marcado algo no es seleccionable.
+   */
+  unavailable: CopyUnavailableReason | null;
+}
+
+export interface CopyResult {
+  /** Pronosticos ya guardados en el grupo de destino. */
+  copied: Prediction[];
+  skipped: { matchId: string; reason: CopySkipReason }[];
+  /** Partidos copiados SIN el comodin que tenian (no disponible en el destino, o sin equivalente en su modo). */
+  wildcardsDropped: string[];
+}
 
 @Injectable()
 export class PredictionsService {
@@ -150,6 +178,201 @@ export class PredictionsService {
     } catch (error) {
       this.logger.warn(`No se pudo conceder XP de participacion a ${userId}: ${error}`);
     }
+  }
+
+  /**
+   * TODOS los otros grupos del usuario en los que ya ha marcado algo de esa
+   * jornada, para ofrecer "copiar de otro grupo". Solo los que se pueden
+   * copiar de verdad (mismo modo de puntuacion que el actual y algun
+   * pronostico aun abierto) vienen con `unavailable: null`; el resto se
+   * devuelve con el motivo para poder mostrarlo desactivado en vez de hacer
+   * que un grupo en el que se ha marcado desaparezca sin explicacion. Solo
+   * grupos de los que sigue siendo miembro y que no estan eliminados (salir
+   * conserva los resultados, pero no es "otro grupo" al que pertenezca).
+   */
+  async getCopySources(userId: string, groupId: string, matchdayId: string): Promise<CopySource[]> {
+    await this.groupsService.assertIsMember(groupId, userId);
+    const matchday = await this.getMatchdayInActiveCompetition(groupId, matchdayId);
+    const targetMode = await this.groupsService.getScoringMode(groupId);
+
+    const predictions = await this.prisma.prediction.findMany({
+      where: {
+        userId,
+        groupId: { not: groupId },
+        match: { matchdayId: matchday.id },
+        group: { deletedAt: null, memberships: { some: { userId } } },
+      },
+      select: {
+        groupId: true,
+        match: { select: { status: true, kickoff: true } },
+        group: { select: { name: true, scoringMode: true } },
+      },
+    });
+
+    const now = new Date();
+    const sources = new Map<string, CopySource>();
+    for (const prediction of predictions) {
+      let source = sources.get(prediction.groupId);
+      if (!source) {
+        source = {
+          groupId: prediction.groupId,
+          name: prediction.group.name,
+          scoringMode: prediction.group.scoringMode,
+          copyableCount: 0,
+          unavailable: null,
+        };
+        sources.set(prediction.groupId, source);
+      }
+      if (isMatchPredictable(prediction.match, now)) source.copyableCount += 1;
+    }
+
+    for (const source of sources.values()) {
+      if (!canCopyBetweenModes(source.scoringMode, targetMode)) {
+        source.unavailable = 'DIFFERENT_MODE';
+      } else if (source.copyableCount === 0) {
+        source.unavailable = 'ALL_STARTED';
+      }
+    }
+
+    // Primero los copiables (con mas pronosticos abiertos arriba); despues el resto, por nombre.
+    return [...sources.values()].sort((a, b) => {
+      const aUnavailable = a.unavailable !== null;
+      if (aUnavailable !== (b.unavailable !== null)) return aUnavailable ? 1 : -1;
+      return (aUnavailable ? 0 : b.copyableCount - a.copyableCount) || a.name.localeCompare(b.name);
+    });
+  }
+
+  /**
+   * Copia a `targetGroupId` los pronosticos que el usuario ya hizo en
+   * `sourceGroupId` para una jornada ("no tener que ponerlo todo de nuevo
+   * en cada grupo"). Reutiliza submit() partido a partido, asi que se aplican
+   * exactamente las mismas reglas que al pronosticar a mano (partido aun no
+   * empezado, jornada abierta, comodines de ESE grupo, XP de participar) y
+   * un pronostico copiado se puede cambiar despues como cualquier otro.
+   *
+   * Sobrescribe lo que el destino ya tuviera de esos partidos, pero no toca
+   * los partidos que el origen no tiene pronosticados. No es atomico: si un
+   * partido falla, los demas siguen y se informa en `skipped`. Solo entre
+   * grupos del mismo modo de puntuacion; ver planCopy para los comodines.
+   */
+  async copyFromGroup(
+    userId: string,
+    targetGroupId: string,
+    sourceGroupId: string,
+    matchdayId: string,
+  ): Promise<CopyResult> {
+    if (targetGroupId === sourceGroupId) {
+      throw new BadRequestException('Elige un grupo distinto del actual');
+    }
+    await Promise.all([
+      this.groupsService.assertIsMember(targetGroupId, userId),
+      this.groupsService.assertIsMember(sourceGroupId, userId),
+    ]);
+    const matchday = await this.getMatchdayInActiveCompetition(targetGroupId, matchdayId);
+    if (!(await this.matchdaysService.canAcceptPredictions(matchday.id))) {
+      throw new ForbiddenException(
+        'Todavía no se puede predecir esta jornada, espera a que sea la jornada actual',
+      );
+    }
+
+    const sourceGroup = await this.prisma.group.findFirst({
+      where: { id: sourceGroupId, deletedAt: null },
+      select: { scoringMode: true },
+    });
+    if (!sourceGroup) {
+      throw new NotFoundException('Grupo no encontrado');
+    }
+    const sourceMode = sourceGroup.scoringMode;
+    const targetMode = await this.groupsService.getScoringMode(targetGroupId);
+    if (!canCopyBetweenModes(sourceMode, targetMode)) {
+      throw new BadRequestException(
+        'Solo se puede copiar entre grupos con el mismo modo de juego (1X2 o resultado exacto)',
+      );
+    }
+
+    const sourcePredictions = await this.prisma.prediction.findMany({
+      where: { userId, groupId: sourceGroupId, match: { matchdayId: matchday.id } },
+      include: { match: true },
+      orderBy: { match: { kickoff: 'asc' } },
+    });
+
+    const result: CopyResult = { copied: [], skipped: [], wildcardsDropped: [] };
+    const now = new Date();
+    for (const source of sourcePredictions) {
+      if (!isMatchPredictable(source.match, now)) {
+        result.skipped.push({ matchId: source.matchId, reason: 'LOCKED' });
+        continue;
+      }
+
+      // Solo se mira el comodin del destino si este pronostico usa uno; se
+      // consulta partido a partido porque cada comodin que se copia gasta uno
+      // de los disponibles del destino.
+      const usesWildcard = source.doublePointsWildcard || source.doubleChanceOption !== null;
+      const wildcardAvailable = usesWildcard
+        ? await this.canUseWildcard(userId, targetGroupId, matchday.id, source.matchId)
+        : false;
+
+      const plan = planCopy(source, targetMode, wildcardAvailable);
+      if ('skip' in plan) {
+        result.skipped.push({ matchId: source.matchId, reason: plan.skip });
+        continue;
+      }
+
+      try {
+        const saved = await this.submit(userId, targetGroupId, {
+          matchId: source.matchId,
+          ...plan.submission,
+        });
+        result.copied.push(saved);
+        if (plan.wildcardDropped) result.wildcardsDropped.push(source.matchId);
+      } catch (error) {
+        // El partido pudo empezar entre la comprobacion y el guardado.
+        this.logger.warn(
+          `No se pudo copiar el pronostico de ${source.matchId} a ${targetGroupId}: ${error}`,
+        );
+        result.skipped.push({
+          matchId: source.matchId,
+          reason: error instanceof ForbiddenException ? 'LOCKED' : 'FAILED',
+        });
+      }
+    }
+    return result;
+  }
+
+  private async canUseWildcard(
+    userId: string,
+    groupId: string,
+    matchdayId: string,
+    matchId: string,
+  ): Promise<boolean> {
+    try {
+      await this.wildcardsService.assertCanUseDoubleChance(userId, groupId, matchdayId, matchId);
+      return true;
+    } catch (error) {
+      if (error instanceof ForbiddenException) return false;
+      throw error;
+    }
+  }
+
+  /** La jornada existe y pertenece a una competicion activa del grupo (igual que al reclamar el comodin extra, ver WildcardsService.claimAdReward). */
+  private async getMatchdayInActiveCompetition(groupId: string, matchdayId: string) {
+    const matchday = await this.prisma.matchday.findUnique({
+      where: { id: matchdayId },
+      select: { id: true, competitionId: true },
+    });
+    if (!matchday) {
+      throw new NotFoundException('Jornada no encontrada');
+    }
+    const active = await this.prisma.groupCompetition.findFirst({
+      where: { groupId, competitionId: matchday.competitionId, isActive: true },
+      select: { id: true },
+    });
+    if (!active) {
+      throw new ForbiddenException(
+        'Esa jornada no pertenece a una competición activa de este grupo',
+      );
+    }
+    return matchday;
   }
 
   async getMine(userId: string, groupId: string, matchdayId: string) {

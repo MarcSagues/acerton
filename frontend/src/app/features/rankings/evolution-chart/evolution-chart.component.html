@@ -1,0 +1,111 @@
+<div class="plot">
+  <svg
+    [attr.width]="width()"
+    [attr.height]="height()"
+    [attr.viewBox]="'0 0 ' + width() + ' ' + height()"
+    role="img"
+    tabindex="0"
+    [attr.aria-label]="(chart().cumulative ? 'rankingsPage.graficaAcumuladoAria' : 'rankingsPage.graficaJornadaAria') | t"
+    (pointerdown)="onPointer($event)"
+    (pointermove)="onPointer($event)"
+    (pointerleave)="onPointerLeave($event)"
+    (keydown)="onKey($event)"
+    (blur)="activeIndex.set(null)"
+  >
+    @if (chart().highlightIndex !== null) {
+      <rect
+        class="viewed-band"
+        [attr.x]="xs()[chart().highlightIndex!] - band() / 2"
+        [attr.y]="pad.top - 6"
+        [attr.width]="band()"
+        [attr.height]="plotHeight + 6"
+        rx="10"
+      ></rect>
+    }
+
+    @for (tick of yTicks(); track tick.value) {
+      <line class="grid" [class.base]="tick.value === 0" [attr.x1]="pad.left" [attr.x2]="pad.left + plotWidth()" [attr.y1]="tick.y" [attr.y2]="tick.y"></line>
+      <text class="y-label" [attr.x]="pad.left - 8" [attr.y]="tick.y" dominant-baseline="middle" text-anchor="end">{{ tick.value }}</text>
+    }
+
+    @for (label of chart().labels; track $index) {
+      <text
+        class="x-label"
+        [class.viewed]="$index === chart().highlightIndex"
+        [attr.x]="xs()[$index]"
+        [attr.y]="labelY"
+        text-anchor="middle"
+      >{{ label }}</text>
+    }
+
+    @if (chart().sublabels; as sublabels) {
+      @for (sublabel of sublabels; track $index) {
+        <text class="x-sublabel" [attr.x]="xs()[$index]" [attr.y]="height() - 4" text-anchor="middle">{{ sublabel }}</text>
+      }
+    }
+
+    @if (readout(); as r) {
+      <line class="crosshair" [attr.x1]="r.x" [attr.x2]="r.x" [attr.y1]="pad.top - 4" [attr.y2]="pad.top + plotHeight"></line>
+    }
+
+    @for (series of plotted(); track series.userId) {
+      <g [class]="'series s' + series.slot" [class.me]="series.isMe" [class.dimmed]="isDimmed(series.userId)">
+        <path class="line" [attr.d]="series.path"></path>
+        @for (p of series.points; track $index) {
+          <circle class="dot" [class.active]="$index === activeIndex()" [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="series.isMe ? 4 : 3"></circle>
+        }
+      </g>
+    }
+  </svg>
+
+  @if (readout(); as r) {
+    <div class="readout" [class.right]="r.alignRight" [style.left.px]="r.alignRight ? null : r.x + 10" [style.right.px]="r.alignRight ? width() - r.x + 10 : null" aria-live="polite">
+      <span class="readout-title mono">{{ r.label }}</span>
+      @for (row of r.rows; track row.userId) {
+        <span class="readout-row" [class.me]="row.isMe">
+          <span [class]="'key s' + row.slot"></span>
+          <span class="readout-value mono">{{ row.value }}</span>
+          <span class="readout-name">{{ row.name }}</span>
+        </span>
+      }
+    </div>
+  }
+</div>
+
+<div class="legend" role="group" [attr.aria-label]="'rankingsPage.leyenda' | t">
+  @for (series of chart().series; track series.userId) {
+    <button
+      type="button"
+      class="legend-item"
+      [class.me]="series.isMe"
+      [class.dimmed]="isDimmed(series.userId)"
+      [attr.aria-pressed]="focusedUserId() === series.userId"
+      (click)="toggleFocus(series.userId)"
+    >
+      <span [class]="'key s' + series.slot"></span>
+      <span class="legend-name">{{ series.name }}</span>
+    </button>
+  }
+</div>
+
+<table class="sr-only">
+  <caption>{{ (chart().cumulative ? 'rankingsPage.graficaAcumuladoAria' : 'rankingsPage.graficaJornadaAria') | t }}</caption>
+  <thead>
+    <tr>
+      <th scope="col">{{ 'rankingsPage.jugador' | t }}</th>
+      @for (label of chart().labels; track $index) {
+        <th scope="col">{{ label }}</th>
+      }
+    </tr>
+  </thead>
+  <tbody>
+    @for (series of chart().series; track series.userId) {
+      <tr>
+        <th scope="row">{{ series.name }}</th>
+        @for (value of series.values; track $index) {
+          <td>{{ value }}</td>
+        }
+      </tr>
+    }
+  </tbody>
+</table>

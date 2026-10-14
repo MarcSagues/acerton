@@ -1,3 +1,4 @@
+import { FavoriteTeam } from './favorite-team.model';
 import { GroupRole, ScoringMode } from './group.model';
 import { MatchdayStatus } from './matchday.model';
 
@@ -22,6 +23,8 @@ export interface MemberProfile {
   name: string;
   avatarUrl: string | null;
   avatarBackground: string | null;
+  /** Equipo favorito (bandera en su perfil), o null. */
+  favoriteTeam: FavoriteTeam | null;
   /** Nivel derivado de la XP acumulada (Sprint 14, roadmap). */
   level: number;
   role: GroupRole;

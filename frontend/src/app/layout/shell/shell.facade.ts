@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { BottomNavService } from '../../core/services/bottom-nav.service';
 import { PushNotificationsService } from '../../core/services/push-notifications.service';
 import { NotificationsFeedService } from '../../core/services/notifications-feed.service';
+import { WhatsNewService } from '../../core/services/whats-new.service';
 import { PiqoDialogService } from '../../shared/ui/dialog/dialog.service';
 import { LevelUpDialogComponent } from '../../features/profile/level-up-dialog/level-up-dialog.component';
 
@@ -14,9 +15,10 @@ import { LevelUpDialogComponent } from '../../features/profile/level-up-dialog/l
  * flujos autocontenidos con su propia cabecera y boton de volver, no tabs
  * reales de la app — la barra inferior no pinta nada ahi, sobre todo para
  * quien todavia no tiene ningun grupo (Jornada/Tabla/Perfil no funcionan sin
- * uno y solo confunden).
+ * uno y solo confunden). Lo mismo al jugar un quiz (`/quiz/:id`, no el centro
+ * `/quiz`): tiene su propia navegacion anterior/siguiente y boton de volver.
  */
-const ROUTES_WITHOUT_BOTTOM_NAV = ['/groups/create', '/groups/join-code', '/groups/public'];
+const ROUTES_WITHOUT_BOTTOM_NAV = ['/groups/create', '/groups/join-code', '/groups/public', '/quiz/'];
 
 /**
  * Cada cuanto se vuelve a pedir el feed de avisos mientras la app sigue
@@ -35,6 +37,7 @@ export class ShellFacade {
   private readonly bottomNav = inject(BottomNavService);
   private readonly pushNotifications = inject(PushNotificationsService);
   private readonly notificationsFeed = inject(NotificationsFeedService);
+  private readonly whatsNew = inject(WhatsNewService);
   private readonly dialog = inject(PiqoDialogService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -82,6 +85,10 @@ export class ShellFacade {
     // salgan los dos a la vez es mas confuso que darle un respiro a cada
     // uno. No hace nada si ya se pidio antes (ver promptOnFirstLaunch).
     setTimeout(() => void this.pushNotifications.promptOnFirstLaunch(), 1500);
+
+    // Novedades de la version recien instalada (solo la primera vez que se abre
+    // esa version). Un poco despues que lo anterior, por el mismo motivo.
+    setTimeout(() => void this.whatsNew.checkOnLaunch(), 2000);
 
     const pollId = setInterval(() => this.notificationsFeed.refresh(), LEVEL_UP_POLL_INTERVAL_MS);
     this.destroyRef.onDestroy(() => clearInterval(pollId));

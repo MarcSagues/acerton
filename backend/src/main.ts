@@ -15,6 +15,12 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: configService.get('corsOrigin', { infer: true }),
     credentials: true,
+    // Cada peticion con Authorization va precedida de un preflight OPTIONS
+    // (una ida y vuelta extra). Sin esto, WebKit/Chromium solo lo cachean 5 s,
+    // asi que en la practica casi cada llamada pagaba dos viajes al servidor.
+    // Los navegadores recortan el valor a su propio maximo (Chromium 2 h,
+    // Safari/WebKit 10 min), asi que este numero solo marca "lo maximo posible".
+    maxAge: 86400,
   });
   app.useGlobalPipes(
     new ValidationPipe({

@@ -266,7 +266,7 @@ describe('GroupsService.findMineForUser', () => {
       matchdaysService as never,
       badgesService as never,
     );
-    return { service, prisma };
+    return { service, prisma, matchdaysService };
   }
 
   const openMatchday = (matches: unknown[]) => ({
@@ -287,9 +287,21 @@ describe('GroupsService.findMineForUser', () => {
     expect(result.hasPendingPicks).toBe(true);
   });
 
+  it('marca hasPendingPicks a true aunque opensAt (solo compatibilidad) este en el futuro: la jornada mas proxima siempre esta abierta', async () => {
+    const matchday = {
+      ...openMatchday([futureMatch]),
+      opensAt: new Date(Date.now() + 10 * 24 * 3600_000).toISOString(),
+    };
+    const { service } = buildFindMineDeps(matchday, []);
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(true);
+  });
+
   it('marca hasPendingPicks a false si ya se pronostico ese partido', async () => {
     const { service } = buildFindMineDeps(openMatchday([futureMatch]), [
-      { matchId: 'm1', choice: 'HOME', doubleChanceOption: null },
+      { groupId: 'g1', matchId: 'm1', choice: 'HOME', doubleChanceOption: null },
     ]);
 
     const [result] = await service.findMineForUser('u1');
@@ -335,7 +347,7 @@ describe('GroupsService.findMineForUser', () => {
   it('en modo EXACT_SCORE exige ambos marcadores para no quedar pendiente', async () => {
     const { service } = buildFindMineDeps(
       openMatchday([futureMatch]),
-      [{ matchId: 'm1', predictedHomeScore: 1, predictedAwayScore: null }],
+      [{ groupId: 'g1', matchId: 'm1', predictedHomeScore: 1, predictedAwayScore: null }],
       { scoringMode: 'EXACT_SCORE' },
     );
 
@@ -364,6 +376,84 @@ describe('GroupsService.findMineForUser', () => {
     const result = await service.findMineForUser('u1');
 
     expect(result.map((g) => g.id)).toEqual(['g2', 'g1', 'g3']);
+  });
+
+  it('pide la jornada actual una sola vez por competicion aunque la compartan varios grupos', async () => {
+    const groups = [
+      buildOwnGroup({ id: 'g1' }),
+      buildOwnGroup({ id: 'g2' }),
+      buildOwnGroup({ id: 'g3' }),
+    ];
+    const { service, matchdaysService } = buildFindMineDeps(
+      openMatchday([futureMatch]),
+      [],
+      {},
+      groups,
+    );
+
+    await service.findMineForUser('u1');
+
+    // Esta lista se pide en cada cambio de pestana: repetirlo por grupo multiplica las consultas.
+    expect(matchdaysService.getCurrentMatchdayForCompetition).toHaveBeenCalledTimes(1);
+    expect(matchdaysService.getCurrentMatchdayForCompetition).toHaveBeenCalledWith('c1');
+  });
+
+  it('pide los pronosticos de todos los grupos en una sola consulta', async () => {
+    const groups = [buildOwnGroup({ id: 'g1' }), buildOwnGroup({ id: 'g2' })];
+    const { service, prisma } = buildFindMineDeps(openMatchday([futureMatch]), [], {}, groups);
+
+    await service.findMineForUser('u1');
+
+    expect(prisma.prediction.findMany).toHaveBeenCalledTimes(1);
+    expect(prisma.prediction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: 'u1', groupId: { in: ['g1', 'g2'] } }),
+      }),
+    );
+  });
+
+  it('reparte los pronosticos por grupo: pendiente en uno no implica pendiente en otro', async () => {
+    const groups = [buildOwnGroup({ id: 'g1' }), buildOwnGroup({ id: 'g2' })];
+    const { service } = buildFindMineDeps(
+      openMatchday([futureMatch]),
+      [{ groupId: 'g2', matchId: 'm1', choice: 'HOME', doubleChanceOption: null }],
+      {},
+      groups,
+    );
+
+    const result = await service.findMineForUser('u1');
+
+    expect(result.find((g) => g.id === 'g1')?.hasPendingPicks).toBe(true);
+    expect(result.find((g) => g.id === 'g2')?.hasPendingPicks).toBe(false);
+  });
+
+  it('no consulta pronosticos si ninguna jornada admite pronosticar todavia', async () => {
+    const { service, prisma } = buildFindMineDeps(
+      { ...openMatchday([futureMatch]), canPredict: false },
+      [],
+    );
+
+    await service.findMineForUser('u1');
+
+    expect(prisma.prediction.findMany).not.toHaveBeenCalled();
+  });
+
+  it('un grupo con varias competiciones queda pendiente si lo esta cualquiera de ellas', async () => {
+    const group = buildOwnGroup({
+      groupCompetitions: [
+        { competitionId: 'c1', isActive: true, competition: {} },
+        { competitionId: 'c2', isActive: true, competition: {} },
+      ],
+    });
+    const { service, matchdaysService } = buildFindMineDeps(null, [], {}, [group]);
+    matchdaysService.getCurrentMatchdayForCompetition.mockImplementation(async (id: string) =>
+      id === 'c2' ? openMatchday([futureMatch]) : null,
+    );
+
+    const [result] = await service.findMineForUser('u1');
+
+    expect(result.hasPendingPicks).toBe(true);
+    expect(matchdaysService.getCurrentMatchdayForCompetition).toHaveBeenCalledTimes(2);
   });
 });
 

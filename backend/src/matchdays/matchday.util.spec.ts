@@ -1,5 +1,6 @@
 import {
   computeMatchResult,
+  isKickoffTimeUnconfirmed,
   isMatchEditable,
   isMatchPredictable,
   isMatchResolved,
@@ -209,6 +210,19 @@ describe('sortCurrentMatchdayEntries', () => {
     ];
     const sorted = sortCurrentMatchdayEntries(entries);
     expect(sorted.map((e) => e.competitionId)).toEqual(['recent', 'old']);
+  });
+});
+
+describe('isKickoffTimeUnconfirmed', () => {
+  it('las 00:00:00 UTC (las 2:00 en España) son la hora provisional del proveedor', () => {
+    expect(isKickoffTimeUnconfirmed(new Date('2026-10-11T00:00:00.000Z'))).toBe(true);
+  });
+
+  it('una hora real no lo es, ni siquiera por un minuto o un segundo', () => {
+    expect(isKickoffTimeUnconfirmed(new Date('2026-10-11T19:00:00Z'))).toBe(false);
+    expect(isKickoffTimeUnconfirmed(new Date('2026-10-11T00:15:00Z'))).toBe(false);
+    expect(isKickoffTimeUnconfirmed(new Date('2026-10-11T00:00:30Z'))).toBe(false);
+    expect(isKickoffTimeUnconfirmed(new Date('2026-10-11T20:00:00Z'))).toBe(false);
   });
 });
 

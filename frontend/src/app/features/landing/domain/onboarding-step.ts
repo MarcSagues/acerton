@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/translate';
 export interface OnboardingStep {
   eyebrow: string;
   title: string;
@@ -6,18 +7,18 @@ export interface OnboardingStep {
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
-    eyebrow: 'Tu liga, vuestra historia',
-    title: 'Pronostica.\nPica. Repite.',
-    body: 'Crea un grupo con tus amigos, juega cada jornada y deja que la tabla decida quién manda.',
+    eyebrow: t('onboardingStep.ligaVuestraHistoria'),
+    title: t('onboardingStep.pronosticaPicaRepite'),
+    body: t('onboardingStep.creaGrupoAmigosJuega'),
   },
   {
-    eyebrow: 'Dos formas de jugar',
-    title: 'Elige vuestro\nterreno de juego.',
-    body: 'Quiniela 1X2 para elegir local, empate o visitante; resultado exacto para clavar el marcador.',
+    eyebrow: t('onboardingStep.dosFormasJugar'),
+    title: t('onboardingStep.eligeVuestroTerrenoJuego'),
+    body: t('onboardingStep.quiniela1x2ElegirLocal'),
   },
   {
-    eyebrow: 'Todo queda entre vosotros',
-    title: 'Una temporada\npara recordar.',
-    body: 'Los puntos, las rachas y los piques se acumulan jornada a jornada. Jugar es gratis y sin dinero real.',
+    eyebrow: t('onboardingStep.todoQuedaEntreVosotros'),
+    title: t('onboardingStep.temporadaRecordar'),
+    body: t('onboardingStep.puntosRachasPiquesAcumulan'),
   },
 ];

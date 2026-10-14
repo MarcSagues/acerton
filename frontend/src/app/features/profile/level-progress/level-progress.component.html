@@ -2,14 +2,14 @@
   <div class="halo" aria-hidden="true"></div>
 
   <div class="head-row">
-    <button type="button" class="head-btn" aria-label="Volver a Perfil" (click)="page.goToProfile()">
+    <button type="button" class="head-btn" [attr.aria-label]="'common.volverPerfil' | t" (click)="page.goToProfile()">
       <piqo-svg icon="atras" size="18"></piqo-svg>
     </button>
     <div class="head-title">
-      <h1>Tu nivel</h1>
-      <p>Progreso de tu cuenta</p>
+      <h1>{{ 'levelProgress.nivel' | t }}</h1>
+      <p>{{ 'levelProgress.progresoCuenta' | t }}</p>
     </div>
-    <button type="button" class="head-btn" aria-label="Cómo ganar XP" (click)="page.openInfo()">
+    <button type="button" class="head-btn" [attr.aria-label]="'common.comoGanarXp' | t" (click)="page.openInfo()">
       <piqo-svg icon="ayuda" size="20"></piqo-svg>
     </button>
   </div>
@@ -37,7 +37,7 @@
           </svg>
           <div class="ring-disc">
             <span class="ring-level">{{ page.currentLevel() }}</span>
-            <span class="ring-caption">NIVEL</span>
+            <span class="ring-caption">{{ 'levelProgress.nivel2' | t }}</span>
           </div>
         </div>
         <div class="hero-meta">
@@ -49,17 +49,17 @@
       <div class="hero-bottom">
         <div>
           <p class="hero-xp mono">{{ page.currentXp() }} / {{ page.needXp() }}</p>
-          <p class="hero-xp-label">XP de nivel</p>
+          <p class="hero-xp-label">{{ 'levelProgress.xpNivel' | t }}</p>
         </div>
         <div class="right">
           <p class="hero-xp mono success">{{ page.xpLast7DaysLabel() }}</p>
-          <p class="hero-xp-label">Últimos 7 días</p>
+          <p class="hero-xp-label">{{ 'levelProgress.ultimos7Dias' | t }}</p>
         </div>
       </div>
     </div>
 
     <div class="section-head">
-      <p class="section-title">Pase de progreso</p>
+      <p class="section-title">{{ 'levelProgress.paseProgreso' | t }}</p>
       <p class="section-count mono">{{ page.unlockedLabel() }}</p>
     </div>
 
@@ -74,9 +74,9 @@
             (click)="onNodeClick(node.n)"
           >
             @if (node.current) {
-              <span class="node-pin">TÚ</span>
+              <span class="node-pin">{{ 'levelProgress.tu' | t }}</span>
             } @else if (node.hasUnclaimedReward) {
-              <span class="node-unclaimed-dot" aria-label="Recompensa nueva"></span>
+              <span class="node-unclaimed-dot" [attr.aria-label]="'levelProgress.recompensaNueva' | t"></span>
             }
             <span class="node-rail" [class.hidden]="node.n === page.maxLevel"></span>
             <span
@@ -111,13 +111,13 @@
         <div class="detail-icon" [class.unlocked]="page.selectedUnlocked()">
           <span>{{ page.selected() }}</span>
           @if (page.selectedHasUnclaimedReward()) {
-            <span class="detail-icon-dot" aria-label="Recompensa nueva"></span>
+            <span class="detail-icon-dot" [attr.aria-label]="'levelProgress.recompensaNueva' | t"></span>
           }
         </div>
         <div class="detail-meta">
           <div class="detail-title-row">
             <p class="detail-title">{{ page.selectedReward().reward }}</p>
-            <span class="detail-chip" [class]="page.selectedStatusLabel() === 'CONSEGUIDO' ? 'done' : page.selectedStatusLabel() === 'EN CURSO' ? 'current' : 'locked'">
+            <span class="detail-chip" [class]="page.selectedStatus()">
               {{ page.selectedStatusLabel() }}
             </span>
           </div>
@@ -135,7 +135,7 @@
     </div>
 
     <div class="section-head tight">
-      <p class="section-title">Tu jornada</p>
+      <p class="section-title">{{ 'common.jornada' | t }}</p>
     </div>
     <div class="stats-row">
       @for (stat of page.stats(); track stat.label) {
@@ -150,8 +150,8 @@
       <button type="button" class="invite-card" (click)="page.shareInvite()">
         <span class="invite-icon"><piqo-svg icon="invitar" size="19"></piqo-svg></span>
         <span class="invite-meta">
-          <span class="invite-title">Invita a un amigo</span>
-          <span class="invite-sub">Gana XP extra cuando se una con tu enlace</span>
+          <span class="invite-title">{{ 'levelProgress.invitaAmigo' | t }}</span>
+          <span class="invite-sub">{{ 'levelProgress.ganaXpExtraCuando' | t }}</span>
         </span>
         <piqo-svg icon="flecha" size="18"></piqo-svg>
       </button>

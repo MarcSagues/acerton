@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { BottomSheetService } from '../../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { DoubleChanceOption } from '../../../core/models/prediction.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
+import { t } from '../../../core/i18n/translate';
 
 export interface ComebackSheetData {
   homeTeam: string;
@@ -32,9 +34,10 @@ const DOUBLE_CHANCE_OPTIONS: { v: DoubleChanceOption; l: string }[] = [
 @Component({
   selector: 'app-comeback-sheet',
   standalone: true,
+  imports: [TranslatePipe],
   template: `
     <div class="sheet-handle"></div>
-    <p class="sheet-title">Comodín de remontada</p>
+    <p class="sheet-title">{{ 'common.comodinRemontada' | t }}</p>
     <p class="sheet-teams">{{ data.homeTeam }} - {{ data.awayTeam }}</p>
     <p class="sheet-remaining">{{ remainingLabel() }}</p>
     @if (data.mode === 'double-chance') {
@@ -48,12 +51,12 @@ const DOUBLE_CHANCE_OPTIONS: { v: DoubleChanceOption; l: string }[] = [
     } @else {
       <div class="sheet-options">
         <button type="button" class="opt wide" [class.selected]="data.currentDoublePoints" (click)="pickDoublePoints()">
-          Duplicar puntos de este partido (x2)
+          {{ 'comebackSheet.duplicarPuntosEstePartido' | t }}
         </button>
       </div>
     }
     @if (hasCurrent()) {
-      <button type="button" class="remove-btn" (click)="remove()">Quitar comodín</button>
+      <button type="button" class="remove-btn" (click)="remove()">{{ 'comebackSheet.quitarComodin' | t }}</button>
     }
   `,
   styles: [
@@ -135,10 +138,8 @@ export class ComebackSheetComponent {
   }
 
   remainingLabel(): string {
-    if (this.hasCurrent()) return 'Ya activo en este partido';
-    return this.data.remaining === 1
-      ? 'Te queda 1 comodín esta jornada'
-      : `Te quedan ${this.data.remaining} comodines esta jornada`;
+    if (this.hasCurrent()) return t('comebackSheet.yaActivoEstePartido');
+    return t('comebackSheet.remaining', { count: this.data.remaining });
   }
 
   pick(option: DoubleChanceOption): void {

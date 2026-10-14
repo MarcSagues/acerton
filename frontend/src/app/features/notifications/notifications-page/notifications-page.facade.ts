@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { NOTICE_PERIODS, NoticeItem, NoticePeriod } from '../domain/notice';
+import { NOTICE_PERIODS, NoticeItem, NoticePeriod, noticePeriodLabel } from '../domain/notice';
 import { NotificationsFeedService } from '../../../core/services/notifications-feed.service';
 
 @Injectable()
@@ -16,6 +16,10 @@ export class NotificationsPageFacade {
   }
 
   /** Solo los avisos de este periodo — evita pintar una cabecera de sección vacía cuando no hay ninguno. */
+  periodLabel(period: NoticePeriod): string {
+    return noticePeriodLabel(period);
+  }
+
   noticesForPeriod(period: NoticePeriod) {
     return this.notices().filter((notice) => notice.period === period);
   }
@@ -27,8 +31,8 @@ export class NotificationsPageFacade {
   /**
    * Al pulsar un aviso concreto: marca solo ese como leido (quita su punto
    * rojo) y, segun el tipo, navega a donde tenga sentido verlo — de
-   * momento solo "subiste de nivel" lleva a elegir avatar (la recompensa
-   * que acabas de desbloquear).
+   * momento "subiste de nivel" lleva a elegir avatar (la recompensa que
+   * acabas de desbloquear) y los avisos del Quiz, al centro del Quiz.
    */
   openNotice(notice: NoticeItem): void {
     if (notice.unread) {
@@ -36,6 +40,8 @@ export class NotificationsPageFacade {
     }
     if (notice.type === 'LEVEL_UP') {
       this.router.navigate(['/profile/avatar']);
+    } else if (notice.type === 'QUIZ_OPENED' || notice.type === 'QUIZ_CLOSING_SOON') {
+      this.router.navigate(['/quiz']);
     }
   }
 }

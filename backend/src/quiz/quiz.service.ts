@@ -338,9 +338,8 @@ export class QuizService {
         id: match.id,
         homeTeam: match.homeTeam,
         awayTeam: match.awayTeam,
-        // dev no guarda todavia los nombres cortos: el cliente usa el completo.
-        homeTeamShort: null,
-        awayTeamShort: null,
+        homeTeamShort: match.homeTeamShort,
+        awayTeamShort: match.awayTeamShort,
         homeTeamLogo: match.homeTeamLogo,
         awayTeamLogo: match.awayTeamLogo,
         kickoff: match.kickoff.toISOString(),

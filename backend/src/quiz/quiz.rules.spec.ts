@@ -15,6 +15,8 @@ function match(id: number, overrides: Partial<Match> = {}): Match {
     matchdayId: 'round',
     homeTeam: `Club ${id}`,
     awayTeam: 'Rival',
+    homeTeamShort: null,
+    awayTeamShort: null,
     homeTeamLogo: null,
     awayTeamLogo: null,
     kickoff: new Date(`2030-10-12T${String(10 + (id % 10)).padStart(2, '0')}:00:00Z`),

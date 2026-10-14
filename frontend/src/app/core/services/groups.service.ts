@@ -97,11 +97,21 @@ export class GroupsService {
     });
   }
 
+  /** Ajustes del grupo (nombre, reglas, privacidad): solo admins, lo comprueba el backend. */
   updateRules(
     groupId: string,
-    rules: { comebackEnabled?: boolean; comebackPointsPerBonus?: number; isPublic?: boolean },
+    rules: { name?: string; comebackEnabled?: boolean; comebackPointsPerBonus?: number; isPublic?: boolean },
   ) {
-    return this.http.patch<Group>(`${environment.apiUrl}/groups/${groupId}/rules`, rules);
+    return this.http.patch<Group>(`${environment.apiUrl}/groups/${groupId}/rules`, rules).pipe(
+      // El nombre se ve en el selector de grupo de la barra superior y en
+      // las tarjetas de compartir: sin esto seguiria el nombre viejo hasta
+      // la siguiente recarga del listado.
+      tap((updated) =>
+        this.myGroupsSignal.update((groups) =>
+          groups.map((g) => (g.id === updated.id ? { ...g, name: updated.name } : g)),
+        ),
+      ),
+    );
   }
 
   setMuted(groupId: string, muted: boolean) {

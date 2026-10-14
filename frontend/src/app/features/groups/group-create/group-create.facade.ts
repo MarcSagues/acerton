@@ -11,6 +11,7 @@ import { ScoringMode } from '../../../core/models/group.model';
 import { competitionTrophyId } from '../../../shared/utils/competition-trophy';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { InfoDialogComponent, InfoDialogData } from '../../../shared/info-dialog/info-dialog.component';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class GroupCreateFacade {
@@ -63,10 +64,10 @@ export class GroupCreateFacade {
     const exact = this.form.value.scoringMode === 'EXACT_SCORE';
     this.dialog.open<InfoDialogComponent, void, InfoDialogData>(InfoDialogComponent, {
       data: {
-        title: '¿Cómo funciona el comodín?',
+        title: t('groupCreate.comoFuncionaComodin'),
         message: exact
-          ? 'Cada partido se puede jugar con los puntos duplicados (10 por marcador exacto, 4 por acertar solo el resultado) en vez de un pronóstico normal. Los usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.'
-          : 'Cada partido se puede jugar con doble oportunidad (1X, X2 o 12) en vez de un pronóstico normal. Los usos disponibles se recalculan cada semana según tu diferencia de puntos con quien vaya primero en el grupo. El admin puede desactivarlo o ajustarlo después, desde los ajustes.',
+          ? t('groupCreate.cadaPartidoPuedeJugar')
+          : t('groupCreate.cadaPartidoPuedeJugar2'),
       },
     });
   }
@@ -132,7 +133,7 @@ export class GroupCreateFacade {
         },
         error: (error: HttpErrorResponse) => {
           this.formLoading.set(false);
-          this.errorMessage.set(error.error?.message ?? 'No se pudo crear el grupo');
+          this.errorMessage.set(error.error?.message ?? t('groupCreate.pudoCrearGrupo'));
         },
       });
   }

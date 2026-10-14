@@ -1,59 +1,56 @@
 <div class="page">
-  <a routerLink="/login" class="back">&lt; Volver</a>
-  <h1>Política de privacidad</h1>
-  <p class="updated mono">Última actualización: septiembre de 2026</p>
+  <a routerLink="/login" class="back">{{ 'common.volver' | t }}</a>
+  <h1>{{ 'privacyPolicy.politicaPrivacidad' | t }}</h1>
+  <p class="updated mono">{{ 'privacyPolicy.ultimaActualizacionSeptiembre2026' | t }}</p>
 
   <section>
-    <h2>Quién es el responsable</h2>
+    <h2>{{ 'privacyPolicy.quienResponsable' | t }}</h2>
     <p>
-      Piqo es un proyecto personal, sin ánimo de lucro comercial más allá de la publicidad descrita
-      más abajo. Para cualquier consulta sobre tus datos puedes escribir a
-      <a href="mailto:support@piqo.es">support&#64;piqo.es</a>.
+      {{ 'privacyPolicy.piqoProyectoPersonalSin' | t }}
+      <a href="mailto:support@piqo.es">{{ 'common.supportPiqo' | t }}</a>.
     </p>
   </section>
 
   <section>
-    <h2>Qué datos se recogen</h2>
+    <h2>{{ 'privacyPolicy.datosRecogen' | t }}</h2>
     <ul>
-      <li><strong>Cuenta:</strong> nombre, email y contraseña (guardada cifrada), o tu perfil básico de Google si entras con ese método.</li>
-      <li><strong>Uso de la app:</strong> los grupos a los que perteneces, tus pronósticos, puntos, rachas e insignias.</li>
-      <li><strong>Notificaciones push:</strong> un identificador de dispositivo (token de Firebase Cloud Messaging), solo si activas los avisos desde tu perfil.</li>
-      <li><strong>Sesión:</strong> una cookie técnica necesaria para mantenerte identificado (renovación del inicio de sesión). No es de seguimiento ni publicitaria.</li>
+      <li><strong>{{ 'privacyPolicy.cuenta' | t }}</strong> {{ 'privacyPolicy.nombreEmailContrasenaGuardada' | t }}</li>
+      <li><strong>{{ 'privacyPolicy.usoApp' | t }}</strong> {{ 'privacyPolicy.gruposPertenecesPronosticosPuntos' | t }}</li>
+      <li><strong>{{ 'privacyPolicy.notificacionesPush' | t }}</strong> {{ 'privacyPolicy.identificadorDispositivoTokenFirebase' | t }}</li>
+      <li><strong>{{ 'privacyPolicy.sesion' | t }}</strong> {{ 'privacyPolicy.cookieTecnicaNecesariaMantenerte' | t }}</li>
     </ul>
   </section>
 
   <section>
-    <h2>Con quién se comparten</h2>
+    <h2>{{ 'privacyPolicy.quienComparten' | t }}</h2>
     <ul>
-      <li><strong>Google</strong> (inicio de sesión con Google, notificaciones push vía Firebase, y publicidad vía Google AdSense).</li>
-      <li><strong>football-data.org</strong>, para traer calendarios y resultados reales — no recibe datos tuyos, solo se le pide información pública de partidos.</li>
-      <li>Proveedores de infraestructura donde corre la app (hosting del backend, base de datos y CDN del frontend), que procesan los datos únicamente para que el servicio funcione.</li>
+      <li><strong>{{ 'privacyPolicy.google' | t }}</strong> {{ 'privacyPolicy.inicioSesionGoogleNotificaciones' | t }}</li>
+      <li><strong>{{ 'privacyPolicy.footballDataOrg' | t }}</strong>{{ 'privacyPolicy.traerCalendariosResultadosReales' | t }}</li>
+      <li>{{ 'privacyPolicy.proveedoresInfraestructuraDondeCorre' | t }}</li>
     </ul>
-    <p>No se venden datos a terceros.</p>
+    <p>{{ 'privacyPolicy.vendenDatosTerceros' | t }}</p>
   </section>
 
   <section>
-    <h2>Publicidad y cookies</h2>
+    <h2>{{ 'privacyPolicy.publicidadCookies' | t }}</h2>
     <p>
-      Esta app muestra anuncios a través de <strong>Google AdSense</strong>. Google (y sus socios publicitarios)
-      puede usar cookies para mostrar anuncios basados en tus visitas a esta y otras webs. Puedes elegir si
-      permites publicidad personalizada en el aviso de cookies que aparece la primera vez que entras; tu elección
-      se recuerda en este navegador y puedes cambiarla borrando los datos del sitio.
+      {{ 'privacyPolicy.estaAppMuestraAnuncios' | t }} <strong>{{ 'privacyPolicy.googleAdsense' | t }}</strong>{{ 'privacyPolicy.googleSociosPublicitariosPuede' | t }}
     </p>
     <p>
-      Más información sobre cómo usa Google los datos:
+      {{ 'privacyPolicy.masInformacionSobreComo' | t }}
       <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">
-        policies.google.com/technologies/partner-sites
+        {{ 'privacyPolicy.policiesGoogleComTechnologies' | t }}
       </a>.
     </p>
   </section>
 
   <section>
-    <h2>Tus derechos</h2>
+    <h2>{{ 'privacyPolicy.derechos' | t }}</h2>
     <p>
-      Puedes pedir acceder, corregir o borrar tus datos, o eliminar tu cuenta por completo, escribiendo a
-      <a href="mailto:support@piqo.es">support&#64;piqo.es</a>. Al borrar la cuenta se eliminan
-      también tus pronósticos, comodines y notificaciones asociadas.
+      {{ 'privacyPolicy.puedesEliminarCuentaCompleto' | t }} <strong>{{ 'privacyPolicy.perfilEliminarCuenta' | t }}</strong>{{ 'privacyPolicy.hacerloEliminanTambienPronosticos' | t }}
+    </p>
+    <p>
+      {{ 'privacyPolicy.siPrefieresPedirAcceder' | t }} <a href="mailto:support@piqo.es">{{ 'common.supportPiqo' | t }}</a>.
     </p>
   </section>
 </div>

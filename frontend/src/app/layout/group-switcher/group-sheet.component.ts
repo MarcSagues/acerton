@@ -5,11 +5,13 @@ import { ActiveGroupService } from '../../core/services/active-group.service';
 import { BottomSheetService } from '../../shared/ui/bottom-sheet/bottom-sheet.service';
 import { ScoringMode } from '../../core/models/group.model';
 import { scoringModeIcon as scoringModeIconOf } from '../../shared/utils/scoring-mode-badge';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 /** Contenido del panel inferior "Selector de grupo". HANDOFF §10. */
 @Component({
   selector: 'app-group-sheet',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './group-sheet.component.html',
   styleUrl: './group-sheet.component.scss',

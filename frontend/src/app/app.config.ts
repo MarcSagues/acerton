@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, ApplicationConfig, inject, isDevMode, provideZoneChangeDetection } from '@angular/core';
+import { APP_INITIALIZER, ApplicationConfig, LOCALE_ID, inject, isDevMode, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withInMemoryScrolling, withViewTransitions } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -7,8 +7,10 @@ import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { languageInterceptor } from './core/interceptors/language.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
+import { currentLocale } from './core/i18n/translate';
 
 /**
  * Remata la animacion del loader estatico (ver index.html) antes de dejar
@@ -34,14 +36,13 @@ function initializeAuth(authService: AuthService): () => Promise<boolean> {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
+    // Idioma de DatePipe y demas pipes de formato: el mismo que el de los textos (ver core/i18n).
+    { provide: LOCALE_ID, useFactory: currentLocale },
     provideRouter(
       routes,
-      // 'enabled': al volver atras (boton, gesto o navegador) restaura el
-      // scroll donde estaba esa vista; al ir hacia adelante (navegacion
-      // nueva) empieza arriba, como es de esperar. El scroll de las
-      // pantallas es el del documento (el layout del shell crece con el
-      // contenido, sin un contenedor interno con su propio overflow), asi
-      // que esta opcion de Angular Router basta sin nada mas a medida.
+      // Sin efecto real mientras el scroll sea el de `body` y no el de la ventana (ver
+      // ScrollTopService, que es quien sube cada pantalla al abrirla): se deja por si el layout
+      // vuelve a hacer scroll en el documento.
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
       // Solo anima la navegacion que viene del gesto de deslizar desde el
       // borde (ver EdgeSwipeBackService): el resto de navegaciones (enlaces,
@@ -61,7 +62,7 @@ export const appConfig: ApplicationConfig = {
         },
       }),
     ),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([languageInterceptor, authInterceptor])),
     provideAnimationsAsync(),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

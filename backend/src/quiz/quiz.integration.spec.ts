@@ -1,0 +1,381 @@
+import { Prisma, QuizOption } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { MatchdaysService } from '../matchdays/matchdays.service';
+import { FootballProvider } from '../football-data/football-provider.interface';
+import { QuizService, seasonLabelFor } from './quiz.service';
+import { getCurrentFootballSeason } from '../common/season.util';
+import { Test } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
+import { JwtStrategy } from '../auth/strategies/jwt.strategy';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { LocalizedExceptionFilter } from '../common/i18n/localized-exception.filter';
+import { QuizController } from './quiz.controller';
+
+// Explicit opt-in, isolated local DB only. Regular unit runs skip database access.
+const databaseUrl = process.env.TEST_QUIZ_DATABASE_URL;
+const integration = databaseUrl ? describe : describe.skip;
+const prefix = 'quiz-it-';
+
+integration('Quiz API service against MySQL', () => {
+  let prisma: PrismaService;
+  let service: QuizService;
+  let app: INestApplication;
+  let baseUrl: string;
+  const jwt = new JwtService({ secret: 'isolated-quiz-test-secret' });
+  const season = getCurrentFootballSeason();
+  const future = () => new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  beforeAll(async () => {
+    const url = new URL(databaseUrl!);
+    if (
+      !['127.0.0.1', 'localhost'].includes(url.hostname) ||
+      url.pathname !== '/acerton_quiz_test'
+    ) {
+      throw new Error(
+        'Quiz integration tests require the isolated local acerton_quiz_test database',
+      );
+    }
+    prisma = new PrismaService({ datasources: { db: { url: databaseUrl } } });
+    await prisma.$connect();
+    service = new QuizService(prisma, new MatchdaysService(prisma, {} as FootballProvider));
+    const module = await Test.createTestingModule({
+      controllers: [QuizController],
+      providers: [
+        { provide: QuizService, useValue: service },
+        { provide: PrismaService, useValue: prisma },
+        { provide: ConfigService, useValue: { get: () => 'isolated-quiz-test-secret' } },
+        JwtStrategy,
+        { provide: APP_GUARD, useClass: JwtAuthGuard },
+        { provide: APP_FILTER, useClass: LocalizedExceptionFilter },
+      ],
+    }).compile();
+    app = module.createNestApplication();
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
+    );
+    await app.listen(0, '127.0.0.1');
+    baseUrl = await app.getUrl();
+  });
+
+  async function clean() {
+    await prisma.competition.deleteMany({ where: { id: { startsWith: prefix } } });
+    await prisma.user.deleteMany({ where: { id: { startsWith: prefix } } });
+  }
+
+  beforeEach(async () => {
+    await clean();
+    await prisma.competition.createMany({
+      data: [
+        {
+          id: `${prefix}liga`,
+          code: 'LA_LIGA',
+          name: 'La Liga',
+          externalId: 2014,
+          currentSeason: season,
+        },
+        {
+          id: `${prefix}premier`,
+          code: 'PREMIER_LEAGUE',
+          name: 'Premier League',
+          externalId: 2021,
+          currentSeason: season,
+        },
+      ],
+    });
+    await prisma.user.createMany({
+      data: ['a', 'b', 'c'].map((id) => ({
+        id: `${prefix}${id}`,
+        email: `${prefix}${id}@example.test`,
+        name: id.toUpperCase(),
+        referralCode: `${prefix}${id}`,
+      })),
+    });
+  });
+
+  afterAll(async () => {
+    if (prisma) {
+      await clean();
+      if (app) await app.close();
+      await prisma.$disconnect();
+    }
+  });
+
+  async function round(league = 'liga', order = 1, count = 10) {
+    const id = `${prefix}${league}-${order}`;
+    await prisma.matchday.create({
+      data: {
+        id,
+        competitionId: `${prefix}${league}`,
+        season,
+        name: `Regular Season - ${order}`,
+        order,
+        closesAt: future(),
+        status: 'OPEN',
+        matches: {
+          create: Array.from({ length: count }, (_, i) => ({
+            id: `${id}-m${i}`,
+            externalId: (league === 'liga' ? 800000 : 900000) + order * 100 + i,
+            homeTeam: i === count - 1 ? 'FC Barcelona' : `Club ${i}`,
+            awayTeam: 'Opponent',
+            kickoff: new Date(future().getTime() + i * 3600000),
+          })),
+        },
+      },
+    });
+    await service.publishAvailable();
+    return prisma.quizEvent.findUnique({
+      where: { matchdayId: id },
+      include: { questions: { orderBy: { order: 'asc' } } },
+    });
+  }
+
+  it('serves the HTTP contract with JWT auth, nested DTO validation and stable localized error codes', async () => {
+    const event = (await round())!;
+    expect((await fetch(`${baseUrl}/api/quiz/overview`)).status).toBe(401);
+    const headers = {
+      Authorization: `Bearer ${jwt.sign({ sub: `${prefix}a` })}`,
+      'Content-Type': 'application/json',
+    };
+    const overview = await fetch(`${baseUrl}/api/quiz/overview`, { headers });
+    expect(overview.status).toBe(200);
+    expect((await overview.json()).quizzes[0].id).toBe(event.id);
+    const malformed = await fetch(`${baseUrl}/api/quiz/${event.id}/answers`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ answers: [{ questionId: event.questions[0].id, option: 'INVALID' }] }),
+    });
+    expect(malformed.status).toBe(400);
+    expect(await prisma.quizParticipation.count()).toBe(0);
+    const foreignUser = await fetch(`${baseUrl}/api/quiz/${event.id}/answers`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        userId: `${prefix}b`,
+        answers: [{ questionId: event.questions[0].id, option: 'HOME' }],
+      }),
+    });
+    expect(foreignUser.status).toBe(400);
+    const saved = await fetch(`${baseUrl}/api/quiz/${event.id}/answers`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ answers: [{ questionId: event.questions[0].id, option: 'HOME' }] }),
+    });
+    expect(saved.status).toBe(200);
+    expect((await saved.json()).quiz.participation.answeredCount).toBe(1);
+    expect((await fetch(`${baseUrl}/api/quiz/rankings?limit=101`, { headers })).status).toBe(400);
+    const missing = await fetch(`${baseUrl}/api/quiz/missing`, {
+      headers: { ...headers, 'Accept-Language': 'en' },
+    });
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toMatchObject({
+      code: 'QUIZ_NOT_FOUND',
+      message: 'Quiz not found',
+    });
+  });
+
+  it('opens only an eligible round, shares fixed questions and supports users without groups', async () => {
+    const event = (await round())!;
+    expect(await round('liga', 2)).toBeNull();
+    const first = await service.start(event.id, `${prefix}a`);
+    const second = await service.start(event.id, `${prefix}b`);
+    expect(first.questions.map((q) => [q.id, q.type, q.options])).toEqual(
+      second.questions.map((q) => [q.id, q.type, q.options]),
+    );
+    expect(first.questions.every((q) => q.correctOption === null)).toBe(true);
+    expect(await prisma.groupMembership.count()).toBe(0);
+    await Promise.all([
+      service.start(event.id, `${prefix}a`),
+      service.start(event.id, `${prefix}a`),
+    ]);
+    expect(
+      await prisma.quizParticipation.count({ where: { userId: `${prefix}a`, eventId: event.id } }),
+    ).toBe(1);
+  });
+
+  it('saves partial answers, resumes, validates batches atomically and keeps other players private', async () => {
+    const event = (await round())!;
+    const [question] = event.questions;
+    const option = (question.options as QuizOption[])[0];
+    await service.saveAnswers(event.id, `${prefix}a`, [{ questionId: question.id, option }]);
+    const detail = await service.detail(event.id, `${prefix}a`);
+    expect(detail.quiz.participation?.answeredCount).toBe(1);
+    expect(
+      (await service.detail(event.id, `${prefix}b`)).questions.every(
+        (q) => q.selectedOption === null,
+      ),
+    ).toBe(true);
+    await expect(
+      service.saveAnswers(event.id, `${prefix}a`, [
+        { questionId: question.id, option },
+        { questionId: 'foreign-question', option: 'YES' },
+      ]),
+    ).rejects.toMatchObject({ response: { code: 'INVALID_QUIZ_ANSWER' } });
+    await expect(
+      service.saveAnswers(event.id, `${prefix}a`, [{ questionId: question.id, option: 'YES' }]),
+    ).rejects.toMatchObject({ response: { code: 'INVALID_QUIZ_ANSWER' } });
+    await expect(
+      service.saveAnswers(event.id, `${prefix}a`, [
+        { questionId: question.id, option },
+        { questionId: question.id, option },
+      ]),
+    ).rejects.toMatchObject({ response: { code: 'INVALID_QUIZ_ANSWER' } });
+    expect(await prisma.quizAnswer.count()).toBe(1);
+    await expect(service.complete(event.id, `${prefix}a`)).rejects.toMatchObject({
+      response: { code: 'QUIZ_INCOMPLETE' },
+    });
+    await service.saveAnswers(
+      event.id,
+      `${prefix}a`,
+      event.questions.map((q) => ({ questionId: q.id, option: (q.options as QuizOption[])[0] })),
+    );
+    expect(
+      (await service.complete(event.id, `${prefix}a`)).quiz.participation?.completedAt,
+    ).not.toBeNull();
+    expect(
+      (
+        await service.saveAnswers(event.id, `${prefix}a`, [
+          { questionId: question.id, option: 'AWAY' },
+        ])
+      ).canAnswer,
+    ).toBe(true);
+  });
+
+  it('updates the deadline before kickoff and locks on an omitted match without reopening', async () => {
+    const event = (await round('liga', 1, 12))!;
+    const omitted = await prisma.match.findFirstOrThrow({
+      where: { matchdayId: event.matchdayId, id: { notIn: event.questions.map((q) => q.matchId) } },
+    });
+    const earlier = new Date(Date.now() + 60000);
+    await prisma.match.update({ where: { id: omitted.id }, data: { kickoff: earlier } });
+    expect((await service.detail(event.id, `${prefix}a`)).quiz.closesAt).toBe(
+      earlier.toISOString(),
+    );
+    await prisma.match.update({ where: { id: omitted.id }, data: { status: 'LIVE' } });
+    await expect(service.start(event.id, `${prefix}a`)).rejects.toMatchObject({
+      response: { code: 'QUIZ_CLOSED' },
+    });
+    await prisma.match.update({
+      where: { id: omitted.id },
+      data: { status: 'POSTPONED', kickoff: future() },
+    });
+    expect((await service.detail(event.id, `${prefix}a`)).canAnswer).toBe(false);
+    expect(
+      (await prisma.quizEvent.findUniqueOrThrow({ where: { id: event.id } })).lockedAt,
+    ).not.toBeNull();
+  });
+
+  it('checks the deadline again after waiting for a competing database lock', async () => {
+    const event = (await round())!;
+    await service.start(event.id, `${prefix}a`);
+    let acquired!: () => void;
+    const acquiredPromise = new Promise<void>((resolve) => {
+      acquired = resolve;
+    });
+    const held = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM quiz_events WHERE id = ${event.id} FOR UPDATE`);
+      const soon = new Date(Date.now() + 100);
+      await tx.match.updateMany({
+        where: { matchdayId: event.matchdayId },
+        data: { kickoff: soon },
+      });
+      acquired();
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    await acquiredPromise;
+    const saved = service.saveAnswers(event.id, `${prefix}a`, [
+      { questionId: event.questions[0].id, option: 'HOME' },
+    ]);
+    await held;
+    await expect(saved).rejects.toMatchObject({ response: { code: 'QUIZ_CLOSED' } });
+    expect(await prisma.quizAnswer.count()).toBe(0);
+  });
+
+  it('scores idempotently, handles cancelled/postponed matches, and corrects a previous final result', async () => {
+    const event = (await round('liga', 1, 2))!;
+    await service.saveAnswers(
+      event.id,
+      `${prefix}a`,
+      event.questions.map((q) => ({
+        questionId: q.id,
+        option: 'YES' === (q.options as string[])[0] ? 'YES' : 'HOME',
+      })),
+    );
+    await prisma.match.updateMany({
+      where: { matchdayId: event.matchdayId },
+      data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
+    });
+    const first = await service.detail(event.id, `${prefix}a`);
+    const second = await service.detail(event.id, `${prefix}a`);
+    expect(second.quiz.participation?.points).toBe(first.quiz.participation?.points);
+    expect(first.quiz.status).toBe('FINISHED');
+    const expected = first.questions.filter((q) => q.selectedOption === q.correctOption).length;
+    expect(first.quiz.participation?.points).toBe(expected);
+    await prisma.match.updateMany({
+      where: { matchdayId: event.matchdayId },
+      data: { homeScore: 0, awayScore: 3 },
+    });
+    const corrected = await service.detail(event.id, `${prefix}a`);
+    expect(corrected.quiz.participation?.points).toBe(
+      corrected.questions.filter((q) => q.selectedOption === q.correctOption).length,
+    );
+    expect(corrected.quiz.participation?.points).not.toBe(expected);
+    await prisma.match.update({
+      where: { id: event.questions[0].matchId },
+      data: { status: 'CANCELLED' },
+    });
+    await prisma.match.update({
+      where: { id: event.questions[1].matchId },
+      data: { status: 'POSTPONED' },
+    });
+    const pending = await service.detail(event.id, `${prefix}a`);
+    expect(pending.quiz.participation?.voidCount).toBeGreaterThan(0);
+    expect(pending.quiz.participation?.points).toBe(0);
+    expect(pending.quiz.status).toBe('CLOSED');
+    expect(pending.questions.every((q) => q.correctOption === null)).toBe(true);
+  });
+
+  it('returns cumulative and league rankings, shared positions, pagination and own row', async () => {
+    const liga = (await round('liga', 1, 1))!;
+    const premier = (await round('premier', 1, 1))!;
+    for (const event of [liga, premier]) {
+      for (const user of ['a', 'b']) {
+        await service.saveAnswers(
+          event.id,
+          `${prefix}${user}`,
+          event.questions.map((q) => ({
+            questionId: q.id,
+            option: (q.options as QuizOption[])[0],
+          })),
+        );
+      }
+      await prisma.match.updateMany({
+        where: { matchdayId: event.matchdayId },
+        data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
+      });
+    }
+    const general = await service.rankings(`${prefix}b`, { limit: 1 });
+    const league = await service.rankings(`${prefix}b`, { competitionId: `${prefix}liga` });
+    expect(general.rows).toHaveLength(1);
+    expect(general.total).toBe(2);
+    expect(general.nextCursor).toBe('1');
+    expect(general.me?.userId).toBe(`${prefix}b`);
+    expect(general.me?.position).toBe(1);
+    expect(league.rows.map((r) => r.position)).toEqual([1, 1]);
+    expect(general.me?.points).toBe(league.me!.points * 2);
+    expect(general.provisional).toBe(false);
+    const next = await service.rankings(`${prefix}c`, { cursor: '1', limit: 1 });
+    expect(next.rows[0].userId).toBe(`${prefix}b`);
+    expect(next.me).toBeNull();
+    expect(next.nextCursor).toBeNull();
+    expect((await service.rankings(`${prefix}c`, { cursor: '100' })).total).toBe(2);
+    const old = await service.rankings(`${prefix}a`, { seasonLabel: seasonLabelFor(season - 1) });
+    expect(old.total).toBe(0);
+    await expect(service.rankings(`${prefix}a`, { seasonLabel: '2026/99' })).rejects.toMatchObject({
+      response: { code: 'INVALID_QUIZ_ANSWER' },
+    });
+  });
+});

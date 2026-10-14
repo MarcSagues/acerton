@@ -1,6 +1,8 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from '@angular/core';
 import { DIALOG_DATA } from '@angular/cdk/dialog';
+import { badgeAnimatedSrc, badgeArtSrc } from '../../shared/utils/badge-art';
 import { BadgeProgress } from '../../core/models/badge-progress.model';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export interface BadgeDetailData {
   artId: string | null;
@@ -15,19 +17,22 @@ export interface BadgeDetailData {
 @Component({
   selector: 'app-badge-detail-dialog',
   standalone: true,
+  imports: [TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <div class="badge-dialog">
       @if (data.artId) {
         <span class="art-wrap">
-          <img class="art-animated" [src]="'/piqo/insignias/animadas/' + data.artId + '.webp'" [alt]="data.name" />
-          <img class="art-static" [src]="'/piqo/insignias/3d/' + data.artId + '.png'" [alt]="data.name" />
+          @if (animatedSrc) {
+            <img class="art-animated" [src]="animatedSrc" [alt]="data.name" />
+          }
+          <img class="art-static" [src]="staticSrc" [alt]="data.name" />
         </span>
       } @else {
         <piqo-svg icon="medalla" size="64" [class.earned]="data.earned"></piqo-svg>
       }
       <p class="name">{{ data.name }}</p>
-      <p class="status" [class.earned]="data.earned">{{ data.earned ? 'Conseguida' : 'Todavía sin conseguir' }}</p>
+      <p class="status" [class.earned]="data.earned">{{ data.earned ? ('common.conseguida' | t) : ('common.todaviaSinConseguir' | t) }}</p>
       <p class="rule">{{ data.description }}</p>
       @if (data.progress; as progress) {
         <div class="progress-row">
@@ -38,7 +43,7 @@ export interface BadgeDetailData {
         </div>
       }
       @if (data.percentage != null) {
-        <p class="stat">La tienen el {{ data.percentage }}% de los jugadores.</p>
+        <p class="stat">{{ 'badgeDetailDialog.tienenJugadores' | t: { percentage: data.percentage } }}</p>
       }
     </div>
   `,
@@ -76,14 +81,14 @@ export interface BadgeDetailData {
       /* Por defecto se ve la version animada; solo la estatica (misma
          ilustracion, sin movimiento) si el usuario prefiere menos
          animaciones en el sistema. */
-      .art-wrap .art-static {
+      .art-wrap .art-animated + .art-static {
         display: none;
       }
       @media (prefers-reduced-motion: reduce) {
         .art-wrap .art-animated {
           display: none;
         }
-        .art-wrap .art-static {
+        .art-wrap .art-animated + .art-static {
           display: block;
         }
       }
@@ -144,4 +149,6 @@ export interface BadgeDetailData {
 })
 export class BadgeDetailDialogComponent {
   readonly data = inject<BadgeDetailData>(DIALOG_DATA);
+  readonly staticSrc = this.data.artId ? badgeArtSrc(this.data.artId) : '';
+  readonly animatedSrc = this.data.artId ? badgeAnimatedSrc(this.data.artId) : null;
 }

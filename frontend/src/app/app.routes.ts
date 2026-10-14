@@ -232,6 +232,29 @@ export const routes: Routes = [
           ),
       },
       {
+        // Quiz de jornada: evento para toda la comunidad, sin hasGroupGuard a
+        // proposito (se puede jugar sin pertenecer a ningun grupo).
+        path: 'quiz',
+        loadComponent: () =>
+          import('./features/quiz/quiz-hub/quiz-hub.component').then((m) => m.QuizHubComponent),
+      },
+      {
+        // Perfil general de cualquier jugador: lo que se abre al pulsar a alguien (Quiz, Tabla...).
+        path: 'player/:userId',
+        loadComponent: () =>
+          import('./features/player-profile/player-profile.component').then((m) => m.PlayerProfileComponent),
+      },
+      {
+        path: 'quiz/history/:userId',
+        loadComponent: () =>
+          import('./features/quiz/quiz-history/quiz-history.component').then((m) => m.QuizHistoryComponent),
+      },
+      {
+        path: 'quiz/:quizId',
+        loadComponent: () =>
+          import('./features/quiz/quiz-play/quiz-play.component').then((m) => m.QuizPlayComponent),
+      },
+      {
         path: 'rankings',
         canActivate: [hasGroupGuard],
         loadComponent: () =>
@@ -240,8 +263,11 @@ export const routes: Routes = [
           ),
       },
       {
+        // Perfil (y sus ajustes, insignias, nivel y avisos) son de la cuenta, no
+        // de un grupo: sin hasGroupGuard para que quien juega solo al Quiz sin
+        // grupo pueda entrar desde el avatar. Estadisticas, historico y normas
+        // si dependen del grupo activo y conservan la guardia.
         path: 'profile',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-page/profile-page.component').then(
             (m) => m.ProfilePageComponent,
@@ -249,31 +275,78 @@ export const routes: Routes = [
       },
       {
         path: 'profile/avatar',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-avatar/profile-avatar.component').then(
             (m) => m.ProfileAvatarComponent,
           ),
       },
       {
-        path: 'profile/appearance',
-        canActivate: [hasGroupGuard],
+        // Ajustes: una pagina con una pestaña por cada ruta hija.
+        path: 'profile/settings',
         loadComponent: () =>
-          import('./features/profile/profile-appearance/profile-appearance.component').then(
-            (m) => m.ProfileAppearanceComponent,
+          import('./features/profile/profile-settings/profile-settings.component').then(
+            (m) => m.ProfileSettingsComponent,
           ),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'name' },
+          {
+            path: 'name',
+            loadComponent: () =>
+              import('./features/profile/profile-settings/profile-name/profile-name.component').then(
+                (m) => m.ProfileNameComponent,
+              ),
+          },
+          {
+            path: 'favorite-team',
+            loadComponent: () =>
+              import('./features/profile/profile-favorite-team/profile-favorite-team.component').then(
+                (m) => m.ProfileFavoriteTeamComponent,
+              ),
+          },
+          {
+            path: 'notifications',
+            loadComponent: () =>
+              import('./features/notifications/notification-settings/notification-settings.component').then(
+                (m) => m.NotificationSettingsComponent,
+              ),
+          },
+          {
+            path: 'appearance',
+            loadComponent: () =>
+              import('./features/profile/profile-appearance/profile-appearance.component').then(
+                (m) => m.ProfileAppearanceComponent,
+              ),
+          },
+          {
+            path: 'language',
+            loadComponent: () =>
+              import('./features/profile/profile-language/profile-language.component').then(
+                (m) => m.ProfileLanguageComponent,
+              ),
+          },
+          {
+            path: 'password',
+            loadComponent: () =>
+              import('./features/profile/profile-change-password/profile-change-password.component').then(
+                (m) => m.ProfileChangePasswordComponent,
+              ),
+          },
+        ],
       },
+      // Rutas antiguas (marcadores, enlaces): ahora son pestañas de Ajustes.
+      { path: 'profile/favorite-team', redirectTo: 'profile/settings/favorite-team' },
+      { path: 'profile/appearance', redirectTo: 'profile/settings/appearance' },
+      { path: 'profile/change-password', redirectTo: 'profile/settings/password' },
+      { path: 'notifications/preferences', redirectTo: 'profile/settings/notifications' },
       {
-        path: 'profile/change-password',
-        canActivate: [hasGroupGuard],
+        path: 'profile/delete-account',
         loadComponent: () =>
-          import('./features/profile/profile-change-password/profile-change-password.component').then(
-            (m) => m.ProfileChangePasswordComponent,
+          import('./features/profile/profile-delete-account/profile-delete-account.component').then(
+            (m) => m.ProfileDeleteAccountComponent,
           ),
       },
       {
         path: 'profile/invite',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-invite/profile-invite.component').then(
             (m) => m.ProfileInviteComponent,
@@ -281,7 +354,6 @@ export const routes: Routes = [
       },
       {
         path: 'profile/badges',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/profile-badges/profile-badges.component').then(
             (m) => m.ProfileBadgesComponent,
@@ -305,7 +377,6 @@ export const routes: Routes = [
       },
       {
         path: 'profile/level',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/level-progress/level-progress.component').then(
             (m) => m.LevelProgressComponent,
@@ -313,7 +384,6 @@ export const routes: Routes = [
       },
       {
         path: 'profile/trophies/:trophyId/:year',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/profile/trophy-season/trophy-season.component').then(
             (m) => m.TrophySeasonComponent,
@@ -321,18 +391,9 @@ export const routes: Routes = [
       },
       {
         path: 'notifications',
-        canActivate: [hasGroupGuard],
         loadComponent: () =>
           import('./features/notifications/notifications-page/notifications-page.component').then(
             (m) => m.NotificationsPageComponent,
-          ),
-      },
-      {
-        path: 'notifications/preferences',
-        canActivate: [hasGroupGuard],
-        loadComponent: () =>
-          import('./features/notifications/notification-settings/notification-settings.component').then(
-            (m) => m.NotificationSettingsComponent,
           ),
       },
       {

@@ -13,7 +13,7 @@ const MAX_VERTICAL_DRIFT_PX = 60;
  * hace nada ahi — igual que en iOS nativo, donde el swipe-back de un
  * UINavigationController no actua en la raiz de la pila.
  */
-const ROOT_ROUTES = ['/matchday', '/groups', '/rankings', '/profile'];
+const ROOT_ROUTES = ['/matchday', '/groups', '/rankings', '/quiz'];
 
 /**
  * Gesto "deslizar desde el borde izquierdo para volver" como en iOS nativo.

@@ -1,5 +1,6 @@
 import { CurrentMatchdayEntry, Match, PredictionChoice } from '../../../core/models/matchday.model';
 import { DoubleChanceOption } from '../../../core/models/prediction.model';
+import { currentLocale, t } from '../../../core/i18n/translate';
 
 export interface PredictionSelection {
   choice: PredictionChoice | null;
@@ -25,6 +26,19 @@ const DOUBLE_CHANCE_LABEL: Record<DoubleChanceOption, string> = {
 
 export function isMatchPredictable(match: Match, now: Date): boolean {
   return match.status === 'SCHEDULED' && new Date(match.kickoff).getTime() > now.getTime();
+}
+
+/** Aplazado o cancelado: no se ha jugado ni tiene fecha, asi que el pronostico sigue abierto (ver isMatchEditable). */
+export function isMatchWithoutDate(match: Match): boolean {
+  return match.status === 'POSTPONED' || match.status === 'CANCELLED';
+}
+
+/**
+ * Se puede crear o cambiar el pronostico: por empezar, o aplazado/cancelado.
+ * Misma regla que el servidor (backend matchday.util isMatchEditable).
+ */
+export function isMatchEditable(match: Match, now: Date): boolean {
+  return isMatchPredictable(match, now) || isMatchWithoutDate(match);
 }
 
 export function predictionLabel(selection: PredictionSelection | undefined, exactScore: boolean): string | null {
@@ -126,22 +140,39 @@ export function matchAccentTone(
 }
 
 export function lockedMatchLabel(match: Match): string {
-  if (match.status === 'POSTPONED') return 'Aplazado';
-  if (match.status === 'CANCELLED') return 'Cancelado';
-  return 'En juego';
+  if (match.status === 'POSTPONED') return t('predictionRules.aplazado');
+  if (match.status === 'CANCELLED') return t('predictionRules.cancelado');
+  return t('predictionRules.juego');
 }
 
 function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+/** true si el partido es hoy (la plantilla pone "Hoy" en negrita: compara aqui, no contra el texto traducido). */
+export function isKickoffToday(kickoff: string, today: Date): boolean {
+  return isSameDay(new Date(kickoff), today);
+}
+
+/**
+ * El proveedor manda las 00:00 UTC (las 2:00 de la madrugada en España) mientras
+ * la hora de un partido no esta confirmada: se enseña "hora por confirmar" en vez
+ * de una hora inventada. Ningun partido que seguimos se juega a esa hora exacta.
+ */
+export function isKickoffTimeTbc(kickoff: string): boolean {
+  const date = new Date(kickoff);
+  return (
+    date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0 && date.getUTCMilliseconds() === 0
+  );
+}
+
 export function matchDayLabel(kickoff: string, today: Date): string {
   const date = new Date(kickoff);
-  if (isSameDay(date, today)) return 'Hoy';
+  if (isSameDay(date, today)) return t('currentMatchday.hoy');
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (isSameDay(date, tomorrow)) return 'Mañana';
-  return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  if (isSameDay(date, tomorrow)) return t('predictionRules.manana');
+  return date.toLocaleDateString(currentLocale(), { day: '2-digit', month: '2-digit' });
 }
 
 export function predictionSummary(
@@ -157,10 +188,10 @@ export function predictionSummary(
     .filter((row): row is { match: (typeof entry.matchday.matches)[number]; label: string } => row.label != null)
     .map((row) => `${row.match.homeTeam} - ${row.match.awayTeam}: ${row.label}`);
   return [
-    `Piqo · ${entry.competition.name} · Jornada ${entry.matchday.order}`,
+    t('predictionRules.piqoJornada', { name: entry.competition.name, order: entry.matchday.order }),
     '',
     ...lines,
     '',
-    'Pronósticos enviados',
+    t('predictionRules.pronosticosEnviados'),
   ].join('\n');
 }

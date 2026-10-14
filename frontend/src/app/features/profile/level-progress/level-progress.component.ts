@@ -1,6 +1,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, OnInit, ViewChild, effect, inject } from '@angular/core';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { LevelProgressFacade } from './level-progress.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 /** Ancho de cada nodo del track y relleno lateral — deben coincidir con las medidas fijadas en el SCSS (.track-inner). */
 const NODE_WIDTH = 92;
@@ -9,7 +10,7 @@ const TRACK_PADDING = 149;
 @Component({
   selector: 'app-level-progress',
   standalone: true,
-  imports: [SpinnerComponent],
+  imports: [SpinnerComponent, TranslatePipe],
   providers: [LevelProgressFacade],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './level-progress.component.html',

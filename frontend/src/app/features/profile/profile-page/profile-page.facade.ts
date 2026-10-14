@@ -1,6 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -9,12 +8,14 @@ import { TutorialService } from '../../../core/services/tutorial.service';
 import { BadgesService } from '../../../core/services/badges.service';
 import { Badge, UserProfile } from '../../../core/models/profile.model';
 import { BadgeProgress } from '../../../core/models/badge-progress.model';
-import { usernameHint, validateUsername } from '../../../shared/username.util';
-import { badgeArtId } from '../../../shared/utils/badge-art';
+import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../trophy-detail-dialog.component';
 import { BadgeDetailDialogComponent, BadgeDetailData } from '../badge-detail-dialog.component';
 import { TROPHIES } from '../domain/trophies';
+import { t } from '../../../core/i18n/translate';
+import { badgeName, badgeDescription } from '../../../shared/utils/badge-text';
+import { distinctBadgeCount } from '../../../shared/utils/badge-count';
 
 export interface BadgePreviewItem {
   badge: Badge;
@@ -37,7 +38,7 @@ export class ProfilePageFacade {
   private readonly badgeStats = signal<Record<string, number>>({});
   private readonly badgeProgress = signal<Record<string, BadgeProgress>>({});
 
-  /** Hasta 5 insignias: primero las conseguidas, y de faltar se completa con las pendientes en gris. */
+  /** Hasta 8 insignias (2 filas de 4, como la vitrina de trofeos): primero las conseguidas, y de faltar se completa con las pendientes en gris. */
   readonly badgePreview = computed<BadgePreviewItem[]>(() => {
     const profile = this.profile();
     if (!profile) return [];
@@ -45,19 +46,23 @@ export class ProfilePageFacade {
     const withEarned = this.badgeCatalog().map((badge) => ({ badge, earned: earnedCodes.has(badge.code) }));
     const earned = withEarned.filter((b) => b.earned);
     const pending = withEarned.filter((b) => !b.earned);
-    return [...earned, ...pending].slice(0, 5);
+    return [...earned, ...pending].slice(0, 8);
   });
 
   artId(code: string): string | null {
     return badgeArtId(code);
   }
 
+  artSrc(artId: string): string {
+    return badgeArtSrc(artId);
+  }
+
   openBadge(item: BadgePreviewItem): void {
     this.dialog.open<BadgeDetailDialogComponent, void, BadgeDetailData>(BadgeDetailDialogComponent, {
       data: {
         artId: this.artId(item.badge.code),
-        name: item.badge.name,
-        description: item.badge.description,
+        name: badgeName(item.badge),
+        description: badgeDescription(item.badge),
         earned: item.earned,
         percentage: this.badgeStats()[item.badge.code] ?? null,
         progress: item.earned ? null : (this.badgeProgress()[item.badge.code] ?? null),
@@ -73,41 +78,20 @@ export class ProfilePageFacade {
    */
   readonly globalCurrentStreak = computed(() => this.profile()?.globalStreak.currentStreak ?? 0);
   readonly globalLongestStreak = computed(() => this.profile()?.globalStreak.longestStreak ?? 0);
-  readonly badgeCount = computed(() => this.profile()?.badges.length ?? 0);
+  readonly badgeCount = computed(() => distinctBadgeCount(this.profile()?.badges ?? []));
+  /**
+   * Perfil se puede abrir sin grupo (quien solo juega al Quiz): estadisticas,
+   * historico, normas y el tutorial dependen de un grupo y se ocultan o se
+   * cambian por un acceso a Grupos. Sale del perfil (no de ActiveGroupService),
+   * que puede no estar cargado si se llega directo desde el Quiz.
+   */
+  readonly hasGroups = computed(() => (this.profile()?.groups.length ?? 0) > 0);
   readonly trophies = TROPHIES;
 
   openTrophy(trophy: TrophyDetailData): void {
     this.dialog.open<TrophyDetailDialogComponent, void, TrophyDetailData>(TrophyDetailDialogComponent, {
       data: trophy,
     });
-  }
-
-  readonly nameInput = signal('');
-  readonly nameSaving = signal(false);
-  readonly nameError = signal<string | null>(null);
-
-  readonly nameChangeAvailableAt = computed(() => {
-    const iso = this.authService.currentUser()?.nameChangeAvailableAt;
-    return iso ? new Date(iso) : null;
-  });
-
-  /** Feedback en vivo mientras se escribe. */
-  nameHint(): string | null {
-    const value = this.nameInput();
-    if (!value) return null;
-    return usernameHint(validateUsername(value));
-  }
-
-  canSaveName(): boolean {
-    const name = this.nameInput().trim();
-    const current = this.authService.currentUser();
-    return (
-      !this.nameSaving() &&
-      !!name &&
-      !!current &&
-      name !== current.name &&
-      validateUsername(this.nameInput()) === null
-    );
   }
 
   /** Repetir el tutorial no reinicia el flag del backend, solo lo vuelve a mostrar desde Tabla. */
@@ -117,33 +101,12 @@ export class ProfilePageFacade {
     this.router.navigate(['/rankings']);
   }
 
-  saveName(): void {
-    if (!this.canSaveName()) {
-      return;
-    }
-    const name = this.nameInput().trim();
-
-    this.nameSaving.set(true);
-    this.nameError.set(null);
-    this.profileService.updateName(name).subscribe({
-      next: (user) => {
-        this.nameSaving.set(false);
-        this.authService.setCurrentUser(user);
-        this.nameInput.set(user.name);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.nameSaving.set(false);
-        this.nameError.set(error.error?.message ?? 'No se pudo cambiar el nombre');
-      },
-    });
-  }
-
   logout(): void {
     const dialogRef = this.dialog.open<ConfirmDialogComponent, boolean, ConfirmDialogData>(ConfirmDialogComponent, {
       data: {
-        title: 'Cerrar sesión',
-        message: 'Vas a cerrar sesión en este dispositivo. ¿Confirmas?',
-        confirmLabel: 'Cerrar sesión',
+        title: t('profilePage.cerrarSesion'),
+        message: t('profilePage.vasCerrarSesionEste'),
+        confirmLabel: t('profilePage.cerrarSesion'),
       },
     });
 
@@ -156,7 +119,6 @@ export class ProfilePageFacade {
   }
 
   init(): void {
-    this.nameInput.set(this.authService.currentUser()?.name ?? '');
     this.profileService.getMyProfile().subscribe({
       next: (profile) => {
         this.profile.set(profile);

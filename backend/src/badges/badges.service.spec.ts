@@ -1,3 +1,4 @@
+import { BADGE_CATALOG } from './badge-catalog';
 import { BadgesService } from './badges.service';
 
 function buildPrismaMock() {
@@ -438,5 +439,82 @@ describe('BadgesService.checkGroupFounder', () => {
     const awarded = await service.checkGroupFounder('u1', 'g1');
 
     expect(awarded).toEqual([]);
+  });
+});
+
+describe('BadgesService.onModuleInit', () => {
+  it('hace upsert de las insignias del catalogo por code (crea las que faltan, sin tocar las conseguidas)', async () => {
+    const prisma = { badge: { upsert: jest.fn().mockResolvedValue({}) } };
+
+    await new BadgesService(prisma as never).onModuleInit();
+
+    expect(BADGE_CATALOG).toHaveLength(20);
+    expect(prisma.badge.upsert).toHaveBeenCalledTimes(BADGE_CATALOG.length);
+    expect(prisma.badge.upsert).toHaveBeenCalledWith({
+      where: { code: 'PODIUM_5' },
+      update: { name: expect.any(String), description: expect.any(String) },
+      create: expect.objectContaining({ code: 'PODIUM_5' }),
+    });
+  });
+
+  it('no impide arrancar el backend si la BD falla', async () => {
+    const prisma = { badge: { upsert: jest.fn().mockRejectedValue(new Error('db caida')) } };
+
+    await expect(new BadgesService(prisma as never).onModuleInit()).resolves.toBeUndefined();
+  });
+});
+
+describe('BadgesService.reconcileEarnedBadges', () => {
+  function buildReconcileMock() {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { groupId: 'g1', group: { scoringMode: 'ONE_X_TWO' } },
+    ]);
+    // racha 7: STREAK_5 completa (7>=5), STREAK_10 no
+    prisma.streak.findMany.mockResolvedValue([{ currentStreak: 7 }]);
+    return Object.assign(prisma, {
+      groupMembership: {
+        ...prisma.groupMembership,
+        findFirst: jest.fn().mockResolvedValue({ groupId: 'g1' }),
+      },
+      userBadge: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({}),
+      },
+    });
+  }
+
+  it('concede con retraso la insignia cuyo progreso ya esta completo y que no se tenia', async () => {
+    const prisma = buildReconcileMock();
+    prisma.badge.findUnique.mockImplementation(({ where }: { where: { code: string } }) =>
+      Promise.resolve({ id: `id-${where.code}`, code: where.code, name: where.code }),
+    );
+
+    await new BadgesService(prisma as never).reconcileEarnedBadges('u1');
+
+    const created = prisma.userBadge.create.mock.calls.map((c) => c[0].data.badgeId);
+    expect(created).toContain('id-STREAK_5');
+    expect(created).not.toContain('id-STREAK_10');
+  });
+
+  it('no repite una insignia que ya se tiene', async () => {
+    const prisma = buildReconcileMock();
+    prisma.userBadge.findMany.mockResolvedValue([{ badge: { code: 'STREAK_5' } }]);
+    prisma.badge.findUnique.mockResolvedValue({ id: 'x', code: 'X', name: 'X' });
+
+    await new BadgesService(prisma as never).reconcileEarnedBadges('u1');
+
+    expect(prisma.userBadge.create).not.toHaveBeenCalled();
+  });
+
+  it('solo recalcula una vez por usuario dentro del intervalo', async () => {
+    const prisma = buildReconcileMock();
+    const service = new BadgesService(prisma as never);
+
+    await service.reconcileEarnedBadges('u1');
+    await service.reconcileEarnedBadges('u1');
+
+    expect(prisma.groupMembership.findFirst).toHaveBeenCalledTimes(1);
   });
 });

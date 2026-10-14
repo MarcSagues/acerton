@@ -3,11 +3,12 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { ResetPasswordFacade } from './reset-password.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent],
+  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [ResetPasswordFacade],
   templateUrl: './reset-password.component.html',

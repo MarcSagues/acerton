@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { GOOGLE_RETURN_URL_KEY } from '../auth-page/auth-page.constants';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class AuthCallbackFacade {
@@ -16,7 +17,7 @@ export class AuthCallbackFacade {
   init(): void {
     const accessToken = this.route.snapshot.queryParamMap.get('accessToken');
     if (!accessToken) {
-      this.errorMessage.set('Falta el token de acceso en la respuesta de Google');
+      this.errorMessage.set(t('authCallback.faltaTokenAccesoRespuesta'));
       return;
     }
 
@@ -35,7 +36,7 @@ export class AuthCallbackFacade {
         }
         this.groupsService.postLoginRoute().subscribe((route) => this.router.navigate(route));
       },
-      error: () => this.errorMessage.set('No se pudo completar el inicio de sesión con Google'),
+      error: () => this.errorMessage.set(t('authCallback.pudoCompletarInicioSesion')),
     });
   }
 }

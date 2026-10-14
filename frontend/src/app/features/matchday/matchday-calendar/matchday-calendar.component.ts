@@ -2,11 +2,12 @@ import { Component, OnInit, inject } from '@angular/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { RouterLink } from '@angular/router';
 import { MatchdayCalendarFacade } from './matchday-calendar.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-matchday-calendar',
   standalone: true,
-  imports: [RouterLink, MatProgressSpinnerModule],
+  imports: [RouterLink, MatProgressSpinnerModule, TranslatePipe],
   providers: [MatchdayCalendarFacade],
   templateUrl: './matchday-calendar.component.html',
   styleUrl: './matchday-calendar.component.scss',

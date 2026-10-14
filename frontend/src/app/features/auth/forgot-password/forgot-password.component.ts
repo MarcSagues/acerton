@@ -3,11 +3,12 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { ForgotPasswordFacade } from './forgot-password.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent],
+  imports: [ReactiveFormsModule, RouterLink, SpinnerComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [ForgotPasswordFacade],
   templateUrl: './forgot-password.component.html',

@@ -21,10 +21,6 @@
   justify-content: center;
 }
 
-.head-row {
-  padding: 12px 20px 0;
-}
-
 .title-row {
   padding: 14px 20px 0;
 }
@@ -57,6 +53,10 @@ h1 {
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+.md-pills {
+  margin-top: 8px;
 }
 
 .comp-pill {
@@ -143,9 +143,56 @@ h1 {
 
 .evolution-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 10px;
   margin-bottom: 12px;
+}
+
+.evolution-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* Grupo / Tu: cambia entre la grafica de lineas y la de tus barras. */
+.evolution-toggle {
+  flex: none;
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--p4-radius-pill);
+  background: var(--p4-glass);
+  border: 1px solid var(--p4-border);
+}
+
+.toggle-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--p4-radius-pill);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 600 11px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+
+  &.active {
+    background: var(--p4-surface);
+    color: var(--p4-accent);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.evolution-note {
+  margin: 6px 2px 0;
+  font: 400 10.5px/15px var(--p4-font-ui);
+  color: var(--p4-muted);
 }
 
 .evolution-title {
@@ -161,7 +208,7 @@ h1 {
   display: flex;
   align-items: flex-end;
   gap: 7px;
-  height: 66px;
+  height: 84px;
 }
 
 .evolution-col {
@@ -188,13 +235,28 @@ h1 {
   background: var(--p4-soft);
   transition: height 200ms ease;
 
-  .evolution-col:last-child & {
+  &.active {
     background: var(--p4-accent);
+  }
+}
+
+.evolution-points {
+  font-size: 10px;
+  color: var(--p4-muted);
+
+  &.active {
+    color: var(--p4-text);
+    font-weight: 700;
   }
 }
 
 .evolution-label {
   font-size: 10px;
+  color: var(--p4-muted);
+}
+
+.evolution-sublabel {
+  font-size: 8.5px;
   color: var(--p4-muted);
 }
 

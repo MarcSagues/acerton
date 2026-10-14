@@ -35,10 +35,6 @@
   justify-content: center;
 }
 
-.head-row {
-  padding: 12px 20px 0;
-}
-
 .title-row {
   padding: 14px 20px 0;
 }
@@ -384,6 +380,28 @@ h1 {
   background: var(--p4-accent);
   color: var(--p4-on-accent);
   font: 700 13px/1 var(--p4-font-ui);
+}
+
+.copy-row {
+  margin-top: 14px;
+  padding: 0 20px;
+}
+
+.copy-groups-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--p4-radius-pill);
+  border: 1px solid var(--p4-border);
+  background: transparent;
+  color: var(--p4-accent);
+  font: 600 12px/1 var(--p4-font-ui);
+
+  &:disabled {
+    opacity: 0.6;
+  }
 }
 
 .match-list {

@@ -1,7 +1,7 @@
 import { TrophyDetailData } from '../trophy-detail-dialog.component';
 
 /**
- * Vitrina de trofeos (HANDOFF §13/§18): 7 disenos fijos del kit. Piqo aun no
+ * Vitrina de trofeos (HANDOFF §13/§18): 8 disenos fijos del kit. Piqo aun no
  * tiene un modelo de datos real para trofeos ("Para Copa Piqo falta fijar el
  * criterio"), asi que se muestran todos honestamente como no conseguidos en
  * vez de inventar datos de competiciones ganadas.
@@ -18,6 +18,7 @@ import { TrophyDetailData } from '../trophy-detail-dialog.component';
 export const TROPHIES: TrophyDetailData[] = [
   { id: 'piqo', name: 'Copa Piqo', count: 0 },
   { id: 'champions', name: 'Champions League', count: 0 },
+  { id: 'premier', name: 'Premier League', count: 0 },
   { id: 'laliga', name: 'LaLiga', count: 0 },
   { id: 'bundesliga', name: 'Bundesliga', count: 0 },
   { id: 'ligue1', name: 'Ligue 1', count: 0 },

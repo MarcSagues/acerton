@@ -2,20 +2,21 @@ import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { VerifyEmailFacade } from './verify-email.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-verify-email',
   standalone: true,
-  imports: [SpinnerComponent, RouterLink],
+  imports: [SpinnerComponent, RouterLink, TranslatePipe],
   providers: [VerifyEmailFacade],
   template: `
     <div class="callback-page">
       @if (page.errorMessage(); as error) {
         <p>{{ error }}</p>
-        <a class="piqo-primary cta" routerLink="/login">Volver al acceso</a>
+        <a class="piqo-primary cta" routerLink="/login">{{ 'common.volverAcceso' | t }}</a>
       } @else {
         <app-spinner [size]="32"></app-spinner>
-        <p>Confirmando tu cuenta...</p>
+        <p>{{ 'verifyEmail.confirmandoCuenta' | t }}</p>
       }
     </div>
   `,

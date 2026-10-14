@@ -1,12 +1,18 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 
 function buildPrismaMock() {
   return {
     groupMembership: { findMany: jest.fn() },
+    group: { findUnique: jest.fn().mockResolvedValue(null) },
+    matchday: { findUnique: jest.fn().mockResolvedValue(null) },
     groupCompetition: { findMany: jest.fn().mockResolvedValue([]) },
     rankingSnapshot: { findFirst: jest.fn().mockResolvedValue(null) },
     prediction: { findMany: jest.fn() },
-    notificationToken: { findMany: jest.fn() },
+    notificationToken: {
+      findMany: jest.fn(),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
     notificationPreference: {
       findMany: jest.fn().mockResolvedValue([]),
       findUnique: jest.fn().mockResolvedValue(null),
@@ -14,6 +20,7 @@ function buildPrismaMock() {
     user: {
       findMany: jest.fn().mockResolvedValue([]),
       updateMany: jest.fn().mockResolvedValue({}),
+      count: jest.fn().mockResolvedValue(0),
     },
     notification: {
       create: jest.fn().mockResolvedValue({}),
@@ -139,6 +146,27 @@ describe('NotificationsService.notifyMatchdayFinished', () => {
       'u1',
       expect.objectContaining({ body: expect.stringContaining('Vas 2º en la clasificación') }),
     );
+  });
+  it('pone el grupo en el titulo y deja claro que son los puntos de toda la jornada de esa liga', async () => {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([{ userId: 'u1' }]);
+    prisma.prediction.findMany.mockResolvedValue([
+      { userId: 'u1', pointsEarned: 5 },
+      { userId: 'u1', pointsEarned: 2 },
+    ]);
+    prisma.group.findUnique.mockResolvedValue({ name: 'Los del bar' });
+    prisma.matchday.findUnique.mockResolvedValue({ competition: { name: 'La Liga' } });
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUser').mockResolvedValue(undefined);
+
+    await service.notifyMatchdayFinished('g1', 'md1', 'Regular Season - 6');
+
+    expect(sendSpy).toHaveBeenCalledWith('u1', {
+      title: 'Los del bar · Jornada 6 terminada',
+      body: 'Has sumado 7 puntos en total en la jornada 6 de La Liga.',
+      data: { type: 'MATCHDAY_FINISHED', groupId: 'g1', matchdayId: 'md1' },
+    });
   });
 });
 
@@ -279,6 +307,36 @@ describe('NotificationsService.notifyMatchesClosingSoon', () => {
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
     expect(prisma.notification.createMany).not.toHaveBeenCalled();
   });
+  it('pone el grupo en el titulo y la jornada y liga en el texto', async () => {
+    const prisma = buildPrismaMock();
+    prisma.groupMembership.findMany.mockResolvedValue([
+      { userId: 'u1', mutedNotifications: false },
+    ]);
+    prisma.prediction.findMany.mockResolvedValue([]);
+    prisma.user.findMany.mockResolvedValue([{ id: 'u1', lastClosingReminderPushAt: null }]);
+    prisma.group.findUnique.mockResolvedValue({ name: 'Los del bar' });
+    prisma.matchday.findUnique.mockResolvedValue({ competition: { name: 'La Liga' } });
+
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendSpy = jest.spyOn(service, 'sendToUsers').mockResolvedValue(undefined);
+
+    await service.notifyMatchesClosingSoon(
+      'g1',
+      'md1',
+      'Regular Season - 6',
+      ['m1', 'm2'],
+      '1 hora',
+      'reminder1h',
+    );
+
+    expect(sendSpy).toHaveBeenCalledWith(
+      ['u1'],
+      expect.objectContaining({
+        title: 'Los del bar · Partidos por pronosticar',
+        body: '2 partidos de la jornada 6 de La Liga empiezan en 1 hora y todavía no los has pronosticado.',
+      }),
+    );
+  });
 });
 
 describe('NotificationsService.notifyReengagement', () => {
@@ -317,12 +375,19 @@ describe('NotificationsService.notifyReengagement', () => {
 });
 
 describe('NotificationsService.getFeedForUser', () => {
-  it('lista los avisos del usuario, mas recientes primero', async () => {
-    const prisma = buildPrismaMock();
-    const notices = [{ id: 'n1' }, { id: 'n2' }];
-    prisma.notification.findMany.mockResolvedValue(notices);
+  const levelUp = (id: string, readAt: Date | null = null) => ({ id, type: 'LEVEL_UP', readAt });
+  const closing = (id: string) => ({ id, type: 'MATCHDAY_CLOSING_SOON', readAt: null });
 
-    const service = new NotificationsService(prisma as never, {} as never);
+  function build(notices: unknown[]) {
+    const prisma = buildPrismaMock();
+    prisma.notification.findMany.mockResolvedValue(notices);
+    return { prisma, service: new NotificationsService(prisma as never, {} as never) };
+  }
+
+  it('lista los avisos del usuario, mas recientes primero', async () => {
+    const notices = [{ id: 'n1' }, { id: 'n2' }];
+    const { prisma, service } = build(notices);
+
     const result = await service.getFeedForUser('u1');
 
     expect(prisma.notification.findMany).toHaveBeenCalledWith({
@@ -331,6 +396,38 @@ describe('NotificationsService.getFeedForUser', () => {
       take: 50,
     });
     expect(result).toBe(notices);
+  });
+
+  it('devuelve el aviso de subida de nivel como sin leer esta vez y lo deja leido para la siguiente', async () => {
+    const { prisma, service } = build([levelUp('l1'), closing('c1'), levelUp('l2')]);
+
+    const result = await service.getFeedForUser('u1');
+
+    expect(result.map((n) => [n.id, n.readAt])).toEqual([
+      ['l1', null],
+      ['c1', null],
+      ['l2', null],
+    ]);
+    expect(prisma.notification.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.notification.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'u1', id: { in: ['l1', 'l2'] }, readAt: null },
+      data: { readAt: expect.any(Date) },
+    });
+  });
+
+  it('no toca los avisos de otros tipos ni los de nivel que ya estaban leidos', async () => {
+    const { prisma, service } = build([closing('c1'), levelUp('l1', new Date())]);
+
+    await service.getFeedForUser('u1');
+
+    expect(prisma.notification.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('un fallo al marcarlos no tumba el feed', async () => {
+    const { prisma, service } = build([levelUp('l1')]);
+    prisma.notification.updateMany.mockRejectedValue(new Error('BD caida'));
+
+    await expect(service.getFeedForUser('u1')).resolves.toHaveLength(1);
   });
 });
 
@@ -344,6 +441,125 @@ describe('NotificationsService.markAllRead', () => {
     expect(prisma.notification.updateMany).toHaveBeenCalledWith({
       where: { userId: 'u1', readAt: null },
       data: { readAt: expect.any(Date) },
+    });
+  });
+});
+
+describe('NotificationsService.broadcastAnnouncement (envio a todo el mundo desde el dashboard)', () => {
+  const announcement = { title: 'Novedades', body: 'Ya hay jornada nueva' };
+
+  function build(devices: { token: string; userId: string }[], totalUsers = 10) {
+    const prisma = buildPrismaMock();
+    prisma.user.count.mockResolvedValue(totalUsers);
+    prisma.notificationToken.findMany.mockResolvedValue(devices);
+    const service = new NotificationsService(prisma as never, {} as never);
+    const sendEachForMulticast = jest
+      .fn()
+      .mockImplementation(async ({ tokens }: { tokens: string[] }) => ({
+        successCount: tokens.length,
+        failureCount: 0,
+        responses: tokens.map(() => ({ success: true })),
+      }));
+    (service as unknown as { messaging: unknown }).messaging = { sendEachForMulticast };
+    return { service, prisma, sendEachForMulticast };
+  }
+
+  const devicesFor = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ token: `t${i}`, userId: `u${i % 7}` }));
+
+  it('dryRun solo cuenta destinatarios: no envia nada aunque Firebase este configurado', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(9), 25);
+
+    const result = await service.broadcastAnnouncement({ ...announcement, dryRun: true });
+
+    expect(result).toEqual({
+      dryRun: true,
+      totalUsers: 25,
+      usersWithDevices: 7,
+      tokenCount: 9,
+      successCount: 0,
+      failureCount: 0,
+      errors: {},
+    });
+    expect(sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('envia titulo y texto a todos los dispositivos registrados', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(3));
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    expect(sendEachForMulticast).toHaveBeenCalledTimes(1);
+    expect(sendEachForMulticast).toHaveBeenCalledWith({
+      tokens: ['t0', 't1', 't2'],
+      notification: { title: 'Novedades', body: 'Ya hay jornada nueva' },
+      data: { type: 'ANNOUNCEMENT' },
+    });
+    expect(result).toMatchObject({
+      dryRun: false,
+      tokenCount: 3,
+      successCount: 3,
+      failureCount: 0,
+    });
+  });
+
+  it('con mas de 500 dispositivos envia por lotes de 500 (limite de FCM)', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(1200));
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    const sizes = sendEachForMulticast.mock.calls.map(
+      ([arg]: [{ tokens: string[] }]) => arg.tokens.length,
+    );
+    expect(sizes).toEqual([500, 500, 200]);
+    expect(result.successCount).toBe(1200);
+    expect(result.tokenCount).toBe(1200);
+  });
+
+  it('suma los fallos de todos los lotes, los agrupa por codigo y borra los tokens invalidos', async () => {
+    const { service, prisma, sendEachForMulticast } = build(devicesFor(4));
+    sendEachForMulticast.mockResolvedValueOnce({
+      successCount: 2,
+      failureCount: 2,
+      responses: [
+        { success: true },
+        { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+        { success: true },
+        { success: false, error: { code: 'messaging/registration-token-not-registered' } },
+      ],
+    });
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    expect(result.successCount).toBe(2);
+    expect(result.failureCount).toBe(2);
+    expect(result.errors).toEqual({ 'messaging/registration-token-not-registered': 2 });
+    expect(prisma.notificationToken.deleteMany).toHaveBeenCalledWith({
+      where: { token: { in: ['t1', 't3'] } },
+    });
+  });
+
+  it('sin Firebase configurado falla (503) en vez de decir que se envio', async () => {
+    const { service, sendEachForMulticast } = build(devicesFor(3));
+    (service as unknown as { messaging: unknown }).messaging = null;
+
+    await expect(service.broadcastAnnouncement(announcement)).rejects.toThrow(
+      ServiceUnavailableException,
+    );
+    expect(sendEachForMulticast).not.toHaveBeenCalled();
+  });
+
+  it('sin ningun dispositivo registrado no llama a Firebase y devuelve ceros', async () => {
+    const { service, sendEachForMulticast } = build([], 12);
+
+    const result = await service.broadcastAnnouncement(announcement);
+
+    expect(sendEachForMulticast).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      totalUsers: 12,
+      usersWithDevices: 0,
+      tokenCount: 0,
+      successCount: 0,
     });
   });
 });

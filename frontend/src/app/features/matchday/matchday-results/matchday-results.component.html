@@ -2,14 +2,14 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else if (page.locked()) {
   <div class="page">
-    <p class="empty">Esta jornada todavía está abierta; los pronósticos del grupo se verán al cerrar.</p>
+    <p class="empty">{{ 'matchdayResults.estaJornadaTodaviaEsta' | t }}</p>
   </div>
 } @else {
   @if (page.matchday(); as md) {
     <div class="page">
       <header class="head-row">
         @if (page.viewingSelf) {
-          <button type="button" class="nav-btn" (click)="page.goToCalendar()" aria-label="Elegir jornada">
+          <button type="button" class="nav-btn" (click)="page.goToCalendar()" [attr.aria-label]="'common.elegirJornada' | t">
             <piqo-svg icon="jornada" size="16"></piqo-svg>
           </button>
           <button
@@ -17,19 +17,19 @@
             class="nav-btn"
             [disabled]="page.navigating() || page.noPreviousAvailable() || md.order <= 1"
             (click)="page.navigatePrevious()"
-            aria-label="Jornada anterior"
+            [attr.aria-label]="'common.jornadaAnterior' | t"
           >
             <piqo-svg icon="atras" size="16"></piqo-svg>
           </button>
         } @else {
-          <button type="button" class="nav-btn" (click)="page.goBack()" aria-label="Volver">
+          <button type="button" class="nav-btn" (click)="page.goBack()" [attr.aria-label]="'common.volver2' | t">
             <piqo-svg icon="atras" size="16"></piqo-svg>
           </button>
 
         }
         <div class="title-block">
           @if (page.viewingSelf) {
-            <p class="title">Tus quinielas</p>
+            <p class="title">{{ 'matchdayResults.quinielas' | t }}</p>
           } @else {
             <a class="member-header" [routerLink]="['/groups', page.groupId(), 'members', page.routeUserId]">
               <app-avatar
@@ -39,12 +39,12 @@
                 [level]="page.targetUserLevel()"
                 [size]="28"
               ></app-avatar>
-              <span class="title">{{ page.targetUserName() ?? 'Quinielas' }}</span>
+              <span class="title">{{ page.targetUserName() ?? ('matchdayResults.quinielas2' | t) }}</span>
               <piqo-svg icon="flecha" size="14"></piqo-svg>
             </a>
           }
           <p class="sub mono">
-            {{ md.competition?.name }} · J{{ md.order }} · {{ md.status === 'FINISHED' ? 'finalizada' : 'cerrada' }}
+            {{ md.competition?.name }} · {{ 'common.jornadaAbrev' | t: { order: md.order } }} · {{ md.status === 'FINISHED' ? ('matchdayResults.finalizadaMin' | t) : ('matchdayResults.cerradaMin' | t) }}
           </p>
         </div>
         @if (page.viewingSelf) {
@@ -53,7 +53,7 @@
             class="nav-btn"
             [disabled]="page.navigating() || page.noNextAvailable()"
             (click)="page.navigateNext()"
-            aria-label="Jornada siguiente"
+            [attr.aria-label]="'common.jornadaSiguiente' | t"
           >
             <piqo-svg icon="arriba" size="16" style="transform: rotate(90deg)"></piqo-svg>
           </button>
@@ -64,23 +64,23 @@
         <div class="head-links">
           <button type="button" class="share-card-link" (click)="page.openShareCard()">
             <piqo-svg icon="compartir" size="14"></piqo-svg>
-            Compartir
+            {{ 'common.compartir' | t }}
           </button>
-          <a class="rankings-link" routerLink="/rankings">Tabla</a>
+          <a class="rankings-link" routerLink="/rankings">{{ 'common.tabla' | t }}</a>
           <a
             class="rankings-link"
             [routerLink]="['/matchday/history']"
             [queryParams]="{ competitionId: md.competitionId, competitionName: md.competition?.name }"
           >
-            Histórico
+            {{ 'common.historico' | t }}
           </a>
         </div>
       } @else {
         <div class="section">
           <a class="card settings-link" [routerLink]="['/groups', page.groupId(), 'members', page.routeUserId, 'history']">
             <div>
-              <p class="card-title">Histórico</p>
-              <p class="hint mono">{{ page.groupName() ? 'En ' + page.groupName() : 'Sus últimas jornadas jugadas' }}</p>
+              <p class="card-title">{{ 'common.historico' | t }}</p>
+              <p class="hint mono">{{ page.groupName() ? ('matchdayResults.enGrupo' | t: { name: page.groupName() }) : ('common.ultimasJornadasJugadas' | t) }}</p>
             </div>
             <piqo-svg icon="flecha" size="18"></piqo-svg>
           </a>
@@ -105,17 +105,17 @@
 
       <div class="stats-row">
         <div class="stat-card">
-          <p class="stat-label">{{ page.viewingSelf ? 'Tus puntos' : 'Sus puntos' }}</p>
+          <p class="stat-label">{{ page.viewingSelf ? ('matchdayResults.puntos' | t) : ('matchdayResults.puntos2' | t) }}</p>
           <p class="stat-value mono">{{ page.totalPoints() }}</p>
         </div>
         <div class="stat-card">
-          <p class="stat-label">{{ page.scoringMode() === 'EXACT_SCORE' ? 'Aciertos' : 'Aciertos 1X2' }}</p>
+          <p class="stat-label">{{ page.scoringMode() === 'EXACT_SCORE' ? ('matchdayResults.aciertos' | t) : ('matchdayResults.aciertos1x2' | t) }}</p>
           <p class="stat-value mono">{{ page.hits() }}/{{ page.predictions().length }}</p>
         </div>
         @if (page.position(); as p) {
           <div class="stat-card">
-            <p class="stat-label">Puesto</p>
-            <p class="stat-value mono">{{ p.pos }}º</p>
+            <p class="stat-label">{{ 'matchdayResults.puesto' | t }}</p>
+            <p class="stat-value mono">{{ 'matchdayResults.puestoOrdinal' | t: { pos: p.pos } }}</p>
           </div>
         }
       </div>
@@ -124,26 +124,26 @@
         <div class="extra-lines">
           @if (page.rescueHits() > 0) {
             <div class="line">
-              <span>Doble oportunidad acertada</span>
+              <span>{{ 'matchdayResults.dobleOportunidadAcertada' | t }}</span>
               <span class="mono accent">{{ page.rescueHits() }}</span>
             </div>
           }
           @if (page.viewingSelf && page.currentStreak() > 0) {
             <div class="line">
-              <span>Racha de participación</span>
-              <span class="mono accent">{{ page.currentStreak() }} jornadas</span>
+              <span>{{ 'matchdayResults.rachaParticipacion' | t }}</span>
+              <span class="mono accent">{{ 'matchdayResults.jornadas' | t: { count: page.currentStreak() } }}</span>
             </div>
           }
         </div>
       }
 
       @if (page.comparisonMembers().length > 1) {
-        <h2 class="section-title">Comparativa del grupo</h2>
+        <h2 class="section-title">{{ 'matchdayResults.comparativaGrupo' | t }}</h2>
         <div class="comparison-scroll">
           <table class="comparison">
             <thead>
               <tr>
-                <th class="comparison-match-head">Partido</th>
+                <th class="comparison-match-head">{{ 'matchdayResults.partido' | t }}</th>
                 @for (member of page.comparisonMembers(); track member.userId) {
                   <th class="comparison-member-head">
                     <span class="comparison-avatar-wrap" #avatarWrap (click)="page.toggleComparisonTooltip(member.userId, member.name, avatarWrap)">
@@ -175,20 +175,20 @@
         </div>
         <div class="comparison-legend">
           @if (page.scoringMode() === 'EXACT_SCORE') {
-            <span class="mono"><span class="dot exact"></span>Resultado exacto</span>
+            <span class="mono"><span class="dot exact"></span>{{ 'common.resultadoExacto' | t }}</span>
           }
-          <span class="mono"><span class="dot hit"></span>Acierto</span>
-          <span class="mono"><span class="dot miss"></span>Fallo</span>
+          <span class="mono"><span class="dot hit"></span>{{ 'matchdayResults.acierto' | t }}</span>
+          <span class="mono"><span class="dot miss"></span>{{ 'matchdayResults.fallo' | t }}</span>
           @if (page.comparisonHasX2()) {
-            <span class="mono"><span class="x2-badge legend-x2">x2</span>Comodín de remontada</span>
+            <span class="mono"><span class="x2-badge legend-x2">x2</span>{{ 'common.comodinRemontada' | t }}</span>
           }
         </div>
       }
 
-      <h2 class="section-title">Desglose por partido</h2>
+      <h2 class="section-title">{{ 'matchdayResults.desglosePartido' | t }}</h2>
       @if (page.visiblePredictions().length === 0) {
         <p class="empty">
-          {{ page.viewingSelf ? 'No enviaste pronósticos en esta jornada.' : 'No envió pronósticos en esta jornada.' }}
+          {{ page.viewingSelf ? ('matchdayResults.enviastePronosticosEstaJornada' | t) : ('matchdayResults.envioPronosticosEstaJornada' | t) }}
         </p>
       } @else {
         <div class="predictions">
@@ -200,9 +200,9 @@
               </div>
               <div class="pred-bottom">
                 @if (page.isMatchPending(prediction, md)) {
-                  <span class="pred-pending mono">Partido todavía sin acabar</span>
+                  <span class="pred-pending mono">{{ 'matchdayResults.partidoTodaviaSinAcabar' | t }}</span>
                 } @else {
-                  <span class="pred-label">{{ page.viewingSelf ? 'Tu elección' : 'Su elección' }}</span>
+                  <span class="pred-label">{{ page.viewingSelf ? ('matchdayResults.eleccion' | t) : ('matchdayResults.eleccion2' | t) }}</span>
                   <span class="pred-chip mono">
                     {{ page.pickLabel(prediction) }}
                     @if (prediction.doublePointsWildcard) {
@@ -210,11 +210,11 @@
                     }
                   </span>
                   @if (page.scoringMode() !== 'EXACT_SCORE') {
-                    <span class="pred-label">· Resultado</span>
+                    <span class="pred-label">{{ 'matchdayResults.resultado' | t }}</span>
                     <span class="pred-chip pred-chip-real mono">{{ page.realLabel(prediction, md) }}</span>
                   }
                   @if (prediction.doubleChanceOption) {
-                    <span class="wc-tag mono">SOS</span>
+                    <span class="wc-tag mono">{{ 'matchdayResults.sos' | t }}</span>
                   }
                   <span
                     class="pred-result mono"
@@ -228,7 +228,7 @@
             </div>
           }
         </div>
-        <p class="footnote">Las elecciones de otros jugadores se muestran según las reglas de visibilidad del grupo tras el cierre.</p>
+        <p class="footnote">{{ 'matchdayResults.eleccionesOtrosJugadoresMuestran' | t }}</p>
       }
 
       @if (page.comparisonTooltip(); as tip) {
@@ -238,7 +238,7 @@
              cuando el avatar estaba en la primera fila. Fixed lo saca de
              ese recorte sin importar el scroll. Fondo invisible detras
              para poder cerrarlo tocando fuera. -->
-        <button type="button" class="comparison-tooltip-backdrop" aria-label="Cerrar" (click)="page.closeComparisonTooltip()"></button>
+        <button type="button" class="comparison-tooltip-backdrop" [attr.aria-label]="'common.cerrar' | t" (click)="page.closeComparisonTooltip()"></button>
         <span class="comparison-tooltip-floating" [style.top.px]="tip.top" [style.left.px]="tip.left">{{ tip.name }}</span>
       }
 
@@ -247,13 +247,13 @@
           @for (userBadge of page.newBadges(); track userBadge.id) {
             <div class="badge-card">
               @if (page.artId(userBadge.badge.code); as artId) {
-                <piqo-svg [attr.badge]="artId" state="conseguida" variant="mini" size="28"></piqo-svg>
+                <img class="badge-art" [src]="page.artSrc(artId)" [alt]="userBadge.badge | badgeName" />
               } @else {
                 <piqo-svg icon="medalla" size="22"></piqo-svg>
               }
               <div>
-                <p class="badge-title">Insignia desbloqueada</p>
-                <p class="badge-desc mono">{{ userBadge.badge.name }} · {{ userBadge.badge.description }}</p>
+                <p class="badge-title">{{ 'matchdayResults.insigniaDesbloqueada' | t }}</p>
+                <p class="badge-desc mono">{{ userBadge.badge | badgeName }} · {{ userBadge.badge | badgeDescription }}</p>
               </div>
             </div>
           }
