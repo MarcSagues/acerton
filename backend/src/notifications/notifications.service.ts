@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { NotificationType, Prisma } from '@prisma/client';
@@ -8,6 +8,22 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   NotificationPreferenceFields,
 } from './notification-preferences.service';
+
+/** Maximo de tokens por llamada multicast de Firebase Cloud Messaging. */
+const BROADCAST_CHUNK_SIZE = 500;
+
+export interface BroadcastResult {
+  /** true: solo se han contado destinatarios, no se ha enviado nada. */
+  dryRun: boolean;
+  totalUsers: number;
+  /** Usuarios con al menos un dispositivo registrado (los unicos que pueden recibir el push). */
+  usersWithDevices: number;
+  tokenCount: number;
+  successCount: number;
+  failureCount: number;
+  /** Conteo de fallos por codigo de FCM (p.ej. messaging/registration-token-not-registered). */
+  errors: Record<string, number>;
+}
 
 export interface PushNotification {
   title: string;
@@ -110,13 +126,42 @@ export class NotificationsService implements OnModuleInit {
     }
   }
 
-  /** Lista los avisos del usuario para la pantalla "Avisos" (mas recientes primero). */
-  getFeedForUser(userId: string, limit = 50) {
-    return this.prisma.notification.findMany({
+  /**
+   * Lista los avisos del usuario para la pantalla "Avisos" (mas recientes primero).
+   *
+   * Los avisos de subida de nivel sin leer se devuelven como sin leer UNA vez y
+   * quedan marcados como leidos: la app los enseña como pop-up ("subiste al nivel
+   * N") al recibirlos, y sin esto el mismo pop-up volvia a salir en cada arranque
+   * hasta pulsar el aviso en la pantalla de Avisos. Se hace aqui, en el servidor,
+   * para que valga tambien para las versiones de la app ya instaladas.
+   */
+  async getFeedForUser(userId: string, limit = 50) {
+    const notices = await this.prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
+    await this.markLevelUpsAsSeen(userId, notices);
+    return notices;
+  }
+
+  /** Un fallo aqui no tumba el feed: lo peor es que el pop-up vuelva a salir en el siguiente arranque. */
+  private async markLevelUpsAsSeen(
+    userId: string,
+    notices: Array<{ id: string; type: NotificationType; readAt: Date | null }>,
+  ): Promise<void> {
+    const ids = notices
+      .filter((notice) => notice.type === NotificationType.LEVEL_UP && notice.readAt === null)
+      .map((notice) => notice.id);
+    if (ids.length === 0) return;
+    try {
+      await this.prisma.notification.updateMany({
+        where: { userId, id: { in: ids }, readAt: null },
+        data: { readAt: new Date() },
+      });
+    } catch (error) {
+      this.logger.warn(`No se pudo marcar como vistos los avisos de nivel de ${userId}: ${error}`);
+    }
   }
 
   /** "Leer todo" (ver NotificationsPageFacade). */
@@ -179,39 +224,68 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
-   * Boton de prueba en Ajustes (ver ProfilePageFacade.sendTestBroadcast): un
-   * envio de verdad a todos los tokens registrados, para comprobar el
-   * pipeline completo de un vistazo. Devuelve conteos (no solo si fue bien)
-   * porque el fallo mas probable ahora mismo no es un error, es que
-   * userCount/tokenCount no coincidan — es decir, la mayoria de cuentas
-   * nunca han activado las notificaciones (ver "Preferencias de avisos").
+   * Envia un anuncio push a TODOS los dispositivos registrados. Solo lo llama
+   * el endpoint del dashboard (ver DashboardNotificationsController), nunca
+   * un usuario de la app: el antiguo POST /notifications/test-broadcast lo
+   * podia lanzar cualquier cuenta con sesion y se elimino por eso.
+   *
+   * No respeta las preferencias por tipo de aviso (NotificationPreference):
+   * un anuncio del equipo no es ninguno de esos tipos, y quien no quiere push
+   * ya no tiene token registrado (ver DELETE /users/me/notification-tokens).
+   * Tampoco crea fila en el feed "Avisos": un tipo nuevo exige migrar el enum
+   * NotificationType en la BBDD de produccion.
+   *
+   * FCM admite como mucho 500 tokens por llamada multicast (BROADCAST_CHUNK_SIZE):
+   * con mas dispositivos se envia por lotes. Con dryRun solo cuenta
+   * destinatarios, sin enviar nada.
    */
-  async sendTestBroadcast(): Promise<{
-    userCount: number;
-    tokenCount: number;
-    successCount: number;
-    failureCount: number;
-    errors: string[];
-  }> {
+  async broadcastAnnouncement(input: {
+    title: string;
+    body: string;
+    dryRun?: boolean;
+  }): Promise<BroadcastResult> {
+    const dryRun = input.dryRun ?? false;
+    const [totalUsers, devices] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.notificationToken.findMany({ select: { token: true, userId: true } }),
+    ]);
+    const base = {
+      dryRun,
+      totalUsers,
+      usersWithDevices: new Set(devices.map((device) => device.userId)).size,
+      tokenCount: devices.length,
+    };
+
+    if (dryRun) {
+      return { ...base, successCount: 0, failureCount: 0, errors: {} };
+    }
     if (!this.messaging) {
-      this.logger.warn('sendTestBroadcast: Firebase no esta configurado, no se envia nada');
+      throw new ServiceUnavailableException(
+        'Firebase no esta configurado en este servidor: no se ha enviado nada',
+      );
     }
 
-    const [userCount, tokens] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.notificationToken.findMany({ select: { token: true } }),
-    ]);
+    let successCount = 0;
+    let failureCount = 0;
+    const errors: Record<string, number> = {};
+    const tokens = devices.map((device) => device.token);
+    for (let i = 0; i < tokens.length; i += BROADCAST_CHUNK_SIZE) {
+      const result = await this.sendToTokens(tokens.slice(i, i + BROADCAST_CHUNK_SIZE), {
+        title: input.title,
+        body: input.body,
+        data: { type: 'ANNOUNCEMENT' },
+      });
+      successCount += result.successCount;
+      failureCount += result.failureCount;
+      for (const code of result.errors) {
+        errors[code] = (errors[code] ?? 0) + 1;
+      }
+    }
 
-    const { successCount, failureCount, errors } = await this.sendToTokens(
-      tokens.map((t) => t.token),
-      {
-        title: 'Notificación de prueba',
-        body: 'Si ves esto, las notificaciones push funcionan.',
-        data: { type: 'TEST_BROADCAST' },
-      },
+    this.logger.log(
+      `Anuncio enviado desde el dashboard: ${successCount} entregados, ${failureCount} fallidos de ${tokens.length} dispositivos`,
     );
-
-    return { userCount, tokenCount: tokens.length, successCount, failureCount, errors };
+    return { ...base, successCount, failureCount, errors };
   }
 
   /**
@@ -244,6 +318,45 @@ export class NotificationsService implements OnModuleInit {
       const preference = preferenceByUser.get(userId) ?? DEFAULT_NOTIFICATION_PREFERENCES;
       return preference[field];
     });
+  }
+
+  /**
+   * Nombre del grupo, jornada legible y liga para los avisos de un grupo
+   * concreto. Sin esto, quien esta en varios grupos de la misma liga recibia
+   * avisos identicos ("Regular Season - 6 terminada") sin saber de que grupo
+   * ni de que liga era cada uno. Un fallo aqui no tumba el aviso: se manda
+   * sin grupo ni liga.
+   */
+  private async getGroupMatchdayContext(
+    groupId: string,
+    matchdayId: string,
+    matchdayName: string,
+  ): Promise<{ groupName: string | null; matchdayLabel: string; matchdayPhrase: string }> {
+    let groupName: string | null = null;
+    let competitionName: string | null = null;
+    try {
+      const [group, matchday] = await Promise.all([
+        this.prisma.group.findUnique({ where: { id: groupId }, select: { name: true } }),
+        this.prisma.matchday.findUnique({
+          where: { id: matchdayId },
+          select: { competition: { select: { name: true } } },
+        }),
+      ]);
+      groupName = group?.name ?? null;
+      competitionName = matchday?.competition?.name ?? null;
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo leer el grupo/liga del aviso (${groupId}, ${matchdayId}): ${error}`,
+      );
+    }
+    // El proveedor nombra las jornadas de liga "Regular Season - N" (ver FootballDataOrgProvider).
+    const roundNumber = /^Regular Season\s*-\s*(\d+)$/i.exec(matchdayName.trim())?.[1];
+    const matchdayLabel = roundNumber ? `Jornada ${roundNumber}` : matchdayName;
+    const baseMatchdayPhrase = roundNumber ? `la jornada ${roundNumber}` : matchdayName;
+    const matchdayPhrase = competitionName
+      ? `${baseMatchdayPhrase} de ${competitionName}`
+      : baseMatchdayPhrase;
+    return { groupName, matchdayLabel, matchdayPhrase };
   }
 
   /**
@@ -292,12 +405,19 @@ export class NotificationsService implements OnModuleInit {
     const eligibleIds = await this.filterByReminderCooldown(recipientIds);
     if (eligibleIds.length === 0) return;
 
+    const { groupName, matchdayPhrase } = await this.getGroupMatchdayContext(
+      groupId,
+      matchdayId,
+      matchdayName,
+    );
     const body =
       matchIds.length === 1
-        ? `Un partido de ${matchdayName} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
-        : `${matchIds.length} partidos de ${matchdayName} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
+        ? `Un partido de ${matchdayPhrase} empieza en ${urgencyLabel} y todavía no lo has pronosticado.`
+        : `${matchIds.length} partidos de ${matchdayPhrase} empiezan en ${urgencyLabel} y todavía no los has pronosticado.`;
 
-    const title = 'Partidos por pronosticar';
+    const title = groupName
+      ? `${groupName} · Partidos por pronosticar`
+      : 'Partidos por pronosticar';
     await this.sendToUsers(eligibleIds, {
       title,
       body,
@@ -333,24 +453,6 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
-   * Avisos opcionales del Quiz de jornada (apertura y cierre). Como el Quiz no
-   * es de ningun grupo, no hay silenciados que mirar: QuizRemindersService ya
-   * elige a los destinatarios por su preferencia (y quita a quien ya lo
-   * termino); aqui solo se manda el push y se guarda en el buzon.
-   */
-  async notifyQuiz(
-    userIds: string[],
-    type: 'QUIZ_OPENED' | 'QUIZ_CLOSING_SOON',
-    title: string,
-    body: string,
-    quizId: string,
-  ): Promise<void> {
-    if (userIds.length === 0) return;
-    await this.sendToUsers(userIds, { title, body, data: { type, quizId } });
-    await this.recordMany(userIds, NotificationType[type], title, body);
-  }
-
-  /**
    * "Piqo te echa de menos": no depende de ningun grupo (a diferencia del
    * resto de avisos), asi que solo se filtra por la preferencia `reengagement`
    * de cada destinatario, sin comprobar silenciados de grupo. JobsService.
@@ -372,6 +474,24 @@ export class NotificationsService implements OnModuleInit {
     const body = 'Hace unos días que no entras — tu grupo sigue pronosticando sin ti.';
     await this.sendToUsers(recipientIds, { title, body, data: { type: 'REENGAGEMENT' } });
     await this.recordMany(recipientIds, NotificationType.REENGAGEMENT, title, body);
+  }
+
+  /**
+   * Avisos opcionales del Quiz de jornada (apertura y cierre). Como el Quiz no
+   * es de ningun grupo, no hay silenciados que mirar: QuizRemindersService ya
+   * elige a los destinatarios por su preferencia (y quita a quien ya lo
+   * termino); aqui solo se manda el push y se guarda en el buzon.
+   */
+  async notifyQuiz(
+    userIds: string[],
+    type: 'QUIZ_OPENED' | 'QUIZ_CLOSING_SOON',
+    title: string,
+    body: string,
+    quizId: string,
+  ): Promise<void> {
+    if (userIds.length === 0) return;
+    await this.sendToUsers(userIds, { title, body, data: { type, quizId } });
+    await this.recordMany(userIds, NotificationType[type], title, body);
   }
 
   /**
@@ -428,15 +548,25 @@ export class NotificationsService implements OnModuleInit {
       'matchdayFinishedResult',
     );
     const recipients = new Set(recipientIds);
+    if (recipients.size === 0) return;
+    const { groupName, matchdayLabel, matchdayPhrase } = await this.getGroupMatchdayContext(
+      groupId,
+      matchdayId,
+      matchdayName,
+    );
+    const title = groupName
+      ? `${groupName} · ${matchdayLabel} terminada`
+      : `${matchdayLabel} terminada`;
 
     await Promise.all(
       [...pointsByUser.entries()]
         .filter(([userId]) => recipients.has(userId))
         .map(async ([userId, points]) => {
           const position = await this.getPositionForUser(groupId, userId);
-          const positionText = position != null ? ` Vas ${position}º en la clasificación.` : '';
-          const title = `${matchdayName} terminada`;
-          const body = `Has ganado ${points} ${points === 1 ? 'punto' : 'puntos'}.${positionText}`;
+          const positionText =
+            position != null ? ` Vas ${position}º en la clasificación del grupo.` : '';
+          // "En total" deja claro que es la suma de toda la jornada, no los puntos de un partido.
+          const body = `Has sumado ${points} ${points === 1 ? 'punto' : 'puntos'} en total en ${matchdayPhrase}.${positionText}`;
           await this.sendToUser(userId, {
             title,
             body,

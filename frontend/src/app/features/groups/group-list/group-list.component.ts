@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { GroupListFacade } from './group-list.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-group-list',
   standalone: true,
-  imports: [CommonModule, SpinnerComponent, EmptyStateComponent],
+  imports: [CommonModule, SpinnerComponent, EmptyStateComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupListFacade],
   templateUrl: './group-list.component.html',

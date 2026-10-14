@@ -6,6 +6,7 @@ import { AuthService } from '../services/auth.service';
 import { ReferralService } from '../services/referral.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { PENDING_REFERRAL_CODE_KEY } from '../../features/auth/auth-page/auth-page.constants';
+import { t } from '../i18n/translate';
 
 /**
  * Ruta `/r/:code` de un link de invitacion (Sprint 14, referidos). Si ya
@@ -38,10 +39,10 @@ export const referralLinkGuard: CanActivateFn = async (route) => {
 
   try {
     await firstValueFrom(referralService.redeem(code));
-    toast.show('¡Código de invitación aplicado!');
+    toast.show(t('referralLink.codigoInvitacionAplicado'));
   } catch (error) {
     const message = error instanceof HttpErrorResponse ? (error.error?.message as string | undefined) : undefined;
-    toast.show(message ?? 'No se pudo aplicar el código de invitación');
+    toast.show(message ?? t('referralLink.pudoAplicarCodigoInvitacion'));
   }
   return router.createUrlTree(['/matchday']);
 };

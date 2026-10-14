@@ -2,14 +2,11 @@
   <div class="loading"><app-spinner [size]="32"></app-spinner></div>
 } @else {
   <div class="page">
-    <div class="head-row">
-      <app-group-switcher></app-group-switcher>
-    </div>
 
     <div class="title-row" data-tutorial="rankings-head">
-      <h1>Clasificación</h1>
+      <h1>{{ 'common.clasificacion' | t }}</h1>
       @if (page.currentSeasonLabel(); as label) {
-        <p class="season-label mono">Temporada {{ label }}</p>
+        <p class="season-label mono">{{ 'rankingsPage.temporada' | t: { label: label } }}</p>
       }
     </div>
 
@@ -17,7 +14,7 @@
       <app-segmented-control
         [options]="periodOptions"
         [value]="page.period()"
-        ariaLabel="Periodo de clasificación"
+        [ariaLabel]="'rankingsPage.periodoClasificacion' | t"
         (valueChange)="page.setPeriod($event)"
       ></app-segmented-control>
     </div>
@@ -25,7 +22,7 @@
     @if (page.hasMultipleCompetitions()) {
       <div class="comp-pills">
         @if (page.period() !== 'WEEKLY') {
-          <button type="button" class="comp-pill" [class.active]="page.scope() === 'general'" (click)="page.setScope('general')">General</button>
+          <button type="button" class="comp-pill" [class.active]="page.scope() === 'general'" (click)="page.setScope('general')">{{ 'rankingsPage.general' | t }}</button>
         }
         @for (competition of page.activeCompetitions(); track competition.id) {
           <button type="button" class="comp-pill" [class.active]="page.scope() === competition.id" (click)="page.setScope(competition.id)">
@@ -35,59 +32,113 @@
       </div>
     }
 
+    @if (page.showMatchdayPicker()) {
+      <div class="comp-pills md-pills" role="group" [attr.aria-label]="'common.elegirJornada' | t">
+        @for (md of page.matchdayChips(); track md.matchdayId) {
+          <button type="button" class="comp-pill" [class.active]="page.isMatchdaySelected(md.matchdayId)" (click)="page.selectMatchday(md.matchdayId)">
+            {{ 'common.jornadaAbrev' | t: { order: md.order } }}
+          </button>
+        }
+      </div>
+    }
+
+    @if (page.hasEvolution()) {
+      <div class="evolution-card">
+        <div class="evolution-head">
+          <span class="evolution-heading">
+            <span class="evolution-title">
+              {{ (page.effectiveEvolutionMode() === 'group' ? 'rankingsPage.evolucionGrupo' : 'rankingsPage.evolucion') | t }}
+            </span>
+            @if (page.evolutionRange(); as range) {
+              <span class="evolution-sub mono">{{ 'rankingsPage.rarr' | t: { label: range.from, label2: range.to } }}</span>
+            }
+          </span>
+          @if (page.groupChart()) {
+            <span class="evolution-toggle" role="group" [attr.aria-label]="'rankingsPage.tipoGrafica' | t">
+              <button type="button" class="toggle-btn" [class.active]="page.effectiveEvolutionMode() === 'group'" [attr.aria-pressed]="page.effectiveEvolutionMode() === 'group'" (click)="page.setEvolutionMode('group')">
+                <piqo-svg icon="grupos" size="14"></piqo-svg>
+                {{ 'rankingsPage.grafGrupo' | t }}
+              </button>
+              <button type="button" class="toggle-btn" [class.active]="page.effectiveEvolutionMode() === 'me'" [attr.aria-pressed]="page.effectiveEvolutionMode() === 'me'" (click)="page.setEvolutionMode('me')">
+                <piqo-svg icon="perfil" size="14"></piqo-svg>
+                {{ 'rankingsPage.tuCorto' | t }}
+              </button>
+            </span>
+          }
+        </div>
+
+        @if (page.effectiveEvolutionMode() === 'group' && page.groupChart(); as chart) {
+          <app-evolution-chart [chart]="chart"></app-evolution-chart>
+          <p class="evolution-note">
+            {{ (chart.cumulative ? 'rankingsPage.notaAcumulado' : 'rankingsPage.notaJornada') | t }}
+            @if (chart.sublabels?.length) {
+              · {{ 'rankingsPage.notaGeneral' | t }}
+            }
+            @if (chart.series.length < page.rows().length) {
+              · {{ 'rankingsPage.notaLideres' | t }}
+            }
+          </p>
+        } @else {
+          <div class="evolution-bars">
+            @for (bar of page.evolutionBars(); track bar.label) {
+              <div class="evolution-col">
+                <span class="evolution-points mono" [class.active]="bar.active">{{ bar.points }}</span>
+                <div class="evolution-bar-track">
+                  <div class="evolution-bar" [class.active]="bar.active" [style.height.%]="bar.heightPct"></div>
+                </div>
+                <span class="evolution-label mono">{{ bar.label }}</span>
+                @if (bar.sublabel) {
+                  <span class="evolution-sublabel mono">{{ bar.sublabel }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    @if (page.exactLeaders()?.length) {
+      <app-exact-king-card></app-exact-king-card>
+    }
+
     @if (page.myRow(); as mine) {
-      <button type="button" class="my-row" (click)="page.viewUserPicks(mine.userId)">
+      <button type="button" class="my-row" (click)="page.openProfile(mine.userId)">
         <span class="my-pos mono">{{ mine.position }}</span>
         <span class="my-meta">
-          <span class="my-name">Tú · {{ mine.user.name }}</span>
+          <span class="my-name">{{ 'rankingsPage.tu' | t: { name: mine.user.name } }}</span>
           <span class="my-delta mono" [class.up]="mine.positionDelta > 0" [class.down]="mine.positionDelta < 0">
-            @if (page.deltaLabel(mine.positionDelta); as delta) {
-              {{ delta }} esta semana
+            @if (page.viewingPastMatchday()) {
+              {{ 'rankingsPage.jornadaN' | t: { order: page.selectedMatchdayOrder() } }}
             } @else {
-              Esta semana
+              @if (page.deltaLabel(mine.positionDelta); as delta) {
+                {{ 'rankingsPage.estaSemana' | t: { delta: delta } }}
+              } @else {
+                {{ 'rankingsPage.estaSemana2' | t }}
+              }
             }
           </span>
         </span>
         <span class="my-pts">
           <span class="pts-value mono">{{ mine.points }}</span>
-          <span class="pts-label mono">PTS</span>
+          <span class="pts-label mono">{{ 'rankingsPage.pts' | t }}</span>
         </span>
       </button>
     }
 
-    @if (page.showEvolution() && page.evolutionBars().length > 0) {
-      <div class="evolution-card">
-        <div class="evolution-head">
-          <span class="evolution-title">Tu evolución</span>
-          <span class="evolution-sub mono">{{ page.evolutionBars()[0].label }} &rarr; {{ page.evolutionBars().at(-1)?.label }}</span>
-        </div>
-        <div class="evolution-bars">
-          @for (bar of page.evolutionBars(); track bar.label) {
-            <div class="evolution-col">
-              <div class="evolution-bar-track">
-                <div class="evolution-bar" [style.height.%]="bar.heightPct"></div>
-              </div>
-              <span class="evolution-label mono">{{ bar.label }}</span>
-            </div>
-          }
-        </div>
-      </div>
-    }
-
     <div class="table-head">
       <span class="col-pos mono">#</span>
-      <span class="col-name mono">JUGADOR</span>
-      <span class="col-pts mono">PTS</span>
+      <span class="col-name mono">{{ 'rankingsPage.jugador' | t }}</span>
+      <span class="col-pts mono">{{ 'rankingsPage.pts' | t }}</span>
     </div>
 
     @if (page.loadingRanking()) {
       <div class="loading"><app-spinner [size]="20"></app-spinner></div>
     } @else if (page.rows().length === 0) {
-      <p class="empty">Todavía no hay puntos calculados para esta vista.</p>
+      <p class="empty">{{ 'rankingsPage.todaviaHayPuntosCalculados' | t }}</p>
     } @else {
       <div class="rows">
         @for (row of page.rows(); track row.userId) {
-          <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.viewUserPicks(row.userId)">
+          <button type="button" class="row" [class.me]="row.userId === page.currentUserId" (click)="page.openProfile(row.userId)">
             <span class="col-pos mono">
               {{ row.position }}
               @if (page.deltaLabel(row.positionDelta); as delta) {
@@ -104,7 +155,7 @@
           </button>
         }
       </div>
-      <p class="footnote">Los empates muestran el puesto que devuelve el sistema. Piqo no inventa desempates.</p>
+      <p class="footnote">{{ 'rankingsPage.empatesMuestranPuestoDevuelve' | t }}</p>
     }
   </div>
 }

@@ -5,6 +5,7 @@ import { Share } from '@capacitor/share';
 import { GroupsService } from '../../../core/services/groups.service';
 import { Group, GroupMember } from '../../../core/models/group.model';
 import { environment } from '../../../../environments/environment';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class GroupInviteFacade {
@@ -79,10 +80,10 @@ export class GroupInviteFacade {
     }
     try {
       await Share.share({
-        title: 'Únete a mi grupo en Piqo',
-        text: `Únete a ${group.name} en Piqo`,
+        title: t('groupInvite.uneteGrupoPiqo'),
+        text: t('groupInvite.unetePiqo', { name: group.name }),
         url: this.inviteLink(),
-        dialogTitle: 'Compartir enlace de invitación',
+        dialogTitle: t('groupInvite.compartirEnlaceInvitacion'),
       });
     } catch {
       // El usuario cierra el panel de compartir sin elegir nada: no es un

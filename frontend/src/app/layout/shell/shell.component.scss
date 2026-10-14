@@ -6,7 +6,6 @@
   display: flex;
   flex-direction: column;
   background: var(--p4-bg);
-  padding-top: env(safe-area-inset-top);
 }
 
 .shell-bg {
@@ -51,7 +50,6 @@
   }
 }
 
-app-top-bar,
 .shell-content {
   position: relative;
   z-index: 1;

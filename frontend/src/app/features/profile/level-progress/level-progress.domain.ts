@@ -1,3 +1,4 @@
+import { t } from '../../../core/i18n/translate';
 export type LevelRewardKind = 'color' | 'mascot';
 
 export interface LevelReward {
@@ -10,7 +11,7 @@ export interface LevelReward {
   mascotId?: string;
 }
 
-export const RANKS = ['Aprendiz', 'Analista', 'Estratega', 'Oráculo', 'Leyenda'];
+export const RANKS = [t('levelProgress.aprendiz'), t('levelProgress.analista'), t('levelProgress.estratega'), t('levelProgress.oraculo'), t('levelProgress.leyenda')];
 
 export function mascotAssetPath(mascotId: string): string {
   return `/assets/avatars/mascot/${mascotId}.png`;
@@ -44,24 +45,24 @@ export function levelRequiredForMascot(mascotId: string): number {
  * roadmap.md Sprint 14.
  */
 export const LEVEL_REWARDS: LevelReward[] = [
-  { n: 1, reward: 'Tema grafito', kind: 'color', swatch: '#3a3f44' },
-  { n: 2, reward: 'Mascota saludo', kind: 'mascot', mascotId: 'saludo' },
-  { n: 3, reward: 'Tema salvia', kind: 'color', swatch: '#7c9473' },
-  { n: 4, reward: 'Mascota guiño', kind: 'mascot', mascotId: 'guino' },
-  { n: 5, reward: 'Mascota sorpresa', kind: 'mascot', mascotId: 'sorpresa' },
-  { n: 6, reward: 'Tema azul apagado', kind: 'color', swatch: '#6a8caf' },
-  { n: 7, reward: 'Mascota pensativa', kind: 'mascot', mascotId: 'pensando' },
-  { n: 8, reward: 'Tema arcilla', kind: 'color', swatch: '#c98a8a' },
-  { n: 9, reward: 'Mascota sentada', kind: 'mascot', mascotId: 'sentado' },
-  { n: 10, reward: 'Mascota adormilada', kind: 'mascot', mascotId: 'sueno' },
-  { n: 11, reward: 'Tema terracota', kind: 'color', swatch: '#c0704f' },
-  { n: 12, reward: 'Mascota enfadada', kind: 'mascot', mascotId: 'enfado' },
-  { n: 13, reward: 'Tema ciruela', kind: 'color', swatch: '#8a6a8a' },
-  { n: 14, reward: 'Mascota risueña', kind: 'mascot', mascotId: 'risa' },
-  { n: 15, reward: 'Mascota con balón', kind: 'mascot', mascotId: 'abrazo-balon' },
-  { n: 16, reward: 'Tema mostaza', kind: 'color', swatch: '#b98d3e' },
-  { n: 17, reward: 'Mascota corriendo', kind: 'mascot', mascotId: 'corriendo' },
-  { n: 18, reward: 'Mascota campeona', kind: 'mascot', mascotId: 'celebrando' },
+  { n: 1, reward: t('levelProgress.temaGrafito'), kind: 'color', swatch: '#3a3f44' },
+  { n: 2, reward: t('levelProgress.mascotaSaludo'), kind: 'mascot', mascotId: 'saludo' },
+  { n: 3, reward: t('levelProgress.temaSalvia'), kind: 'color', swatch: '#7c9473' },
+  { n: 4, reward: t('levelProgress.mascotaGuino'), kind: 'mascot', mascotId: 'guino' },
+  { n: 5, reward: t('levelProgress.mascotaSorpresa'), kind: 'mascot', mascotId: 'sorpresa' },
+  { n: 6, reward: t('levelProgress.temaAzulApagado'), kind: 'color', swatch: '#6a8caf' },
+  { n: 7, reward: t('levelProgress.mascotaPensativa'), kind: 'mascot', mascotId: 'pensando' },
+  { n: 8, reward: t('levelProgress.temaArcilla'), kind: 'color', swatch: '#c98a8a' },
+  { n: 9, reward: t('levelProgress.mascotaSentada'), kind: 'mascot', mascotId: 'sentado' },
+  { n: 10, reward: t('levelProgress.mascotaAdormilada'), kind: 'mascot', mascotId: 'sueno' },
+  { n: 11, reward: t('levelProgress.temaTerracota'), kind: 'color', swatch: '#c0704f' },
+  { n: 12, reward: t('levelProgress.mascotaEnfadada'), kind: 'mascot', mascotId: 'enfado' },
+  { n: 13, reward: t('levelProgress.temaCiruela'), kind: 'color', swatch: '#8a6a8a' },
+  { n: 14, reward: t('levelProgress.mascotaRisuena'), kind: 'mascot', mascotId: 'risa' },
+  { n: 15, reward: t('levelProgress.mascotaBalon'), kind: 'mascot', mascotId: 'abrazo-balon' },
+  { n: 16, reward: t('levelProgress.temaMostaza'), kind: 'color', swatch: '#b98d3e' },
+  { n: 17, reward: t('levelProgress.mascotaCorriendo'), kind: 'mascot', mascotId: 'corriendo' },
+  { n: 18, reward: t('levelProgress.mascotaCampeona'), kind: 'mascot', mascotId: 'celebrando' },
 ];
 
 export interface XpRule {
@@ -79,23 +80,23 @@ export interface XpGroup {
 /** Texto del botón de info — mismos valores reales que XP_VALUES en el backend (ver xp.util.ts). */
 export const XP_GROUPS: XpGroup[] = [
   {
-    title: 'ACIERTOS',
+    title: t('levelProgress.grupoAciertos'),
     rules: [
-      { title: 'Ganador correcto', note: '1X2 o resultado exacto', xp: '+25 XP', tone: 'accent' },
-      { title: 'Acierto con comodín en 1X2', note: 'Doble oportunidad', xp: '+15 XP', tone: 'muted' },
-      { title: 'Resultado exacto', note: 'Marcador clavado', xp: '+60 XP', tone: 'warning' },
-      { title: 'Pleno de ganadores', note: 'Todos los partidos, 1X2 o resultado exacto', xp: '+600 XP', tone: 'success' },
-      { title: 'Pleno de resultado exacto', note: 'Marcador clavado en todos los partidos', xp: '+1000 XP', tone: 'success' },
+      { title: t('levelProgress.ganadorCorrecto'), note: t('levelProgress.1x2ResultadoExacto'), xp: '+25 XP', tone: 'accent' },
+      { title: t('levelProgress.aciertoComodin1x2'), note: t('levelProgress.dobleOportunidad'), xp: '+15 XP', tone: 'muted' },
+      { title: t('common.resultadoExacto'), note: t('levelProgress.marcadorClavado'), xp: '+60 XP', tone: 'warning' },
+      { title: t('levelProgress.plenoGanadores'), note: t('levelProgress.todosPartidos1x2Resultado'), xp: '+600 XP', tone: 'success' },
+      { title: t('levelProgress.plenoResultadoExacto'), note: t('levelProgress.marcadorClavadoTodosPartidos'), xp: '+1000 XP', tone: 'success' },
     ],
   },
   {
-    title: 'PARTICIPACIÓN',
-    rules: [{ title: 'Pronosticar', note: 'Por cada partido, al enviarlo por primera vez', xp: '+5 XP', tone: 'muted' }],
+    title: t('levelProgress.participacion'),
+    rules: [{ title: t('levelProgress.pronosticar'), note: t('levelProgress.cadaPartidoEnviarloPrimera'), xp: '+5 XP', tone: 'muted' }],
   },
   {
-    title: 'REFERIDOS',
+    title: t('levelProgress.grupoReferidos'),
     rules: [
-      { title: 'Invitar a un amigo', note: 'Al enlazar tu código con su cuenta — baja con cada uno', xp: '+500 XP', tone: 'accent' },
+      { title: t('levelProgress.invitarAmigo'), note: t('levelProgress.enlazarCodigoCuentaBaja'), xp: '+500 XP', tone: 'accent' },
     ],
   },
 ];

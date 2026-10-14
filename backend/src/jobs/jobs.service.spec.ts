@@ -9,8 +9,12 @@ function buildDeps() {
   };
   const matchdaysService = {
     syncCurrentRound: jest.fn(),
+    hasPredictableMatch: jest.fn(),
+    ensureUpcomingMatchday: jest.fn(),
     syncResultsForClosedMatchdays: jest.fn(),
     closeDueMatchdays: jest.fn(),
+    refreshUnconfirmedKickoffs: jest.fn(),
+    backfillTeamShortNames: jest.fn(),
   };
   const predictionsService = { scoreFinishedMatchday: jest.fn() };
   const rankingsService = { computeForFinishedMatchday: jest.fn() };
@@ -67,6 +71,108 @@ describe('JobsService.onApplicationBootstrap', () => {
     expect(matchdaysService.syncResultsForClosedMatchdays).toHaveBeenCalled();
     expect(predictionsService.scoreFinishedMatchday).toHaveBeenCalledWith('md-live');
     expect(rankingsService.computeForFinishedMatchday).toHaveBeenCalledWith('md-live');
+  });
+});
+
+describe('JobsService.ensureUpcomingMatchdays (siempre una jornada con algo por pronosticar)', () => {
+  function withCompetitions(ids: string[]) {
+    const deps = buildDeps();
+    deps.prisma.groupCompetition.findMany.mockResolvedValue(
+      ids.map((competitionId) => ({ competitionId })),
+    );
+    return deps;
+  }
+
+  it('no llama al proveedor si ya hay partidos por empezar', async () => {
+    const { service, matchdaysService } = withCompetitions(['c1', 'c2']);
+    matchdaysService.hasPredictableMatch.mockResolvedValue(true);
+
+    await service.ensureUpcomingMatchdays();
+
+    expect(matchdaysService.hasPredictableMatch).toHaveBeenCalledTimes(2);
+    expect(matchdaysService.ensureUpcomingMatchday).not.toHaveBeenCalled();
+  });
+
+  it('pide la siguiente jornada solo de las competiciones sin nada por pronosticar', async () => {
+    const { service, matchdaysService } = withCompetitions(['c1', 'c2']);
+    matchdaysService.hasPredictableMatch.mockImplementation(async (id: string) => id === 'c1');
+    matchdaysService.ensureUpcomingMatchday.mockResolvedValue(true);
+
+    await service.ensureUpcomingMatchdays();
+
+    expect(matchdaysService.ensureUpcomingMatchday).toHaveBeenCalledTimes(1);
+    expect(matchdaysService.ensureUpcomingMatchday).toHaveBeenCalledWith('c2');
+  });
+
+  it('si el proveedor no trae nada nuevo, no vuelve a insistir en la siguiente pasada', async () => {
+    const { service, matchdaysService } = withCompetitions(['c1']);
+    matchdaysService.hasPredictableMatch.mockResolvedValue(false);
+    matchdaysService.ensureUpcomingMatchday.mockResolvedValue(false);
+
+    await service.ensureUpcomingMatchdays();
+    await service.ensureUpcomingMatchdays();
+
+    expect(matchdaysService.ensureUpcomingMatchday).toHaveBeenCalledTimes(1);
+  });
+
+  it('si encuentra jornada nueva, la siguiente pasada vuelve a comprobar con normalidad', async () => {
+    const { service, matchdaysService } = withCompetitions(['c1']);
+    matchdaysService.hasPredictableMatch.mockResolvedValue(false);
+    matchdaysService.ensureUpcomingMatchday.mockResolvedValue(true);
+
+    await service.ensureUpcomingMatchdays();
+    await service.ensureUpcomingMatchdays();
+
+    expect(matchdaysService.ensureUpcomingMatchday).toHaveBeenCalledTimes(2);
+  });
+
+  it('un error con una competicion no impide atender a las demas', async () => {
+    const { service, matchdaysService } = withCompetitions(['c1', 'c2']);
+    matchdaysService.hasPredictableMatch.mockResolvedValue(false);
+    matchdaysService.ensureUpcomingMatchday.mockImplementation(async (id: string) => {
+      if (id === 'c1') throw new Error('proveedor caido');
+      return true;
+    });
+
+    await expect(service.ensureUpcomingMatchdays()).resolves.toBeUndefined();
+
+    expect(matchdaysService.ensureUpcomingMatchday).toHaveBeenCalledWith('c2');
+  });
+});
+
+describe('JobsService.refreshUnconfirmedKickoffs (horas provisionales de los partidos)', () => {
+  it('pide al servicio que corrija las horas provisionales', async () => {
+    const { service, matchdaysService } = buildDeps();
+    matchdaysService.refreshUnconfirmedKickoffs.mockResolvedValue(3);
+
+    await service.refreshUnconfirmedKickoffs();
+
+    expect(matchdaysService.refreshUnconfirmedKickoffs).toHaveBeenCalledTimes(1);
+  });
+
+  it('un fallo del proveedor no tumba el cron: se registra y se sigue', async () => {
+    const { service, matchdaysService } = buildDeps();
+    matchdaysService.refreshUnconfirmedKickoffs.mockRejectedValue(new Error('proveedor caido'));
+
+    await expect(service.refreshUnconfirmedKickoffs()).resolves.toBeUndefined();
+  });
+});
+
+describe('JobsService.backfillTeamShortNames (nombres cortos de equipos)', () => {
+  it('pide al servicio que rellene los nombres cortos que falten', async () => {
+    const { service, matchdaysService } = buildDeps();
+    matchdaysService.backfillTeamShortNames.mockResolvedValue(12);
+
+    await service.backfillTeamShortNames();
+
+    expect(matchdaysService.backfillTeamShortNames).toHaveBeenCalledTimes(1);
+  });
+
+  it('un fallo del proveedor no tumba el cron: se registra y se sigue', async () => {
+    const { service, matchdaysService } = buildDeps();
+    matchdaysService.backfillTeamShortNames.mockRejectedValue(new Error('proveedor caido'));
+
+    await expect(service.backfillTeamShortNames()).resolves.toBeUndefined();
   });
 });
 

@@ -38,10 +38,20 @@ actuales.
 - Añadir L y V sobre los campos local y visitante de resultado exacto.
 - Textos: «La jornada se abre en» y «La jornada cierra en». Es un cambio de
   texto, no una nueva regla de apertura.
+  **Actualizado 2026-10-04**: ya no hay regla de apertura por horas; la
+  jornada más próxima siempre está abierta para pronosticar (ver `decisions.md`).
 - Quitar el fondo de «Faltan X por enviar».
 - Copiar enlace muestra una confirmación temporal «Copiado» únicamente si
   funciona. No vigilar el portapapeles.
 - Cerrar sesión requiere un único modal de confirmación.
+- Copiar de otro grupo (a petición del usuario, 2026-10-04): quien está en
+  varios grupos puede rellenar de una vez los pronósticos de la jornada
+  abierta copiándolos de otro de sus grupos, en vez de repetirlos uno a uno.
+  Rellena todos los partidos de esa jornada que el otro grupo tenga
+  pronosticados y siguen abiertos; después se puede cambiar cualquiera con el
+  autoguardado de siempre. Solo entre grupos del mismo modo de puntuación
+  (1X2 con 1X2, resultado exacto con resultado exacto). Ver `decisions.md`
+  (2026-10-04) para los comodines.
 
 ## Grupos y navegación
 
@@ -123,6 +133,14 @@ correspondiente; no introducir desempates nuevos sin consultarlo.
 - El contador junto al nombre suma exclusivamente primeros premios
   generales de grupo ganados en solitario.
 - Mostrar contador en Tabla y Perfil, oculto si vale cero.
+- En Tabla, dentro de cada liga y **solo en Semanal**, se puede elegir una jornada ya
+  finalizada y ver lo que se puntuó en ella (chips en orden cronológico: J1, J2, J3...).
+  Por defecto, la última. **En Total nunca hay historial de jornadas**: es siempre el
+  acumulado de ahora. Tampoco hay selector en la vista "General" (cada liga tiene su
+  propio calendario). Una jornada que el grupo no jugó (se creó después, nadie
+  pronosticó) o un jugador que entró después cuentan **0 puntos**: se listan todos los
+  miembros. Viendo una jornada anterior no se enseñan subidas/bajadas de puesto y tocar a
+  un jugador abre sus quinielas de esa jornada.
 - Los premios de competición no incrementan ese contador.
 - Premios identificados por grupo, temporada, categoría y posición.
 - No duplicar premios al repetir cierres o recalcular.
@@ -179,6 +197,23 @@ competición, calcular participación sobre sus propias jornadas.
 - Si ambos usuarios comparten grupo, mostrar historial reciente. Esta
   lógica ya existe según el usuario: revisar y modificar principalmente su
   presentación, sin reescribirla innecesariamente.
+
+## Idioma
+
+- La app está en español (idioma original y de reserva) e inglés.
+- Idioma de arranque: el elegido por el usuario en Perfil > Apariencia > Idioma; si
+  no ha elegido, el del dispositivo (inglés solo si el dispositivo está en inglés;
+  catalán, gallego, euskera y cualquier otro se quedan en español).
+- Cambiar de idioma recarga la app.
+- Los correos (confirmar correo, restablecer contraseña) y los mensajes de error del
+  servidor salen en el idioma de la app que hace la petición (cabecera
+  `Accept-Language`).
+- **Pendiente**: los avisos push y los del feed (jornada nueva, recordatorios de
+  cierre, partido/jornada terminados, insignia, nivel) y los comunicados del
+  dashboard se siguen generando en español para todo el mundo: dependen de saber el
+  idioma de cada usuario en el servidor (ver `decisions.md`, 2026-10-04 "Inglés").
+- Los textos legales (política de privacidad) están traducidos tal cual, sin
+  revisión legal.
 
 ## Insignias
 

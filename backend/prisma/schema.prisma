@@ -4,10 +4,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  // url: conexion pooled (PgBouncer), la que usa la app en marcha.
-  // directUrl: conexion directa, la que usan `prisma migrate`/`db seed` (el
-  // pooler en modo transaccion de Neon no soporta bien los advisory locks de
-  // las migraciones). En local, sin pooler por delante, ambas apuntan a lo mismo.
+  // Dev: Neon PostgreSQL; conexion pooled para la app y directa para migraciones.
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -79,8 +76,12 @@ enum ScoringMode {
 model User {
   id                        String    @id @default(cuid())
   email                     String    @unique
-  passwordHash              String? // null cuando el usuario solo usa Google OAuth
+  passwordHash              String? // null cuando el usuario solo usa Google/Apple
   googleId                  String?   @unique
+  /// `sub` del identity token de Sign in with Apple (login nativo iOS, ver
+  /// AuthService.loginWithAppleIdToken). Distinto de googleId: mismo patron,
+  /// proveedor distinto.
+  appleSub                  String?   @unique
   name                      String
   /// false solo para cuentas de Google recien creadas, cuyo nombre viene
   /// del perfil de Google sin que el usuario lo haya elegido — se les pide
@@ -148,6 +149,7 @@ model User {
   memberships            GroupMembership[]
   ownedGroups            Group[]
   predictions            Prediction[]
+  quizParticipations     QuizParticipation[]
   userBadges             UserBadge[]
   streaks                Streak[]
   globalStreak           GlobalStreak?
@@ -161,8 +163,6 @@ model User {
   authTokens             AuthToken[]
   referredBy             User?                   @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
   referrals              User[]                  @relation("Referrals")
-
-  quizParticipations QuizParticipation[]
 
   @@map("users")
 }
@@ -454,9 +454,8 @@ model Matchday {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  matches     Match[]
-
+  competition             Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  matches                 Match[]
   quizEvent               QuizEvent?
   rankingSnapshots        RankingSnapshot[]
   streaksLastPlayed       Streak[]          @relation("StreakLastMatchday")
@@ -499,6 +498,11 @@ model Match {
   awayTeam          String
   homeTeamLogo      String?
   awayTeamLogo      String?
+  /// Nombre corto del proveedor ("Barça", "Atleti") para sitios con poco espacio,
+  /// como las imagenes de compartir. null = todavia no traido: se rellena solo
+  /// (ver MatchdaysService.backfillTeamShortNames) y mientras tanto se usa el nombre completo.
+  homeTeamShort     String?
+  awayTeamShort     String?
   kickoff           DateTime
   status            MatchStatus       @default(SCHEDULED)
   homeScore         Int?
@@ -519,9 +523,8 @@ model Match {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  matchday    Matchday     @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
-  predictions Prediction[]
-
+  matchday      Matchday       @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  predictions   Prediction[]
   quizQuestions QuizQuestion[]
 
   @@index([matchdayId])

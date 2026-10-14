@@ -152,21 +152,34 @@
   </style>
 
   <!--
-    Google Consent Mode: por defecto todo denegado hasta que el usuario
-    acepte en el banner de cookies (app-cookie-consent). Debe declararse
-    ANTES de cargar adsbygoogle.js para que arranque ya en modo restringido.
+    Google Consent Mode + AdSense: solo en web. En la app nativa (iOS/Android,
+    dentro del WebView de Capacitor) los anuncios y su consentimiento los
+    gestiona AdMob (ver AdsService), que si pasa por App Tracking Transparency
+    antes de pedir el IDFA (Guideline 5.1.2(i) de App Store). Cargar aqui
+    tambien AdSense/cookies de Google dentro de la app nativa violaria esa
+    misma guideline, porque ese consentimiento (banner web de cookies) nunca
+    pasa por el dialogo nativo de ATT.
   -->
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('consent', 'default', {
-      ad_storage: 'denied',
-      ad_user_data: 'denied',
-      ad_personalization: 'denied',
-      analytics_storage: 'denied',
-    });
+    (function () {
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return;
+
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { dataLayer.push(arguments); };
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+      });
+
+      var adsenseScript = document.createElement('script');
+      adsenseScript.async = true;
+      adsenseScript.crossOrigin = 'anonymous';
+      adsenseScript.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1185144357301303';
+      document.head.appendChild(adsenseScript);
+    })();
   </script>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1185144357301303" crossorigin="anonymous"></script>
 </head>
 <body class="mat-typography">
   <app-root>

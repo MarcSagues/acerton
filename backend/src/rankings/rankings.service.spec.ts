@@ -142,6 +142,90 @@ describe('RankingsService.getHistoryForCompetition', () => {
     expect(prisma.rankingSnapshot.findMany).not.toHaveBeenCalled();
   });
 });
+
+describe('RankingsService.getRankingForMatchday', () => {
+  const user = (id: string) => ({
+    id,
+    name: id.toUpperCase(),
+    avatarUrl: null,
+    avatarBackground: null,
+    experience: 0,
+  });
+  const member = (id: string) => ({ userId: id, user: user(id) });
+  const snapshot = (id: string, points: number, position: number) => ({
+    id: `s-${id}`,
+    userId: id,
+    points,
+    position,
+    user: user(id),
+  });
+
+  function build(rows: ReturnType<typeof snapshot>[], members: ReturnType<typeof member>[]) {
+    const prisma = buildPrismaMock();
+    prisma.rankingSnapshot.findMany.mockResolvedValue(rows);
+    prisma.groupMembership.findMany.mockResolvedValue(members);
+    return new RankingsService(prisma as never, {} as never);
+  }
+
+  it('una jornada que el grupo no jugo (sin ninguna fila) devuelve a todos los miembros con 0 puntos', async () => {
+    const service = build([], [member('u1'), member('u2'), member('u3')]);
+
+    const result = await service.getRankingForMatchday('g1', 'WEEKLY', 'pd', 'md-1');
+
+    expect(result.map((row) => [row.userId, row.points, row.position])).toEqual([
+      ['u1', 0, 1],
+      ['u2', 0, 1],
+      ['u3', 0, 1],
+    ]);
+    expect(result.every((row) => row.matchdayId === 'md-1' && row.positionDelta === 0)).toBe(true);
+  });
+
+  it('quien entro despues de esa jornada aparece con 0 puntos, por detras de los que puntuaron', async () => {
+    const service = build(
+      [snapshot('u1', 5, 1), snapshot('u2', 2, 2)],
+      [member('u1'), member('u2'), member('u3')],
+    );
+
+    const result = await service.getRankingForMatchday('g1', 'WEEKLY', 'pd', 'md-1');
+
+    expect(result.map((row) => [row.userId, row.points, row.position])).toEqual([
+      ['u1', 5, 1],
+      ['u2', 2, 2],
+      ['u3', 0, 3],
+    ]);
+  });
+
+  it('un nuevo con 0 puntos empata con los que ya tenian 0 en esa jornada', async () => {
+    const service = build(
+      [snapshot('u1', 4, 1), snapshot('u2', 0, 2)],
+      [member('u1'), member('u2'), member('u3')],
+    );
+
+    const result = await service.getRankingForMatchday('g1', 'WEEKLY', 'pd', 'md-1');
+
+    expect(result.map((row) => [row.userId, row.position])).toEqual([
+      ['u1', 1],
+      ['u2', 2],
+      ['u3', 2],
+    ]);
+  });
+
+  it('si todos tienen fila devuelve la clasificacion guardada tal cual', async () => {
+    const service = build(
+      [snapshot('u1', 5, 1), snapshot('u2', 5, 1), snapshot('u3', 1, 3)],
+      [member('u1'), member('u2'), member('u3')],
+    );
+
+    const result = await service.getRankingForMatchday('g1', 'TOTAL', 'pd', 'md-1');
+
+    expect(result.map((row) => [row.userId, row.points, row.position])).toEqual([
+      ['u1', 5, 1],
+      ['u2', 5, 1],
+      ['u3', 1, 3],
+    ]);
+  });
+});
+
 describe('RankingsService.getExactScoreLeaders', () => {
   const user = (id: string) => ({
     id,

@@ -187,10 +187,10 @@ export function parseRoundOrder(roundName: string, fallbackIndex: number): numbe
 }
 
 /**
- * football-data.org manda las 00:00 UTC mientras la hora de un partido no esta
- * confirmada (las 2 de la madrugada en España). Ningun partido de las competiciones
- * que seguimos se juega a esa hora exacta, asi que se toma como "hora por confirmar".
- * Portado de main para el Quiz de jornada.
+ * El proveedor publica la fecha de un partido antes que su hora: mientras la
+ * hora no esta confirmada manda esa fecha a las 00:00:00 UTC (las 2:00 de la
+ * madrugada en España). Ningun partido de las competiciones que seguimos se
+ * juega a esa hora exacta, asi que se toma como "hora por confirmar".
  */
 export function isKickoffTimeUnconfirmed(kickoff: Date): boolean {
   return (

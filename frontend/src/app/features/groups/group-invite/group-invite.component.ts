@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { GroupInviteFacade } from './group-invite.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-group-invite',
   standalone: true,
-  imports: [RouterLink, SpinnerComponent, AvatarComponent],
+  imports: [RouterLink, SpinnerComponent, AvatarComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupInviteFacade],
   templateUrl: './group-invite.component.html',

@@ -196,17 +196,7 @@ export class RankingsService {
       this.prisma.rankingSnapshot.findMany({
         where: { groupId, period, competitionId, matchdayId: latest.matchdayId },
         orderBy: { position: 'asc' },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              avatarUrl: true,
-              avatarBackground: true,
-              experience: true,
-            },
-          },
-        },
+        include: { user: { select: RANKING_USER_SELECT } },
       }),
       this.prisma.rankingSnapshot.findFirst({
         where: { groupId, period, competitionId, matchdayId: { not: latest.matchdayId } },
@@ -237,17 +227,7 @@ export class RankingsService {
   private async emptyRanking(groupId: string, period: RankingPeriod, competitionId: string | null) {
     const members = await this.prisma.groupMembership.findMany({
       where: { groupId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            avatarBackground: true,
-            experience: true,
-          },
-        },
-      },
+      include: { user: { select: RANKING_USER_SELECT } },
     });
 
     const ranked = rankEntries(members.map((m) => ({ userId: m.userId, points: 0 })));
@@ -285,28 +265,57 @@ export class RankingsService {
     return snapshot !== null;
   }
 
+  /**
+   * Clasificacion de una jornada concreta. Quien no tiene fila en esa jornada
+   * (el grupo no la jugo —se creo despues o nadie pronostico— o el jugador
+   * entro despues) cuenta con 0 puntos: nunca se devuelve una tabla vacia ni
+   * se esconde a nadie del grupo.
+   */
   async getRankingForMatchday(
     groupId: string,
     period: RankingPeriod,
     competitionId: string | null,
     matchdayId: string,
   ) {
-    const rows = await this.prisma.rankingSnapshot.findMany({
-      where: { groupId, period, competitionId, matchdayId },
-      orderBy: { position: 'asc' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-            avatarBackground: true,
-            experience: true,
-          },
-        },
-      },
-    });
-    return rows.map(withLevel);
+    const [rows, members] = await Promise.all([
+      this.prisma.rankingSnapshot.findMany({
+        where: { groupId, period, competitionId, matchdayId },
+        orderBy: { position: 'asc' },
+        include: { user: { select: RANKING_USER_SELECT } },
+      }),
+      this.prisma.groupMembership.findMany({
+        where: { groupId },
+        include: { user: { select: RANKING_USER_SELECT } },
+      }),
+    ]);
+
+    const scored = new Set(rows.map((row) => row.userId));
+    const absent = members.filter((member) => !scored.has(member.userId));
+    if (absent.length === 0) {
+      return rows.map((row) => withLevel({ ...row, positionDelta: 0 }));
+    }
+
+    const zeroRows = absent.map((member) => ({
+      id: `empty-${member.userId}`,
+      groupId,
+      competitionId,
+      matchdayId,
+      period,
+      userId: member.userId,
+      points: 0,
+      createdAt: new Date(),
+      user: member.user,
+    }));
+    const positionByUser = new Map(
+      rankEntries(
+        [...rows, ...zeroRows].map((row) => ({ userId: row.userId, points: row.points })),
+      ).map((entry) => [entry.userId, entry.position]),
+    );
+    return [...rows, ...zeroRows]
+      .map((row) =>
+        withLevel({ ...row, position: positionByUser.get(row.userId) ?? 0, positionDelta: 0 }),
+      )
+      .sort((a, b) => a.position - b.position);
   }
 
   /**

@@ -8,12 +8,12 @@
   </div>
 
   <div class="title-row">
-    <h1>Algo ha ido mal</h1>
-    <p class="lead">No hemos podido cargar esto. Comprueba tu conexión e inténtalo de nuevo.</p>
+    <h1>{{ 'errorPage.algoHaIdoMal' | t }}</h1>
+    <p class="lead">{{ 'errorPage.hemosPodidoCargarEsto' | t }}</p>
   </div>
 
   <div class="actions">
-    <button type="button" class="piqo-primary cta" (click)="reload()">Reintentar</button>
-    <a routerLink="/matchday" class="piqo-secondary cta">Volver al inicio</a>
+    <button type="button" class="piqo-primary cta" (click)="reload()">{{ 'common.reintentar' | t }}</button>
+    <a routerLink="/matchday" class="piqo-secondary cta">{{ 'errorPage.volverInicio' | t }}</a>
   </div>
 </div>

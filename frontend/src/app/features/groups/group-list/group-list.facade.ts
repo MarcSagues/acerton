@@ -6,6 +6,7 @@ import { ProfileService } from '../../../core/services/profile.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { Group, ScoringMode } from '../../../core/models/group.model';
 import { scoringModeIcon as scoringModeIconOf } from '../../../shared/utils/scoring-mode-badge';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class GroupListFacade {
@@ -17,7 +18,13 @@ export class GroupListFacade {
 
   readonly groups = this.groupsService.myGroups;
   readonly activeGroupId = this.activeGroupService.activeId;
-  readonly loading = signal(true);
+  /**
+   * Con la lista ya en memoria (la dejo hasGroupGuard u otra visita anterior)
+   * se pinta al instante y se refresca por detras: el spinner solo hace falta
+   * la primera vez. Antes cada visita a Grupos esperaba un viaje completo a
+   * /groups/mine, el endpoint mas pesado de la app.
+   */
+  readonly loading = signal(this.groupsService.myGroups().length === 0);
   /**
    * /welcome vive fuera del shell (sin barra superior con logo): el estado
    * vacio reserva ahi ese hueco a mano. /groups (mismo componente, dentro
@@ -50,6 +57,11 @@ export class GroupListFacade {
     return streak > 0 ? streak : null;
   }
 
+  /** Quiz de jornada: se puede jugar sin grupo (ver app.routes). */
+  goToQuiz(): void {
+    this.router.navigate(['/quiz']);
+  }
+
   goToExplorePublic(): void {
     this.router.navigate(['/groups/public']);
   }
@@ -76,7 +88,7 @@ export class GroupListFacade {
     const next = !group.isFavorite;
     this.groupsService.setFavorite(group.id, next).subscribe({
       next: () => this.activeGroupService.setGroups(this.groupsService.myGroups()),
-      error: () => this.toast.show('No se pudo actualizar el favorito. Inténtalo de nuevo.'),
+      error: () => this.toast.show(t('groupList.pudoActualizarFavoritoIntentalo')),
     });
   }
 

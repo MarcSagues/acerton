@@ -37,6 +37,12 @@ export class ThemeService {
     this.apply(pref);
   }
 
+  /** Tema que se ve realmente en pantalla, resolviendo Automatico con el del sistema. */
+  effectiveTheme(): 'light' | 'dark' {
+    const pref = this.preference();
+    return pref === 'auto' ? (this.media.matches ? 'dark' : 'light') : pref;
+  }
+
   private readStored(): ThemePreference {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -58,8 +64,7 @@ export class ThemeService {
   }
 
   private syncMetaThemeColor(): void {
-    const pref = this.preference();
-    const effective: 'light' | 'dark' = pref === 'auto' ? (this.media.matches ? 'dark' : 'light') : pref;
+    const effective = this.effectiveTheme();
     const meta = document.querySelector('meta[name="theme-color"]');
     meta?.setAttribute('content', THEME_COLOR[effective]);
   }

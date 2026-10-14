@@ -3,6 +3,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { ScoringMode } from '../models/group.model';
 import { ProfileService } from './profile.service';
 import { AuthService } from './auth.service';
+import { t } from '../i18n/translate';
 
 export interface TutorialStep {
   id: string;
@@ -37,8 +38,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
       id: 'tabla',
       route: '/rankings',
       target: '[data-tutorial="rankings-head"]',
-      title: 'Bienvenido a Piqo',
-      body: 'Esta es la Tabla: aquí ves la clasificación general del grupo, quién va primero y cuántos puntos lleva cada uno.',
+      title: t('tutorial.bienvenidoPiqo'),
+      body: t('tutorial.estaTablaAquiVes'),
       mascotId: 'saludo',
       mascotPosition: 'below',
       placement: 'bottom',
@@ -48,8 +49,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
       id: 'nav-jornada',
       route: '/rankings',
       target: '[data-tutorial="nav-jornada"]',
-      title: 'Haz tus pronósticos',
-      body: 'Pulsa aquí para ver los próximos partidos y elegir tus pronósticos antes de que empiecen.',
+      title: t('tutorial.hazPronosticos'),
+      body: t('tutorial.pulsaAquiVerProximos'),
       mascotId: 'corriendo',
       mascotPosition: 'above',
       placement: 'top',
@@ -60,8 +61,8 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
           id: 'matchday-choices',
           route: '/matchday',
           target: '[data-tutorial="first-match"]',
-          title: 'Resultado exacto',
-          body: 'Para cada partido, escribe el marcador exacto que crees que va a pasar. Cuanto más te acerques al resultado real, más puntos consigues.',
+          title: t('common.resultadoExacto'),
+          body: t('tutorial.cadaPartidoEscribeMarcador'),
           mascotId: 'pensando',
           mascotPosition: 'above',
           placement: 'top',
@@ -71,22 +72,24 @@ function buildSteps(scoringMode: ScoringMode): TutorialStep[] {
           id: 'matchday-choices',
           route: '/matchday',
           target: '[data-tutorial="first-match"]',
-          title: 'Elige 1, X o 2',
-          body: 'Para cada partido, elige 1 (gana el local), X (empate) o 2 (gana el visitante) — se guarda solo al pulsar. Si vas por detrás en la clasificación, puede que tengas el comodín de doble oportunidad disponible en algunos partidos.',
+          title: t('tutorial.elige1X2'),
+          body: t('tutorial.cadaPartidoElige1'),
           mascotId: 'pensando',
           mascotPosition: 'above',
           placement: 'top',
           advanceOn: 'manual',
         },
     {
+      // Perfil ya no esta en la barra inferior (ahi va el Quiz): el paso
+      // senala el avatar de la cabecera, que es por donde se entra ahora.
       id: 'nav-profile',
       route: '/matchday',
       target: '[data-tutorial="nav-perfil"]',
-      title: 'Grupos y Perfil',
-      body: '"Grupos" te deja cambiar entre tus grupos o crear/unirte a otro. Desde "Perfil" puedes volver a ver este tutorial cuando quieras.',
+      title: t('tutorial.gruposPerfil'),
+      body: t('tutorial.gruposDejaCambiarEntre'),
       mascotId: 'celebrando',
-      mascotPosition: 'above',
-      placement: 'top',
+      mascotPosition: 'below',
+      placement: 'bottom',
       advanceOn: 'manual',
     },
   ];

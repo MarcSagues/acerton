@@ -1,0 +1,65 @@
+@if (page.loading()) {
+  <div class="loading"><app-spinner [size]="32"></app-spinner></div>
+} @else {
+  <div class="page">
+    <div class="title-row">
+      <p class="lead">{{ 'favoriteTeam.lead' | t }}</p>
+    </div>
+
+    @if (page.current(); as current) {
+      <div class="current">
+        <app-team-flag [team]="current"></app-team-flag>
+        <button
+          type="button"
+          class="remove-btn"
+          [disabled]="page.saving()"
+          [attr.aria-label]="'favoriteTeam.quitar' | t"
+          [attr.title]="'favoriteTeam.quitar' | t"
+          (click)="page.select(null)"
+        >
+          <piqo-svg icon="cerrar" size="18"></piqo-svg>
+        </button>
+      </div>
+    }
+
+    @if (page.error()) {
+      <p class="error mono">{{ page.error() }}</p>
+    }
+
+    @if (page.teams().length > 0) {
+      <div class="search-row">
+        <input
+          class="search-input"
+          type="search"
+          autocomplete="off"
+          [attr.aria-label]="'favoriteTeam.buscar' | t"
+          [placeholder]="'favoriteTeam.buscar' | t"
+          [value]="page.search()"
+          (input)="page.search.set($any($event.target).value)"
+        />
+      </div>
+
+      <ul class="team-list">
+        @for (team of page.visibleTeams(); track team.name) {
+          <li>
+            <button
+              type="button"
+              class="team-row"
+              [class.selected]="page.isSelected(team)"
+              [disabled]="page.saving()"
+              (click)="page.select(team)"
+            >
+              <span class="swatch" [style.background]="'linear-gradient(135deg, ' + team.primary + ' 50%, ' + team.secondary + ' 50%)'" aria-hidden="true"></span>
+              <span class="team-name">{{ team.name }}</span>
+              @if (page.isSelected(team)) {
+                <piqo-svg icon="check" size="16"></piqo-svg>
+              }
+            </button>
+          </li>
+        } @empty {
+          <li class="empty mono">{{ 'favoriteTeam.sinResultados' | t }}</li>
+        }
+      </ul>
+    }
+  </div>
+}

@@ -56,6 +56,8 @@
 
 :root {
   @include light-tokens;
+  /* Alto de la barra superior fija (Piqo, avisos, perfil), con el margen de seguridad de iOS: lo usan las cabeceras que se quedan pegadas debajo. */
+  --p4-topbar-h: calc(52px + env(safe-area-inset-top));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -113,6 +115,14 @@
   --p4-info-bg: #e3edf8;
   --p4-disabled: #788184;
   --p4-disabled-bg: #e2e5e4;
+  /* Lineas de la grafica de la clasificacion (0 = tu). Orden validado para que
+     se distingan entre vecinas tambien con daltonismo. */
+  --p4-series-0: #8a5a12;
+  --p4-series-1: #e87ba4;
+  --p4-series-2: #2a78d6;
+  --p4-series-3: #e34948;
+  --p4-series-4: #4a3aa7;
+  --p4-series-5: #0e8a6a;
 }
 
 @mixin piqo4-oscuro {
@@ -144,6 +154,12 @@
   --p4-info-bg: #203247;
   --p4-disabled: #718083;
   --p4-disabled-bg: #273033;
+  --p4-series-0: #b8862f;
+  --p4-series-1: #d55181;
+  --p4-series-2: #3987e5;
+  --p4-series-3: #e66767;
+  --p4-series-4: #9085e9;
+  --p4-series-5: #199e70;
 }
 
 :root {
@@ -288,6 +304,16 @@ body {
   }
 }
 
+/* Teclado abierto en iOS (ver KeyboardInsetService): un hueco al final de la
+   pagina del alto del teclado y de la barra "Listo", para que el ultimo campo
+   (p.ej. el marcador del ultimo partido) pueda subir por encima del teclado.
+   Va en app-root y no en body porque body mide height:100% y su relleno no
+   alargaria la pagina. */
+html.keyboard-open app-root {
+  display: block;
+  padding-bottom: var(--keyboard-inset, 0px);
+}
+
 body {
   margin: 0;
   background: var(--p4-bg);
@@ -354,6 +380,39 @@ input,
 textarea {
   -webkit-user-select: text;
   user-select: text;
+}
+
+/* Seleccion desactivada en toda la app (no solo en html): se aplica a todos
+   los descendientes y se anula el color de resaltado por si algun
+   WebView lo pinta igualmente. Los campos de texto la recuperan justo
+   debajo. */
+*,
+*::before,
+*::after {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+::selection {
+  background: transparent;
+}
+
+input::selection,
+textarea::selection {
+  background: Highlight;
+}
+
+/* El "borde azul" de los dialogos/paneles: el contenedor de CDK recibe el
+   foco programaticamente al abrirse (tabindex=-1) y el navegador le pinta
+   su anillo de foco nativo. No es un elemento con el que se interactue, asi
+   que no hace falta anillo; los botones/campos dentro conservan el suyo. */
+.cdk-overlay-container *:focus:not(:focus-visible),
+.cdk-dialog-container,
+.cdk-dialog-container:focus,
+.cdk-overlay-pane:focus,
+.cdk-global-overlay-wrapper:focus,
+[tabindex='-1']:focus {
+  outline: none;
 }
 
 a {
@@ -828,4 +887,14 @@ button {
   .swipe-back-transition::view-transition-new(root) {
     animation: none;
   }
+}
+
+// Idiomas con palabras largas (alemán: "Mitteilungseinstellungen"): un título nunca se
+// sale de la pantalla; si no cabe en la línea, se parte (con guion donde el navegador
+// sabe, por el atributo lang del <html>).
+h1,
+h2,
+h3 {
+  overflow-wrap: break-word;
+  hyphens: auto;
 }

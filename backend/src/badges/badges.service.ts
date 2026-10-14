@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Badge } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { BADGE_CATALOG } from './badge-catalog';
 
 export const BADGE_CODES = {
   FIRST_MATCHDAY_PLAYED: 'FIRST_MATCHDAY_PLAYED',
@@ -56,16 +57,44 @@ export const BADGE_TARGETS: Partial<Record<keyof typeof BADGE_CODES, number>> = 
 /** Fetch maximo necesario para cubrir HOT_STREAK_5 y HOT_STREAK_10 con una sola consulta. */
 const MAX_HOT_STREAK_TARGET = 10;
 
+/** Cada cuanto se reintenta la reconciliacion de insignias de un mismo usuario (calcular el progreso es caro). */
+const RECONCILE_INTERVAL_MS = 10 * 60 * 1000;
+
 export interface BadgeProgress {
   current: number;
   target: number;
 }
 
 @Injectable()
-export class BadgesService {
+export class BadgesService implements OnModuleInit {
   private readonly logger = new Logger(BadgesService.name);
+  private readonly lastReconcileAt = new Map<string, number>();
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Asegura que el catalogo de insignias de la BD esta completo (upsert por
+   * code: crea las que faltan y actualiza nombre/descripcion, sin tocar las
+   * insignias ya conseguidas). Sin esto, una BD a la que nunca se le paso
+   * `prisma db seed` (p. ej. produccion tras la migracion a MySQL) solo
+   * devuelve las insignias que ya tuviera y las nuevas no aparecen en la app.
+   * Un fallo aqui nunca debe impedir arrancar el backend.
+   */
+  async onModuleInit(): Promise<void> {
+    try {
+      for (const badge of BADGE_CATALOG) {
+        await this.prisma.badge.upsert({
+          where: { code: badge.code },
+          update: { name: badge.name, description: badge.description },
+          create: badge,
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `No se pudo asegurar el catalogo de insignias: ${(error as Error).message}`,
+      );
+    }
+  }
 
   findCatalog(): Promise<Badge[]> {
     return this.prisma.badge.findMany({ orderBy: { name: 'asc' } });
@@ -610,6 +639,48 @@ export class BadgesService {
       );
     }
     return awarded;
+  }
+
+  /**
+   * Concede las insignias medibles cuyo progreso ya esta completo y que el
+   * usuario todavia no tiene. Las concesiones normales (evaluateAfterMatchdayClose)
+   * solo comparan por igualdad en el instante de cerrar la jornada
+   * (`racha === 5`): si en ese momento la insignia no existia en la BD, o el
+   * contador paso de largo, nunca se concede y la app muestra "5/5" sin
+   * iluminar para siempre. Esto la concede a posteriori, sin avisos push
+   * (no es un logro "nuevo" de ahora). Se ancla al primer grupo del usuario,
+   * igual que las insignias de cuenta (Sociable, Multiliga...). Como
+   * calcular el progreso es caro, solo se repite cada RECONCILE_INTERVAL_MS
+   * por usuario. Nunca lanza.
+   */
+  async reconcileEarnedBadges(userId: string): Promise<void> {
+    const last = this.lastReconcileAt.get(userId) ?? 0;
+    if (Date.now() - last < RECONCILE_INTERVAL_MS) {
+      return;
+    }
+    this.lastReconcileAt.set(userId, Date.now());
+
+    try {
+      const [progress, owned, membership] = await Promise.all([
+        this.getProgressForUser(userId),
+        this.prisma.userBadge.findMany({
+          where: { userId },
+          select: { badge: { select: { code: true } } },
+        }),
+        this.prisma.groupMembership.findFirst({ where: { userId }, select: { groupId: true } }),
+      ]);
+      if (!membership) {
+        return;
+      }
+      const ownedCodes = new Set(owned.map((u) => u.badge.code));
+      for (const [code, { current, target }] of Object.entries(progress)) {
+        if (current >= target && !ownedCodes.has(code)) {
+          await this.award(userId, code, membership.groupId);
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`No se pudieron reconciliar las insignias de ${userId}: ${error}`);
+    }
   }
 
   /** Devuelve un array con la insignia si se ha concedido de verdad ahora (vacio si ya se tenia). */

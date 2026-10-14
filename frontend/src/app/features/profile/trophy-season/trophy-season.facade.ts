@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { trophyById } from '../domain/trophies';
+import { t } from '../../../core/i18n/translate';
 
 export interface SeasonStanding {
   position: number;
@@ -16,7 +17,7 @@ export interface SeasonMatchday {
   myPoints: number;
 }
 
-const MOCK_NAMES = ['Carlos M.', 'Laura G.', 'Javier R.', 'Sofía P.', 'Diego L.'];
+const MOCK_NAMES = [t('trophySeason.carlosM'), t('trophySeason.lauraG'), t('trophySeason.javierR'), t('trophySeason.sofiaP'), t('trophySeason.diegoL')];
 
 /**
  * Resumen de temporada de un trofeo: como los propios trofeos (ver
@@ -36,10 +37,10 @@ export class TrophySeasonFacade {
   readonly year = signal(0);
   readonly demoCalloutDismissed = signal(false);
 
-  readonly trophyName = computed(() => trophyById(this.trophyId())?.name ?? 'Trofeo');
+  readonly trophyName = computed(() => trophyById(this.trophyId())?.name ?? t('trophySeason.trofeo'));
 
   readonly standings = computed<SeasonStanding[]>(() => {
-    const myName = this.authService.currentUser()?.name ?? 'Tú';
+    const myName = this.authService.currentUser()?.name ?? t('trophySeason.tu2');
     const seed = this.year() || 1;
     const base = 60 + (seed % 7) * 3;
     const points = [base, base - 4, base - 9, base - 13, base - 18, base - 21];
@@ -53,7 +54,7 @@ export class TrophySeasonFacade {
   });
 
   readonly matchdays = computed<SeasonMatchday[]>(() => {
-    const myName = this.authService.currentUser()?.name ?? 'Tú';
+    const myName = this.authService.currentUser()?.name ?? t('trophySeason.tu2');
     const seed = this.year() || 1;
     return Array.from({ length: 6 }, (_, i) => {
       const winsIt = (seed + i) % 3 !== 0;

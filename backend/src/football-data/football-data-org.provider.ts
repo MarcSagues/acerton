@@ -14,8 +14,8 @@ interface FootballDataMatch {
   utcDate: string;
   status: string;
   matchday: number;
-  homeTeam: { name: string; crest: string | null };
-  awayTeam: { name: string; crest: string | null };
+  homeTeam: { name: string; shortName?: string | null; crest: string | null };
+  awayTeam: { name: string; shortName?: string | null; crest: string | null };
   score: { fullTime: { home: number | null; away: number | null } };
 }
 
@@ -45,8 +45,16 @@ function mapMatch(match: FootballDataMatch): ProviderFixture {
     // Formato "Regular Season - N" para reutilizar parseRoundOrder tal cual.
     round: `Regular Season - ${match.matchday}`,
     kickoff: new Date(match.utcDate),
-    homeTeam: { name: match.homeTeam.name, logoUrl: match.homeTeam.crest },
-    awayTeam: { name: match.awayTeam.name, logoUrl: match.awayTeam.crest },
+    homeTeam: {
+      name: match.homeTeam.name,
+      shortName: match.homeTeam.shortName || null,
+      logoUrl: match.homeTeam.crest,
+    },
+    awayTeam: {
+      name: match.awayTeam.name,
+      shortName: match.awayTeam.shortName || null,
+      logoUrl: match.awayTeam.crest,
+    },
     status: mapStatus(match.status),
     homeGoals: match.score.fullTime.home,
     awayGoals: match.score.fullTime.away,

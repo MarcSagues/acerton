@@ -1,13 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ProfileChangePasswordFacade {
-  private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
@@ -39,10 +38,6 @@ export class ProfileChangePasswordFacade {
     });
   }
 
-  goBack(): void {
-    this.router.navigate(['/profile']);
-  }
-
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -51,7 +46,7 @@ export class ProfileChangePasswordFacade {
 
     const { currentPassword, newPassword, confirmPassword } = this.form.getRawValue();
     if (newPassword !== confirmPassword) {
-      this.errorMessage.set('Las contraseñas nuevas no coinciden');
+      this.errorMessage.set(t('profileChangePassword.contrasenasNuevasCoinciden'));
       return;
     }
 
@@ -60,12 +55,12 @@ export class ProfileChangePasswordFacade {
     this.authService.changePassword(currentPassword, newPassword).subscribe({
       next: () => {
         this.loading.set(false);
-        this.toast.show('Contraseña actualizada');
-        this.goBack();
+        this.toast.show(t('resetPassword.contrasenaActualizada'));
+        this.form.reset();
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo cambiar la contraseña');
+        this.errorMessage.set(error.error?.message ?? t('profileChangePassword.pudoCambiarContrasena'));
       },
     });
   }

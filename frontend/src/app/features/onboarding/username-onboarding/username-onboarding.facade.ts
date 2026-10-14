@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { ProfileService } from '../../../core/services/profile.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class UsernameOnboardingFacade {
@@ -49,7 +50,7 @@ export class UsernameOnboardingFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo guardar el nombre');
+        this.errorMessage.set(error.error?.message ?? t('usernameOnboarding.pudoGuardarNombre'));
       },
     });
   }

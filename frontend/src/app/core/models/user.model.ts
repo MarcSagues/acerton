@@ -1,3 +1,5 @@
+import { FavoriteTeam } from './favorite-team.model';
+
 export interface User {
   id: string;
   email: string;
@@ -5,6 +7,8 @@ export interface User {
   avatarUrl: string | null;
   /** Color de fondo detras del avatar de catalogo (null = sin color propio). */
   avatarBackground: string | null;
+  /** Equipo favorito con los colores de su bandera, o null si no ha elegido. */
+  favoriteTeam: FavoriteTeam | null;
   /** false solo para cuentas de Google recien creadas: el nombre vino del perfil de Google, no lo eligio el usuario. */
   usernameConfirmed: boolean;
   /** ISO date a partir de la cual se puede volver a cambiar el nombre, o null si ya se puede ahora. */

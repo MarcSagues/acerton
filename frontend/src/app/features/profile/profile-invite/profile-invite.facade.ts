@@ -4,6 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Share } from '@capacitor/share';
 import { ReferralService } from '../../../core/services/referral.service';
 import { environment } from '../../../../environments/environment';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ProfileInviteFacade {
@@ -73,10 +74,10 @@ export class ProfileInviteFacade {
     }
     try {
       await Share.share({
-        title: 'Únete a Piqo',
-        text: 'Te invito a jugar a Piqo conmigo',
+        title: t('levelProgress.unetePiqo'),
+        text: t('levelProgress.invitoJugarPiqoConmigo'),
         url: link,
-        dialogTitle: 'Compartir invitación',
+        dialogTitle: t('levelProgress.compartirInvitacion'),
       });
     } catch {
       // Cierra el panel sin elegir nada: no es un fallo que avisar.
@@ -95,11 +96,11 @@ export class ProfileInviteFacade {
       next: (res) => {
         this.redeeming.set(false);
         this.redeemInput.set('');
-        this.redeemMessage.set({ text: `¡Código aplicado! Invitado por ${res.referrerName}.`, ok: true });
+        this.redeemMessage.set({ text: t('profileInvite.codigoAplicadoInvitado', { referrerName: res.referrerName }), ok: true });
       },
       error: (error: HttpErrorResponse) => {
         this.redeeming.set(false);
-        this.redeemMessage.set({ text: error.error?.message ?? 'No se pudo aplicar el código', ok: false });
+        this.redeemMessage.set({ text: error.error?.message ?? t('profileInvite.pudoAplicarCodigo'), ok: false });
       },
     });
   }

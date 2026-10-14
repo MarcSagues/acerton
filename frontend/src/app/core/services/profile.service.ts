@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { UserProfile } from '../models/profile.model';
 import { User } from '../models/user.model';
 import { AvatarCatalog } from '../models/avatar-catalog.model';
+import { TeamCatalog } from '../models/favorite-team.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
@@ -23,6 +24,15 @@ export class ProfileService {
 
   updateAvatar(mascotId: string, background: string) {
     return this.http.patch<User>(`${environment.apiUrl}/users/me/avatar`, { mascotId, background });
+  }
+
+  getTeamCatalog() {
+    return this.http.get<TeamCatalog>(`${environment.apiUrl}/users/me/team-catalog`);
+  }
+
+  /** `null` quita el equipo favorito. */
+  updateFavoriteTeam(team: string | null) {
+    return this.http.patch<User>(`${environment.apiUrl}/users/me/favorite-team`, { team });
   }
 
   completeTutorial() {

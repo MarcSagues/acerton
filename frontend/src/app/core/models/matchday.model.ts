@@ -11,6 +11,9 @@ export interface Match {
   awayTeam: string;
   homeTeamLogo: string | null;
   awayTeamLogo: string | null;
+  /** Nombre corto del proveedor ("Barça", "Atleti"); null o ausente si todavía no se ha traído (usar `shortTeamName`). */
+  homeTeamShort?: string | null;
+  awayTeamShort?: string | null;
   kickoff: string;
   status: MatchStatus;
   homeScore: number | null;
@@ -26,10 +29,8 @@ export interface Matchday {
   order: number;
   closesAt: string;
   status: MatchdayStatus;
-  /** false cuando esta jornada todavia no le toca (previsualizada con "siguiente"), aunque sus partidos no esten bloqueados por horario. */
+  /** false cuando esta jornada todavia no le toca (previsualizada con "siguiente"), aunque sus partidos no esten bloqueados por horario. Si es true esta abierta: no hay ventana horaria de apertura (el backend aun envia opensAt, solo por compatibilidad con apps antiguas). */
   canPredict: boolean;
-  /** ISO date: 4 dias antes del primer partido — antes de esto no se admiten pronosticos aunque canPredict sea true. */
-  opensAt: string;
   matches: Match[];
   competition?: Competition;
 }

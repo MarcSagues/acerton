@@ -8,6 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { GroupsService } from '../../../core/services/groups.service';
 import { usernameHint, usernameValidator } from '../../../shared/username.util';
 import { GOOGLE_RETURN_URL_KEY, PENDING_REFERRAL_CODE_KEY } from './auth-page.constants';
+import { t } from '../../../core/i18n/translate';
 
 type AuthMode = 'login' | 'register';
 
@@ -30,6 +31,7 @@ export class AuthPageFacade implements OnDestroy {
   readonly passwordVisible = signal(false);
   readonly googleLoginUrl = this.authService.googleLoginUrl;
   readonly isNativePlatform = this.authService.isNativePlatform;
+  readonly isIOSPlatform = this.authService.isIOSPlatform;
 
   /** Distinto de null tras un registro correcto: la cuenta existe pero no puede entrar hasta confirmar el correo. */
   readonly registeredEmail = signal<string | null>(null);
@@ -115,11 +117,11 @@ export class AuthPageFacade implements OnDestroy {
     this.authService.resendVerification(email).subscribe({
       next: () => {
         this.resendingVerification.set(false);
-        this.resendMessage.set('Te hemos enviado el correo de confirmación de nuevo.');
+        this.resendMessage.set(t('authPage.hemosEnviadoCorreoConfirmacion'));
       },
       error: () => {
         this.resendingVerification.set(false);
-        this.resendMessage.set('No se ha podido reenviar. Inténtalo de nuevo en unos minutos.');
+        this.resendMessage.set(t('authPage.haPodidoReenviarIntentalo'));
       },
     });
   }
@@ -184,12 +186,34 @@ export class AuthPageFacade implements OnDestroy {
         // Temporal: mostrar el detalle real del fallo para poder diagnosticarlo en TestFlight.
         if (error instanceof HttpErrorResponse) {
           this.errorMessage.set(
-            `No se pudo iniciar sesión con Google (backend ${error.status}): ${JSON.stringify(error.error)}`,
+            t('authPage.pudoIniciarSesionGoogle', { status: error.status, stringify: JSON.stringify(error.error) }),
           );
         } else {
           this.errorMessage.set(
-            `No se pudo iniciar sesión con Google (${error?.code ?? 'sin código'}): ${error?.message ?? JSON.stringify(error)}`,
+            t('authPage.googleErrorCode', { code: error?.code ?? t('authPage.noCode'), detail: error?.message ?? JSON.stringify(error) }),
           );
+        }
+      },
+    });
+  }
+
+  loginWithAppleNative(): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.authService.loginWithAppleNative(this.peekPendingReferralCode()).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.clearPendingReferralCode();
+        this.navigateAfterLogin();
+      },
+      error: (error) => {
+        this.loading.set(false);
+        // El usuario cerro el dialogo de Apple sin elegir cuenta: no es un fallo que mostrar.
+        if (error?.message?.includes('1001') || error?.code === '1001') return;
+        if (error instanceof HttpErrorResponse) {
+          this.errorMessage.set(error.error?.message ?? t('authPage.pudoIniciarSesionApple'));
+        } else {
+          this.errorMessage.set(error?.message ?? t('authPage.pudoIniciarSesionApple'));
         }
       },
     });
@@ -218,7 +242,7 @@ export class AuthPageFacade implements OnDestroy {
         },
         error: (error: HttpErrorResponse) => {
           this.loading.set(false);
-          this.errorMessage.set(error.error?.message ?? 'No se pudo crear la cuenta');
+          this.errorMessage.set(error.error?.message ?? t('authPage.pudoCrearCuenta'));
         },
       });
       return;
@@ -233,10 +257,10 @@ export class AuthPageFacade implements OnDestroy {
         this.loading.set(false);
         if (error.status === 403) {
           this.unverifiedEmailError.set(true);
-          this.errorMessage.set(error.error?.message ?? 'Confirma tu correo antes de iniciar sesión.');
+          this.errorMessage.set(error.error?.message ?? t('authPage.confirmaCorreoAntesIniciar'));
           return;
         }
-        this.errorMessage.set(error.error?.message ?? 'No se pudo iniciar sesión');
+        this.errorMessage.set(error.error?.message ?? t('authPage.pudoIniciarSesion'));
       },
     });
   }

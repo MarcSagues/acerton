@@ -1,6 +1,7 @@
 import { CompetitionCode } from '../../core/models/competition.model';
 
 const TROPHY_BY_CODE: Partial<Record<CompetitionCode, string>> = {
+  PREMIER_LEAGUE: 'premier',
   LA_LIGA: 'laliga',
   SERIE_A: 'seriea',
   BUNDESLIGA: 'bundesliga',

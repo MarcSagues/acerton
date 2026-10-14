@@ -4,8 +4,8 @@
   <div class="page">
     @if (page.groups().length > 0) {
       <div class="title-row">
-        <h1>Tus grupos</h1>
-        <p class="lead">Elige dónde pronosticas esta jornada.</p>
+        <h1>{{ 'common.grupos2' | t }}</h1>
+        <p class="lead">{{ 'groupList.eligeDondePronosticasEsta' | t }}</p>
       </div>
     }
 
@@ -14,10 +14,10 @@
         icon="grupos"
         [large]="true"
         [standalone]="page.isStandaloneWelcome"
-        title="Todavía no estás en ningún grupo"
-        text="Crea uno para tu gente o únete con el código que te hayan pasado."
-        ctaLabel="Crear grupo"
-        cta2Label="Unirse con código"
+        [title]="'groupList.todaviaEstasNingunGrupo' | t"
+        [text]="'groupList.creaUnoGenteUnete' | t"
+        [ctaLabel]="'common.crearGrupo' | t"
+        [cta2Label]="'groupList.unirseCodigo' | t"
         (cta)="page.goToCreate()"
         (cta2)="page.goToJoinCode()"
       ></app-empty-state>
@@ -52,12 +52,12 @@
               class="favorite-btn"
               [class.active]="group.isFavorite"
               [attr.aria-pressed]="!!group.isFavorite"
-              [attr.aria-label]="group.isFavorite ? 'Quitar de favoritos' : 'Marcar como favorito'"
+              [attr.aria-label]="group.isFavorite ? ('groupList.quitarFavoritos' | t) : ('groupList.marcarComoFavorito' | t)"
               (click)="page.toggleFavorite(group)"
             >
               <piqo-svg [attr.icon]="group.isFavorite ? 'estrella-llena' : 'estrella'" size="20"></piqo-svg>
             </button>
-            <button type="button" class="settings-btn" aria-label="Ajustes del grupo" (click)="page.goToSettings(group.id)">
+            <button type="button" class="settings-btn" [attr.aria-label]="'common.ajustesGrupo' | t" (click)="page.goToSettings(group.id)">
               <piqo-svg icon="ajustes" size="22"></piqo-svg>
             </button>
           </div>
@@ -66,19 +66,31 @@
 
       <div class="actions">
         <button type="button" class="piqo-primary action-btn" (click)="page.goToCreate()">
-          <piqo-svg icon="mas" size="20"></piqo-svg>Crear grupo
+          <piqo-svg icon="mas" size="20"></piqo-svg>{{ 'common.crearGrupo' | t }}
         </button>
         <button type="button" class="piqo-secondary action-btn" (click)="page.goToJoinCode()">
-          <piqo-svg icon="enlace" size="20"></piqo-svg>Unirse con código
+          <piqo-svg icon="enlace" size="20"></piqo-svg>{{ 'groupList.unirseCodigo' | t }}
         </button>
       </div>
+    }
+
+    @if (page.isStandaloneWelcome) {
+      <!-- /welcome no tiene barra inferior: aqui esta el unico acceso al Quiz, que se juega sin grupo. -->
+      <button type="button" class="explore-public-btn quiz-btn" (click)="page.goToQuiz()">
+        <span class="explore-icon"><piqo-svg icon="objetivo" size="20"></piqo-svg></span>
+        <span class="explore-text">
+          <span class="explore-title">{{ 'quiz.titulo' | t }}</span>
+          <span class="explore-sub">{{ 'quiz.accesoSinGrupo' | t }}</span>
+        </span>
+        <piqo-svg icon="flecha" size="18"></piqo-svg>
+      </button>
     }
 
     <button type="button" class="explore-public-btn" (click)="page.goToExplorePublic()">
       <span class="explore-icon"><piqo-svg icon="publico" size="20"></piqo-svg></span>
       <span class="explore-text">
-        <span class="explore-title">Explorar grupos públicos</span>
-        <span class="explore-sub">Busca uno por liga, modo o nombre</span>
+        <span class="explore-title">{{ 'groupList.explorarGruposPublicos' | t }}</span>
+        <span class="explore-sub">{{ 'groupList.buscaUnoLigaModo' | t }}</span>
       </span>
       <piqo-svg icon="flecha" size="18"></piqo-svg>
     </button>

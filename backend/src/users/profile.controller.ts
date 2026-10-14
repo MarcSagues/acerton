@@ -22,6 +22,9 @@ export class ProfileController {
       include: { group: { select: { id: true, name: true } } },
     });
 
+    // Antes de leer las insignias: concede las que ya cumplen la condicion pero nunca se otorgaron.
+    await this.badgesService.reconcileEarnedBadges(user.id);
+
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const [

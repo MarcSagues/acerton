@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { GroupDetailFacade } from './group-detail.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, SpinnerComponent, AvatarComponent],
+  imports: [CommonModule, RouterLink, SpinnerComponent, AvatarComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [GroupDetailFacade],
   templateUrl: './group-detail.component.html',

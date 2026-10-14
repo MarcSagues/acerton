@@ -1,5 +1,7 @@
 export interface ProviderTeam {
   name: string;
+  /** Nombre corto del proveedor ("Barça", "Atleti"); null si no lo da. */
+  shortName: string | null;
   logoUrl: string | null;
 }
 

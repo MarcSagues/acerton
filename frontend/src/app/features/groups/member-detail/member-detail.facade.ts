@@ -4,10 +4,12 @@ import { ActivatedRoute } from '@angular/router';
 import { MemberProfileService } from '../../../core/services/member-profile.service';
 import { MemberProfile, MemberBadge } from '../../../core/models/member-profile.model';
 import { PiqoDialogService } from '../../../shared/ui/dialog/dialog.service';
-import { badgeArtId } from '../../../shared/utils/badge-art';
+import { badgeArtId, badgeArtSrc } from '../../../shared/utils/badge-art';
 import { TrophyDetailDialogComponent, TrophyDetailData } from '../../profile/trophy-detail-dialog.component';
 import { BadgeDetailDialogComponent, BadgeDetailData } from '../../profile/badge-detail-dialog.component';
 import { TROPHIES } from '../../profile/domain/trophies';
+import { t } from '../../../core/i18n/translate';
+import { badgeName, badgeDescription } from '../../../shared/utils/badge-text';
 
 @Injectable()
 export class MemberDetailFacade {
@@ -33,8 +35,8 @@ export class MemberDetailFacade {
   readonly roleLabel = computed(() => {
     const p = this.profile();
     if (!p) return '';
-    if (p.isOwner) return 'Propietario';
-    return p.role === 'ADMIN' ? 'Administrador' : 'Miembro';
+    if (p.isOwner) return t('memberDetail.propietario');
+    return p.role === 'ADMIN' ? t('memberDetail.administrador') : t('groupDetail.miembro');
   });
 
   init(): void {
@@ -61,6 +63,10 @@ export class MemberDetailFacade {
     return badgeArtId(code);
   }
 
+  artSrc(artId: string): string {
+    return badgeArtSrc(artId);
+  }
+
   openTrophy(trophy: TrophyDetailData): void {
     this.dialog.open<TrophyDetailDialogComponent, void, TrophyDetailData>(TrophyDetailDialogComponent, {
       data: trophy,
@@ -72,8 +78,8 @@ export class MemberDetailFacade {
     this.dialog.open<BadgeDetailDialogComponent, void, BadgeDetailData>(BadgeDetailDialogComponent, {
       data: {
         artId: this.artId(userBadge.badge.code),
-        name: userBadge.badge.name,
-        description: userBadge.badge.description,
+        name: badgeName(userBadge.badge),
+        description: badgeDescription(userBadge.badge),
         earned: true,
         percentage: null,
         progress: null,

@@ -86,6 +86,33 @@
   color: var(--p4-muted);
 }
 
+.name-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--p4-border);
+  background: var(--p4-surface);
+  color: var(--p4-text);
+  padding: 0 14px;
+  font: 500 15px/1 var(--p4-font-ui);
+
+  &.invalid {
+    border-color: var(--p4-error);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+.name-error {
+  margin: 0;
+  font: 400 11px/15px var(--p4-font-ui);
+  color: var(--p4-error);
+}
+
 .invite-row {
   margin-top: 12px;
   display: flex;

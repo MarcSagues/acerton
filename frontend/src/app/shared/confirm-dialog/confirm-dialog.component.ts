@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export interface ConfirmDialogData {
   title: string;
@@ -11,6 +12,7 @@ export interface ConfirmDialogData {
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
+  imports: [TranslatePipe],
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
 })

@@ -1,11 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AuthCallbackFacade } from './auth-callback.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-auth-callback',
   standalone: true,
-  imports: [SpinnerComponent],
+  imports: [SpinnerComponent, TranslatePipe],
   providers: [AuthCallbackFacade],
   template: `
     <div class="callback-page">
@@ -13,7 +14,7 @@ import { AuthCallbackFacade } from './auth-callback.facade';
         <p>{{ page.errorMessage() }}</p>
       } @else {
         <app-spinner [size]="32"></app-spinner>
-        <p>Completando inicio de sesión...</p>
+        <p>{{ 'authCallback.completandoInicioSesion' | t }}</p>
       }
     </div>
   `,

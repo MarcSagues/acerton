@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
 
 declare function gtag(...args: unknown[]): void;
 
@@ -7,7 +8,14 @@ type ConsentChoice = 'accepted' | 'rejected';
 
 @Injectable()
 export class CookieConsentFacade {
-  readonly visible = signal(this.readStoredChoice() === null);
+  /**
+   * En la app nativa no hay cookies de terceros que consentir (ver
+   * index.html: AdSense/Google Consent Mode solo cargan en web, la app usa
+   * AdMob con su propio flujo de ATT) — el banner no debe aparecer ahi
+   * (Guideline 5.1.2(i) de App Store: un banner de cookies dentro de la app
+   * sin nada real detras solo confunde la revision).
+   */
+  readonly visible = signal(!Capacitor.isNativePlatform() && this.readStoredChoice() === null);
 
   accept(): void {
     this.applyChoice('accepted');

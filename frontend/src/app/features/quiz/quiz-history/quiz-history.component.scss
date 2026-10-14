@@ -1,0 +1,287 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.loading {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--p4-text);
+}
+
+.error-msg {
+  margin: 0 0 14px;
+  font: 400 13px/1.4 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  color: var(--p4-text);
+  padding-bottom: 28px;
+}
+
+.head-row {
+  padding: 12px 20px 0;
+}
+
+.back-btn {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--p4-muted);
+  font: 600 13px/1 var(--p4-font-ui);
+}
+
+.title-row {
+  padding: 6px 20px 0;
+}
+
+.title-row h1 {
+  margin: 0;
+  font: 700 26px/32px var(--p4-font-display);
+}
+
+.lead {
+  margin: 8px 0 0;
+  font: 400 12px/17px var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.totals {
+  margin: 18px 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.total-tile {
+  flex: 1;
+  padding: 12px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--p4-border);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  text-align: center;
+}
+
+.total-value {
+  margin: 0;
+  font: 700 22px/1 var(--p4-font-ui);
+
+  &.hit {
+    color: var(--p4-success);
+  }
+
+  &.miss {
+    color: var(--p4-error);
+  }
+}
+
+.total-label {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: var(--p4-muted);
+}
+
+.quiz-list {
+  list-style: none;
+  margin: 16px 20px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-card {
+  border-radius: 16px;
+  border: 1px solid var(--p4-border);
+  background: linear-gradient(165deg, var(--p4-surface), var(--p4-surface-2));
+  overflow: hidden;
+}
+
+.quiz-head {
+  width: 100%;
+  min-height: 60px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: 0;
+  color: var(--p4-text);
+  text-align: left;
+
+  piqo-svg {
+    flex: none;
+    color: var(--p4-muted);
+  }
+}
+
+.quiz-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.quiz-name {
+  font: 700 14px/1.25 var(--p4-font-ui);
+}
+
+.quiz-sub {
+  font-size: 11px;
+  color: var(--p4-muted);
+}
+
+.quiz-points {
+  flex: none;
+  text-align: right;
+}
+
+.points-value {
+  display: block;
+  font: 700 18px/1 var(--p4-font-ui);
+  color: var(--p4-accent);
+}
+
+.points-label {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  color: var(--p4-muted);
+}
+
+.answer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.result-row {
+  min-height: 56px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--p4-border);
+  background: var(--p4-bg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.answer-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.answer-match {
+  font-size: 10.5px;
+  color: var(--p4-muted);
+}
+
+.answer-question {
+  font: 600 13px/1.3 var(--p4-font-ui);
+}
+
+.answer-line {
+  font: 400 12px/1.35 var(--p4-font-ui);
+  color: var(--p4-muted);
+}
+
+.outcome-chip {
+  flex: none;
+  padding: 5px 8px;
+  border-radius: var(--p4-radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--p4-muted);
+  background: var(--p4-glass);
+
+  &[data-outcome='hit'] {
+    color: var(--p4-success);
+    background: var(--p4-success-bg);
+  }
+  &[data-outcome='miss'],
+  &[data-outcome='unanswered'] {
+    color: var(--p4-error);
+    background: var(--p4-error-bg);
+  }
+  &[data-outcome='void'] {
+    color: var(--p4-disabled);
+    background: var(--p4-disabled-bg);
+  }
+  &[data-outcome='pending'] {
+    color: var(--p4-info);
+    background: var(--p4-info-bg);
+  }
+}
+
+/* Ligas en las que ha jugado: una fila que se desliza de lado cuando no caben. */
+.filters {
+  margin-top: 16px;
+  padding: 0 20px 2px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.filter {
+  flex: none;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--p4-radius-pill);
+  border: 1px solid var(--p4-border);
+  background: none;
+  color: var(--p4-muted);
+  font: 600 13px/1 var(--p4-font-ui);
+  white-space: nowrap;
+
+  &.active {
+    background: var(--p4-soft);
+    border-color: var(--p4-accent);
+    color: var(--p4-accent);
+  }
+}
+
+/* Quien es: su avatar, nombre y, si lo tiene, la bandera de su equipo favorito. */
+.player {
+  padding: 8px 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.player-name {
+  margin: 0;
+  font: 700 20px/1.1 var(--p4-font-display);
+}
+
+.team-flag {
+  margin: 14px 20px 0;
+}

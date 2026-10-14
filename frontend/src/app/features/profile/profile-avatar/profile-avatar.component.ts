@@ -2,11 +2,12 @@ import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { ProfileAvatarFacade } from './profile-avatar.facade';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-profile-avatar',
   standalone: true,
-  imports: [SpinnerComponent, AvatarComponent],
+  imports: [SpinnerComponent, AvatarComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [ProfileAvatarFacade],
   templateUrl: './profile-avatar.component.html',

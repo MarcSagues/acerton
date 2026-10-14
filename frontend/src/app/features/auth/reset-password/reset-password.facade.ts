@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
+import { t } from '../../../core/i18n/translate';
 
 @Injectable()
 export class ResetPasswordFacade {
@@ -54,7 +55,7 @@ export class ResetPasswordFacade {
 
     const { password, confirm } = this.form.getRawValue();
     if (password !== confirm) {
-      this.errorMessage.set('Las contraseñas no coinciden');
+      this.errorMessage.set(t('resetPassword.contrasenasCoinciden'));
       return;
     }
     if (!this.token) {
@@ -71,7 +72,7 @@ export class ResetPasswordFacade {
       },
       error: (error: HttpErrorResponse) => {
         this.loading.set(false);
-        this.errorMessage.set(error.error?.message ?? 'No se pudo restablecer la contraseña');
+        this.errorMessage.set(error.error?.message ?? t('resetPassword.pudoRestablecerContrasena'));
       },
     });
   }

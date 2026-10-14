@@ -3,8 +3,8 @@
 } @else {
   <div class="page">
     <header class="head">
-      <a routerLink="/matchday" class="back">&lt; Jornada</a>
-      <span class="title">Elegir jornada</span>
+      <a routerLink="/matchday" class="back">{{ 'matchdayCalendar.jornada' | t }}</a>
+      <span class="title">{{ 'common.elegirJornada' | t }}</span>
       <span class="spacer"></span>
     </header>
 
@@ -12,7 +12,7 @@
       <div class="comp-name">{{ page.competitionName }}</div>
 
       @if (page.matchdays().length === 0) {
-        <p class="empty">Todavía no hay jornadas guardadas de esta competición.</p>
+        <p class="empty">{{ 'matchdayCalendar.todaviaHayJornadasGuardadas' | t }}</p>
       } @else {
         <div class="grid">
           @for (matchday of page.matchdays(); track matchday.id) {
@@ -30,7 +30,7 @@
                 @if (page.state(matchday) === 'played') {
                   {{ matchday.points! > 0 ? '+' : '' }}{{ matchday.points }}
                 } @else if (page.state(matchday) === 'open') {
-                  abierta
+                  {{ 'matchdayCalendar.abierta' | t }}
                 } @else {
                   &mdash;
                 }
@@ -40,9 +40,9 @@
         </div>
 
         <div class="legend">
-          <span class="mono"><span class="dot played"></span>Jugada &middot; tus puntos</span>
-          <span class="mono"><span class="dot open"></span>Abierta ahora</span>
-          <span class="mono"><span class="dot upcoming"></span>Próxima</span>
+          <span class="mono"><span class="dot played"></span>{{ 'matchdayCalendar.jugadaPuntos' | t }}</span>
+          <span class="mono"><span class="dot open"></span>{{ 'matchdayCalendar.abiertaAhora' | t }}</span>
+          <span class="mono"><span class="dot upcoming"></span>{{ 'matchdayCalendar.proxima' | t }}</span>
         </div>
       }
     </div>
