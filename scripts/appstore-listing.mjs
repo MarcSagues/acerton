@@ -17,6 +17,8 @@ const BUILD = arg('build');
 const WAIT_MIN = Number(arg('wait-build', '0'));
 const DRY = process.argv.includes('--dry-run');
 const BUNDLE_ID = 'app.piqo.es';
+/** Politica de privacidad (la misma pagina de la app, traducida a los seis idiomas): Apple exige la URL para enviar a revision. */
+const PRIVACY_URL = 'https://app.piqo.es/privacy';
 const API = 'https://api.appstoreconnect.apple.com';
 
 /** Codigo del idioma en la ficha -> codigo de App Store Connect. */
@@ -119,14 +121,22 @@ async function appInfoLocalizations(appId, ficha) {
   for (const [locale, t] of Object.entries(ficha)) {
     await attempt(`nombre/subtitulo ${locale}`, async () => {
       const current = existing.find((l) => l.attributes.locale === locale);
-      const attributes = { name: t.name, subtitle: t.subtitle };
+      const attributes = { name: t.name, subtitle: t.subtitle, privacyPolicyUrl: PRIVACY_URL };
       if (current) {
-        if (current.attributes.name === t.name && current.attributes.subtitle === t.subtitle) return log(`  = ${locale}: nombre y subtitulo ya estan`);
-        await write('PATCH', `/v1/appInfoLocalizations/${current.id}`, { data: { type: 'appInfoLocalizations', id: current.id, attributes } }, `${locale}: "${t.name}" / "${t.subtitle}"`);
+        const a = current.attributes;
+        if (a.name === t.name && a.subtitle === t.subtitle && a.privacyPolicyUrl === PRIVACY_URL) return log(`  = ${locale}: nombre, subtitulo y politica de privacidad ya estan`);
+        await write('PATCH', `/v1/appInfoLocalizations/${current.id}`, { data: { type: 'appInfoLocalizations', id: current.id, attributes } }, `${locale}: "${t.name}" / "${t.subtitle}" + privacidad`);
       } else {
         await write('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale, ...attributes }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } }, `${locale} (nuevo): "${t.name}" / "${t.subtitle}"`);
       }
     });
+  }
+  // Idiomas que Apple pide aunque no tengan ficha propia (p. ej. francés de Canadá o español de México): también
+  // necesitan la URL de privacidad para poder enviar a revisión.
+  for (const l of existing.filter((l) => !ficha[l.attributes.locale] && l.attributes.privacyPolicyUrl !== PRIVACY_URL)) {
+    await attempt(`privacidad ${l.attributes.locale}`, () =>
+      write('PATCH', `/v1/appInfoLocalizations/${l.id}`, { data: { type: 'appInfoLocalizations', id: l.id, attributes: { privacyPolicyUrl: PRIVACY_URL } } }, `${l.attributes.locale}: politica de privacidad`),
+    );
   }
 }
 
@@ -172,7 +182,7 @@ const { data: apps } = await api('GET', `/v1/apps?filter[bundleId]=${BUNDLE_ID}`
 if (!apps.length) throw new Error(`No hay app ${BUNDLE_ID}`);
 const appId = apps[0].id;
 const versionId = await ensureVersion(appId);
-log('Nombre y subtitulo por idioma:');
+log('Nombre, subtitulo y politica de privacidad por idioma:');
 await attempt('appInfo', () => appInfoLocalizations(appId, ficha));
 log('Textos de la version por idioma:');
 await attempt('textos de la version', () => versionLocalizations(versionId, ficha));

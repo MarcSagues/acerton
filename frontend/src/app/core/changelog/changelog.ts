@@ -59,6 +59,10 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-13',
     changes: [
       {
+        es: 'Al abrir Tabla en un grupo con varias ligas, ves la clasificación General por defecto.',
+        en: 'When you open Table in a group with multiple leagues, the General standings are selected by default.',
+      },
+      {
         headline: {
           es: 'NUEVO MODO DE JUEGO: ¡QUIZ!',
           en: 'NEW GAME MODE: QUIZ!',
