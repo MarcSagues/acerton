@@ -3,6 +3,9 @@
  * escrito en el codigo (ver error-messages.ts).
  */
 export const messages: Record<string, string> = {
+  // mantenimiento
+  'Piqo está en mantenimiento. Vuelve a intentarlo en un rato.':
+    'Piqo està en manteniment. Torna-ho a provar d’aquí a una estona.',
   'Quiz no encontrado': 'No s’ha trobat el quiz',
   'El quiz ya está cerrado': 'El quiz ja està tancat',
   'El quiz todavía no está abierto': 'El quiz encara no està obert',

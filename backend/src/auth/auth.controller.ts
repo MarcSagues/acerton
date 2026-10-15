@@ -31,10 +31,13 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
 import { PublicUser } from './auth.types';
+import { AllowDuringMaintenance } from '../app-client/app-client.decorator';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 
+// Abierto en mantenimiento: si no, ni el revisor de la tienda podria entrar con la cuenta demo.
+@AllowDuringMaintenance()
 @Controller('auth')
 export class AuthController {
   constructor(

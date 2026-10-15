@@ -1,5 +1,11 @@
 /** Catalogo en espanol: es la fuente de las claves (ver translate.ts). Las claves `common.*` son textos compartidos por varias pantallas. */
 export const es = {
+  'appGate.actualizaTexto': 'Actualiza Piqo para seguir jugando. Solo tarda un momento.',
+  'appGate.actualizaTitulo': 'Hay una versión nueva',
+  'appGate.actualizar': 'Actualizar',
+  'appGate.mantenimientoTexto': 'Estamos mejorando Piqo. Vuelve a intentarlo en un rato.',
+  'appGate.mantenimientoTitulo': 'Estamos en mantenimiento',
+  'appGate.reintentar': 'Reintentar',
   'authPage.o': 'o',
   'common.1PuntoAcertar1x2': '1 punto por acertar 1X2.',
   'common.5PuntosMarcadorExacto': '5 puntos por marcador exacto, 2 por acertar solo el ganador.',

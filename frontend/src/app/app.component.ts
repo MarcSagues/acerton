@@ -10,6 +10,8 @@ import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { ScrollTopService } from './core/services/scroll-top.service';
 import { KeyboardAccessoryComponent } from './shared/ui/keyboard-accessory/keyboard-accessory.component';
+import { AppGateComponent } from './shared/app-gate/app-gate.component';
+import { AppGateService } from './core/app-client/app-gate.service';
 
 @Component({
   selector: 'app-root',
@@ -21,6 +23,7 @@ import { KeyboardAccessoryComponent } from './shared/ui/keyboard-accessory/keybo
     TutorialCoachMarkComponent,
     ToastHostComponent,
     KeyboardAccessoryComponent,
+    AppGateComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -33,11 +36,13 @@ export class AppComponent {
   private readonly edgeSwipeBackService = inject(EdgeSwipeBackService);
   private readonly keyboardInsetService = inject(KeyboardInsetService);
   private readonly scrollTopService = inject(ScrollTopService);
+  private readonly appGate = inject(AppGateService);
 
   constructor() {
     this.deepLinkService.init();
     this.edgeSwipeBackService.init();
     this.keyboardInsetService.init();
     this.scrollTopService.init();
+    this.appGate.init();
   }
 }

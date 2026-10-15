@@ -25,6 +25,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { JobsModule } from './jobs/jobs.module';
 import { QuizModule } from './quiz/quiz.module';
 import { PlayersModule } from './players/players.module';
+import { AppClientModule } from './app-client/app-client.module';
+import { MaintenanceGuard } from './app-client/maintenance.guard';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { LocalizedExceptionFilter } from './common/i18n/localized-exception.filter';
 
@@ -64,10 +66,13 @@ import { LocalizedExceptionFilter } from './common/i18n/localized-exception.filt
     JobsModule,
     PlayersModule,
     QuizModule,
+    AppClientModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    // Detras del JwtAuthGuard: necesita saber quien llama para dejar pasar a la cuenta demo.
+    { provide: APP_GUARD, useClass: MaintenanceGuard },
     // Devuelve los mensajes de error en el idioma de la peticion (Accept-Language).
     { provide: APP_FILTER, useClass: LocalizedExceptionFilter },
   ],

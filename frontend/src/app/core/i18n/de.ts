@@ -2,6 +2,12 @@ import type { Catalog } from './translate';
 
 /** German catalog: same keys as es.ts (typed as Catalog, so a missing or extra key does not compile). */
 export const de: Catalog = {
+  'appGate.actualizaTexto': 'Aktualisiere Piqo, um weiterzuspielen. Das dauert nur einen Moment.',
+  'appGate.actualizaTitulo': 'Eine neue Version ist da',
+  'appGate.actualizar': 'Aktualisieren',
+  'appGate.mantenimientoTexto': 'Wir verbessern Piqo. Versuch es in einer Weile noch einmal.',
+  'appGate.mantenimientoTitulo': 'Wartungsarbeiten',
+  'appGate.reintentar': 'Erneut versuchen',
   'authPage.o': 'oder',
   'common.1PuntoAcertar1x2': '1 Punkt für einen richtigen 1X2-Tipp.',
   'common.5PuntosMarcadorExacto': '5 Punkte für das exakte Ergebnis, 2 für die richtige Tendenz.',

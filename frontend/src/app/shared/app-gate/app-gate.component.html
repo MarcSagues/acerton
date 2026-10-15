@@ -1,0 +1,22 @@
+@switch (gate.state()) {
+  @case ('update') {
+    <div class="gate" role="alertdialog" aria-modal="true" aria-labelledby="app-gate-title">
+      <div class="card">
+        <div class="icon" aria-hidden="true">↑</div>
+        <h2 id="app-gate-title">{{ 'appGate.actualizaTitulo' | t }}</h2>
+        <p>{{ 'appGate.actualizaTexto' | t }}</p>
+        <button class="btn" (click)="gate.openStore()">{{ 'appGate.actualizar' | t }}</button>
+      </div>
+    </div>
+  }
+  @case ('maintenance') {
+    <div class="gate" role="alertdialog" aria-modal="true" aria-labelledby="app-gate-title">
+      <div class="card">
+        <div class="icon" aria-hidden="true">⚙</div>
+        <h2 id="app-gate-title">{{ 'appGate.mantenimientoTitulo' | t }}</h2>
+        <p>{{ 'appGate.mantenimientoTexto' | t }}</p>
+        <button class="btn" (click)="gate.retry()">{{ 'appGate.reintentar' | t }}</button>
+      </div>
+    </div>
+  }
+}
