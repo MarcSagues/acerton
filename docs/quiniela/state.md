@@ -1,5 +1,14 @@
 # Estado actual
 
+## 2026-10-15 — Quiz escondido a la app 1.1.0 (fuera de sprint)
+
+Aviso de un jugador: en una pregunta salían dos equipos, «Elige una opción» y Sí/No. Es la app 1.1.0 de la tienda, que no
+conoce los 8 tipos de pregunta nuevos (cae en `quiz.preguntaGenerica`). La app no manda su versión, pero la 1.1.0 solo lee
+`overview.quizzes` y la 1.1.1/web leen `overview.events`: `quizzes` va ahora siempre vacío, así la 1.1.0 enseña «Sin quiz por
+ahora» y no lleva punto rojo. No se le puede pedir que actualice (ese texto va dentro de la app). La barra inferior de la app
+nueva leía `quizzes` para el punto rojo: ahora lee `events` (en la 1.1.1 ya enviada a revisión ese punto no saldrá hasta la
+siguiente build). Un aviso push de apertura con enlace al quiz sí podría llevar a la 1.1.0 a la pantalla de juego.
+
 ## 2026-10-15 — Quiz a producción con los datos de los jugadores a cero (fuera de sprint)
 
 Petición del usuario: fusionar en dev y main, build de main y que en producción no aparezca nadie que hubiera jugado al Quiz.
