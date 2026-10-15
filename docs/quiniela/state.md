@@ -1,5 +1,12 @@
 # Estado actual
 
+## 2026-10-15 — Quiz a producción con los datos de los jugadores a cero (fuera de sprint)
+
+Petición del usuario: fusionar en dev y main, build de main y que en producción no aparezca nadie que hubiera jugado al Quiz.
+Sin acceso a la BD de producción (la lleva un compañero), el reseteo va como migración `20261015200000_reset_quiz_players`
+(solo en main; Render la aplica al desplegar): borra `quiz_answers` y `quiz_participations`; los quizzes, sus preguntas y las
+preferencias de avisos se conservan. Probada en MySQL local (2 participaciones y 10 respuestas a 0; quizzes intactos).
+
 ## 2026-10-15 — Quiz: clasificación General / Ligas / Champions y respuestas que no se pierden (fuera de sprint)
 
 Dos peticiones del usuario. **Clasificación**: los filtros pasan de una pestaña por liga a **General / Ligas / Champions**.
