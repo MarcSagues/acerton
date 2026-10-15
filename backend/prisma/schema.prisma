@@ -767,23 +767,36 @@ enum QuizResolution {
   VOID
 }
 
+/// Quiz mixto (2026-10-15): una ventana de fin de semana (vie-lun) o entre semana (mar-jue), hora de Madrid.
+enum QuizWindowKind {
+  WEEKEND
+  MIDWEEK
+}
+
 model QuizEvent {
-  id           String     @id @default(cuid())
-  matchdayId   String     @unique
-  seasonLabel  String
-  status       QuizStatus @default(SCHEDULED)
-  rulesVersion Int        @default(1)
-  closesAt     DateTime
-  openedAt     DateTime?
-  lockedAt     DateTime?
+  id                String          @id @default(cuid())
+  /// Quiz antiguo de una liga y jornada. null en los quizzes mixtos (todas las ligas, por ventana).
+  matchdayId        String?         @unique
+  /// Quiz mixto: ventana que cubre ("2026-10-16-WEEKEND"), su tipo, sus limites y su numero dentro de la temporada.
+  windowKey         String?         @unique
+  windowKind        QuizWindowKind?
+  windowStart       DateTime?
+  windowEnd         DateTime?
+  number            Int?
+  seasonLabel       String
+  status            QuizStatus      @default(SCHEDULED)
+  rulesVersion      Int             @default(1)
+  closesAt          DateTime
+  openedAt          DateTime?
+  lockedAt          DateTime?
   /// Avisos opcionales ya enviados (ver QuizRemindersService): uno por evento y franja.
   openNotifiedAt    DateTime?
   reminder24hSentAt DateTime?
   reminder1hSentAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  matchday       Matchday            @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  matchday       Matchday?           @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
   questions      QuizQuestion[]
   participations QuizParticipation[]
 

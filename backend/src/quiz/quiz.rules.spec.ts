@@ -1,11 +1,17 @@
-import { Match, QuizQuestionType } from '@prisma/client';
+import { CompetitionCode, Match, QuizQuestionType } from '@prisma/client';
 import {
-  generateQuizQuestions,
+  generateMixedQuizQuestions,
+  matchInterest,
   mustLockQuiz,
+  planMixedQuiz,
+  publishableWindows,
   QUESTION_TYPES,
+  QUIZ_QUESTION_COUNT,
+  QuizCandidate,
+  questionTarget,
   quizDeadline,
+  quizWindowFor,
   resolveQuizQuestion,
-  selectQuizMatches,
 } from './quiz.rules';
 
 function match(id: number, overrides: Partial<Match> = {}): Match {
@@ -34,54 +40,149 @@ function match(id: number, overrides: Partial<Match> = {}): Match {
   };
 }
 
-describe('quiz selection and generation', () => {
-  it('includes Barcelona, Madrid and Liverpool before other clubs and never confuses Madrid aliases', () => {
-    const matches = Array.from({ length: 12 }, (_, i) => match(i));
-    matches[9].homeTeam = 'FC Barcelona';
-    matches[10].awayTeam = 'Real Madrid CF';
-    matches[11].homeTeam = 'Liverpool FC';
-    matches[0].homeTeam = 'Rayo de Madrid';
-    const selected = selectQuizMatches(matches);
-    expect(selected).toHaveLength(10);
+function candidate(
+  id: number,
+  competitionCode: CompetitionCode,
+  homeTeam: string,
+  awayTeam: string,
+  overrides: Partial<Match> = {},
+): QuizCandidate {
+  return { ...match(id, { homeTeam, awayTeam, ...overrides }), competitionCode };
+}
+
+/** Un fin de semana tipico: varias ligas, algun gran partido y muchos partidos sin grandes. */
+function weekend(): QuizCandidate[] {
+  const leagues: CompetitionCode[] = [
+    'LA_LIGA',
+    'PREMIER_LEAGUE',
+    'SERIE_A',
+    'BUNDESLIGA',
+    'LIGUE_1',
+  ];
+  const fillers = leagues.flatMap((league, l) =>
+    Array.from({ length: 8 }, (_, i) =>
+      candidate(100 + l * 10 + i, league, `Club ${league} ${i}`, `Rival ${league} ${i}`),
+    ),
+  );
+  return [
+    ...fillers,
+    candidate(1, 'LA_LIGA', 'Real Madrid CF', 'FC Barcelona'),
+    candidate(2, 'PREMIER_LEAGUE', 'Arsenal FC', 'Chelsea FC'),
+    candidate(3, 'SERIE_A', 'AS Roma', 'SS Lazio'),
+    candidate(4, 'BUNDESLIGA', 'Borussia Dortmund', 'Club Bundesliga'),
+    candidate(5, 'LA_LIGA', 'Sevilla FC', 'Getafe CF'),
+  ];
+}
+
+describe('mixed quiz selection and generation', () => {
+  it('makes 20 questions mixing leagues, every league present, more questions for big matches', () => {
+    const plan = planMixedQuiz(weekend());
+    expect(plan.reduce((sum, item) => sum + item.count, 0)).toBe(QUIZ_QUESTION_COUNT);
+    expect(new Set(plan.map((item) => item.match.competitionCode))).toEqual(
+      new Set(['LA_LIGA', 'PREMIER_LEAGUE', 'SERIE_A', 'BUNDESLIGA', 'LIGUE_1']),
+    );
+    const count = (id: string) => plan.find((item) => item.match.id === id)?.count ?? 0;
+    expect(plan[0].match.id).toBe('m1'); // el Clasico, el primero
+    expect(count('m1')).toBe(4);
+    expect(count('m2')).toBe(4);
+    expect(count('m3')).toBe(2);
+    expect(count('m4')).toBe(2);
+    // Ligue 1 sin grandes: entra su mejor partido, con una pregunta.
+    expect(plan.filter((item) => item.match.competitionCode === 'LIGUE_1')).toHaveLength(1);
+  });
+
+  it('is stable whatever the input order and gives different question types per match', () => {
+    const questions = generateMixedQuizQuestions(weekend());
+    expect(generateMixedQuizQuestions(weekend().reverse())).toEqual(questions);
+    expect(questions).toHaveLength(20);
+    expect(questions.map((q) => q.order)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    expect(new Set(questions.map((q) => `${q.matchId}:${q.type}`)).size).toBe(20);
+    // Las preguntas de un mismo partido van juntas.
+    const seen = new Set<string>();
+    questions.forEach((q, i) => {
+      if (seen.has(q.matchId)) expect(questions[i - 1].matchId).toBe(q.matchId);
+      seen.add(q.matchId);
+    });
+  });
+
+  it('picks the biggest clubs when there are no big matches, and keeps Madrid aliases apart', () => {
+    const plan = planMixedQuiz([
+      candidate(1, 'LA_LIGA', 'Rayo Vallecano de Madrid', 'Getafe CF'),
+      candidate(2, 'LA_LIGA', 'Club 2', 'Real Madrid CF'),
+      candidate(3, 'SERIE_A', 'Club 3', 'Rival 3'),
+      candidate(4, 'SERIE_A', 'Juventus FC', 'Rival 4'),
+    ]);
+    expect(plan[0].match.id).toBe('m2');
+    expect(plan[1].match.id).toBe('m4');
+  });
+
+  it('fills 20 questions from few matches, excludes cancelled ones and never invents questions', () => {
+    const midweek = Array.from({ length: 3 }, (_, i) =>
+      candidate(i, 'CHAMPIONS_LEAGUE', `Club ${i}`, 'Rival'),
+    );
+    expect(generateMixedQuizQuestions(midweek)).toHaveLength(20);
+    expect(generateMixedQuizQuestions([candidate(1, 'LA_LIGA', 'A', 'B')])).toHaveLength(
+      QUESTION_TYPES.length,
+    );
+    expect(generateMixedQuizQuestions([])).toEqual([]);
     expect(
-      selected
-        .slice(0, 3)
-        .map((m) => m.id)
-        .sort(),
-    ).toEqual(['m10', 'm11', 'm9']);
-    expect(selectQuizMatches([...matches].reverse())).toEqual(selected);
+      generateMixedQuizQuestions([candidate(1, 'LA_LIGA', 'A', 'B', { status: 'CANCELLED' })]),
+    ).toEqual([]);
   });
 
-  it('generates stable different questions, covering every selected match in small leagues', () => {
-    const matches = Array.from({ length: 9 }, (_, i) => match(i));
-    const questions = generateQuizQuestions(matches);
-    expect(questions).toHaveLength(10);
-    expect(new Set(questions.map((q) => q.matchId)).size).toBe(9);
-    expect(new Set(questions.map((q) => `${q.matchId}:${q.type}`)).size).toBe(10);
-    expect(generateQuizQuestions(matches.reverse())).toEqual(questions);
-    expect(new Set(questions.map((q) => q.type)).size).toBeGreaterThan(3);
+  it('scores big matches above single big clubs and Champions nights slightly higher', () => {
+    const clasico = candidate(1, 'LA_LIGA', 'FC Barcelona', 'Real Madrid CF');
+    const bayern = candidate(2, 'BUNDESLIGA', 'FC Bayern München', 'Club');
+    const bayernCl = candidate(3, 'CHAMPIONS_LEAGUE', 'FC Bayern München', 'Club');
+    expect(matchInterest(clasico)).toBeGreaterThan(matchInterest(bayern));
+    expect(matchInterest(bayernCl)).toBe(matchInterest(bayern) + 1);
+    expect(questionTarget(clasico)).toBe(4);
+    expect(questionTarget(bayern)).toBe(2);
+    expect(questionTarget(candidate(4, 'LIGUE_1', 'Club', 'Rival'))).toBe(1);
+  });
+});
+
+describe('mixed quiz windows (Madrid time)', () => {
+  it('weekend runs Friday to Monday and midweek Tuesday to Thursday', () => {
+    // Sabado 17 de octubre de 2026, 20:00 en Madrid (verano, UTC+2).
+    expect(quizWindowFor(new Date('2026-10-17T18:00:00Z'))).toEqual({
+      key: '2026-10-16-WEEKEND',
+      kind: 'WEEKEND',
+      start: new Date('2026-10-15T22:00:00Z'),
+      end: new Date('2026-10-19T22:00:00Z'),
+    });
+    expect(quizWindowFor(new Date('2026-10-19T21:59:00Z')).key).toBe('2026-10-16-WEEKEND');
+    const tuesday = quizWindowFor(new Date('2026-10-19T22:00:00Z'));
+    expect(tuesday.key).toBe('2026-10-20-MIDWEEK');
+    expect(tuesday.end).toEqual(new Date('2026-10-22T22:00:00Z'));
+    expect(quizWindowFor(new Date('2026-10-22T21:59:59Z')).kind).toBe('MIDWEEK');
   });
 
-  it('handles a single real match, excludes cancelled matches and does not invent questions', () => {
-    expect(generateQuizQuestions([match(1)])).toHaveLength(8);
-    expect(generateQuizQuestions([])).toEqual([]);
-    expect(generateQuizQuestions([match(1, { status: 'CANCELLED' })])).toEqual([]);
+  it('follows the winter time change', () => {
+    // El 25 de octubre de 2026 Madrid pasa a UTC+1: ese fin de semana empieza en verano y acaba en invierno.
+    const window = quizWindowFor(new Date('2026-10-24T12:00:00Z'));
+    expect(window.start).toEqual(new Date('2026-10-22T22:00:00Z'));
+    expect(window.end).toEqual(new Date('2026-10-26T23:00:00Z'));
+  });
+
+  it('publishes the next window only two days before it starts', () => {
+    const keys = (iso: string) => publishableWindows(new Date(iso)).map((w) => w.key);
+    expect(keys('2026-10-17T12:00:00Z')).toEqual(['2026-10-16-WEEKEND']);
+    expect(keys('2026-10-18T12:00:00Z')).toEqual(['2026-10-16-WEEKEND', '2026-10-20-MIDWEEK']);
+    expect(keys('2026-10-20T12:00:00Z')).toEqual(['2026-10-20-MIDWEEK']);
+    expect(keys('2026-10-21T12:00:00Z')).toEqual(['2026-10-20-MIDWEEK', '2026-10-23-WEEKEND']);
   });
 });
 
 describe('quiz closing rules', () => {
   const now = new Date('2030-10-12T12:00:00Z');
-  it('closes at the first match even if that match was not selected', () => {
-    const matches = Array.from({ length: 12 }, (_, i) =>
+  it('closes at the first match it is given and locks when one has started', () => {
+    const matches = Array.from({ length: 3 }, (_, i) =>
       match(i, { kickoff: new Date('2030-10-12T18:00:00Z') }),
     );
-    matches[0].homeTeam = 'FC Barcelona';
-    for (let i = 1; i < 11; i++) matches[i].homeTeam = 'Arsenal FC';
-    matches[11].kickoff = now;
-    matches[11].externalId = 1000;
-    matches[11].homeTeam = 'Small club';
-    expect(selectQuizMatches(matches).find((m) => m.id === 'm11')).toBeUndefined();
+    matches[2].kickoff = now;
     const deadline = quizDeadline(matches, new Date('2030-10-13T18:00:00Z'));
+    expect(deadline.closesAt).toEqual(now);
     expect(mustLockQuiz(null, matches, deadline.closesAt, now)).toBe(true);
   });
 
