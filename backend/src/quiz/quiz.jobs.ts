@@ -94,7 +94,8 @@ export class QuizJobs implements OnApplicationBootstrap {
       where: {
         status: 'FINISHED',
         kickoff: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        matchday: { quizEvent: { isNot: null } },
+        // Partidos de algun quiz: los de los mixtos (por sus preguntas) y los de las jornadas de los antiguos.
+        OR: [{ quizQuestions: { some: {} } }, { matchday: { quizEvent: { isNot: null } } }],
       },
       select: { externalId: true },
     });

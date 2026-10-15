@@ -419,7 +419,7 @@ integration('Quiz API service against MySQL', () => {
     }
     await prisma.match.updateMany({
       where: { id: { in: quizMatchIds(event) } },
-      data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
+      data: { status: 'FINISHED', homeScore: 3, awayScore: 0, htHomeScore: 1, htAwayScore: 0 },
     });
     await closeNow(event.id);
     const general = await service.rankings(`${prefix}b`, { limit: 1 });

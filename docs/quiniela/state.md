@@ -7,8 +7,9 @@ football-data.org (plan gratuito) solo da resultado final y **al descanso** (`sc
 estadísticas no. Se guarda el descanso en `matches.htHomeScore`/`htAwayScore` (migración `20261015180000_quiz_more_questions`,
 que también añade los tipos y las opciones `GOALS_0_1/2_3/4_PLUS`) desde `matchDataFromFixture` y `refreshRecentFinals`.
 8 tipos nuevos: resultado al descanso (1X2), gol en la 1ª parte, más goles en la 2ª, gol en las dos partes, remontada (gana quien
-perdía al descanso), empate, número de goles (0-1 / 2-3 / 4+) y goles impares. Sin descanso del proveedor, las de descanso se
-anulan. Reparto (`generateMixedQuizQuestions`): a cada pregunta el tipo menos usado en el quiz que su partido no tenga, con
+perdía al descanso), empate, número de goles (0-1 / 2-3 / 4+) y goles impares. Medido: 324 de 324 partidos terminados de la temporada traen el descanso; los minutos de los goles,
+ninguno (plan gratuito). Si falta el descanso, la pregunta queda pendiente y solo se anula pasados 3 días (`HALF_TIME_WAIT_MS`);
+`refreshRecentFinals` ahora también repasa cada noche los partidos de los quizzes mixtos. Reparto (`generateMixedQuizQuestions`): a cada pregunta el tipo menos usado en el quiz que su partido no tenga, con
 `QUESTION_TYPES` intercalando clásicos y nuevos; un fin de semana típico sale con ~14 tipos distintos en 20 preguntas.
 Frontend: textos de las preguntas y opciones en 6 idiomas; línea en la 1.1.1. **Ojo**: la app 1.1.0 no conoce los tipos nuevos
 (sale «Elige una opción» y, en la de goles, el código de la opción): conviene publicar la 1.1.1 antes de llevarlo a producción.
