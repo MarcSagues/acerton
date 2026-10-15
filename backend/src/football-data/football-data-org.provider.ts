@@ -16,7 +16,10 @@ interface FootballDataMatch {
   matchday: number;
   homeTeam: { name: string; shortName?: string | null; crest: string | null };
   awayTeam: { name: string; shortName?: string | null; crest: string | null };
-  score: { fullTime: { home: number | null; away: number | null } };
+  score: {
+    fullTime: { home: number | null; away: number | null };
+    halfTime?: { home: number | null; away: number | null } | null;
+  };
 }
 
 interface FootballDataCompetition {
@@ -58,6 +61,8 @@ function mapMatch(match: FootballDataMatch): ProviderFixture {
     status: mapStatus(match.status),
     homeGoals: match.score.fullTime.home,
     awayGoals: match.score.fullTime.away,
+    htHomeGoals: match.score.halfTime?.home ?? null,
+    htAwayGoals: match.score.halfTime?.away ?? null,
   };
 }
 

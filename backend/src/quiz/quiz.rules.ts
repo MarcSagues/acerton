@@ -129,19 +129,39 @@ function teamIn(match: Match, side: 'home' | 'away', aliases: string[]): boolean
   return names.some((name) => name !== null && aliases.includes(normalize(name)));
 }
 
+/** Tipos de pregunta, intercalando los clasicos con los mas traicioneros: el orden decide cuales salen antes. */
 export const QUESTION_TYPES: QuizQuestionType[] = [
   'WINNER',
+  'HALF_TIME_RESULT',
+  'TOTAL_GOALS',
   'BOTH_SCORE',
+  'COMEBACK',
+  'FIRST_HALF_GOAL',
+  'DRAW',
   'OVER_2_5',
+  'SECOND_HALF_MORE_GOALS',
   'HOME_CLEAN_SHEET',
+  'ODD_GOALS',
   'AWAY_CLEAN_SHEET',
+  'GOAL_BOTH_HALVES',
   'HOME_TWO_PLUS',
   'AWAY_TWO_PLUS',
   'WIN_BY_TWO_PLUS',
 ];
 
+/** Tipos que se resuelven con el resultado al descanso (football-data.org `score.halfTime`). */
+const HALF_TIME_TYPES = new Set<QuizQuestionType>([
+  'HALF_TIME_RESULT',
+  'FIRST_HALF_GOAL',
+  'SECOND_HALF_MORE_GOALS',
+  'GOAL_BOTH_HALVES',
+  'COMEBACK',
+]);
+
 export function questionOptions(type: QuizQuestionType): QuizOption[] {
-  return type === 'WINNER' ? ['HOME', 'DRAW', 'AWAY'] : ['YES', 'NO'];
+  if (type === 'WINNER' || type === 'HALF_TIME_RESULT') return ['HOME', 'DRAW', 'AWAY'];
+  if (type === 'TOTAL_GOALS') return ['GOALS_0_1', 'GOALS_2_3', 'GOALS_4_PLUS'];
+  return ['YES', 'NO'];
 }
 
 /** Preguntas de cada quiz mixto. */
@@ -220,20 +240,28 @@ export function planMixedQuiz(
     .map((match) => ({ match, count: counts.get(match.id)! }));
 }
 
-const OTHER_TYPES = QUESTION_TYPES.filter((type) => type !== 'WINNER');
-
 /**
- * Preguntas del quiz mixto: cada partido elegido empieza por quien gana y sigue con otros tipos (distintos, rotando de un
- * partido a otro para que no salgan siempre los mismos); en el quiz van por orden de inicio, las de un partido juntas.
+ * Preguntas del quiz mixto, con la mayor variedad posible (peticion del usuario, 2026-10-15): a cada pregunta le toca el
+ * tipo menos usado hasta entonces en el quiz que su partido aun no tenga; los empates se deshacen con un orden propio de
+ * cada partido, para que no empiecen todos igual. En el quiz van por orden de inicio, las de un mismo partido juntas.
  */
 export function generateMixedQuizQuestions(candidates: QuizCandidate[]) {
-  const items = planMixedQuiz(candidates).flatMap(({ match, count }, rank) =>
-    Array.from({ length: count }, (_, k) => ({
-      match,
-      type: k === 0 ? ('WINNER' as const) : OTHER_TYPES[(rank + k - 1) % OTHER_TYPES.length],
-      k,
-    })),
-  );
+  const used = new Map<QuizQuestionType, number>();
+  const items = planMixedQuiz(candidates).flatMap(({ match, count }) => {
+    const shift = match.externalId % QUESTION_TYPES.length;
+    const order = [...QUESTION_TYPES.slice(shift), ...QUESTION_TYPES.slice(0, shift)];
+    const mine: QuizQuestionType[] = [];
+    for (let k = 0; k < count; k++) {
+      const type = order
+        .filter((candidate) => !mine.includes(candidate))
+        .reduce((best, candidate) =>
+          (used.get(candidate) ?? 0) < (used.get(best) ?? 0) ? candidate : best,
+        );
+      mine.push(type);
+      used.set(type, (used.get(type) ?? 0) + 1);
+    }
+    return mine.map((type, k) => ({ match, type, k }));
+  });
   items.sort(
     (a, b) =>
       a.match.kickoff.getTime() - b.match.kickoff.getTime() ||
@@ -357,9 +385,17 @@ export function resolveMixedQuestion(
   return resolveQuizQuestion(type, match);
 }
 
+/**
+ * Cuanto se espera al resultado al descanso de un partido terminado antes de anular sus preguntas. football-data.org lo
+ * da siempre junto al resultado final (324 de 324 partidos de la temporada, medido el 2026-10-15) y QuizJobs vuelve a
+ * pedir cada noche los resultados de la ultima semana: anular es solo para el caso raro de que nunca llegue.
+ */
+export const HALF_TIME_WAIT_MS = 3 * 24 * 60 * 60 * 1000;
+
 export function resolveQuizQuestion(
   type: QuizQuestionType,
   match: Match,
+  now = new Date(),
 ): {
   resolution: QuizResolution;
   correctOption: QuizOption | null;
@@ -370,22 +406,50 @@ export function resolveQuizQuestion(
   }
   const home = match.homeScore;
   const away = match.awayScore;
-  if (type === 'WINNER') {
+  const total = home + away;
+  const outcome = (h: number, a: number): QuizOption => (h > a ? 'HOME' : h < a ? 'AWAY' : 'DRAW');
+  const yesNo = (condition: boolean) => ({
+    resolution: 'RESOLVED' as const,
+    correctOption: (condition ? 'YES' : 'NO') as QuizOption,
+  });
+  if (type === 'WINNER') return { resolution: 'RESOLVED', correctOption: outcome(home, away) };
+  if (type === 'TOTAL_GOALS') {
     return {
       resolution: 'RESOLVED',
-      correctOption: home > away ? 'HOME' : home < away ? 'AWAY' : 'DRAW',
+      correctOption: total <= 1 ? 'GOALS_0_1' : total <= 3 ? 'GOALS_2_3' : 'GOALS_4_PLUS',
     };
   }
-  const conditions: Record<Exclude<QuizQuestionType, 'WINNER'>, boolean> = {
+  if (HALF_TIME_TYPES.has(type)) {
+    // Sin resultado al descanso todavia: se espera (pendiente, sin puntos) y solo se anula si no llega en 3 dias.
+    if (match.htHomeScore === null || match.htAwayScore === null) {
+      const waited = now.getTime() - match.kickoff.getTime() > HALF_TIME_WAIT_MS;
+      return { resolution: waited ? 'VOID' : 'PENDING', correctOption: null };
+    }
+    const htHome = match.htHomeScore;
+    const htAway = match.htAwayScore;
+    const firstHalf = htHome + htAway;
+    const secondHalf = total - firstHalf;
+    if (type === 'HALF_TIME_RESULT') {
+      return { resolution: 'RESOLVED', correctOption: outcome(htHome, htAway) };
+    }
+    if (type === 'FIRST_HALF_GOAL') return yesNo(firstHalf > 0);
+    if (type === 'SECOND_HALF_MORE_GOALS') return yesNo(secondHalf > firstHalf);
+    if (type === 'GOAL_BOTH_HALVES') return yesNo(firstHalf > 0 && secondHalf > 0);
+    // COMEBACK: gana quien iba perdiendo al descanso.
+    return yesNo((htHome < htAway && home > away) || (htAway < htHome && away > home));
+  }
+  const conditions: Partial<Record<QuizQuestionType, boolean>> = {
     BOTH_SCORE: home > 0 && away > 0,
-    OVER_2_5: home + away > 2,
+    OVER_2_5: total > 2,
     HOME_CLEAN_SHEET: away === 0,
     AWAY_CLEAN_SHEET: home === 0,
     HOME_TWO_PLUS: home >= 2,
     AWAY_TWO_PLUS: away >= 2,
     WIN_BY_TWO_PLUS: Math.abs(home - away) >= 2,
+    DRAW: home === away,
+    ODD_GOALS: total % 2 === 1,
   };
-  return { resolution: 'RESOLVED', correctOption: conditions[type] ? 'YES' : 'NO' };
+  return yesNo(conditions[type] ?? false);
 }
 
 /** Uses every match in the round, including those omitted from the quiz. */

@@ -30,6 +30,8 @@ function match(id: number, overrides: Partial<Match> = {}): Match {
     status: 'SCHEDULED',
     homeScore: null,
     awayScore: null,
+    htHomeScore: null,
+    htAwayScore: null,
     result: null,
     reminder24hSentAt: null,
     reminder5hSentAt: null,
@@ -98,15 +100,26 @@ describe('mixed quiz selection and generation', () => {
     expect(questions).toHaveLength(20);
     expect(questions.map((q) => q.order)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
     expect(new Set(questions.map((q) => `${q.matchId}:${q.type}`)).size).toBe(20);
-    // Cada partido empieza por quien gana, y sus preguntas van juntas.
-    expect(new Set(questions.filter((q) => q.type === 'WINNER').map((q) => q.matchId)).size).toBe(
-      new Set(questions.map((q) => q.matchId)).size,
-    );
+    // Las preguntas de un mismo partido van juntas.
     const seen = new Set<string>();
     questions.forEach((q, i) => {
       if (seen.has(q.matchId)) expect(questions[i - 1].matchId).toBe(q.matchId);
       seen.add(q.matchId);
     });
+  });
+
+  it('mixes many question types instead of repeating the winner one', () => {
+    const questions = generateMixedQuizQuestions(weekend());
+    const types = questions.map((q) => q.type);
+    expect(new Set(types).size).toBeGreaterThanOrEqual(14);
+    for (const type of QUESTION_TYPES) {
+      expect(types.filter((t) => t === type).length).toBeLessThanOrEqual(2);
+    }
+    // Cada pregunta trae las opciones de su tipo.
+    const total = questions.find((q) => q.type === 'TOTAL_GOALS');
+    expect(total?.options).toEqual(['GOALS_0_1', 'GOALS_2_3', 'GOALS_4_PLUS']);
+    const halfTime = questions.find((q) => q.type === 'HALF_TIME_RESULT');
+    expect(halfTime?.options).toEqual(['HOME', 'DRAW', 'AWAY']);
   });
 
   it('picks the biggest clubs when there are no big matches, and keeps Madrid aliases apart', () => {
@@ -262,7 +275,55 @@ describe('automatic quiz resolution', () => {
   );
 
   it.each([
+    // [tipo, goles local, goles visitante, descanso local, descanso visitante, correcta]
+    ['HALF_TIME_RESULT', 3, 3, 0, 1, 'AWAY'],
+    ['HALF_TIME_RESULT', 2, 0, 0, 0, 'DRAW'],
+    ['FIRST_HALF_GOAL', 1, 0, 0, 0, 'NO'],
+    ['FIRST_HALF_GOAL', 1, 0, 1, 0, 'YES'],
+    ['SECOND_HALF_MORE_GOALS', 3, 1, 1, 0, 'YES'],
+    ['SECOND_HALF_MORE_GOALS', 2, 0, 1, 0, 'NO'],
+    ['GOAL_BOTH_HALVES', 2, 0, 1, 0, 'YES'],
+    ['GOAL_BOTH_HALVES', 1, 0, 1, 0, 'NO'],
+    ['COMEBACK', 2, 1, 0, 1, 'YES'],
+    ['COMEBACK', 1, 1, 0, 1, 'NO'],
+    ['COMEBACK', 1, 3, 1, 0, 'YES'],
+  ])('%s with %s-%s (half time %s-%s) gives %s', (type, home, away, htHome, htAway, expected) => {
+    const resolution = resolveQuizQuestion(
+      type as QuizQuestionType,
+      match(1, {
+        status: 'FINISHED',
+        homeScore: home as number,
+        awayScore: away as number,
+        htHomeScore: htHome as number,
+        htAwayScore: htAway as number,
+      }),
+    );
+    expect(resolution).toEqual({ resolution: 'RESOLVED', correctOption: expected });
+  });
+
+  it('waits for a missing half-time score and only voids it after 3 days', () => {
+    const kickoff = new Date('2030-10-12T18:00:00Z');
+    const finished = match(1, { status: 'FINISHED', homeScore: 2, awayScore: 1, kickoff });
+    const hours = (h: number) => new Date(kickoff.getTime() + h * 60 * 60 * 1000);
+    expect(resolveQuizQuestion('FIRST_HALF_GOAL', finished, hours(3))).toEqual({
+      resolution: 'PENDING',
+      correctOption: null,
+    });
+    expect(resolveQuizQuestion('COMEBACK', finished, hours(71)).resolution).toBe('PENDING');
+    expect(resolveQuizQuestion('COMEBACK', finished, hours(73)).resolution).toBe('VOID');
+    // Las que no dependen del descanso se resuelven igual.
+    expect(resolveQuizQuestion('DRAW', finished, hours(3)).resolution).toBe('RESOLVED');
+  });
+
+  it.each([
     ['WINNER', 0, 0, 'DRAW'],
+    ['DRAW', 1, 1, 'YES'],
+    ['DRAW', 2, 1, 'NO'],
+    ['TOTAL_GOALS', 1, 0, 'GOALS_0_1'],
+    ['TOTAL_GOALS', 2, 1, 'GOALS_2_3'],
+    ['TOTAL_GOALS', 3, 1, 'GOALS_4_PLUS'],
+    ['ODD_GOALS', 2, 1, 'YES'],
+    ['ODD_GOALS', 0, 0, 'NO'],
     ['WINNER', 0, 2, 'AWAY'],
     ['WINNER', 2, 0, 'HOME'],
     ['BOTH_SCORE', 1, 1, 'YES'],

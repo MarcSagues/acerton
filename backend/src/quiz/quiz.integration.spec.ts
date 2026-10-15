@@ -370,12 +370,12 @@ integration('Quiz API service against MySQL', () => {
       `${prefix}a`,
       event.questions.map((q) => ({
         questionId: q.id,
-        option: 'YES' === (q.options as string[])[0] ? 'YES' : 'HOME',
+        option: (q.options as QuizOption[])[0],
       })),
     );
     await prisma.match.updateMany({
       where: { id: { in: quizMatchIds(event) } },
-      data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
+      data: { status: 'FINISHED', homeScore: 3, awayScore: 0, htHomeScore: 1, htAwayScore: 0 },
     });
     await closeNow(event.id);
     const first = await service.detail(event.id, `${prefix}a`);
@@ -386,7 +386,7 @@ integration('Quiz API service against MySQL', () => {
     expect(first.quiz.participation?.points).toBe(expected);
     await prisma.match.updateMany({
       where: { id: { in: quizMatchIds(event) } },
-      data: { homeScore: 0, awayScore: 3 },
+      data: { homeScore: 0, awayScore: 3, htHomeScore: 0, htAwayScore: 1 },
     });
     const corrected = await service.detail(event.id, `${prefix}a`);
     expect(corrected.quiz.participation?.points).toBe(
@@ -419,7 +419,7 @@ integration('Quiz API service against MySQL', () => {
     }
     await prisma.match.updateMany({
       where: { id: { in: quizMatchIds(event) } },
-      data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
+      data: { status: 'FINISHED', homeScore: 3, awayScore: 0, htHomeScore: 1, htAwayScore: 0 },
     });
     await closeNow(event.id);
     const general = await service.rankings(`${prefix}b`, { limit: 1 });
