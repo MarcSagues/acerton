@@ -118,19 +118,13 @@ describe('QuizService.overview — rendimiento', () => {
     });
   });
 
-  it('para las apps anteriores repite el quiz mixto en cada liga', async () => {
+  it('a las apps anteriores (solo leen quizzes) no les manda ningun quiz: no entienden sus preguntas', async () => {
     const { service } = build();
 
     const result = await service.overview('u1');
 
-    expect(result.quizzes.map((q) => `${q.id}@${q.competition.id}`)).toEqual([
-      'mixed-soon@c1',
-      'mixed-soon@c2',
-      'mixed-open@c1',
-      'mixed-open@c2',
-      'mixed-done@c1',
-      'mixed-done@c2',
-    ]);
+    expect(result.quizzes).toEqual([]);
+    expect(result.events.length).toBeGreaterThan(0);
   });
 
   it('refresca los quizzes sin cerrar, y no vuelve a hacerlo hasta que pasa el tiempo', async () => {

@@ -181,7 +181,7 @@ integration('Quiz API service against MySQL', () => {
     const body = await overview.json();
     expect(body.events[0].id).toBe(event.id);
     expect(body.events[0].kind).toBe('MIXED');
-    expect(body.quizzes.map((q: { id: string }) => q.id)).toEqual([event.id, event.id]);
+    expect(body.quizzes).toEqual([]);
     const malformed = await fetch(`${baseUrl}/api/quiz/${event.id}/answers`, {
       method: 'PUT',
       headers,
