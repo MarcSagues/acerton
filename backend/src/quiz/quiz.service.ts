@@ -750,6 +750,8 @@ export class QuizService {
         ))
     `);
     for (const event of events) await this.refreshEventIfStale(event.id);
+    // Salen todos los usuarios, tambien los que aun no han jugado (con 0 puntos, empatados al final): con la
+    // clasificacion vacia la app parecia desierta (peticion del usuario, 2026-10-15).
     // General: los puntos de cada quiz. Ligas / Champions (y una liga, para apps anteriores): solo los de las preguntas
     // de partidos de esas competiciones, y cuenta como jugado cada quiz con alguna respuesta en ellas.
     const european = Prisma.sql`(${Prisma.join(EUROPEAN_COMPETITIONS.map((code) => Prisma.sql`${code}`))})`;
@@ -776,11 +778,15 @@ export class QuizService {
         FROM quiz_participations p JOIN quiz_events e ON e.id = p."eventId"
         WHERE e."seasonLabel" = ${seasonLabel} GROUP BY p."userId"`;
     const ranked = Prisma.sql`
-      WITH totals AS (${totals}), ranked AS (
-        SELECT t.*, RANK() OVER (ORDER BY t.points DESC) AS position,
-          ROW_NUMBER() OVER (ORDER BY t.points DESC, t."userId" ASC) AS "rowNumber",
-          COUNT(*) OVER () AS total, u.name, u."avatarUrl", u."avatarBackground"
-        FROM totals t JOIN users u ON u.id = t."userId"
+      WITH totals AS (${totals}), scored AS (
+        SELECT u.id AS "userId", COALESCE(t.points, 0) AS points,
+          COALESCE(t."quizzesPlayed", 0) AS "quizzesPlayed", u.name, u."avatarUrl", u."avatarBackground"
+        FROM users u LEFT JOIN totals t ON t."userId" = u.id
+      ), ranked AS (
+        SELECT s.*, RANK() OVER (ORDER BY s.points DESC) AS position,
+          ROW_NUMBER() OVER (ORDER BY s.points DESC, s."quizzesPlayed" DESC, s.name ASC, s."userId" ASC) AS "rowNumber",
+          COUNT(*) OVER () AS total
+        FROM scored s
       )
     `;
     const offset = Number(query.cursor ?? 0);
