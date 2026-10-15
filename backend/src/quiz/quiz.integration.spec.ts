@@ -434,6 +434,13 @@ integration('Quiz API service against MySQL', () => {
     // Por liga solo cuentan las preguntas de esa liga: entre las dos suman lo de la general.
     expect(general.me?.points).toBe(league.me!.points + premier.me!.points);
     expect(league.me?.quizzesPlayed).toBe(1);
+    // Ligas: todo lo de partidos de liga (aqui, todo); Champions: nada, no hay partidos europeos.
+    const leagues = await service.rankings(`${prefix}b`, { scope: 'LEAGUES' });
+    const champions = await service.rankings(`${prefix}b`, { scope: 'CHAMPIONS' });
+    expect(leagues.scope).toBe('LEAGUES');
+    expect(leagues.me?.points).toBe(general.me?.points);
+    expect(champions.total).toBe(0);
+    expect(champions.me).toBeNull();
     expect(general.provisional).toBe(false);
     const next = await service.rankings(`${prefix}c`, { cursor: '1', limit: 1 });
     expect(next.rows[0].userId).toBe(`${prefix}b`);

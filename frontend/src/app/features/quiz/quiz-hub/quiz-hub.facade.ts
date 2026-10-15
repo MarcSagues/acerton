@@ -4,7 +4,14 @@ import { Router } from '@angular/router';
 import { QuizService } from '../../../core/services/quiz.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { QuizCompetition, QuizOverview, QuizRanking, QuizRankingRow, QuizSummary } from '../../../core/models/quiz.model';
+import {
+  QuizCompetition,
+  QuizOverview,
+  QuizRanking,
+  QuizRankingRow,
+  QuizRankingScope,
+  QuizSummary,
+} from '../../../core/models/quiz.model';
 import {
   RankingSegment,
   buildRankingItems,
@@ -69,8 +76,8 @@ export class QuizHubFacade {
   readonly previousQuiz = computed(() => this.cards().previous);
 
   // ---- Clasificacion ---------------------------------------------------------
-  /** Liga del filtro de la clasificacion (null = General). Independiente de la liga elegida para jugar. */
-  readonly rankingCompetitionId = signal<string | null>(null);
+  /** Filtro de la clasificacion: General (null), Ligas o Champions. */
+  readonly rankingScope = signal<QuizRankingScope | null>(null);
   /** Temporada pedida (null = la que el servidor considere actual). */
   readonly rankingSeason = signal<string | null>(null);
   readonly rankingState = signal<LoadState>('loading');
@@ -218,9 +225,9 @@ export class QuizHubFacade {
 
   // ---- Clasificacion -------------------------------------------------------------
 
-  setRankingCompetition(competitionId: string | null): void {
-    if (competitionId === this.rankingCompetitionId()) return;
-    this.rankingCompetitionId.set(competitionId);
+  setRankingScope(scope: QuizRankingScope | null): void {
+    if (scope === this.rankingScope()) return;
+    this.rankingScope.set(scope);
     this.loadRanking();
   }
 
@@ -280,7 +287,7 @@ export class QuizHubFacade {
     this.rankingState.set('loading');
     this.quizService
       .getRanking({
-        competitionId: this.rankingCompetitionId(),
+        scope: this.rankingScope(),
         seasonLabel: this.rankingSeason(),
         cursor: null,
         limit: QUIZ_RANKING_PAGE_SIZE,
@@ -307,7 +314,7 @@ export class QuizHubFacade {
     return new Promise((resolve) => {
       this.quizService
         .getRanking({
-          competitionId: this.rankingCompetitionId(),
+          scope: this.rankingScope(),
           seasonLabel: this.rankingSeason(),
           cursor: String(cursor),
           limit,

@@ -1,5 +1,16 @@
 # Estado actual
 
+## 2026-10-15 — Quiz: clasificación General / Ligas / Champions y respuestas que no se pierden (fuera de sprint)
+
+Dos peticiones del usuario. **Clasificación**: los filtros pasan de una pestaña por liga a **General / Ligas / Champions**.
+`GET quiz/rankings?scope=LEAGUES|CHAMPIONS`: suma solo las preguntas de partidos de liga o de competiciones europeas
+(`EUROPEAN_COMPETITIONS`: Champions y Conference); `competitionId` sigue valiendo para apps anteriores. **Respuestas**: ya se
+guardaban una a una y contaban sin pulsar Finalizar (puntos y clasificación salen de las respuestas, no de `completedAt`),
+pero la fila de envíos de la pantalla de juego se cortaba al salir (`takeUntilDestroyed`): una respuesta elegida justo antes de
+irse se perdía. Ahora la fila termina de enviarse aunque se cierre la pantalla. La tarjeta de un quiz a medias recuerda que las
+respuestas guardadas cuentan. **Verificado**: backend 107 tests de Quiz/Players (integración contra MySQL), frontend 263, y en
+local (filtros y peticiones `scope`).
+
 ## 2026-10-15 — Quiz: preguntas más variadas (fuera de sprint)
 
 Petición del usuario: preguntas más divertidas y más fáciles de fallar, no solo quién gana y más de 2,5 goles.

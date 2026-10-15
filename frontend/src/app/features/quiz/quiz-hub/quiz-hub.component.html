@@ -83,6 +83,9 @@
                     · {{ 'quiz.completado' | t }}
                   }
                 </p>
+                @if (!part.completedAt && part.answeredCount > 0) {
+                  <p class="muted small">{{ 'quiz.respuestasCuentan' | t }}</p>
+                }
               } @else {
                 <p class="score-line">
                   <span class="score mono">{{ part.points }}</span>
@@ -171,25 +174,16 @@
       }
     </div>
 
-    <div class="comp-pills filter-pills" role="group" [attr.aria-label]="'quiz.filtroLiga' | t">
-      <button
-        type="button"
-        class="comp-pill"
-        [class.active]="page.rankingCompetitionId() === null"
-        [attr.aria-pressed]="page.rankingCompetitionId() === null"
-        (click)="page.setRankingCompetition(null)"
-      >
-        {{ 'quiz.general' | t }}
-      </button>
-      @for (competition of page.competitions(); track competition.id) {
+    <div class="comp-pills filter-pills" role="group" [attr.aria-label]="'quiz.filtroClasificacion' | t">
+      @for (option of rankingScopes; track option.label) {
         <button
           type="button"
           class="comp-pill"
-          [class.active]="page.rankingCompetitionId() === competition.id"
-          [attr.aria-pressed]="page.rankingCompetitionId() === competition.id"
-          (click)="page.setRankingCompetition(competition.id)"
+          [class.active]="page.rankingScope() === option.scope"
+          [attr.aria-pressed]="page.rankingScope() === option.scope"
+          (click)="page.setRankingScope(option.scope)"
         >
-          {{ competition.name }}
+          {{ option.label | t }}
         </button>
       }
     </div>
@@ -210,7 +204,7 @@
       </div>
     }
 
-    @if (page.rankingCompetitionId() === null) {
+    @if (page.rankingScope() === null) {
       <p class="note">{{ 'quiz.notaGeneral' | t }}</p>
     }
 

@@ -7,6 +7,8 @@ import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
 import { InViewDirective } from '../../../shared/directives/in-view.directive';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { QuizHubFacade } from './quiz-hub.facade';
+import { QuizRankingScope } from '../../../core/models/quiz.model';
+import { TranslationKey } from '../../../core/i18n/translate';
 
 /** Centro del Quiz de jornada: liga, jornada en juego y clasificacion global. */
 @Component({
@@ -20,6 +22,13 @@ import { QuizHubFacade } from './quiz-hub.facade';
 })
 export class QuizHubComponent implements OnInit {
   readonly page = inject(QuizHubFacade);
+
+  /** Filtros de la clasificacion: la general, la de los quizzes de ligas y la de los de Champions. */
+  readonly rankingScopes: { scope: QuizRankingScope | null; label: TranslationKey }[] = [
+    { scope: null, label: 'quiz.general' },
+    { scope: 'LEAGUES', label: 'quiz.filtroLigas' },
+    { scope: 'CHAMPIONS', label: 'quiz.filtroChampions' },
+  ];
 
   ngOnInit(): void {
     this.page.init();

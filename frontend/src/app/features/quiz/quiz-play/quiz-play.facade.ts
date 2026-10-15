@@ -2,7 +2,6 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subject, catchError, concatMap, map, of } from 'rxjs';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { QuizService } from '../../../core/services/quiz.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { QuizDetail, QuizErrorCode, QuizOptionCode, QuizQuestion } from '../../../core/models/quiz.model';
@@ -130,13 +129,20 @@ export class QuizPlayFacade {
   readonly points = computed(() => this.quiz()?.participation?.points ?? 0);
   readonly pendingCount = computed(() => this.questions().filter((q) => q.resolution === 'PENDING').length);
 
+  /** Pantalla cerrada: las respuestas en cola se siguen enviando, pero ya no se toca la vista. */
+  private destroyed = false;
+
   constructor() {
-    this.writes
-      .pipe(
-        concatMap((request) => this.send(request)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((result) => this.onWriteResult(result));
+    // Sin cortar la fila al salir de la pantalla: una respuesta elegida justo antes de irse (o las que esperaban turno)
+    // tiene que llegar al servidor, porque cuenta aunque no se termine el quiz. Al cerrar, la fila se completa y
+    // concatMap aun envia lo pendiente.
+    this.writes.pipe(concatMap((request) => this.send(request))).subscribe((result) => {
+      if (!this.destroyed) this.onWriteResult(result);
+    });
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      this.writes.complete();
+    });
   }
 
   init(): void {

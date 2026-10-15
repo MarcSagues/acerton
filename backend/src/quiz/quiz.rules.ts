@@ -363,7 +363,10 @@ export function openQuizWindow(now: Date): QuizWindow {
   return windowFrom(cuts[i], cuts[i + 1], cuts[i + 2]);
 }
 
-/** Ligas de cada quiz: el de ligas, todas menos la Champions; el de Champions, solo ella. */
+/** Competiciones europeas: el quiz de Champions y el filtro «Champions» de la clasificacion; el resto son ligas. */
+export const EUROPEAN_COMPETITIONS: CompetitionCode[] = ['CHAMPIONS_LEAGUE', 'CONFERENCE_LEAGUE'];
+
+/** Ligas de cada quiz: el de ligas, todas menos las europeas; el de Champions, solo la Champions. */
 export function windowCompetitions(kind: QuizWindowKind): CompetitionCode[] {
   return kind === 'MIDWEEK'
     ? ['CHAMPIONS_LEAGUE']

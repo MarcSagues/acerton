@@ -173,10 +173,14 @@ export interface QuizRankingRow {
   quizzesPlayed: number;
 }
 
+/** Clasificacion de los quizzes de ligas o de los de Champions (competiciones europeas); null = la general. */
+export type QuizRankingScope = 'LEAGUES' | 'CHAMPIONS';
+
 export interface QuizRanking {
   seasonLabel: string;
-  /** null = clasificacion general (todas las ligas). */
+  /** Solo para apps anteriores (filtro por una liga). */
   competitionId: string | null;
+  scope?: QuizRankingScope | null;
   provisional: boolean;
   rows: QuizRankingRow[];
   me: QuizRankingRow | null;
@@ -185,6 +189,7 @@ export interface QuizRanking {
 }
 
 export interface QuizRankingQuery {
+  scope?: QuizRankingScope | null;
   competitionId?: string | null;
   seasonLabel?: string | null;
   cursor?: string | null;

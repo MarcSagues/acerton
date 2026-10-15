@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { LALIGA, PREMIER, mixedSummary, overview, quizDetail, quizSummary, ranking, rankingRow } from '../testing/quiz.fixtures';
+import { PREMIER, mixedSummary, overview, quizDetail, quizSummary, ranking, rankingRow } from '../testing/quiz.fixtures';
 import { QuizHubFacade } from './quiz-hub.facade';
 
 const API = `${environment.apiUrl}/quiz`;
@@ -32,10 +32,8 @@ describe('QuizHubFacade', () => {
     return TestBed.inject(QuizHubFacade);
   }
 
-  const rankingReq = (competitionId: string | null = null): TestRequest =>
-    http.expectOne(
-      (req) => req.url === `${API}/rankings` && (req.params.get('competitionId') ?? null) === competitionId,
-    );
+  const rankingReq = (scope: string | null = null): TestRequest =>
+    http.expectOne((req) => req.url === `${API}/rankings` && (req.params.get('scope') ?? null) === scope);
 
   afterEach(() => {
     http.verify();
@@ -88,14 +86,14 @@ describe('QuizHubFacade', () => {
     expect(facade.days(quizSummary())).toBeNull();
   });
 
-  it('el filtro de la clasificacion por liga no cambia el quiz que se juega', () => {
+  it('el filtro de la clasificacion (ligas / Champions) no cambia el quiz que se juega', () => {
     const facade = setup();
     facade.init();
     http.expectOne(`${API}/overview`).flush(overview({ events: [mixedSummary()] }));
     rankingReq(null).flush(ranking());
 
-    facade.setRankingCompetition(LALIGA.id);
-    rankingReq(LALIGA.id).flush(ranking({ competitionId: LALIGA.id }));
+    facade.setRankingScope('LEAGUES');
+    rankingReq('LEAGUES').flush(ranking({ scope: 'LEAGUES' }));
     expect(facade.primaryQuiz()?.id).toBe('mx1');
   });
 
@@ -105,10 +103,10 @@ describe('QuizHubFacade', () => {
     http.expectOne(`${API}/overview`).flush(overview());
     rankingReq(null).flush(ranking());
 
-    facade.setRankingCompetition(LALIGA.id);
-    const slow = rankingReq(LALIGA.id);
-    facade.setRankingCompetition(PREMIER.id);
-    rankingReq(PREMIER.id).flush(ranking({ rows: [rankingRow({ userId: 'premier', name: 'Premier' })] }));
+    facade.setRankingScope('LEAGUES');
+    const slow = rankingReq('LEAGUES');
+    facade.setRankingScope('CHAMPIONS');
+    rankingReq('CHAMPIONS').flush(ranking({ rows: [rankingRow({ userId: 'premier', name: 'Premier' })] }));
     slow.flush(ranking({ rows: [rankingRow({ userId: 'laliga', name: 'LaLiga' })] }));
 
     expect(facade.rankingRows().map((r) => r.userId)).toEqual(['premier']);
@@ -273,12 +271,12 @@ describe('QuizHubFacade', () => {
     expect(facade.rankingState()).toBe('ready');
     expect(facade.rankingRows()).toEqual([]);
 
-    facade.setRankingCompetition(LALIGA.id);
-    rankingReq(LALIGA.id).error(new ProgressEvent('error'), { status: 0 });
+    facade.setRankingScope('LEAGUES');
+    rankingReq('LEAGUES').error(new ProgressEvent('error'), { status: 0 });
     expect(facade.rankingState()).toBe('offline');
 
     facade.retryRanking();
-    rankingReq(LALIGA.id).flush('boom', { status: 500, statusText: 'Server Error' });
+    rankingReq('LEAGUES').flush('boom', { status: 500, statusText: 'Server Error' });
     expect(facade.rankingState()).toBe('error');
   });
 
