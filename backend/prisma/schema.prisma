@@ -510,6 +510,9 @@ model Match {
   status            MatchStatus       @default(SCHEDULED)
   homeScore         Int?
   awayScore         Int?
+  /// Resultado al descanso (football-data.org `score.halfTime`), para las preguntas del Quiz sobre cada parte.
+  htHomeScore       Int?
+  htAwayScore       Int?
   result            PredictionChoice?
   /// Recordatorios push escalonados antes de SU PROPIO kickoff (null = ese
   /// aviso aun no se ha enviado). Viven aqui, no en Matchday, porque una
@@ -751,6 +754,15 @@ enum QuizQuestionType {
   HOME_TWO_PLUS
   AWAY_TWO_PLUS
   WIN_BY_TWO_PLUS
+  /// Quiz con mas variedad (2026-10-15): resultado al descanso, por partes, remontada, empate y numero de goles.
+  HALF_TIME_RESULT
+  FIRST_HALF_GOAL
+  SECOND_HALF_MORE_GOALS
+  GOAL_BOTH_HALVES
+  COMEBACK
+  DRAW
+  TOTAL_GOALS
+  ODD_GOALS
 }
 
 enum QuizOption {
@@ -759,6 +771,10 @@ enum QuizOption {
   AWAY
   YES
   NO
+  /// Opciones de TOTAL_GOALS: 0-1, 2-3 y 4 o mas goles.
+  GOALS_0_1
+  GOALS_2_3
+  GOALS_4_PLUS
 }
 
 enum QuizResolution {
@@ -767,23 +783,36 @@ enum QuizResolution {
   VOID
 }
 
+/// Quiz mixto (2026-10-15): una ventana de fin de semana (vie-lun) o entre semana (mar-jue), hora de Madrid.
+enum QuizWindowKind {
+  WEEKEND
+  MIDWEEK
+}
+
 model QuizEvent {
-  id           String     @id @default(cuid())
-  matchdayId   String     @unique
-  seasonLabel  String
-  status       QuizStatus @default(SCHEDULED)
-  rulesVersion Int        @default(1)
-  closesAt     DateTime
-  openedAt     DateTime?
-  lockedAt     DateTime?
+  id                String          @id @default(cuid())
+  /// Quiz antiguo de una liga y jornada. null en los quizzes mixtos (todas las ligas, por ventana).
+  matchdayId        String?         @unique
+  /// Quiz mixto: ventana que cubre ("2026-10-16-WEEKEND"), su tipo, sus limites y su numero dentro de la temporada.
+  windowKey         String?         @unique
+  windowKind        QuizWindowKind?
+  windowStart       DateTime?
+  windowEnd         DateTime?
+  number            Int?
+  seasonLabel       String
+  status            QuizStatus      @default(SCHEDULED)
+  rulesVersion      Int             @default(1)
+  closesAt          DateTime
+  openedAt          DateTime?
+  lockedAt          DateTime?
   /// Avisos opcionales ya enviados (ver QuizRemindersService): uno por evento y franja.
   openNotifiedAt    DateTime?
   reminder24hSentAt DateTime?
   reminder1hSentAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
-  matchday       Matchday            @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
+  matchday       Matchday?           @relation(fields: [matchdayId], references: [id], onDelete: Cascade)
   questions      QuizQuestion[]
   participations QuizParticipation[]
 

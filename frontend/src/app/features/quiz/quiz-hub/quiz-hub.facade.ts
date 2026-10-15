@@ -4,7 +4,14 @@ import { Router } from '@angular/router';
 import { QuizService } from '../../../core/services/quiz.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { QuizCompetition, QuizOverview, QuizRanking, QuizRankingRow, QuizSummary } from '../../../core/models/quiz.model';
+import {
+  QuizCompetition,
+  QuizOverview,
+  QuizRanking,
+  QuizRankingRow,
+  QuizRankingScope,
+  QuizSummary,
+} from '../../../core/models/quiz.model';
 import {
   RankingSegment,
   buildRankingItems,
@@ -20,24 +27,21 @@ import {
   LoadFailure,
   QuizAction,
   clockOffsetMs,
-  closesSoon,
-  isPendingForUser,
   isClosedError,
   isPastClose,
   loadFailureOf,
-  pickCompetitionQuizzes,
+  pickHubQuizzes,
   quizAction,
   quizActionLabel,
   quizErrorCode,
   quizErrorMessage,
   quizStatusLabel,
-  sortCompetitionsByClose,
+  quizTitle,
+  windowDays,
 } from '../domain/quiz-rules';
 
 export type LoadState = 'loading' | 'ready' | LoadFailure;
 
-/** Liga elegida para jugar, recordada entre visitas (solo comodidad: si falla el almacenamiento, se elige otra). */
-export const QUIZ_COMPETITION_STORAGE_KEY = 'piqo.quiz.competitionId';
 export const QUIZ_RANKING_PAGE_SIZE = 20;
 /** Al saltar a mi puesto sin tenerlo cargado: cuantas filas cargar por encima y por debajo de la mia. */
 export const QUIZ_RANKING_NEIGHBOURS = 10;
@@ -52,11 +56,11 @@ export class QuizHubFacade {
 
   readonly currentUserId = this.authService.currentUser()?.id ?? null;
 
-  // ---- Centro: ligas y jornadas ------------------------------------------
+  // ---- Centro: el quiz mixto (todas las ligas) -------------------------------
   readonly overviewState = signal<LoadState>('loading');
+  /** Ligas del Quiz: los filtros de la clasificacion. */
   readonly competitions = signal<QuizCompetition[]>([]);
   private readonly quizzes = signal<QuizSummary[]>([]);
-  readonly selectedCompetitionId = signal<string | null>(null);
   readonly startingQuizId = signal<string | null>(null);
   /** Hora del servidor estimada (reloj del dispositivo + desfase), solo para el contador. */
   readonly now = signal(Date.now());
@@ -65,31 +69,15 @@ export class QuizHubFacade {
   private readonly refreshedCloses = new Set<string>();
   private overviewRequestId = 0;
 
-  /** Pestañas de liga: primero la que cierra antes. */
-  readonly sortedCompetitions = computed(() =>
-    sortCompetitionsByClose(this.competitions(), this.quizzes(), this.now()),
-  );
-  /** Ligas con una jornada abierta que el usuario no ha terminado: su pestaña lleva el punto rojo. */
-  readonly pendingIds = computed(
-    () => new Set(this.quizzes().filter((q) => isPendingForUser(q, this.now())).map((q) => q.competition.id)),
-  );
-  /** Ligas con una jornada abierta que cierra en menos de 24 h: su pestaña lleva un reloj. */
-  readonly closingSoonIds = computed(
-    () => new Set(this.quizzes().filter((q) => closesSoon(q, this.now())).map((q) => q.competition.id)),
-  );
-
-  readonly selectedCompetition = computed(
-    () => this.competitions().find((c) => c.id === this.selectedCompetitionId()) ?? null,
-  );
-  private readonly selectedCards = computed(() =>
-    pickCompetitionQuizzes(this.quizzes().filter((q) => q.competition.id === this.selectedCompetitionId())),
-  );
-  readonly primaryQuiz = computed(() => this.selectedCards().primary);
-  readonly previousQuiz = computed(() => this.selectedCards().previous);
+  private readonly cards = computed(() => pickHubQuizzes(this.quizzes()));
+  readonly primaryQuiz = computed(() => this.cards().primary);
+  /** Otros quizzes abiertos a la vez (casi nunca: el de entre semana y el del finde se solapan pocas horas). */
+  readonly otherQuizzes = computed(() => this.cards().others);
+  readonly previousQuiz = computed(() => this.cards().previous);
 
   // ---- Clasificacion ---------------------------------------------------------
-  /** Liga del filtro de la clasificacion (null = General). Independiente de la liga elegida para jugar. */
-  readonly rankingCompetitionId = signal<string | null>(null);
+  /** Filtro de la clasificacion: General (null), Ligas o Champions. */
+  readonly rankingScope = signal<QuizRankingScope | null>(null);
   /** Temporada pedida (null = la que el servidor considere actual). */
   readonly rankingSeason = signal<string | null>(null);
   readonly rankingState = signal<LoadState>('loading');
@@ -156,35 +144,9 @@ export class QuizHubFacade {
     this.offsetMs = clockOffsetMs(overview.serverNow, Date.now());
     this.now.set(Date.now() + this.offsetMs);
     this.competitions.set(overview.competitions);
-    this.quizzes.set(overview.quizzes);
-    const current = this.selectedCompetitionId();
-    if (!current || !overview.competitions.some((c) => c.id === current)) {
-      this.selectedCompetitionId.set(this.defaultCompetitionId(overview));
-    }
+    // `events` llega desde el quiz mixto; un servidor anterior solo manda `quizzes` (uno por liga).
+    this.quizzes.set(overview.events ?? overview.quizzes);
     this.overviewState.set('ready');
-  }
-
-  /**
-   * La recordada si sigue existiendo; si no, la que tiene abierta la jornada
-   * que cierra antes; si no, la primera de las pestañas.
-   */
-  private defaultCompetitionId(overview: QuizOverview): string | null {
-    const stored = readStoredCompetition();
-    if (stored && overview.competitions.some((c) => c.id === stored)) return stored;
-    const sorted = sortCompetitionsByClose(overview.competitions, overview.quizzes, this.now());
-    const withOpen = sorted.find((c) =>
-      overview.quizzes.some((q) => q.competition.id === c.id && q.status === 'OPEN'),
-    );
-    return withOpen?.id ?? sorted[0]?.id ?? null;
-  }
-
-  selectCompetition(competitionId: string): void {
-    this.selectedCompetitionId.set(competitionId);
-    try {
-      localStorage.setItem(QUIZ_COMPETITION_STORAGE_KEY, competitionId);
-    } catch {
-      // Sin almacenamiento: la eleccion dura solo esta visita.
-    }
   }
 
   private onTick(): void {
@@ -223,7 +185,16 @@ export class QuizHubFacade {
   }
 
   trophyId(competition: QuizCompetition): string | null {
-    return competitionTrophyId(competition.code);
+    return competition.code === 'MIXED' ? null : competitionTrophyId(competition.code);
+  }
+
+  title(quiz: QuizSummary): string {
+    return quizTitle(quiz);
+  }
+
+  /** Primer y ultimo dia de un quiz mixto ("16 oct – 19 oct"); null en los antiguos. */
+  days(quiz: QuizSummary): { from: string; to: string } | null {
+    return quiz.window ? windowDays(quiz.window) : null;
   }
 
   open(quiz: QuizSummary): void {
@@ -254,9 +225,9 @@ export class QuizHubFacade {
 
   // ---- Clasificacion -------------------------------------------------------------
 
-  setRankingCompetition(competitionId: string | null): void {
-    if (competitionId === this.rankingCompetitionId()) return;
-    this.rankingCompetitionId.set(competitionId);
+  setRankingScope(scope: QuizRankingScope | null): void {
+    if (scope === this.rankingScope()) return;
+    this.rankingScope.set(scope);
     this.loadRanking();
   }
 
@@ -316,7 +287,7 @@ export class QuizHubFacade {
     this.rankingState.set('loading');
     this.quizService
       .getRanking({
-        competitionId: this.rankingCompetitionId(),
+        scope: this.rankingScope(),
         seasonLabel: this.rankingSeason(),
         cursor: null,
         limit: QUIZ_RANKING_PAGE_SIZE,
@@ -343,7 +314,7 @@ export class QuizHubFacade {
     return new Promise((resolve) => {
       this.quizService
         .getRanking({
-          competitionId: this.rankingCompetitionId(),
+          scope: this.rankingScope(),
           seasonLabel: this.rankingSeason(),
           cursor: String(cursor),
           limit,
@@ -381,10 +352,3 @@ export class QuizHubFacade {
   }
 }
 
-function readStoredCompetition(): string | null {
-  try {
-    return localStorage.getItem(QUIZ_COMPETITION_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}

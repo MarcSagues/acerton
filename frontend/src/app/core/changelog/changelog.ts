@@ -55,6 +55,28 @@ export interface ChangelogEntry {
 /** De la más nueva a la más antigua. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    version: '1.1.1',
+    date: '2026-10-15',
+    changes: [
+      {
+        es: 'Nuevo Quiz con fechas fijas: el de ligas (20 preguntas de los mejores partidos del fin de semana) se juega de martes a viernes, y el de Champions de viernes a martes cuando hay Champions.',
+        en: "New Quiz with fixed dates: the league quiz (20 questions on the best weekend games) runs Tuesday to Friday, and the Champions League quiz Friday to Tuesday when it's on.",
+        ca: 'Nou Quiz amb dates fixes: el de lligues (20 preguntes dels millors partits del cap de setmana) es juga de dimarts a divendres, i el de Champions de divendres a dimarts quan n’hi ha.',
+        fr: 'Nouveau Quiz à dates fixes : celui des championnats (20 questions sur les plus beaux matchs du week-end) se joue du mardi au vendredi, et celui de la Ligue des champions du vendredi au mardi quand il y en a.',
+        it: 'Nuovo Quiz con date fisse: quello dei campionati (20 domande sulle partite migliori del weekend) si gioca dal martedì al venerdì, e quello di Champions dal venerdì al martedì quando c’è.',
+        de: 'Neues Quiz mit festen Terminen: Das Liga-Quiz (20 Fragen zu den besten Wochenendspielen) läuft von Dienstag bis Freitag, das Champions-League-Quiz von Freitag bis Dienstag, wenn sie läuft.',
+      },
+      {
+        es: 'Preguntas nuevas en el Quiz: el resultado al descanso, si habrá remontada, goles en cada parte, cuántos goles habrá y más.',
+        en: 'New Quiz questions: the half-time score, comebacks, goals in each half, how many goals there will be and more.',
+        ca: 'Preguntes noves al Quiz: el resultat a la mitja part, si hi haurà remuntada, gols a cada part, quants gols hi haurà i més.',
+        fr: 'Nouvelles questions dans le Quiz : le score à la mi-temps, les remontées, les buts dans chaque période, le nombre de buts et plus.',
+        it: 'Nuove domande nel Quiz: il risultato all’intervallo, le rimonte, i gol in ogni tempo, quanti gol ci saranno e altro.',
+        de: 'Neue Quiz-Fragen: der Halbzeitstand, Comebacks, Tore in jeder Halbzeit, wie viele Tore fallen und mehr.',
+      },
+    ],
+  },
+  {
     version: '1.1.0',
     date: '2026-10-13',
     changes: [

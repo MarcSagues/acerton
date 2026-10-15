@@ -4,8 +4,8 @@ import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 import { isKickoffTimeTbc } from '../../matchday/domain/prediction-rules';
-import { QuizMatch } from '../../../core/models/quiz.model';
-import { teamName } from '../domain/quiz-rules';
+import { QuizMatch, QuizSummary } from '../../../core/models/quiz.model';
+import { quizTitle, teamName, windowDays } from '../domain/quiz-rules';
 import { teamColors, teamDiscBackground } from '../domain/team-colors';
 import { QuizPlayFacade } from './quiz-play.facade';
 
@@ -24,6 +24,15 @@ export class QuizPlayComponent implements OnInit {
 
   ngOnInit(): void {
     this.page.init();
+  }
+
+  title(quiz: QuizSummary): string {
+    return quizTitle(quiz);
+  }
+
+  /** Primer y ultimo dia de un quiz mixto; null en los antiguos (de una liga y jornada). */
+  days(quiz: QuizSummary): { from: string; to: string } | null {
+    return quiz.window ? windowDays(quiz.window) : null;
   }
 
   team(match: QuizMatch, side: 'home' | 'away'): string {

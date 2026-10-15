@@ -7,11 +7,13 @@ import { QuizService } from './quiz.service';
 import { AppConfig } from '../config/configuration';
 import { FOOTBALL_PROVIDER, FootballProvider } from '../football-data/football-provider.interface';
 import { computeMatchResult } from '../matchdays/matchday.util';
+import { openQuizWindow } from './quiz.rules';
 
 @Injectable()
 export class QuizJobs implements OnApplicationBootstrap {
   private readonly logger = new Logger(QuizJobs.name);
   private readonly nextCalendarAttempt = new Map<string, number>();
+  private readonly nextAheadAttempt = new Map<string, number>();
   private calendarsRunning = false;
   private refreshRunning = false;
 
@@ -46,10 +48,28 @@ export class QuizJobs implements OnApplicationBootstrap {
           this.nextCalendarAttempt.set(competition.id, Date.now() + 3 * 60 * 60 * 1000);
           this.logger.error(`Error sincronizando quiz ${competition.code}`, error);
         }
+        await this.importAhead(competition.id, competition.code);
       }
       await this.refreshEvents();
     } finally {
       this.calendarsRunning = false;
+    }
+  }
+
+  /**
+   * Jornadas que necesitara el proximo quiz mixto: hasta el final de los partidos del quiz que se publica en el
+   * siguiente corte (ver openQuizWindow). Si no hay nada nuevo que importar, no se vuelve a mirar en 3 h.
+   */
+  private async importAhead(competitionId: string, code: string): Promise<void> {
+    if ((this.nextAheadAttempt.get(competitionId) ?? 0) > Date.now()) return;
+    const until = openQuizWindow(openQuizWindow(new Date()).start).end;
+    try {
+      if (!(await this.matchdays.ensureRoundsUntil(competitionId, until))) {
+        this.nextAheadAttempt.set(competitionId, Date.now() + 3 * 60 * 60 * 1000);
+      }
+    } catch (error) {
+      this.nextAheadAttempt.set(competitionId, Date.now() + 3 * 60 * 60 * 1000);
+      this.logger.error(`Error importando jornadas del quiz ${code}`, error);
     }
   }
 
@@ -74,7 +94,8 @@ export class QuizJobs implements OnApplicationBootstrap {
       where: {
         status: 'FINISHED',
         kickoff: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-        matchday: { quizEvent: { isNot: null } },
+        // Partidos de algun quiz: los de los mixtos (por sus preguntas) y los de las jornadas de los antiguos.
+        OR: [{ quizQuestions: { some: {} } }, { matchday: { quizEvent: { isNot: null } } }],
       },
       select: { externalId: true },
     });
@@ -88,6 +109,8 @@ export class QuizJobs implements OnApplicationBootstrap {
             kickoff: fixture.kickoff,
             homeScore: fixture.homeGoals,
             awayScore: fixture.awayGoals,
+            htHomeScore: fixture.htHomeGoals ?? null,
+            htAwayScore: fixture.htAwayGoals ?? null,
             result: computeMatchResult(fixture.homeGoals, fixture.awayGoals),
           },
         });

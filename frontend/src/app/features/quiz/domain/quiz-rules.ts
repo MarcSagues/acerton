@@ -1,11 +1,12 @@
 import {
-  QuizCompetition,
   QuizErrorCode,
+  QuizIdentity,
   QuizMatch,
   QuizOptionCode,
   QuizQuestion,
   QuizQuestionType,
   QuizSummary,
+  QuizWindow,
 } from '../../../core/models/quiz.model';
 import { TranslationKey, t } from '../../../core/i18n/translate';
 
@@ -30,40 +31,6 @@ export function clockOffsetMs(serverNow: string | null | undefined, deviceNowMs:
 export function isPastClose(closesAt: string, nowMs: number): boolean {
   const close = Date.parse(closesAt);
   return Number.isFinite(close) && nowMs >= close;
-}
-
-/** Por debajo de esto, la pestaña de la liga lleva un reloj: la jornada cierra en nada. */
-export const CLOSING_SOON_MS = 24 * 60 * 60 * 1000;
-
-/** true si la jornada sigue abierta (segun la hora corregida) y cierra en menos de 24 h. */
-export function closesSoon(quiz: QuizSummary, nowMs: number): boolean {
-  if (quiz.status !== 'OPEN') return false;
-  const close = Date.parse(quiz.closesAt);
-  return Number.isFinite(close) && close > nowMs && close - nowMs < CLOSING_SOON_MS;
-}
-
-/**
- * Ligas ordenadas de la que cierra antes a la que cierra mas tarde. Cuenta la
- * jornada abierta o programada de cada liga que cierra antes y aun no ha
- * cerrado; las ligas sin ninguna van al final, en el orden que mando el servidor.
- */
-export function sortCompetitionsByClose(
-  competitions: readonly QuizCompetition[],
-  quizzes: readonly QuizSummary[],
-  nowMs: number,
-): QuizCompetition[] {
-  const nextClose = new Map<string, number>();
-  for (const quiz of quizzes) {
-    if (quiz.status !== 'OPEN' && quiz.status !== 'SCHEDULED') continue;
-    const close = Date.parse(quiz.closesAt);
-    if (!Number.isFinite(close) || close <= nowMs) continue;
-    const known = nextClose.get(quiz.competition.id);
-    if (known === undefined || close < known) nextClose.set(quiz.competition.id, close);
-  }
-  return competitions
-    .map((competition, index) => ({ competition, index, close: nextClose.get(competition.id) ?? Infinity }))
-    .sort((a, b) => a.close - b.close || a.index - b.index)
-    .map((entry) => entry.competition);
 }
 
 /** true si la jornada esta abierta, no ha cerrado y el usuario aun no la ha terminado: lleva el punto rojo. */
@@ -100,19 +67,34 @@ export function quizActionLabel(action: QuizAction): string {
 }
 
 /**
- * Las jornadas de una competicion que se ensenan en el centro: la principal
- * (una abierta si la hay; si no, la mas reciente) y, aparte, una anterior en la
- * que el usuario participo y que sigue mereciendo un acceso para revisarla.
+ * Los quizzes que se ensenan en el centro: el principal (el abierto que cierra antes; si no hay, el ultimo cerrado),
+ * los demas abiertos (casi nunca hay dos a la vez) y, aparte, el ultimo cerrado en el que el usuario participo.
  */
-export function pickCompetitionQuizzes(quizzes: readonly QuizSummary[]): {
+export function pickHubQuizzes(quizzes: readonly QuizSummary[]): {
   primary: QuizSummary | null;
+  others: QuizSummary[];
   previous: QuizSummary | null;
 } {
-  if (quizzes.length === 0) return { primary: null, previous: null };
-  const byRecency = [...quizzes].sort((a, b) => b.matchdayOrder - a.matchdayOrder || b.closesAt.localeCompare(a.closesAt));
-  const primary = byRecency.find((q) => q.status === 'OPEN') ?? byRecency[0];
-  const previous = byRecency.find((q) => q.id !== primary.id && q.participation !== null) ?? null;
-  return { primary, previous };
+  const open = quizzes
+    .filter((q) => q.status === 'OPEN' || q.status === 'SCHEDULED')
+    .sort((a, b) => a.closesAt.localeCompare(b.closesAt));
+  const closed = quizzes
+    .filter((q) => q.status === 'CLOSED' || q.status === 'FINISHED')
+    .sort((a, b) => b.closesAt.localeCompare(a.closesAt));
+  const primary = open[0] ?? closed[0] ?? null;
+  const previous = closed.find((q) => q.id !== primary?.id && q.participation !== null) ?? null;
+  return { primary, others: open.slice(1), previous };
+}
+
+/** Titulo de un quiz: "Quiz de ligas" / "Quiz de Champions" si es mixto; "Jornada N" si es de los antiguos. */
+export function quizTitle(quiz: Pick<QuizIdentity, 'kind' | 'window' | 'matchdayOrder'>): string {
+  if (quiz.kind !== 'MIXED') return t('quiz.jornadaN', { order: quiz.matchdayOrder });
+  return quiz.window?.kind === 'MIDWEEK' ? t('quiz.quizChampions') : t('quiz.quizLigas');
+}
+
+/** Dias de los partidos de un quiz mixto (el primero y el ultimo), para pintarlos con el pipe de fecha. */
+export function windowDays(window: QuizWindow): { from: string; to: string } {
+  return { from: window.firstKickoff, to: window.lastKickoff };
 }
 
 export function quizStatusLabel(quiz: QuizSummary): string {
@@ -144,6 +126,14 @@ const QUESTION_KEYS: Record<QuizQuestionType, { key: TranslationKey; team?: 'hom
   HOME_TWO_PLUS: { key: 'quiz.preguntaDosOMas', team: 'home' },
   AWAY_TWO_PLUS: { key: 'quiz.preguntaDosOMas', team: 'away' },
   WIN_BY_TWO_PLUS: { key: 'quiz.preguntaGanaPorDos' },
+  HALF_TIME_RESULT: { key: 'quiz.preguntaDescanso' },
+  FIRST_HALF_GOAL: { key: 'quiz.preguntaGolPrimeraParte' },
+  SECOND_HALF_MORE_GOALS: { key: 'quiz.preguntaMasGolesSegunda' },
+  GOAL_BOTH_HALVES: { key: 'quiz.preguntaGolDosPartes' },
+  COMEBACK: { key: 'quiz.preguntaRemontada' },
+  DRAW: { key: 'quiz.preguntaEmpate' },
+  TOTAL_GOALS: { key: 'quiz.preguntaTotalGoles' },
+  ODD_GOALS: { key: 'quiz.preguntaGolesImpar' },
 };
 
 /** Texto de la pregunta a partir de su tipo (un tipo que la app todavia no conoce sale con un texto generico). */
@@ -166,6 +156,12 @@ export function optionLabel(option: QuizOptionCode, match: QuizMatch): string {
       return t('quiz.opcionSi');
     case 'NO':
       return t('quiz.opcionNo');
+    case 'GOALS_0_1':
+      return t('quiz.opcionGoles01');
+    case 'GOALS_2_3':
+      return t('quiz.opcionGoles23');
+    case 'GOALS_4_PLUS':
+      return t('quiz.opcionGoles4');
     default:
       return String(option);
   }

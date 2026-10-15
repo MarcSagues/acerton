@@ -16,15 +16,25 @@ export type QuizQuestionType =
   | 'AWAY_CLEAN_SHEET'
   | 'HOME_TWO_PLUS'
   | 'AWAY_TWO_PLUS'
-  | 'WIN_BY_TWO_PLUS';
+  | 'WIN_BY_TWO_PLUS'
+  | 'HALF_TIME_RESULT'
+  | 'FIRST_HALF_GOAL'
+  | 'SECOND_HALF_MORE_GOALS'
+  | 'GOAL_BOTH_HALVES'
+  | 'COMEBACK'
+  | 'DRAW'
+  | 'TOTAL_GOALS'
+  | 'ODD_GOALS';
 
-export type QuizOptionCode = 'HOME' | 'DRAW' | 'AWAY' | 'YES' | 'NO';
+/** GOALS_*: opciones de TOTAL_GOALS (0-1, 2-3, 4 o mas). */
+export type QuizOptionCode = 'HOME' | 'DRAW' | 'AWAY' | 'YES' | 'NO' | 'GOALS_0_1' | 'GOALS_2_3' | 'GOALS_4_PLUS';
 
 export type QuizResolution = 'PENDING' | 'RESOLVED' | 'VOID';
 
 export interface QuizCompetition {
   id: string;
-  code: CompetitionCode;
+  /** 'MIXED' en el `competition` de un quiz mixto (solo para apps anteriores: ver QuizSummary.kind). */
+  code: CompetitionCode | 'MIXED';
   name: string;
   logoUrl: string | null;
 }
@@ -37,12 +47,40 @@ export interface QuizParticipation {
   voidCount: number;
 }
 
-export interface QuizSummary {
-  id: string;
+/**
+ * MIXED: quiz de 20 preguntas con fechas fijas (hora de Madrid): el de ligas se juega de martes a viernes a las 18:00
+ * con los partidos de liga del fin de semana; el de Champions, de viernes a martes con los de Champions de esa semana.
+ * MATCHDAY: los antiguos, de una liga y jornada.
+ */
+export type QuizKind = 'MIXED' | 'MATCHDAY';
+
+export interface QuizWindow {
+  /** WEEKEND: quiz de ligas. MIDWEEK: quiz de Champions. */
+  kind: 'WEEKEND' | 'MIDWEEK';
+  /** Limites de sus partidos: empiezan al cerrar el quiz (`start`) y acaban en el corte siguiente. */
+  start: string;
+  end: string;
+  /** Primer y ultimo partido de sus preguntas. */
+  firstKickoff: string;
+  lastKickoff: string;
+}
+
+/** Lo que identifica un quiz: su tipo, su ventana o su liga y jornada, y las ligas de sus preguntas. */
+export interface QuizIdentity {
+  kind: QuizKind;
+  window: QuizWindow | null;
+  /** La liga en un quiz antiguo; en uno mixto, un comodin para apps anteriores (usar `competitions`). */
   competition: QuizCompetition;
-  matchdayId: string;
+  /** Ligas de las preguntas, en el orden en que salen. */
+  competitions: QuizCompetition[];
+  /** Jornada en un quiz antiguo; numero de quiz mixto en la temporada en uno mixto. */
   matchdayOrder: number;
   matchdayName: string;
+}
+
+export interface QuizSummary extends QuizIdentity {
+  id: string;
+  matchdayId: string;
   /** "2026/27". */
   seasonLabel: string;
   status: QuizStatus;
@@ -73,6 +111,8 @@ export interface QuizQuestion {
   order: number;
   type: QuizQuestionType;
   match: QuizMatch;
+  /** Liga del partido de la pregunta. */
+  competition: QuizCompetition;
   options: QuizOptionCode[];
   selectedOption: QuizOptionCode | null;
   resolution: QuizResolution;
@@ -81,12 +121,9 @@ export interface QuizQuestion {
 }
 
 /** Un quiz ya cerrado de un jugador, con las preguntas que respondio (ver QuizService.history en el backend). */
-export interface QuizHistoryEntry {
+export interface QuizHistoryEntry extends QuizIdentity {
   quizId: string;
-  competition: QuizCompetition;
   seasonLabel: string;
-  matchdayOrder: number;
-  matchdayName: string;
   closesAt: string;
   status: QuizStatus;
   completedAt: string | null;
@@ -118,6 +155,9 @@ export interface QuizDetail {
 export interface QuizOverview {
   serverNow: string;
   competitions: QuizCompetition[];
+  /** Los quizzes abiertos (del que cierra antes al que mas tarda) y el ultimo mixto ya cerrado. */
+  events: QuizSummary[];
+  /** Lo mismo para apps anteriores al quiz mixto: el mixto repetido en cada liga. No usar. */
   quizzes: QuizSummary[];
 }
 
@@ -133,10 +173,14 @@ export interface QuizRankingRow {
   quizzesPlayed: number;
 }
 
+/** Clasificacion de los quizzes de ligas o de los de Champions (competiciones europeas); null = la general. */
+export type QuizRankingScope = 'LEAGUES' | 'CHAMPIONS';
+
 export interface QuizRanking {
   seasonLabel: string;
-  /** null = clasificacion general (todas las ligas). */
+  /** Solo para apps anteriores (filtro por una liga). */
   competitionId: string | null;
+  scope?: QuizRankingScope | null;
   provisional: boolean;
   rows: QuizRankingRow[];
   me: QuizRankingRow | null;
@@ -145,6 +189,7 @@ export interface QuizRanking {
 }
 
 export interface QuizRankingQuery {
+  scope?: QuizRankingScope | null;
   competitionId?: string | null;
   seasonLabel?: string | null;
   cursor?: string | null;

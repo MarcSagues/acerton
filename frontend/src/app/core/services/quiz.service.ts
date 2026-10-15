@@ -76,6 +76,7 @@ export class QuizService {
 
   getRanking(query: QuizRankingQuery = {}) {
     let params = new HttpParams();
+    if (query.scope) params = params.set('scope', query.scope);
     if (query.competitionId) params = params.set('competitionId', query.competitionId);
     if (query.seasonLabel) params = params.set('seasonLabel', query.seasonLabel);
     if (query.cursor) params = params.set('cursor', query.cursor);

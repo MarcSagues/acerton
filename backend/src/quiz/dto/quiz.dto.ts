@@ -4,6 +4,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -27,7 +28,7 @@ export class QuizAnswerDto {
 export class SaveQuizAnswersDto {
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(20)
   @ValidateNested({ each: true })
   @Type(() => QuizAnswerDto)
   answers!: QuizAnswerDto[];
@@ -38,6 +39,11 @@ export class QuizRankingQueryDto {
   @IsString()
   @MaxLength(191)
   competitionId?: string;
+
+  /** Clasificacion de los quizzes de ligas o de los de Champions (competiciones europeas); sin el, la general. */
+  @IsOptional()
+  @IsIn(['LEAGUES', 'CHAMPIONS'])
+  scope?: 'LEAGUES' | 'CHAMPIONS';
 
   @IsOptional()
   @Matches(/^\d{4}\/\d{2}$/)

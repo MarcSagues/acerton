@@ -1,4 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, OnInit, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { SpinnerComponent } from '../../../shared/ui/spinner/spinner.component';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state/empty-state.component';
 import { AvatarComponent } from '../../../shared/ui/avatar/avatar.component';
@@ -10,7 +11,7 @@ import { QuizHistoryFacade } from './quiz-history.facade';
 @Component({
   selector: 'app-quiz-history',
   standalone: true,
-  imports: [SpinnerComponent, EmptyStateComponent, AvatarComponent, TeamFlagComponent, TranslatePipe],
+  imports: [DatePipe, SpinnerComponent, EmptyStateComponent, AvatarComponent, TeamFlagComponent, TranslatePipe],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [QuizHistoryFacade],
   templateUrl: './quiz-history.component.html',

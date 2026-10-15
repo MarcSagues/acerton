@@ -12,6 +12,7 @@ const match = {
   status: 'FINISHED',
   homeScore: 2,
   awayScore: 1,
+  matchday: { competition: { id: 'c1', code: 'LA_LIGA', name: 'La Liga', logoUrl: null } },
 };
 
 function question(id: string, order: number, resolution: string, correctOption: string | null) {
@@ -40,7 +41,18 @@ function participation() {
       status: 'FINISHED',
       closesAt: new Date('2026-10-10T17:00:00Z'),
       lockedAt: new Date('2026-10-10T17:00:00Z'),
-      matchday: { order: 7, name: 'Jornada 7', competition: { id: 'c1', name: 'La Liga' } },
+      matchdayId: 'md7',
+      windowKey: null,
+      windowKind: null,
+      windowStart: null,
+      windowEnd: null,
+      number: null,
+      matchday: {
+        order: 7,
+        name: 'Jornada 7',
+        competition: { id: 'c1', code: 'LA_LIGA', name: 'La Liga', logoUrl: null },
+        matches: [match],
+      },
       questions: [
         question('q1', 1, 'RESOLVED', 'HOME'),
         question('q2', 2, 'RESOLVED', 'NO'),
@@ -91,7 +103,10 @@ describe('QuizService.history', () => {
         questionCount: 3,
       }),
     );
-    expect(quiz.competition).toEqual({ id: 'c1', name: 'La Liga' });
+    expect(quiz.competition).toEqual({ id: 'c1', code: 'LA_LIGA', name: 'La Liga', logoUrl: null });
+    expect(quiz.kind).toBe('MATCHDAY');
+    expect(quiz.competitions.map((c) => c.id)).toEqual(['c1']);
+    expect(quiz.questions[0].competition.name).toBe('La Liga');
     expect(quiz.questions.map((q) => q.id)).toEqual(['q1', 'q2']);
     // Acierto y fallo: la respuesta, la correcta y los puntos.
     expect(quiz.questions[0]).toEqual(

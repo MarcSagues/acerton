@@ -77,7 +77,13 @@
                 (click)="page.toggle(quiz.quizId)"
               >
                 <span class="quiz-title">
-                  <span class="quiz-name">{{ quiz.competition.name }} · {{ 'rankingsPage.jornadaN' | t: { order: quiz.matchdayOrder } }}</span>
+                  <span class="quiz-name">
+                    @if (quiz.kind === 'MIXED') {
+                      {{ page.title(quiz) }} · {{ quiz.closesAt | date: 'd MMM' }}
+                    } @else {
+                      {{ quiz.competition.name }} · {{ 'rankingsPage.jornadaN' | t: { order: quiz.matchdayOrder } }}
+                    }
+                  </span>
                   <span class="quiz-sub mono">
                     {{ quiz.seasonLabel }} · {{ 'quizHistory.aciertosDe' | t: { hits: stats.hits, total: quiz.questions.length } }}
                   </span>

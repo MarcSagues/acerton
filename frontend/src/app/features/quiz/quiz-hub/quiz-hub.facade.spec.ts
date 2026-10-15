@@ -5,8 +5,8 @@ import { Router } from '@angular/router';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/ui/toast/toast.service';
-import { LALIGA, PREMIER, overview, quizDetail, quizSummary, ranking, rankingRow } from '../testing/quiz.fixtures';
-import { QUIZ_COMPETITION_STORAGE_KEY, QuizHubFacade } from './quiz-hub.facade';
+import { PREMIER, mixedSummary, overview, quizDetail, quizSummary, ranking, rankingRow } from '../testing/quiz.fixtures';
+import { QuizHubFacade } from './quiz-hub.facade';
 
 const API = `${environment.apiUrl}/quiz`;
 
@@ -16,7 +16,6 @@ describe('QuizHubFacade', () => {
   let toast: { show: jasmine.Spy };
 
   function setup(): QuizHubFacade {
-    localStorage.removeItem(QUIZ_COMPETITION_STORAGE_KEY);
     router = { navigate: jasmine.createSpy('navigate') };
     toast = { show: jasmine.createSpy('show') };
     TestBed.configureTestingModule({
@@ -33,10 +32,8 @@ describe('QuizHubFacade', () => {
     return TestBed.inject(QuizHubFacade);
   }
 
-  const rankingReq = (competitionId: string | null = null): TestRequest =>
-    http.expectOne(
-      (req) => req.url === `${API}/rankings` && (req.params.get('competitionId') ?? null) === competitionId,
-    );
+  const rankingReq = (scope: string | null = null): TestRequest =>
+    http.expectOne((req) => req.url === `${API}/rankings` && (req.params.get('scope') ?? null) === scope);
 
   afterEach(() => {
     http.verify();
@@ -54,26 +51,50 @@ describe('QuizHubFacade', () => {
     req.flush(ranking());
 
     expect(facade.overviewState()).toBe('ready');
-    expect(facade.selectedCompetitionId()).toBe(LALIGA.id); // la que tiene jornada abierta
     expect(facade.primaryQuiz()?.id).toBe('q1');
     expect(facade.rankingState()).toBe('ready');
     expect(facade.rankingRows().length).toBe(1);
   });
 
-  it('el selector de juego y el filtro de la clasificacion son independientes', () => {
+  it('ensena el quiz mixto abierto que cierra antes, los demas abiertos aparte y el ultimo cerrado jugado', () => {
     const facade = setup();
     facade.init();
-    http.expectOne(`${API}/overview`).flush(overview());
+    const weekend = mixedSummary({ closesAt: '2026-10-16T18:00:00.000Z' });
+    const midweek = mixedSummary({
+      id: 'mx2',
+      window: { kind: 'MIDWEEK', start: '2026-10-19T22:00:00.000Z', end: '2026-10-22T22:00:00.000Z', firstKickoff: '2026-10-19T22:00:00.000Z', lastKickoff: '2026-10-22T22:00:00.000Z' },
+      closesAt: '2026-10-20T16:45:00.000Z',
+    });
+    const played = mixedSummary({
+      id: 'mx0',
+      status: 'FINISHED',
+      closesAt: '2026-10-13T16:45:00.000Z',
+      participation: { answeredCount: 20, completedAt: '2026-10-13T10:00:00.000Z', points: 12, resolvedCount: 20, voidCount: 0 },
+    });
+    // `quizzes` es lo de las apps anteriores (el mixto en cada liga): la app nueva usa `events`.
+    http
+      .expectOne(`${API}/overview`)
+      .flush(overview({ events: [midweek, played, weekend], quizzes: [weekend, { ...weekend, competition: PREMIER }] }));
     rankingReq(null).flush(ranking());
 
-    facade.selectCompetition(PREMIER.id);
-    http.expectNone(`${API}/rankings`);
-    expect(facade.rankingCompetitionId()).toBeNull();
-    expect(facade.primaryQuiz()?.id).toBe('q2');
+    expect(facade.primaryQuiz()?.id).toBe('mx1');
+    expect(facade.otherQuizzes().map((q) => q.id)).toEqual(['mx2']);
+    expect(facade.previousQuiz()?.id).toBe('mx0');
+    expect(facade.title(weekend)).toBe('Quiz de ligas');
+    expect(facade.title(midweek)).toBe('Quiz de Champions');
+    expect(facade.days(weekend)).toEqual({ from: '2026-10-16T18:30:00.000Z', to: '2026-10-19T19:00:00.000Z' });
+    expect(facade.days(quizSummary())).toBeNull();
+  });
 
-    facade.setRankingCompetition(LALIGA.id);
-    rankingReq(LALIGA.id).flush(ranking({ competitionId: LALIGA.id }));
-    expect(facade.selectedCompetitionId()).toBe(PREMIER.id);
+  it('el filtro de la clasificacion (ligas / Champions) no cambia el quiz que se juega', () => {
+    const facade = setup();
+    facade.init();
+    http.expectOne(`${API}/overview`).flush(overview({ events: [mixedSummary()] }));
+    rankingReq(null).flush(ranking());
+
+    facade.setRankingScope('LEAGUES');
+    rankingReq('LEAGUES').flush(ranking({ scope: 'LEAGUES' }));
+    expect(facade.primaryQuiz()?.id).toBe('mx1');
   });
 
   it('descarta la respuesta tardia de un filtro anterior de la clasificacion', () => {
@@ -82,10 +103,10 @@ describe('QuizHubFacade', () => {
     http.expectOne(`${API}/overview`).flush(overview());
     rankingReq(null).flush(ranking());
 
-    facade.setRankingCompetition(LALIGA.id);
-    const slow = rankingReq(LALIGA.id);
-    facade.setRankingCompetition(PREMIER.id);
-    rankingReq(PREMIER.id).flush(ranking({ rows: [rankingRow({ userId: 'premier', name: 'Premier' })] }));
+    facade.setRankingScope('LEAGUES');
+    const slow = rankingReq('LEAGUES');
+    facade.setRankingScope('CHAMPIONS');
+    rankingReq('CHAMPIONS').flush(ranking({ rows: [rankingRow({ userId: 'premier', name: 'Premier' })] }));
     slow.flush(ranking({ rows: [rankingRow({ userId: 'laliga', name: 'LaLiga' })] }));
 
     expect(facade.rankingRows().map((r) => r.userId)).toEqual(['premier']);
@@ -250,12 +271,12 @@ describe('QuizHubFacade', () => {
     expect(facade.rankingState()).toBe('ready');
     expect(facade.rankingRows()).toEqual([]);
 
-    facade.setRankingCompetition(LALIGA.id);
-    rankingReq(LALIGA.id).error(new ProgressEvent('error'), { status: 0 });
+    facade.setRankingScope('LEAGUES');
+    rankingReq('LEAGUES').error(new ProgressEvent('error'), { status: 0 });
     expect(facade.rankingState()).toBe('offline');
 
     facade.retryRanking();
-    rankingReq(LALIGA.id).flush('boom', { status: 500, statusText: 'Server Error' });
+    rankingReq('LEAGUES').flush('boom', { status: 500, statusText: 'Server Error' });
     expect(facade.rankingState()).toBe('error');
   });
 

@@ -91,35 +91,6 @@ h1 {
   }
 }
 
-/* Reloj (cierra en menos de 24 h) y punto rojo (por hacer), arriba a la derecha de la pestaña. */
-.pill-marks {
-  position: absolute;
-  top: -6px;
-  right: -4px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.pending-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--p4-error);
-  box-shadow: 0 0 0 2px var(--p4-bg);
-}
-
-.closing-soon {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--p4-warning-bg);
-  color: var(--p4-warning);
-  box-shadow: 0 0 0 2px var(--p4-bg);
-}
-
 .quiz-card {
   margin: 14px 20px 0;
   padding: 16px;
@@ -178,6 +149,27 @@ h1 {
     color: var(--p4-info);
     background: var(--p4-info-bg);
   }
+}
+
+/* Ligas que entran en el quiz mixto. */
+.leagues {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.league {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--p4-radius-pill);
+  background: var(--p4-glass);
+  font: 500 11px/1 var(--p4-font-ui);
+  color: var(--p4-muted);
 }
 
 .meta {

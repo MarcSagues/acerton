@@ -8,72 +8,56 @@ const COMPETITIONS = [
   { id: 'c2', code: 'PREMIER_LEAGUE', name: 'Premier League', logoUrl: null, currentSeason: 2026 },
 ];
 
-/** Quizzes ligeros de la temporada: por liga, uno abierto (el siguiente) y uno ya cerrado (el anterior). */
+/** Quizzes mixtos ligeros: dos abiertos y dos ya cerrados. */
 const LIGHT_EVENTS = [
-  {
-    id: 'c1-open',
-    status: 'OPEN',
-    closesAt: new Date(NOW + HOUR),
-    matchday: { competitionId: 'c1' },
-  },
-  {
-    id: 'c1-done',
-    status: 'FINISHED',
-    closesAt: new Date(NOW - 48 * HOUR),
-    matchday: { competitionId: 'c1' },
-  },
-  {
-    id: 'c2-open',
-    status: 'OPEN',
-    closesAt: new Date(NOW + 2 * HOUR),
-    matchday: { competitionId: 'c2' },
-  },
-  {
-    id: 'c2-old',
-    status: 'FINISHED',
-    closesAt: new Date(NOW - 96 * HOUR),
-    matchday: { competitionId: 'c2' },
-  },
-  {
-    id: 'c2-done',
-    status: 'CLOSED',
-    closesAt: new Date(NOW - 24 * HOUR),
-    matchday: { competitionId: 'c2' },
-  },
+  { id: 'mixed-open', status: 'OPEN', closesAt: new Date(NOW + 2 * HOUR), windowKey: 'w3' },
+  { id: 'mixed-old', status: 'FINISHED', closesAt: new Date(NOW - 96 * HOUR), windowKey: 'w1' },
+  { id: 'mixed-done', status: 'CLOSED', closesAt: new Date(NOW - 24 * HOUR), windowKey: 'w2' },
+  { id: 'mixed-soon', status: 'OPEN', closesAt: new Date(NOW + HOUR), windowKey: 'w4' },
 ];
 
-function fullEvent(id: string, competition: (typeof COMPETITIONS)[number]) {
+function fullEvent(id: string) {
+  const mixed = id.startsWith('mixed');
+  const match = (competition: (typeof COMPETITIONS)[number], n: number) => ({
+    id: `${id}-m${n}`,
+    kickoff: new Date(NOW + HOUR),
+    status: 'SCHEDULED',
+    matchday: { competition },
+  });
+  const matches = mixed
+    ? [match(COMPETITIONS[1], 1), match(COMPETITIONS[0], 2)]
+    : [match(COMPETITIONS[0], 1)];
   return {
     id,
-    matchdayId: `md-${id}`,
+    matchdayId: mixed ? null : `md-${id}`,
+    windowKey: mixed ? '2026-10-16-WEEKEND' : null,
+    windowKind: mixed ? 'WEEKEND' : null,
+    windowStart: mixed ? new Date('2026-10-15T22:00:00Z') : null,
+    windowEnd: mixed ? new Date('2026-10-19T22:00:00Z') : null,
+    number: mixed ? 3 : null,
     seasonLabel: '2026/27',
     status: 'OPEN',
     closesAt: new Date(NOW + HOUR),
     lockedAt: null,
-    matchday: {
-      order: 7,
-      name: 'Jornada 7',
-      competition,
-      matches: [{ id: 'm1', kickoff: new Date(NOW + HOUR), status: 'SCHEDULED' }],
-    },
-    questions: [{ id: `${id}-q1`, matchId: 'm1', resolution: 'PENDING' }],
+    matchday: mixed ? null : { order: 7, name: 'Jornada 7', competition: COMPETITIONS[0], matches },
+    questions: matches.map((m, i) => ({
+      id: `${id}-q${i}`,
+      matchId: m.id,
+      resolution: 'PENDING',
+      match: m,
+    })),
   };
 }
 
 function build() {
   const prisma = {
     competition: { findMany: jest.fn().mockResolvedValue(COMPETITIONS) },
-    matchday: { findMany: jest.fn().mockResolvedValue([]) },
+    match: { findMany: jest.fn().mockResolvedValue([]) },
     quizEvent: {
+      findFirst: jest.fn().mockResolvedValue(null),
       findMany: jest.fn(
         ({ include, where }: { include?: unknown; where: { id?: { in: string[] } } }) =>
-          Promise.resolve(
-            include
-              ? (where.id?.in ?? []).map((id) =>
-                  fullEvent(id, id.startsWith('c1') ? COMPETITIONS[0] : COMPETITIONS[1]),
-                )
-              : LIGHT_EVENTS,
-          ),
+          Promise.resolve(include ? (where.id?.in ?? []).map(fullEvent) : LIGHT_EVENTS),
       ),
     },
     quizParticipation: { findMany: jest.fn().mockResolvedValue([]) },
@@ -100,34 +84,76 @@ describe('QuizService.overview — rendimiento', () => {
     expect(result.competitions.map((c) => c.id)).toEqual(['c1', 'c2']);
   });
 
-  it('por liga elige el siguiente abierto y el ultimo cerrado', async () => {
+  it('elige los abiertos, del que cierra antes al que mas tarda, y el ultimo mixto cerrado', async () => {
     const { service } = build();
 
     const result = await service.overview('u1');
 
-    expect(result.quizzes.map((q) => q.id)).toEqual(['c1-open', 'c1-done', 'c2-open', 'c2-done']);
+    expect(result.events.map((q) => q.id)).toEqual(['mixed-soon', 'mixed-open', 'mixed-done']);
+    const mixed = result.events.find((q) => q.id === 'mixed-open')!;
+    expect(mixed).toEqual(
+      expect.objectContaining({
+        kind: 'MIXED',
+        matchdayOrder: 3,
+        window: {
+          kind: 'WEEKEND',
+          start: '2026-10-15T22:00:00.000Z',
+          end: '2026-10-19T22:00:00.000Z',
+          firstKickoff: new Date(NOW + HOUR).toISOString(),
+          lastKickoff: new Date(NOW + HOUR).toISOString(),
+        },
+      }),
+    );
+    expect(mixed.competitions.map((c) => c.id)).toEqual(['c2', 'c1']);
+  });
+
+  it('solo pide quizzes mixtos: los antiguos por liga y jornada ya no se ofrecen', async () => {
+    const { prisma, service } = build();
+
+    await service.overview('u1');
+
+    expect(prisma.quizEvent.findMany.mock.calls[0][0].where).toEqual({
+      windowKey: { not: null },
+      seasonLabel: { in: ['2026/27'] },
+    });
+  });
+
+  it('para las apps anteriores repite el quiz mixto en cada liga', async () => {
+    const { service } = build();
+
+    const result = await service.overview('u1');
+
+    expect(result.quizzes.map((q) => `${q.id}@${q.competition.id}`)).toEqual([
+      'mixed-soon@c1',
+      'mixed-soon@c2',
+      'mixed-open@c1',
+      'mixed-open@c2',
+      'mixed-done@c1',
+      'mixed-done@c2',
+    ]);
   });
 
   it('refresca los quizzes sin cerrar, y no vuelve a hacerlo hasta que pasa el tiempo', async () => {
     const { service, refresh } = build();
 
     await service.overview('u1');
-    expect(refresh.mock.calls.map((c) => c[0]).sort()).toEqual(['c1-open', 'c2-open']);
+    expect(refresh.mock.calls.map((c) => c[0]).sort()).toEqual(['mixed-open', 'mixed-soon']);
 
     refresh.mockClear();
     await service.overview('u1');
     expect(refresh).not.toHaveBeenCalled(); // dentro del tope: el cron de cada minuto ya los mantiene al dia
   });
 
-  it('publicar rondas y pedir las ligas se hace una vez, no en cada apertura', async () => {
+  it('publicar y pedir las ligas se hace una vez, no en cada apertura', async () => {
     const { prisma, service } = build();
+    const publish = jest.spyOn(service, 'publishAvailable');
 
     await service.overview('u1');
     await service.overview('u1');
     await service.overview('u1');
 
     expect(prisma.competition.findMany).toHaveBeenCalledTimes(1);
-    expect(prisma.matchday.findMany).toHaveBeenCalledTimes(COMPETITIONS.length); // una sola publicacion, una consulta por liga
+    expect(publish).toHaveBeenCalledTimes(1);
   });
 
   it('las aperturas a la vez comparten el mismo refresco en vez de lanzar una transaccion cada una', async () => {
@@ -135,7 +161,7 @@ describe('QuizService.overview — rendimiento', () => {
 
     await Promise.all([service.overview('u1'), service.overview('u2'), service.overview('u3')]);
 
-    expect(refresh.mock.calls.filter((c) => c[0] === 'c1-open')).toHaveLength(1);
+    expect(refresh.mock.calls.filter((c) => c[0] === 'mixed-soon')).toHaveLength(1);
   });
 
   it('sin ligas del Quiz devuelve el resumen vacio sin consultar quizzes', async () => {
@@ -145,6 +171,7 @@ describe('QuizService.overview — rendimiento', () => {
     const result = await service.overview('u1');
 
     expect(result.quizzes).toEqual([]);
+    expect(result.events).toEqual([]);
     expect(prisma.quizEvent.findMany).not.toHaveBeenCalled();
   });
 });

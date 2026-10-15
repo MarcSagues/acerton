@@ -20,7 +20,10 @@ export const PREMIER: QuizCompetition = { id: 'c-premier', code: 'PREMIER_LEAGUE
 export function quizSummary(overrides: Partial<QuizSummary> = {}): QuizSummary {
   return {
     id: 'q1',
+    kind: 'MATCHDAY',
+    window: null,
     competition: LALIGA,
+    competitions: [LALIGA],
     matchdayId: 'md9',
     matchdayOrder: 9,
     matchdayName: 'Jornada 9',
@@ -59,6 +62,7 @@ export function quizQuestion(overrides: Partial<QuizQuestion> = {}): QuizQuestio
     order: 1,
     type: 'WINNER',
     match: quizMatch(),
+    competition: LALIGA,
     options: ['HOME', 'DRAW', 'AWAY'],
     selectedOption: null,
     resolution: 'PENDING',
@@ -110,12 +114,32 @@ export function withAnswer(detail: QuizDetail, questionId: string, option: QuizQ
   };
 }
 
+/** Quiz mixto del fin de semana (todas las ligas). */
+export function mixedSummary(overrides: Partial<QuizSummary> = {}): QuizSummary {
+  return quizSummary({
+    id: 'mx1',
+    kind: 'MIXED',
+    window: { kind: 'WEEKEND', start: '2026-10-16T16:00:00.000Z', end: '2026-10-20T16:00:00.000Z', firstKickoff: '2026-10-16T18:30:00.000Z', lastKickoff: '2026-10-19T19:00:00.000Z' },
+    competition: { id: 'MIXED', code: 'MIXED', name: 'Piqo', logoUrl: null },
+    competitions: [LALIGA, PREMIER],
+    matchdayId: '',
+    matchdayOrder: 3,
+    matchdayName: '2026-10-16-WEEKEND',
+    questionCount: 20,
+    matchCount: 9,
+    ...overrides,
+  });
+}
+
+/** `events` sale de `quizzes` si no se da: los tests de antes solo daban `quizzes`. */
 export function overview(overrides: Partial<QuizOverview> = {}): QuizOverview {
+  const quizzes = overrides.quizzes ?? [quizSummary(), quizSummary({ id: 'q2', competition: PREMIER, status: 'SCHEDULED' })];
   return {
     serverNow: '2026-10-12T10:00:00.000Z',
     competitions: [LALIGA, PREMIER],
-    quizzes: [quizSummary(), quizSummary({ id: 'q2', competition: PREMIER, status: 'SCHEDULED' })],
     ...overrides,
+    quizzes,
+    events: overrides.events ?? quizzes,
   };
 }
 

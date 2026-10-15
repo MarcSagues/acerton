@@ -19,7 +19,10 @@ const pending = (id: string) => quizQuestion({ id, selectedOption: 'HOME', resol
 function entry(quizId: string, competition: typeof LALIGA, questions: ReturnType<typeof hit>[]): QuizHistoryEntry {
   return {
     quizId,
+    kind: 'MATCHDAY',
+    window: null,
     competition,
+    competitions: [competition],
     seasonLabel: '2026/27',
     matchdayOrder: 7,
     matchdayName: 'Jornada 7',
@@ -122,5 +125,24 @@ describe('QuizHistoryFacade', () => {
     expect(facade.isExpanded('e1')).toBeTrue();
     facade.toggle('e1');
     expect(facade.isExpanded('e1')).toBeFalse();
+  });
+
+  it('un quiz mixto sale en el filtro de cada liga de sus preguntas', () => {
+    const facade = setup();
+    const mixed: QuizHistoryEntry = {
+      ...entry('mx', LALIGA, [hit('m1')]),
+      kind: 'MIXED',
+      window: { kind: 'WEEKEND', start: '2026-10-16T16:00:00.000Z', end: '2026-10-20T16:00:00.000Z', firstKickoff: '2026-10-16T18:30:00.000Z', lastKickoff: '2026-10-19T19:00:00.000Z' },
+      competition: { id: 'MIXED', code: 'MIXED', name: 'Piqo', logoUrl: null },
+      competitions: [PREMIER, LALIGA],
+    };
+    load(facade, { quizzes: [mixed, entry('liga', LALIGA, [miss('l1')])] });
+
+    expect(facade.competitions().map((c) => c.id)).toEqual([PREMIER.id, LALIGA.id]);
+    facade.selectCompetition(PREMIER.id);
+    expect(facade.quizzes().map((q) => q.quizId)).toEqual(['mx']);
+    facade.selectCompetition(LALIGA.id);
+    expect(facade.quizzes().map((q) => q.quizId)).toEqual(['mx', 'liga']);
+    expect(facade.title(mixed)).toBe('Quiz de ligas');
   });
 });

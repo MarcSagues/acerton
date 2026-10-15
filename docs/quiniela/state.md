@@ -1,5 +1,80 @@
 # Estado actual
 
+## 2026-10-15 — Quiz a producción con los datos de los jugadores a cero (fuera de sprint)
+
+Petición del usuario: fusionar en dev y main, build de main y que en producción no aparezca nadie que hubiera jugado al Quiz.
+Sin acceso a la BD de producción (la lleva un compañero), el reseteo va como migración `20261015200000_reset_quiz_players`
+(solo en main; Render la aplica al desplegar): borra `quiz_answers` y `quiz_participations`; los quizzes, sus preguntas y las
+preferencias de avisos se conservan. Probada en MySQL local (2 participaciones y 10 respuestas a 0; quizzes intactos).
+
+## 2026-10-15 — Quiz: clasificación General / Ligas / Champions y respuestas que no se pierden (fuera de sprint)
+
+Dos peticiones del usuario. **Clasificación**: los filtros pasan de una pestaña por liga a **General / Ligas / Champions**.
+`GET quiz/rankings?scope=LEAGUES|CHAMPIONS`: suma solo las preguntas de partidos de liga o de competiciones europeas
+(`EUROPEAN_COMPETITIONS`: Champions y Conference); `competitionId` sigue valiendo para apps anteriores. **Respuestas**: ya se
+guardaban una a una y contaban sin pulsar Finalizar (puntos y clasificación salen de las respuestas, no de `completedAt`),
+pero la fila de envíos de la pantalla de juego se cortaba al salir (`takeUntilDestroyed`): una respuesta elegida justo antes de
+irse se perdía. Ahora la fila termina de enviarse aunque se cierre la pantalla. La tarjeta de un quiz a medias recuerda que las
+respuestas guardadas cuentan. **Verificado**: backend 107 tests de Quiz/Players (integración contra MySQL), frontend 263, y en
+local (filtros y peticiones `scope`).
+
+## 2026-10-15 — Quiz: preguntas más variadas (fuera de sprint)
+
+Petición del usuario: preguntas más divertidas y más fáciles de fallar, no solo quién gana y más de 2,5 goles.
+football-data.org (plan gratuito) solo da resultado final y **al descanso** (`score.halfTime`); goleadores, tarjetas, cuotas y
+estadísticas no. Se guarda el descanso en `matches.htHomeScore`/`htAwayScore` (migración `20261015180000_quiz_more_questions`,
+que también añade los tipos y las opciones `GOALS_0_1/2_3/4_PLUS`) desde `matchDataFromFixture` y `refreshRecentFinals`.
+8 tipos nuevos: resultado al descanso (1X2), gol en la 1ª parte, más goles en la 2ª, gol en las dos partes, remontada (gana quien
+perdía al descanso), empate, número de goles (0-1 / 2-3 / 4+) y goles impares. Medido: 324 de 324 partidos terminados de la temporada traen el descanso; los minutos de los goles,
+ninguno (plan gratuito). Si falta el descanso, la pregunta queda pendiente y solo se anula pasados 3 días (`HALF_TIME_WAIT_MS`);
+`refreshRecentFinals` ahora también repasa cada noche los partidos de los quizzes mixtos. Reparto (`generateMixedQuizQuestions`): a cada pregunta el tipo menos usado en el quiz que su partido no tenga, con
+`QUESTION_TYPES` intercalando clásicos y nuevos; un fin de semana típico sale con ~14 tipos distintos en 20 preguntas.
+Frontend: textos de las preguntas y opciones en 6 idiomas; línea en la 1.1.1. **Ojo**: la app 1.1.0 no conoce los tipos nuevos
+(sale «Elige una opción» y, en la de goles, el código de la opción): conviene publicar la 1.1.1 antes de llevarlo a producción.
+**Verificado**: backend 567 tests y los 7 de integración contra MySQL; frontend 262; en local (pantalla de juego con las nuevas).
+
+## 2026-10-15 — Quiz mixto con fechas fijas: de ligas y de Champions (fuera de sprint)
+
+Corrección del usuario sobre el quiz mixto de la entrada siguiente: no tenía sentido que la tarjeta dijera «16–19 oct» si se
+abría el 15 y cerraba el 17 (al empezar el primer partido). Pidió fechas fijas, un mínimo de 3 días abierto y que las
+preguntas sean de los partidos que se juegan después; y eligió **un quiz de ligas y otro de Champions (solo cuando la hay)**.
+Reglas (`openQuizWindow`, cortes los martes y viernes a las 18:00 de Madrid): **quiz de ligas** (`windowKind` WEEKEND) se
+juega de martes a viernes 18:00 con los partidos de liga de viernes 18:00 a martes 18:00; **quiz de Champions** (MIDWEEK) se
+juega de viernes a martes 18:00 con los de Champions de martes a viernes. Cierre fijo (`closesAt` = inicio de sus partidos);
+si un partido se adelanta y empieza antes, sus preguntas se anulan (`resolveMixedQuestion`). Sin partidos (semana sin
+Champions, parón), no hay quiz. Las jornadas de liga entre semana no entran en ningún quiz. `QuizJobs.importAhead` importa por
+adelantado (`MatchdaysService.ensureRoundsUntil`) las jornadas que necesitará el siguiente quiz; no abre pronósticos antes
+(`getOrders` lo sigue limitando). Un mixto antiguo que solape (el de dev de esta semana) evita publicar otro igual. API: la
+ventana trae `firstKickoff`/`lastKickoff`; la app titula «Quiz de ligas» / «Quiz de Champions» y pone «Partidos del X al Y».
+Sin migración nueva (mismos valores del enum). **Verificado**: backend 70 tests de Quiz (integración contra MySQL incluida),
+frontend 262. Línea de la 1.1.1 reescrita.
+
+## 2026-10-15 — Quiz mixto: 20 preguntas de todas las ligas (fuera de sprint)
+
+Petición del usuario: en vez de un quiz por liga y jornada (10 preguntas), **un único quiz de 20 preguntas** con los partidos
+más interesantes de todas las ligas mezcladas, sin reparto equitativo. Decisiones del usuario: **un quiz para el fin de semana
+(viernes a lunes) y otro entre semana (martes a jueves)**, hora de Madrid, cada uno se cierra al empezar el primero de *sus*
+partidos; y **más preguntas a los partidos grandes**. Reglas (`backend/src/quiz/quiz.rules.ts`, `planMixedQuiz`): el mejor partido
+de cada liga entra siempre (1 pregunta); luego cada partido pide 4 preguntas si se enfrentan dos grandes, 2 si juega un grande
+(o dos clubes de nivel, lista `NOTABLE`) y 1 si no, en orden de interés (Barça/Madrid/Liverpool primero, extra si se cruzan dos
+grandes, +1 Champions); si sobran preguntas, se reparten más a los elegidos (hasta 8 tipos por partido). Preguntas ordenadas
+por hora de inicio, las de un mismo partido juntas. Se publica la ventana actual y la siguiente dos días antes de que empiece
+(`publishableWindows`), con los partidos aún sin empezar ya importados; una vez publicado no cambia.
+**Esquema** (migración `20261015120000_mixed_quiz`): `quiz_events.matchdayId` pasa a opcional y se añaden `windowKey` (único),
+`windowKind`, `windowStart`, `windowEnd` y `number` (nº de quiz mixto de la temporada, sale como `matchdayOrder`). Los quizzes
+antiguos se conservan en la base y en el historial, pero el Quiz ya no los ofrece (decisión del usuario: solo los mixtos); se cierran solos. Ya no se publican nuevos por liga. **API**: `overview` devuelve `events`
+(abiertos del que cierra antes + último mixto cerrado) y, para las apps anteriores, `quizzes` con el mixto repetido en cada liga
+(con `competition` real) para que sus pestañas sigan funcionando. Cada resumen lleva `kind` (`MIXED`/`MATCHDAY`), `window` y
+`competitions`; cada pregunta, su `competition`. La clasificación por liga suma solo las preguntas de partidos de esa liga
+(sirve para antiguos y mixtos); la general, igual que antes. Avisos: «Quiz del fin de semana» / «Quiz de entre semana».
+**Frontend**: el centro del Quiz ya no tiene pestañas de liga para jugar (sí para filtrar la clasificación): tarjeta «Quiz del
+finde» / «Quiz entre semana» con los días y las ligas que entran, otros abiertos aparte y el último jugado; en cada pregunta sale
+su liga; el historial filtra por cualquier liga de las preguntas. Textos de intro, nota de la general y aviso actualizados en los
+6 idiomas. La 1.1.0 ya estaba aprobada en la App Store (TestFlight rechazó subir otra 1.1.0): versión **1.1.1** con su línea en el historial.
+**Verificado**: backend 542 tests (rules, rendimiento, historial, avisos) y los 7 de integración contra MySQL local; frontend
+tests (ver PR). **Necesita**: backend en main (Render aplica la migración) y portado a `dev` (migración a mano en Neon), build nueva.
+**Pendiente / NO verificado**: la ficha `docs/app-store/ficha-1.1.0.md` sigue con el texto anterior del Quiz.
+
 ## 2026-10-13 — Barra superior con más margen inferior sin selector de grupo (fuera de sprint)
 
 Petición del usuario. En las pantallas sin selector de grupo debajo (todas salvo Jornada y Tabla) la barra superior deja 14px

@@ -3,8 +3,8 @@ import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { QuizService } from '../../../core/services/quiz.service';
-import { QuizHistory, QuizHistoryEntry, QuizMatch, QuizQuestion } from '../../../core/models/quiz.model';
-import { optionLabel, outcomeLabel, questionOutcome, questionText, teamName, QuestionOutcome } from '../domain/quiz-rules';
+import { QuizCompetition, QuizHistory, QuizHistoryEntry, QuizMatch, QuizQuestion } from '../../../core/models/quiz.model';
+import { optionLabel, outcomeLabel, questionOutcome, questionText, quizTitle, teamName, QuestionOutcome } from '../domain/quiz-rules';
 
 export interface QuizHistoryTotals {
   quizzes: number;
@@ -35,12 +35,13 @@ export class QuizHistoryFacade {
   /** Las ligas en las que ha jugado, en el orden en que aparecen (de la mas reciente). */
   readonly competitions = computed(() => {
     const seen = new Map<string, string>();
-    for (const quiz of this.allQuizzes()) if (!seen.has(quiz.competition.id)) seen.set(quiz.competition.id, quiz.competition.name);
+    for (const quiz of this.allQuizzes())
+      for (const competition of leaguesOf(quiz)) if (!seen.has(competition.id)) seen.set(competition.id, competition.name);
     return [...seen].map(([id, name]) => ({ id, name }));
   });
   readonly quizzes = computed(() => {
     const filter = this.competitionFilter();
-    return filter ? this.allQuizzes().filter((quiz) => quiz.competition.id === filter) : this.allQuizzes();
+    return filter ? this.allQuizzes().filter((quiz) => leaguesOf(quiz).some((c) => c.id === filter)) : this.allQuizzes();
   });
 
   readonly totals = computed<QuizHistoryTotals>(() => {
@@ -115,6 +116,10 @@ export class QuizHistoryFacade {
     return questionText(question);
   }
 
+  title(quiz: QuizHistoryEntry): string {
+    return quizTitle(quiz);
+  }
+
   team(match: QuizMatch, side: 'home' | 'away'): string {
     return teamName(match, side);
   }
@@ -127,4 +132,9 @@ export class QuizHistoryFacade {
     if (window.history.length > 1) this.location.back();
     else void this.router.navigate(['/profile']);
   }
+}
+
+/** Ligas de un quiz: las de sus preguntas (un quiz mixto tiene varias); un servidor anterior solo manda `competition`. */
+function leaguesOf(quiz: QuizHistoryEntry): QuizCompetition[] {
+  return quiz.competitions?.length ? quiz.competitions : [quiz.competition];
 }

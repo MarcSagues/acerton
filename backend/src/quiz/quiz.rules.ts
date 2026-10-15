@@ -4,6 +4,7 @@ import {
   QuizOption,
   QuizQuestionType,
   QuizResolution,
+  QuizWindowKind,
 } from '@prisma/client';
 import { isKickoffTimeUnconfirmed } from '../matchdays/matchday.util';
 
@@ -64,6 +65,55 @@ const FEATURED = [
   'olympique de marseille',
   'marseille',
 ];
+/** Clubes de nivel: dan interes a un partido cuando no hay grandes (y dos de ellos ya son un buen partido). */
+const NOTABLE = [
+  'bayer 04 leverkusen',
+  'leverkusen',
+  'rb leipzig',
+  'vfb stuttgart',
+  'eintracht frankfurt',
+  'aston villa fc',
+  'aston villa',
+  'newcastle united fc',
+  'newcastle',
+  'as roma',
+  'roma',
+  'ss lazio',
+  'lazio',
+  'atalanta bc',
+  'atalanta',
+  'acf fiorentina',
+  'fiorentina',
+  'sevilla fc',
+  'sevilla',
+  'villarreal cf',
+  'villarreal',
+  'athletic club',
+  'athletic',
+  'real sociedad de futbol',
+  'real sociedad',
+  'real betis balompie',
+  'betis',
+  'as monaco fc',
+  'monaco',
+  'olympique lyonnais',
+  'lyon',
+  'lille osc',
+  'lille',
+  'sport lisboa e benfica',
+  'benfica',
+  'fc porto',
+  'porto',
+  'sporting clube de portugal',
+  'sporting cp',
+  'afc ajax',
+  'ajax',
+  'psv',
+  'feyenoord rotterdam',
+  'feyenoord',
+  'galatasaray sk',
+  'galatasaray',
+];
 
 function normalize(name: string): string {
   return name
@@ -79,59 +129,276 @@ function teamIn(match: Match, side: 'home' | 'away', aliases: string[]): boolean
   return names.some((name) => name !== null && aliases.includes(normalize(name)));
 }
 
-export function selectQuizMatches(matches: Match[]): Match[] {
-  const priority = (match: Match) => {
-    const required =
-      Number(teamIn(match, 'home', REQUIRED)) + Number(teamIn(match, 'away', REQUIRED));
-    const featured =
-      Number(teamIn(match, 'home', FEATURED)) + Number(teamIn(match, 'away', FEATURED));
-    return required * 10 + featured;
-  };
-  return [...matches]
-    .filter((match) => match.status !== 'CANCELLED')
-    .sort(
-      (a, b) =>
-        priority(b) - priority(a) ||
-        a.kickoff.getTime() - b.kickoff.getTime() ||
-        a.externalId - b.externalId,
-    )
-    .slice(0, 10);
-}
-
+/** Tipos de pregunta, intercalando los clasicos con los mas traicioneros: el orden decide cuales salen antes. */
 export const QUESTION_TYPES: QuizQuestionType[] = [
   'WINNER',
+  'HALF_TIME_RESULT',
+  'TOTAL_GOALS',
   'BOTH_SCORE',
+  'COMEBACK',
+  'FIRST_HALF_GOAL',
+  'DRAW',
   'OVER_2_5',
+  'SECOND_HALF_MORE_GOALS',
   'HOME_CLEAN_SHEET',
+  'ODD_GOALS',
   'AWAY_CLEAN_SHEET',
+  'GOAL_BOTH_HALVES',
   'HOME_TWO_PLUS',
   'AWAY_TWO_PLUS',
   'WIN_BY_TWO_PLUS',
 ];
 
+/** Tipos que se resuelven con el resultado al descanso (football-data.org `score.halfTime`). */
+const HALF_TIME_TYPES = new Set<QuizQuestionType>([
+  'HALF_TIME_RESULT',
+  'FIRST_HALF_GOAL',
+  'SECOND_HALF_MORE_GOALS',
+  'GOAL_BOTH_HALVES',
+  'COMEBACK',
+]);
+
 export function questionOptions(type: QuizQuestionType): QuizOption[] {
-  return type === 'WINNER' ? ['HOME', 'DRAW', 'AWAY'] : ['YES', 'NO'];
+  if (type === 'WINNER' || type === 'HALF_TIME_RESULT') return ['HOME', 'DRAW', 'AWAY'];
+  if (type === 'TOTAL_GOALS') return ['GOALS_0_1', 'GOALS_2_3', 'GOALS_4_PLUS'];
+  return ['YES', 'NO'];
 }
 
-export function generateQuizQuestions(matches: Match[]) {
-  const selected = selectQuizMatches(matches);
-  const count = Math.min(10, selected.length * QUESTION_TYPES.length);
-  return Array.from({ length: count }, (_, index) => {
-    const matchIndex = index % selected.length;
-    const cycle = Math.floor(index / selected.length);
-    const type = QUESTION_TYPES[(matchIndex + cycle) % QUESTION_TYPES.length];
-    return {
-      matchId: selected[matchIndex].id,
-      order: index + 1,
-      type,
-      options: questionOptions(type),
-    };
-  });
+/** Preguntas de cada quiz mixto. */
+export const QUIZ_QUESTION_COUNT = 20;
+
+/** Un partido candidato con la liga a la que pertenece (el quiz mixto mezcla ligas). */
+export type QuizCandidate = Match & { competitionCode: CompetitionCode };
+
+function teamWeight(match: Match, side: 'home' | 'away'): number {
+  if (teamIn(match, side, REQUIRED)) return 10;
+  if (teamIn(match, side, FEATURED)) return 3;
+  if (teamIn(match, side, NOTABLE)) return 1;
+  return 0;
 }
+
+/**
+ * Interes de un partido: Barca, Madrid y Liverpool siempre por delante; despues los grandes, con un extra si se
+ * enfrentan dos (clasicos, derbis, cruces de Champions), y los clubes de nivel para cuando no hay grandes.
+ */
+export function matchInterest(match: QuizCandidate): number {
+  const home = teamWeight(match, 'home');
+  const away = teamWeight(match, 'away');
+  const bigMatch = home >= 3 && away >= 3 ? 5 : 0;
+  return home + away + bigMatch + (match.competitionCode === 'CHAMPIONS_LEAGUE' ? 1 : 0);
+}
+
+/** Preguntas que pide un partido: 4 si se enfrentan dos grandes, 2 si juega uno (o dos de nivel) y 1 si no. */
+export function questionTarget(match: QuizCandidate): number {
+  const home = teamWeight(match, 'home');
+  const away = teamWeight(match, 'away');
+  if (home >= 3 && away >= 3) return 4;
+  if (home >= 3 || away >= 3 || (home >= 1 && away >= 1)) return 2;
+  return 1;
+}
+
+function byInterest(a: QuizCandidate, b: QuizCandidate): number {
+  return (
+    matchInterest(b) - matchInterest(a) ||
+    a.kickoff.getTime() - b.kickoff.getTime() ||
+    a.externalId - b.externalId
+  );
+}
+
+/**
+ * Reparto de las 20 preguntas del quiz mixto (peticion del usuario, 2026-10-15): el mejor partido de cada liga entra
+ * siempre, y el resto de preguntas van a los partidos mas interesantes de cualquier liga, sin repartir por igual. Los
+ * grandes partidos llevan mas preguntas (ver questionTarget). Si no hay bastantes partidos, los elegidos reciben preguntas
+ * de mas (hasta un tipo de pregunta de cada). Devuelve los partidos elegidos, del mas interesante al que menos, con
+ * cuantas preguntas lleva cada uno.
+ */
+export function planMixedQuiz(
+  candidates: QuizCandidate[],
+  total = QUIZ_QUESTION_COUNT,
+): { match: QuizCandidate; count: number }[] {
+  const sorted = candidates.filter((match) => match.status !== 'CANCELLED').sort(byInterest);
+  const counts = new Map<string, number>();
+  let budget = total;
+  const give = (match: QuizCandidate, limit: number) => {
+    while (budget > 0 && (counts.get(match.id) ?? 0) < limit) {
+      counts.set(match.id, (counts.get(match.id) ?? 0) + 1);
+      budget--;
+    }
+  };
+  const leagues = new Set<CompetitionCode>();
+  for (const match of sorted) {
+    if (leagues.has(match.competitionCode)) continue;
+    leagues.add(match.competitionCode);
+    give(match, 1);
+  }
+  for (const match of sorted) give(match, questionTarget(match));
+  for (let limit = 2; budget > 0 && limit <= QUESTION_TYPES.length; limit++) {
+    for (const match of sorted) if (counts.has(match.id)) give(match, limit);
+  }
+  return sorted
+    .filter((match) => counts.has(match.id))
+    .map((match) => ({ match, count: counts.get(match.id)! }));
+}
+
+/**
+ * Preguntas del quiz mixto, con la mayor variedad posible (peticion del usuario, 2026-10-15): a cada pregunta le toca el
+ * tipo menos usado hasta entonces en el quiz que su partido aun no tenga; los empates se deshacen con un orden propio de
+ * cada partido, para que no empiecen todos igual. En el quiz van por orden de inicio, las de un mismo partido juntas.
+ */
+export function generateMixedQuizQuestions(candidates: QuizCandidate[]) {
+  const used = new Map<QuizQuestionType, number>();
+  const items = planMixedQuiz(candidates).flatMap(({ match, count }) => {
+    const shift = match.externalId % QUESTION_TYPES.length;
+    const order = [...QUESTION_TYPES.slice(shift), ...QUESTION_TYPES.slice(0, shift)];
+    const mine: QuizQuestionType[] = [];
+    for (let k = 0; k < count; k++) {
+      const type = order
+        .filter((candidate) => !mine.includes(candidate))
+        .reduce((best, candidate) =>
+          (used.get(candidate) ?? 0) < (used.get(best) ?? 0) ? candidate : best,
+        );
+      mine.push(type);
+      used.set(type, (used.get(type) ?? 0) + 1);
+    }
+    return mine.map((type, k) => ({ match, type, k }));
+  });
+  items.sort(
+    (a, b) =>
+      a.match.kickoff.getTime() - b.match.kickoff.getTime() ||
+      a.match.externalId - b.match.externalId ||
+      a.k - b.k,
+  );
+  return items.map((item, index) => ({
+    matchId: item.match.id,
+    order: index + 1,
+    type: item.type,
+    options: questionOptions(item.type),
+  }));
+}
+
+const MADRID = 'Europe/Madrid';
+/** Hora de los cortes del Quiz (Madrid): los martes y los viernes a esta hora cierra un quiz y abre el siguiente. */
+export const QUIZ_CUT_HOUR = 18;
+
+const madridFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: MADRID,
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+  weekday: 'short',
+  hourCycle: 'h23',
+});
+
+function madridParts(date: Date) {
+  const parts = madridFormat.formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)!.value;
+  return {
+    year: Number(get('year')),
+    month: Number(get('month')),
+    day: Number(get('day')),
+    hour: Number(get('hour')),
+    minute: Number(get('minute')),
+    second: Number(get('second')),
+    weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday')),
+  };
+}
+
+/** Lo que Madrid va por delante de UTC en ese instante (1 h en invierno, 2 h en verano). */
+function madridOffsetMs(instant: number): number {
+  const p = madridParts(new Date(instant));
+  return (
+    Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) -
+    Math.floor(instant / 1000) * 1000
+  );
+}
+
+/** Un dia (calendario en UTC) a una hora de Madrid, como instante. */
+function madridAt(day: Date, hour: number): Date {
+  const guess = day.getTime() + hour * 60 * 60 * 1000;
+  const first = guess - madridOffsetMs(guess);
+  return new Date(guess - madridOffsetMs(first));
+}
+
+/** Cortes del Quiz alrededor de un instante: martes y viernes a las QUIZ_CUT_HOUR de Madrid, en orden. */
+function cutsAround(date: Date): Date[] {
+  const { year, month, day } = madridParts(date);
+  const cuts: Date[] = [];
+  for (let offset = -8; offset <= 16; offset++) {
+    const calendar = new Date(Date.UTC(year, month - 1, day + offset));
+    const weekday = calendar.getUTCDay();
+    if (weekday === 2 || weekday === 5) cuts.push(madridAt(calendar, QUIZ_CUT_HOUR));
+  }
+  return cuts;
+}
+
+/**
+ * Un quiz mixto (peticion del usuario, 2026-10-15): se juega con fechas fijas, de un corte al siguiente, y sus
+ * preguntas son de los partidos que se juegan despues, hasta el corte siguiente (mientras esta abierto el otro quiz):
+ * - WEEKEND, quiz de ligas: se juega de martes a viernes a las 18:00; partidos de liga de viernes 18:00 a martes 18:00.
+ * - MIDWEEK, quiz de Champions: se juega de viernes a martes a las 18:00; partidos de Champions de martes a viernes.
+ * `start`-`end` son los limites de los partidos; el quiz cierra en `start`.
+ */
+export interface QuizWindow {
+  key: string;
+  kind: QuizWindowKind;
+  opensAt: Date;
+  start: Date;
+  end: Date;
+}
+
+function windowFrom(opensAt: Date, start: Date, end: Date): QuizWindow {
+  const kind: QuizWindowKind = madridParts(start).weekday === 5 ? 'WEEKEND' : 'MIDWEEK';
+  const { year, month, day } = madridParts(start);
+  const date = new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10);
+  return { key: `${date}-${kind}`, kind, opensAt, start, end };
+}
+
+/** El quiz que se juega en este momento: el que abrio en el ultimo corte y cierra en el siguiente. */
+export function openQuizWindow(now: Date): QuizWindow {
+  const cuts = cutsAround(now);
+  const i = cuts.findIndex((cut, index) => cut <= now && now < cuts[index + 1]);
+  return windowFrom(cuts[i], cuts[i + 1], cuts[i + 2]);
+}
+
+/** Competiciones europeas: el quiz de Champions y el filtro «Champions» de la clasificacion; el resto son ligas. */
+export const EUROPEAN_COMPETITIONS: CompetitionCode[] = ['CHAMPIONS_LEAGUE', 'CONFERENCE_LEAGUE'];
+
+/** Ligas de cada quiz: el de ligas, todas menos las europeas; el de Champions, solo la Champions. */
+export function windowCompetitions(kind: QuizWindowKind): CompetitionCode[] {
+  return kind === 'MIDWEEK'
+    ? ['CHAMPIONS_LEAGUE']
+    : QUIZ_COMPETITIONS.filter((code) => code !== 'CHAMPIONS_LEAGUE');
+}
+
+/**
+ * Resolucion de una pregunta de un quiz mixto: se anula si su partido empezo antes del cierre del quiz (se adelanto),
+ * porque se pudo responder viendolo; si no, como cualquier otra.
+ */
+export function resolveMixedQuestion(
+  type: QuizQuestionType,
+  match: Match,
+  closesAt: Date,
+): { resolution: QuizResolution; correctOption: QuizOption | null } {
+  if (match.kickoff.getTime() < closesAt.getTime() && match.status !== 'POSTPONED') {
+    return { resolution: 'VOID', correctOption: null };
+  }
+  return resolveQuizQuestion(type, match);
+}
+
+/**
+ * Cuanto se espera al resultado al descanso de un partido terminado antes de anular sus preguntas. football-data.org lo
+ * da siempre junto al resultado final (324 de 324 partidos de la temporada, medido el 2026-10-15) y QuizJobs vuelve a
+ * pedir cada noche los resultados de la ultima semana: anular es solo para el caso raro de que nunca llegue.
+ */
+export const HALF_TIME_WAIT_MS = 3 * 24 * 60 * 60 * 1000;
 
 export function resolveQuizQuestion(
   type: QuizQuestionType,
   match: Match,
+  now = new Date(),
 ): {
   resolution: QuizResolution;
   correctOption: QuizOption | null;
@@ -142,22 +409,50 @@ export function resolveQuizQuestion(
   }
   const home = match.homeScore;
   const away = match.awayScore;
-  if (type === 'WINNER') {
+  const total = home + away;
+  const outcome = (h: number, a: number): QuizOption => (h > a ? 'HOME' : h < a ? 'AWAY' : 'DRAW');
+  const yesNo = (condition: boolean) => ({
+    resolution: 'RESOLVED' as const,
+    correctOption: (condition ? 'YES' : 'NO') as QuizOption,
+  });
+  if (type === 'WINNER') return { resolution: 'RESOLVED', correctOption: outcome(home, away) };
+  if (type === 'TOTAL_GOALS') {
     return {
       resolution: 'RESOLVED',
-      correctOption: home > away ? 'HOME' : home < away ? 'AWAY' : 'DRAW',
+      correctOption: total <= 1 ? 'GOALS_0_1' : total <= 3 ? 'GOALS_2_3' : 'GOALS_4_PLUS',
     };
   }
-  const conditions: Record<Exclude<QuizQuestionType, 'WINNER'>, boolean> = {
+  if (HALF_TIME_TYPES.has(type)) {
+    // Sin resultado al descanso todavia: se espera (pendiente, sin puntos) y solo se anula si no llega en 3 dias.
+    if (match.htHomeScore === null || match.htAwayScore === null) {
+      const waited = now.getTime() - match.kickoff.getTime() > HALF_TIME_WAIT_MS;
+      return { resolution: waited ? 'VOID' : 'PENDING', correctOption: null };
+    }
+    const htHome = match.htHomeScore;
+    const htAway = match.htAwayScore;
+    const firstHalf = htHome + htAway;
+    const secondHalf = total - firstHalf;
+    if (type === 'HALF_TIME_RESULT') {
+      return { resolution: 'RESOLVED', correctOption: outcome(htHome, htAway) };
+    }
+    if (type === 'FIRST_HALF_GOAL') return yesNo(firstHalf > 0);
+    if (type === 'SECOND_HALF_MORE_GOALS') return yesNo(secondHalf > firstHalf);
+    if (type === 'GOAL_BOTH_HALVES') return yesNo(firstHalf > 0 && secondHalf > 0);
+    // COMEBACK: gana quien iba perdiendo al descanso.
+    return yesNo((htHome < htAway && home > away) || (htAway < htHome && away > home));
+  }
+  const conditions: Partial<Record<QuizQuestionType, boolean>> = {
     BOTH_SCORE: home > 0 && away > 0,
-    OVER_2_5: home + away > 2,
+    OVER_2_5: total > 2,
     HOME_CLEAN_SHEET: away === 0,
     AWAY_CLEAN_SHEET: home === 0,
     HOME_TWO_PLUS: home >= 2,
     AWAY_TWO_PLUS: away >= 2,
     WIN_BY_TWO_PLUS: Math.abs(home - away) >= 2,
+    DRAW: home === away,
+    ODD_GOALS: total % 2 === 1,
   };
-  return { resolution: 'RESOLVED', correctOption: conditions[type] ? 'YES' : 'NO' };
+  return yesNo(conditions[type] ?? false);
 }
 
 /** Uses every match in the round, including those omitted from the quiz. */

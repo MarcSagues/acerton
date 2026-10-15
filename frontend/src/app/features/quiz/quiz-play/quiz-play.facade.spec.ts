@@ -1,3 +1,4 @@
+import { EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -48,6 +49,22 @@ describe('QuizPlayFacade', () => {
     expect(facade.stepIndex()).toBe(1);
     expect(facade.total()).toBe(3);
     expect(facade.answered()).toBe(1);
+  });
+
+  it('al salir de la pantalla las respuestas en fila se siguen enviando: cuentan aunque no se termine', () => {
+    setup();
+    // La pantalla en su propio inyector, para poder cerrarla sin tirar el HttpTestingController.
+    const screen = createEnvironmentInjector([QuizPlayFacade], TestBed.inject(EnvironmentInjector));
+    const facade = screen.get(QuizPlayFacade);
+    facade.init();
+    http.expectOne(`${API}/q1`).flush(quizDetail());
+
+    facade.select('YES'); // qq2, en vuelo
+    const first = http.expectOne(`${API}/q1/answers`);
+    screen.destroy(); // se sale justo despues de elegir
+
+    expect(first.cancelled).toBeFalse();
+    first.flush(withAnswer(quizDetail(), 'qq2', 'YES'));
   });
 
   /** Remate del contorno animado (como el 1X2) y, si se guardo, la pausa antes de pasar sola. */

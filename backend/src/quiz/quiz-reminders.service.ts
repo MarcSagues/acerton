@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { QuizStatus } from '@prisma/client';
+import { QuizStatus, QuizWindowKind } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -69,6 +69,16 @@ export function dueClosingTier(event: QuizReminderEvent, now: Date): QuizClosing
   return null;
 }
 
+/** Titulo del aviso: el quiz mixto, de ligas o de Champions; el antiguo, por su liga y jornada. */
+export function quizTitle(event: {
+  windowKind: QuizWindowKind | null;
+  matchday: { order: number; competition: { name: string } } | null;
+}): string {
+  if (event.matchday)
+    return `Quiz de ${event.matchday.competition.name} · Jornada ${event.matchday.order}`;
+  return event.windowKind === 'MIDWEEK' ? 'Quiz de Champions' : 'Quiz de ligas';
+}
+
 /**
  * Avisos opcionales del Quiz de jornada (2026-10-13, peticion del usuario):
  * al abrirse, 24 h antes del cierre y 1 h antes, cada uno con su preferencia
@@ -97,7 +107,7 @@ export class QuizRemindersService {
       });
       for (const event of events) {
         try {
-          const title = `Quiz de ${event.matchday.competition.name} · Jornada ${event.matchday.order}`;
+          const title = quizTitle(event);
           await this.handleOpening(event, title, now);
           await this.handleClosing(event, title, now);
         } catch (error) {

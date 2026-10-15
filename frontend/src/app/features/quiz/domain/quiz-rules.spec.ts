@@ -1,23 +1,22 @@
-import { QuizCompetition } from '../../../core/models/quiz.model';
 import { setLanguageForTests } from '../../../core/i18n/translate';
-import { LALIGA, PREMIER, quizMatch, quizQuestion, quizSummary } from '../testing/quiz.fixtures';
+import { mixedSummary, quizMatch, quizQuestion, quizSummary } from '../testing/quiz.fixtures';
 import {
   answeredCount,
   clockOffsetMs,
-  closesSoon,
   isClosedError,
   isPendingForUser,
   isPastClose,
   loadFailureOf,
   optionLabel,
-  pickCompetitionQuizzes,
+  pickHubQuizzes,
   questionOutcome,
   questionText,
   quizAction,
   quizErrorCode,
   quizErrorMessage,
+  quizTitle,
   resumeIndex,
-  sortCompetitionsByClose,
+  windowDays,
 } from './quiz-rules';
 
 const participation = { answeredCount: 1, completedAt: null, points: 0, resolvedCount: 0, voidCount: 0 };
@@ -49,26 +48,40 @@ describe('quiz-rules', () => {
     expect(quizAction(quizSummary({ status: 'SCHEDULED' }))).toBe('NONE');
   });
 
-  it('con una jornada nueva abierta y la anterior jugada, prioriza la nueva y ofrece revisar la anterior', () => {
-    const previous = quizSummary({ id: 'old', matchdayOrder: 8, status: 'CLOSED', participation });
-    const current = quizSummary({ id: 'new', matchdayOrder: 9, status: 'OPEN' });
-    const picked = pickCompetitionQuizzes([previous, current]);
-    expect(picked.primary?.id).toBe('new');
-    expect(picked.previous?.id).toBe('old');
+  it('el principal es el abierto que cierra antes; los demas abiertos van aparte y se ofrece el ultimo cerrado jugado', () => {
+    const later = quizSummary({ id: 'later', status: 'OPEN', closesAt: '2026-10-20T16:00:00.000Z' });
+    const sooner = quizSummary({ id: 'sooner', status: 'OPEN', closesAt: '2026-10-16T18:00:00.000Z' });
+    const old = quizSummary({ id: 'old', status: 'FINISHED', closesAt: '2026-10-09T18:00:00.000Z', participation });
+    const older = quizSummary({ id: 'older', status: 'FINISHED', closesAt: '2026-10-02T18:00:00.000Z', participation });
+    expect(pickHubQuizzes([older, later, old, sooner])).toEqual({ primary: sooner, others: [later], previous: old });
   });
 
-  it('sin jornada abierta, la principal es la mas reciente y no se repite como anterior', () => {
+  it('sin quiz abierto, el principal es el ultimo cerrado y no se repite como anterior', () => {
     const only = quizSummary({ id: 'old', status: 'FINISHED', participation });
-    expect(pickCompetitionQuizzes([only])).toEqual({ primary: only, previous: null });
-    expect(pickCompetitionQuizzes([])).toEqual({ primary: null, previous: null });
+    expect(pickHubQuizzes([only])).toEqual({ primary: only, others: [], previous: null });
+    expect(pickHubQuizzes([])).toEqual({ primary: null, others: [], previous: null });
   });
 
-  it('una jornada anterior sin participacion no se ofrece para revisar', () => {
-    const picked = pickCompetitionQuizzes([
-      quizSummary({ id: 'old', matchdayOrder: 8, status: 'FINISHED', participation: null }),
-      quizSummary({ id: 'new', matchdayOrder: 9, status: 'OPEN' }),
+  it('un quiz cerrado sin participacion no se ofrece para revisar', () => {
+    const picked = pickHubQuizzes([
+      quizSummary({ id: 'old', status: 'FINISHED', participation: null }),
+      quizSummary({ id: 'new', status: 'OPEN' }),
     ]);
     expect(picked.previous).toBeNull();
+  });
+
+  it('titula el quiz mixto por su tipo (ligas o Champions) y el antiguo por su jornada', () => {
+    const champions = mixedSummary();
+    champions.window = { ...champions.window!, kind: 'MIDWEEK' };
+    expect(quizTitle(mixedSummary())).toBe('Quiz de ligas');
+    expect(quizTitle(champions)).toBe('Quiz de Champions');
+    expect(quizTitle(quizSummary({ matchdayOrder: 9 }))).toBe('Jornada 9');
+    setLanguageForTests('en');
+    expect(quizTitle(mixedSummary())).toBe('League quiz');
+  });
+
+  it('los dias del quiz mixto son los de su primer y su ultimo partido', () => {
+    expect(windowDays(mixedSummary().window!)).toEqual({ from: '2026-10-16T18:30:00.000Z', to: '2026-10-19T19:00:00.000Z' });
   });
 
   it('pinta la pregunta a partir del tipo, con el equipo cuando toca', () => {
@@ -77,6 +90,8 @@ describe('quiz-rules', () => {
     expect(questionText({ type: 'HOME_CLEAN_SHEET', match })).toBe('¿Terminará Barça sin encajar goles?');
     expect(questionText({ type: 'AWAY_TWO_PLUS', match })).toBe('¿Marcará Real Madrid dos o más goles?');
     expect(questionText({ type: 'NUEVO_TIPO' as never, match })).toBe('Elige una opción');
+    expect(questionText({ type: 'HALF_TIME_RESULT', match })).toBe('¿Cómo irá el partido al descanso?');
+    expect(questionText({ type: 'COMEBACK', match })).toBe('¿Ganará algún equipo que vaya perdiendo al descanso?');
     setLanguageForTests('en');
     expect(questionText({ type: 'OVER_2_5', match })).toBe('Will there be over 2.5 goals?');
   });
@@ -88,6 +103,7 @@ describe('quiz-rules', () => {
     expect(optionLabel('DRAW', match)).toBe('Empate');
     expect(optionLabel('YES', match)).toBe('Sí');
     expect(optionLabel('NO', match)).toBe('No');
+    expect(optionLabel('GOALS_4_PLUS', match)).toBe('4 o más');
   });
 
   it('distingue pendiente, anulada, acierto, fallo y sin responder', () => {
@@ -125,39 +141,9 @@ describe('quiz-rules', () => {
     expect(loadFailureOf(500)).toBe('error');
   });
 
-  describe('pestañas de liga', () => {
+  describe('punto rojo', () => {
     const now = Date.parse('2026-10-13T10:00:00.000Z');
     const hours = (h: number) => new Date(now + h * 3600_000).toISOString();
-    const SERIE_A: QuizCompetition = { id: 'c-seriea', code: 'SERIE_A', name: 'Serie A', logoUrl: null };
-
-    it('ordena las ligas de la que cierra antes a la que cierra mas tarde y deja al final las que no tienen nada pendiente', () => {
-      const quizzes = [
-        quizSummary({ id: 'a', competition: LALIGA, status: 'OPEN', closesAt: hours(50) }),
-        quizSummary({ id: 'b', competition: PREMIER, status: 'OPEN', closesAt: hours(5) }),
-        quizSummary({ id: 'c', competition: SERIE_A, status: 'FINISHED', closesAt: hours(-30) }),
-      ];
-      expect(sortCompetitionsByClose([SERIE_A, LALIGA, PREMIER], quizzes, now).map((c) => c.id)).toEqual([
-        PREMIER.id,
-        LALIGA.id,
-        SERIE_A.id,
-      ]);
-    });
-
-    it('cuenta tambien las programadas, se queda con el cierre mas proximo de cada liga e ignora los ya pasados', () => {
-      const quizzes = [
-        quizSummary({ id: 'a1', competition: LALIGA, status: 'SCHEDULED', closesAt: hours(100) }),
-        quizSummary({ id: 'a2', competition: LALIGA, status: 'OPEN', closesAt: hours(-1) }),
-        quizSummary({ id: 'b', competition: PREMIER, status: 'SCHEDULED', closesAt: hours(30) }),
-      ];
-      expect(sortCompetitionsByClose([LALIGA, PREMIER], quizzes, now).map((c) => c.id)).toEqual([PREMIER.id, LALIGA.id]);
-    });
-
-    it('el reloj sale solo con la jornada abierta y menos de 24 h para el cierre', () => {
-      expect(closesSoon(quizSummary({ status: 'OPEN', closesAt: hours(23.9) }), now)).toBe(true);
-      expect(closesSoon(quizSummary({ status: 'OPEN', closesAt: hours(24) }), now)).toBe(false);
-      expect(closesSoon(quizSummary({ status: 'OPEN', closesAt: hours(-0.1) }), now)).toBe(false);
-      expect(closesSoon(quizSummary({ status: 'SCHEDULED', closesAt: hours(2) }), now)).toBe(false);
-    });
 
     it('el punto rojo sale con la jornada abierta que el usuario no ha terminado', () => {
       expect(isPendingForUser(quizSummary({ status: 'OPEN', closesAt: hours(5), participation: null }), now)).toBe(true);
