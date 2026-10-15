@@ -34,7 +34,10 @@ export class BottomNavComponent {
 
   /** Punto rojo de "Quiz": alguna jornada abierta que el usuario aun no ha terminado. */
   readonly hasPendingQuiz = computed(
-    () => this.quizService.lastOverview()?.quizzes.some((q) => isPendingForUser(q, this.now())) ?? false,
+    () => {
+      const overview = this.quizService.lastOverview();
+      return (overview?.events ?? overview?.quizzes ?? []).some((q) => isPendingForUser(q, this.now()));
+    },
   );
 
   constructor() {

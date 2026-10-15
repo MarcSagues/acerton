@@ -157,7 +157,7 @@ export interface QuizOverview {
   competitions: QuizCompetition[];
   /** Los quizzes abiertos (del que cierra antes al que mas tarda) y el ultimo mixto ya cerrado. */
   events: QuizSummary[];
-  /** Lo mismo para apps anteriores al quiz mixto: el mixto repetido en cada liga. No usar. */
+  /** Solo para apps anteriores al quiz mixto: siempre vacio (no entienden sus preguntas). No usar. */
   quizzes: QuizSummary[];
 }
 

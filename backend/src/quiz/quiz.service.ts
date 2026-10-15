@@ -620,12 +620,9 @@ export class QuizService {
       serverNow: serverNow.toISOString(),
       competitions: competitionsView,
       events: summaries,
-      // Apps anteriores al quiz mixto: muestran los quizzes en pestañas por liga, asi que el mixto sale en todas.
-      quizzes: summaries.flatMap((summary) =>
-        summary.kind === 'MIXED'
-          ? competitionsView.map((competition) => ({ ...summary, competition }))
-          : [summary],
-      ),
+      // Apps anteriores al quiz mixto (1.1.0 y antes) solo leen `quizzes`: no conocen los tipos de pregunta nuevos y los
+      // pintarian como «Elige una opcion». Se les manda vacio y ven «Sin quiz por ahora» hasta que actualicen.
+      quizzes: [],
     };
   }
 
