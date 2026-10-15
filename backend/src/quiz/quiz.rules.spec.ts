@@ -97,7 +97,10 @@ describe('mixed quiz selection and generation', () => {
     expect(questions).toHaveLength(20);
     expect(questions.map((q) => q.order)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
     expect(new Set(questions.map((q) => `${q.matchId}:${q.type}`)).size).toBe(20);
-    // Las preguntas de un mismo partido van juntas.
+    // Cada partido empieza por quien gana, y sus preguntas van juntas.
+    expect(new Set(questions.filter((q) => q.type === 'WINNER').map((q) => q.matchId)).size).toBe(
+      new Set(questions.map((q) => q.matchId)).size,
+    );
     const seen = new Set<string>();
     questions.forEach((q, i) => {
       if (seen.has(q.matchId)) expect(questions[i - 1].matchId).toBe(q.matchId);

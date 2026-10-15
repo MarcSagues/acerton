@@ -1,5 +1,13 @@
 # Decisiones
 
+## 2026-10-15 — Quiz mixto: un quiz de todas las ligas por fin de semana y entre semana
+
+El usuario pidió que el Quiz sea de 20 preguntas con los partidos más interesantes de todas las ligas mezcladas,
+sin reparto equitativo (y si no hay partidos interesantes, los de los equipos más grandes). Eligió: un quiz para
+el fin de semana (vie-lun) y otro entre semana (mar-jue), cada uno se cierra al empezar el primero de sus partidos
+(no por pregunta), y más preguntas para los partidos grandes (4 si se cruzan dos grandes, 2 si juega uno, 1 si no),
+asegurando el mejor partido de cada liga. Los quizzes antiguos por liga y jornada se conservan; no se publican más.
+
 ## 2026-10-13 — Sin escudos de clubes ni logos de competiciones
 
 El usuario preguntó si usar los escudos en el Quiz infringía derechos. Son marcas registradas y obras con

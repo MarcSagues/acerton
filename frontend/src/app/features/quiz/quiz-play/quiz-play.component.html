@@ -45,8 +45,15 @@
     @case ('ready') {
       @if (page.quiz(); as quiz) {
         <header class="quiz-head">
-          <span class="eyebrow mono">{{ quiz.competition.name }} · {{ 'quiz.temporada' | t: { label: quiz.seasonLabel } }}</span>
-          <h1>{{ 'quiz.jornadaN' | t: { order: quiz.matchdayOrder } }}</h1>
+          <span class="eyebrow mono">
+            @if (days(quiz); as range) {
+              {{ range.from | date: 'd MMM' }} – {{ range.to | date: 'd MMM' }}
+            } @else {
+              {{ quiz.competition.name }}
+            }
+            · {{ 'quiz.temporada' | t: { label: quiz.seasonLabel } }}
+          </span>
+          <h1>{{ title(quiz) }}</h1>
         </header>
 
         @if (page.closedWhilePlaying()) {
@@ -110,6 +117,9 @@
                   </div>
                 </div>
                 <p class="kickoff mono">
+                  @if (q.competition) {
+                    {{ q.competition.name }} ·
+                  }
                   {{ q.match.kickoff | date: 'EEE d MMM' }} ·
                   @if (kickoffTbc(q.match)) {
                     {{ 'currentMatchday.horaPorConfirmar' | t }}

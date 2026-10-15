@@ -21,46 +21,35 @@
       @if (page.competitions().length === 0) {
         <app-empty-state icon="objetivo" [title]="'quiz.sinLigasTitulo' | t" [text]="'quiz.sinLigasTexto' | t"></app-empty-state>
       } @else {
-        <div class="comp-pills" role="group" [attr.aria-label]="'quiz.elegirLiga' | t">
-          @for (competition of page.sortedCompetitions(); track competition.id) {
-            <button
-              type="button"
-              class="comp-pill"
-              [class.active]="competition.id === page.selectedCompetitionId()"
-              [attr.aria-pressed]="competition.id === page.selectedCompetitionId()"
-              (click)="page.selectCompetition(competition.id)"
-            >
-              @if (page.trophyId(competition); as trophy) {
-                <piqo-svg [attr.trophy]="trophy" variant="mini" size="18"></piqo-svg>
-              }
-              <span>{{ competition.name }}</span>
-              @let closingSoon = page.closingSoonIds().has(competition.id);
-              @let pending = page.pendingIds().has(competition.id);
-              @if (closingSoon || pending) {
-                <span class="pill-marks">
-                  @if (closingSoon) {
-                    <span class="closing-soon" role="img" [attr.aria-label]="'quiz.cierraPronto' | t" [attr.title]="'quiz.cierraPronto' | t">
-                      <piqo-svg icon="reloj" size="10"></piqo-svg>
-                    </span>
-                  }
-                  @if (pending) {
-                    <span class="pending-dot" aria-hidden="true"></span>
-                  }
-                </span>
-              }
-            </button>
-          }
-        </div>
-
         @if (page.primaryQuiz(); as quiz) {
-          <section class="quiz-card" [attr.aria-label]="'quiz.jornadaN' | t: { order: quiz.matchdayOrder }">
+          <section class="quiz-card" [attr.aria-label]="page.title(quiz)">
             <div class="card-head">
               <div class="card-title">
-                <span class="eyebrow mono">{{ quiz.competition.name }} · {{ 'quiz.temporada' | t: { label: quiz.seasonLabel } }}</span>
-                <h2>{{ 'quiz.jornadaN' | t: { order: quiz.matchdayOrder } }}</h2>
+                <span class="eyebrow mono">
+                  @if (page.days(quiz); as days) {
+                    {{ days.from | date: 'd MMM' }} – {{ days.to | date: 'd MMM' }}
+                  } @else {
+                    {{ quiz.competition.name }}
+                  }
+                  · {{ 'quiz.temporada' | t: { label: quiz.seasonLabel } }}
+                </span>
+                <h2>{{ page.title(quiz) }}</h2>
               </div>
               <span class="status-chip mono" [attr.data-status]="quiz.status">{{ page.statusLabel(quiz) }}</span>
             </div>
+
+            @if (quiz.kind === 'MIXED' && quiz.competitions.length) {
+              <ul class="leagues" [attr.aria-label]="'quiz.ligasDelQuiz' | t">
+                @for (competition of quiz.competitions; track competition.id) {
+                  <li class="league">
+                    @if (page.trophyId(competition); as trophy) {
+                      <piqo-svg [attr.trophy]="trophy" variant="mini" size="16"></piqo-svg>
+                    }
+                    <span>{{ competition.name }}</span>
+                  </li>
+                }
+              </ul>
+            }
 
             <p class="meta mono">
               {{ 'quiz.nPreguntas' | t: { count: quiz.questionCount } }} · {{ 'quiz.nPartidos' | t: { count: quiz.matchCount } }}
@@ -127,10 +116,23 @@
             </button>
           </section>
 
+          @for (other of page.otherQuizzes(); track other.id) {
+            <button type="button" class="previous-card" (click)="page.open(other)" [disabled]="page.action(other) === 'NONE'">
+              <span class="previous-meta">
+                <span class="previous-title">{{ page.title(other) }} · {{ page.statusLabel(other) }}</span>
+                @if (page.countdown(other); as time) {
+                  <span class="previous-sub mono">{{ 'quiz.cierraEn' | t: { time: time } }}</span>
+                }
+              </span>
+              <span class="previous-action">{{ page.actionLabel(other) }}</span>
+              <piqo-svg icon="flecha" size="16"></piqo-svg>
+            </button>
+          }
+
           @if (page.previousQuiz(); as previous) {
             <button type="button" class="previous-card" (click)="page.open(previous)" [disabled]="page.action(previous) === 'NONE'">
               <span class="previous-meta">
-                <span class="previous-title">{{ 'quiz.jornadaN' | t: { order: previous.matchdayOrder } }} · {{ page.statusLabel(previous) }}</span>
+                <span class="previous-title">{{ page.title(previous) }} · {{ page.statusLabel(previous) }}</span>
                 @if (previous.participation; as part) {
                   <span class="previous-sub mono">
                     @if (previous.status === 'OPEN') {

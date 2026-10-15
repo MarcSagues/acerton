@@ -1,5 +1,31 @@
 # Estado actual
 
+## 2026-10-15 — Quiz mixto: 20 preguntas de todas las ligas (fuera de sprint)
+
+Petición del usuario: en vez de un quiz por liga y jornada (10 preguntas), **un único quiz de 20 preguntas** con los partidos
+más interesantes de todas las ligas mezcladas, sin reparto equitativo. Decisiones del usuario: **un quiz para el fin de semana
+(viernes a lunes) y otro entre semana (martes a jueves)**, hora de Madrid, cada uno se cierra al empezar el primero de *sus*
+partidos; y **más preguntas a los partidos grandes**. Reglas (`backend/src/quiz/quiz.rules.ts`, `planMixedQuiz`): el mejor partido
+de cada liga entra siempre (1 pregunta); luego cada partido pide 4 preguntas si se enfrentan dos grandes, 2 si juega un grande
+(o dos clubes de nivel, lista `NOTABLE`) y 1 si no, en orden de interés (Barça/Madrid/Liverpool primero, extra si se cruzan dos
+grandes, +1 Champions); si sobran preguntas, se reparten más a los elegidos (hasta 8 tipos por partido). Preguntas ordenadas
+por hora de inicio, las de un mismo partido juntas. Se publica la ventana actual y la siguiente dos días antes de que empiece
+(`publishableWindows`), con los partidos aún sin empezar ya importados; una vez publicado no cambia.
+**Esquema** (migración `20261015120000_mixed_quiz`): `quiz_events.matchdayId` pasa a opcional y se añaden `windowKey` (único),
+`windowKind`, `windowStart`, `windowEnd` y `number` (nº de quiz mixto de la temporada, sale como `matchdayOrder`). Los quizzes
+antiguos se conservan y siguen funcionando hasta cerrar; ya no se publican nuevos por liga. **API**: `overview` devuelve `events`
+(abiertos del que cierra antes + último mixto cerrado) y, para las apps anteriores, `quizzes` con el mixto repetido en cada liga
+(con `competition` real) para que sus pestañas sigan funcionando. Cada resumen lleva `kind` (`MIXED`/`MATCHDAY`), `window` y
+`competitions`; cada pregunta, su `competition`. La clasificación por liga suma solo las preguntas de partidos de esa liga
+(sirve para antiguos y mixtos); la general, igual que antes. Avisos: «Quiz del fin de semana» / «Quiz de entre semana».
+**Frontend**: el centro del Quiz ya no tiene pestañas de liga para jugar (sí para filtrar la clasificación): tarjeta «Quiz del
+finde» / «Quiz entre semana» con los días y las ligas que entran, otros abiertos aparte y el último jugado; en cada pregunta sale
+su liga; el historial filtra por cualquier liga de las preguntas. Textos de intro, nota de la general y aviso actualizados en los
+6 idiomas; el titular del Quiz en la 1.1.0 del historial dice ahora «20 preguntas... un quiz el fin de semana y otro entre semana».
+**Verificado**: backend 542 tests (rules, rendimiento, historial, avisos) y los 7 de integración contra MySQL local; frontend
+tests (ver PR). **Necesita**: backend en main (Render aplica la migración) y portado a `dev` (migración a mano en Neon), build nueva.
+**Pendiente / NO verificado**: la ficha `docs/app-store/ficha-1.1.0.md` sigue con el texto anterior del Quiz.
+
 ## 2026-10-13 — Barra superior con más margen inferior sin selector de grupo (fuera de sprint)
 
 Petición del usuario. En las pantallas sin selector de grupo debajo (todas salvo Jornada y Tabla) la barra superior deja 14px

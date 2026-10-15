@@ -24,7 +24,8 @@ export type QuizResolution = 'PENDING' | 'RESOLVED' | 'VOID';
 
 export interface QuizCompetition {
   id: string;
-  code: CompetitionCode;
+  /** 'MIXED' en el `competition` de un quiz mixto (solo para apps anteriores: ver QuizSummary.kind). */
+  code: CompetitionCode | 'MIXED';
   name: string;
   logoUrl: string | null;
 }
@@ -37,12 +38,35 @@ export interface QuizParticipation {
   voidCount: number;
 }
 
-export interface QuizSummary {
-  id: string;
+/**
+ * MIXED: quiz de 20 preguntas con partidos de todas las ligas, uno por ventana (fin de semana de viernes a lunes o
+ * entre semana de martes a jueves, hora de Madrid). MATCHDAY: los antiguos, de una liga y jornada.
+ */
+export type QuizKind = 'MIXED' | 'MATCHDAY';
+
+export interface QuizWindow {
+  kind: 'WEEKEND' | 'MIDWEEK';
+  start: string;
+  /** Inicio de la ventana siguiente (exclusivo). */
+  end: string;
+}
+
+/** Lo que identifica un quiz: su tipo, su ventana o su liga y jornada, y las ligas de sus preguntas. */
+export interface QuizIdentity {
+  kind: QuizKind;
+  window: QuizWindow | null;
+  /** La liga en un quiz antiguo; en uno mixto, un comodin para apps anteriores (usar `competitions`). */
   competition: QuizCompetition;
-  matchdayId: string;
+  /** Ligas de las preguntas, en el orden en que salen. */
+  competitions: QuizCompetition[];
+  /** Jornada en un quiz antiguo; numero de quiz mixto en la temporada en uno mixto. */
   matchdayOrder: number;
   matchdayName: string;
+}
+
+export interface QuizSummary extends QuizIdentity {
+  id: string;
+  matchdayId: string;
   /** "2026/27". */
   seasonLabel: string;
   status: QuizStatus;
@@ -73,6 +97,8 @@ export interface QuizQuestion {
   order: number;
   type: QuizQuestionType;
   match: QuizMatch;
+  /** Liga del partido de la pregunta. */
+  competition: QuizCompetition;
   options: QuizOptionCode[];
   selectedOption: QuizOptionCode | null;
   resolution: QuizResolution;
@@ -81,12 +107,9 @@ export interface QuizQuestion {
 }
 
 /** Un quiz ya cerrado de un jugador, con las preguntas que respondio (ver QuizService.history en el backend). */
-export interface QuizHistoryEntry {
+export interface QuizHistoryEntry extends QuizIdentity {
   quizId: string;
-  competition: QuizCompetition;
   seasonLabel: string;
-  matchdayOrder: number;
-  matchdayName: string;
   closesAt: string;
   status: QuizStatus;
   completedAt: string | null;
@@ -118,6 +141,9 @@ export interface QuizDetail {
 export interface QuizOverview {
   serverNow: string;
   competitions: QuizCompetition[];
+  /** Los quizzes abiertos (del que cierra antes al que mas tarda) y el ultimo mixto ya cerrado. */
+  events: QuizSummary[];
+  /** Lo mismo para apps anteriores al quiz mixto: el mixto repetido en cada liga. No usar. */
   quizzes: QuizSummary[];
 }
 
