@@ -107,4 +107,16 @@ describe('global quiz calendar jobs', () => {
     expect(matchdays.ensureRoundsUntil).toHaveBeenCalledTimes(4);
     jest.useRealTimers();
   });
+
+  it('re-fetches recent finals of mixed quizzes too, so a late half-time score still arrives', async () => {
+    const { instance, prisma } = jobs();
+    await instance.refreshRecentFinals();
+    expect(prisma.match.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [{ quizQuestions: { some: {} } }, { matchday: { quizEvent: { isNot: null } } }],
+        }),
+      }),
+    );
+  });
 });

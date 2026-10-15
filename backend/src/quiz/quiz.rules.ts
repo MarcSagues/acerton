@@ -385,9 +385,17 @@ export function resolveMixedQuestion(
   return resolveQuizQuestion(type, match);
 }
 
+/**
+ * Cuanto se espera al resultado al descanso de un partido terminado antes de anular sus preguntas. football-data.org lo
+ * da siempre junto al resultado final (324 de 324 partidos de la temporada, medido el 2026-10-15) y QuizJobs vuelve a
+ * pedir cada noche los resultados de la ultima semana: anular es solo para el caso raro de que nunca llegue.
+ */
+export const HALF_TIME_WAIT_MS = 3 * 24 * 60 * 60 * 1000;
+
 export function resolveQuizQuestion(
   type: QuizQuestionType,
   match: Match,
+  now = new Date(),
 ): {
   resolution: QuizResolution;
   correctOption: QuizOption | null;
@@ -412,9 +420,10 @@ export function resolveQuizQuestion(
     };
   }
   if (HALF_TIME_TYPES.has(type)) {
-    // Sin resultado al descanso (el proveedor no lo dio) no se puede saber: se anula en vez de quedarse pendiente.
+    // Sin resultado al descanso todavia: se espera (pendiente, sin puntos) y solo se anula si no llega en 3 dias.
     if (match.htHomeScore === null || match.htAwayScore === null) {
-      return { resolution: 'VOID', correctOption: null };
+      const waited = now.getTime() - match.kickoff.getTime() > HALF_TIME_WAIT_MS;
+      return { resolution: waited ? 'VOID' : 'PENDING', correctOption: null };
     }
     const htHome = match.htHomeScore;
     const htAway = match.htAwayScore;

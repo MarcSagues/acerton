@@ -301,13 +301,18 @@ describe('automatic quiz resolution', () => {
     expect(resolution).toEqual({ resolution: 'RESOLVED', correctOption: expected });
   });
 
-  it('voids the half-time questions when the provider gave no half-time score', () => {
-    const finished = match(1, { status: 'FINISHED', homeScore: 2, awayScore: 1 });
-    expect(resolveQuizQuestion('FIRST_HALF_GOAL', finished)).toEqual({
-      resolution: 'VOID',
+  it('waits for a missing half-time score and only voids it after 3 days', () => {
+    const kickoff = new Date('2030-10-12T18:00:00Z');
+    const finished = match(1, { status: 'FINISHED', homeScore: 2, awayScore: 1, kickoff });
+    const hours = (h: number) => new Date(kickoff.getTime() + h * 60 * 60 * 1000);
+    expect(resolveQuizQuestion('FIRST_HALF_GOAL', finished, hours(3))).toEqual({
+      resolution: 'PENDING',
       correctOption: null,
     });
-    expect(resolveQuizQuestion('DRAW', finished).resolution).toBe('RESOLVED');
+    expect(resolveQuizQuestion('COMEBACK', finished, hours(71)).resolution).toBe('PENDING');
+    expect(resolveQuizQuestion('COMEBACK', finished, hours(73)).resolution).toBe('VOID');
+    // Las que no dependen del descanso se resuelven igual.
+    expect(resolveQuizQuestion('DRAW', finished, hours(3)).resolution).toBe('RESOLVED');
   });
 
   it.each([
