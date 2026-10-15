@@ -13,7 +13,7 @@ por hora de inicio, las de un mismo partido juntas. Se publica la ventana actual
 (`publishableWindows`), con los partidos aún sin empezar ya importados; una vez publicado no cambia.
 **Esquema** (migración `20261015120000_mixed_quiz`): `quiz_events.matchdayId` pasa a opcional y se añaden `windowKey` (único),
 `windowKind`, `windowStart`, `windowEnd` y `number` (nº de quiz mixto de la temporada, sale como `matchdayOrder`). Los quizzes
-antiguos se conservan y siguen funcionando hasta cerrar; ya no se publican nuevos por liga. **API**: `overview` devuelve `events`
+antiguos se conservan en la base y en el historial, pero el Quiz ya no los ofrece (decisión del usuario: solo los mixtos); se cierran solos. Ya no se publican nuevos por liga. **API**: `overview` devuelve `events`
 (abiertos del que cierra antes + último mixto cerrado) y, para las apps anteriores, `quizzes` con el mixto repetido en cada liga
 (con `competition` real) para que sus pestañas sigan funcionando. Cada resumen lleva `kind` (`MIXED`/`MATCHDAY`), `window` y
 `competitions`; cada pregunta, su `competition`. La clasificación por liga suma solo las preguntas de partidos de esa liga
