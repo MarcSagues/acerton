@@ -108,6 +108,8 @@ export class QuizJobs implements OnApplicationBootstrap {
             kickoff: fixture.kickoff,
             homeScore: fixture.homeGoals,
             awayScore: fixture.awayGoals,
+            htHomeScore: fixture.htHomeGoals ?? null,
+            htAwayScore: fixture.htAwayGoals ?? null,
             result: computeMatchResult(fixture.homeGoals, fixture.awayGoals),
           },
         });

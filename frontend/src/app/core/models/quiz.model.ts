@@ -16,9 +16,18 @@ export type QuizQuestionType =
   | 'AWAY_CLEAN_SHEET'
   | 'HOME_TWO_PLUS'
   | 'AWAY_TWO_PLUS'
-  | 'WIN_BY_TWO_PLUS';
+  | 'WIN_BY_TWO_PLUS'
+  | 'HALF_TIME_RESULT'
+  | 'FIRST_HALF_GOAL'
+  | 'SECOND_HALF_MORE_GOALS'
+  | 'GOAL_BOTH_HALVES'
+  | 'COMEBACK'
+  | 'DRAW'
+  | 'TOTAL_GOALS'
+  | 'ODD_GOALS';
 
-export type QuizOptionCode = 'HOME' | 'DRAW' | 'AWAY' | 'YES' | 'NO';
+/** GOALS_*: opciones de TOTAL_GOALS (0-1, 2-3, 4 o mas). */
+export type QuizOptionCode = 'HOME' | 'DRAW' | 'AWAY' | 'YES' | 'NO' | 'GOALS_0_1' | 'GOALS_2_3' | 'GOALS_4_PLUS';
 
 export type QuizResolution = 'PENDING' | 'RESOLVED' | 'VOID';
 

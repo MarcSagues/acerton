@@ -1,5 +1,19 @@
 # Estado actual
 
+## 2026-10-15 — Quiz: preguntas más variadas (fuera de sprint)
+
+Petición del usuario: preguntas más divertidas y más fáciles de fallar, no solo quién gana y más de 2,5 goles.
+football-data.org (plan gratuito) solo da resultado final y **al descanso** (`score.halfTime`); goleadores, tarjetas, cuotas y
+estadísticas no. Se guarda el descanso en `matches.htHomeScore`/`htAwayScore` (migración `20261015180000_quiz_more_questions`,
+que también añade los tipos y las opciones `GOALS_0_1/2_3/4_PLUS`) desde `matchDataFromFixture` y `refreshRecentFinals`.
+8 tipos nuevos: resultado al descanso (1X2), gol en la 1ª parte, más goles en la 2ª, gol en las dos partes, remontada (gana quien
+perdía al descanso), empate, número de goles (0-1 / 2-3 / 4+) y goles impares. Sin descanso del proveedor, las de descanso se
+anulan. Reparto (`generateMixedQuizQuestions`): a cada pregunta el tipo menos usado en el quiz que su partido no tenga, con
+`QUESTION_TYPES` intercalando clásicos y nuevos; un fin de semana típico sale con ~14 tipos distintos en 20 preguntas.
+Frontend: textos de las preguntas y opciones en 6 idiomas; línea en la 1.1.1. **Ojo**: la app 1.1.0 no conoce los tipos nuevos
+(sale «Elige una opción» y, en la de goles, el código de la opción): conviene publicar la 1.1.1 antes de llevarlo a producción.
+**Verificado**: backend 567 tests y los 7 de integración contra MySQL; frontend 262; en local (pantalla de juego con las nuevas).
+
 ## 2026-10-15 — Quiz mixto con fechas fijas: de ligas y de Champions (fuera de sprint)
 
 Corrección del usuario sobre el quiz mixto de la entrada siguiente: no tenía sentido que la tarjeta dijera «16–19 oct» si se

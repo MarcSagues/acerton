@@ -66,6 +66,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Nuovo Quiz con date fisse: quello dei campionati (20 domande sulle partite migliori del weekend) si gioca dal martedì al venerdì, e quello di Champions dal venerdì al martedì quando c’è.',
         de: 'Neues Quiz mit festen Terminen: Das Liga-Quiz (20 Fragen zu den besten Wochenendspielen) läuft von Dienstag bis Freitag, das Champions-League-Quiz von Freitag bis Dienstag, wenn sie läuft.',
       },
+      {
+        es: 'Preguntas nuevas en el Quiz: el resultado al descanso, si habrá remontada, goles en cada parte, cuántos goles habrá y más.',
+        en: 'New Quiz questions: the half-time score, comebacks, goals in each half, how many goals there will be and more.',
+        ca: 'Preguntes noves al Quiz: el resultat a la mitja part, si hi haurà remuntada, gols a cada part, quants gols hi haurà i més.',
+        fr: 'Nouvelles questions dans le Quiz : le score à la mi-temps, les remontées, les buts dans chaque période, le nombre de buts et plus.',
+        it: 'Nuove domande nel Quiz: il risultato all’intervallo, le rimonte, i gol in ogni tempo, quanti gol ci saranno e altro.',
+        de: 'Neue Quiz-Fragen: der Halbzeitstand, Comebacks, Tore in jeder Halbzeit, wie viele Tore fallen und mehr.',
+      },
     ],
   },
   {

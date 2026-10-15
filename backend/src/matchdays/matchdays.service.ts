@@ -394,6 +394,8 @@ export class MatchdaysService {
       status: fixture.status,
       homeScore: fixture.homeGoals,
       awayScore: fixture.awayGoals,
+      htHomeScore: fixture.htHomeGoals ?? null,
+      htAwayScore: fixture.htAwayGoals ?? null,
       result: computeMatchResult(fixture.homeGoals, fixture.awayGoals) as PredictionChoice | null,
     };
   }

@@ -126,6 +126,14 @@ const QUESTION_KEYS: Record<QuizQuestionType, { key: TranslationKey; team?: 'hom
   HOME_TWO_PLUS: { key: 'quiz.preguntaDosOMas', team: 'home' },
   AWAY_TWO_PLUS: { key: 'quiz.preguntaDosOMas', team: 'away' },
   WIN_BY_TWO_PLUS: { key: 'quiz.preguntaGanaPorDos' },
+  HALF_TIME_RESULT: { key: 'quiz.preguntaDescanso' },
+  FIRST_HALF_GOAL: { key: 'quiz.preguntaGolPrimeraParte' },
+  SECOND_HALF_MORE_GOALS: { key: 'quiz.preguntaMasGolesSegunda' },
+  GOAL_BOTH_HALVES: { key: 'quiz.preguntaGolDosPartes' },
+  COMEBACK: { key: 'quiz.preguntaRemontada' },
+  DRAW: { key: 'quiz.preguntaEmpate' },
+  TOTAL_GOALS: { key: 'quiz.preguntaTotalGoles' },
+  ODD_GOALS: { key: 'quiz.preguntaGolesImpar' },
 };
 
 /** Texto de la pregunta a partir de su tipo (un tipo que la app todavia no conoce sale con un texto generico). */
@@ -148,6 +156,12 @@ export function optionLabel(option: QuizOptionCode, match: QuizMatch): string {
       return t('quiz.opcionSi');
     case 'NO':
       return t('quiz.opcionNo');
+    case 'GOALS_0_1':
+      return t('quiz.opcionGoles01');
+    case 'GOALS_2_3':
+      return t('quiz.opcionGoles23');
+    case 'GOALS_4_PLUS':
+      return t('quiz.opcionGoles4');
     default:
       return String(option);
   }

@@ -90,6 +90,8 @@ describe('quiz-rules', () => {
     expect(questionText({ type: 'HOME_CLEAN_SHEET', match })).toBe('¿Terminará Barça sin encajar goles?');
     expect(questionText({ type: 'AWAY_TWO_PLUS', match })).toBe('¿Marcará Real Madrid dos o más goles?');
     expect(questionText({ type: 'NUEVO_TIPO' as never, match })).toBe('Elige una opción');
+    expect(questionText({ type: 'HALF_TIME_RESULT', match })).toBe('¿Cómo irá el partido al descanso?');
+    expect(questionText({ type: 'COMEBACK', match })).toBe('¿Ganará algún equipo que vaya perdiendo al descanso?');
     setLanguageForTests('en');
     expect(questionText({ type: 'OVER_2_5', match })).toBe('Will there be over 2.5 goals?');
   });
@@ -101,6 +103,7 @@ describe('quiz-rules', () => {
     expect(optionLabel('DRAW', match)).toBe('Empate');
     expect(optionLabel('YES', match)).toBe('Sí');
     expect(optionLabel('NO', match)).toBe('No');
+    expect(optionLabel('GOALS_4_PLUS', match)).toBe('4 o más');
   });
 
   it('distingue pendiente, anulada, acierto, fallo y sin responder', () => {
