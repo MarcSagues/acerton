@@ -11,6 +11,7 @@ import {
   generateMixedQuizQuestions,
   mustLockQuiz,
   openQuizWindow,
+  EUROPEAN_COMPETITIONS,
   QUIZ_COMPETITIONS,
   QUIZ_QUESTION_COUNT,
   quizDeadline,
@@ -752,10 +753,17 @@ export class QuizService {
         ))
     `);
     for (const event of events) await this.refreshEventIfStale(event.id);
-    // General: los puntos de cada quiz. Por liga: solo los de las preguntas de partidos de esa liga (un quiz mixto
-    // mezcla ligas), y cuenta como jugado cada quiz con alguna respuesta en ella.
-    const totals = query.competitionId
-      ? Prisma.sql`
+    // General: los puntos de cada quiz. Ligas / Champions (y una liga, para apps anteriores): solo los de las preguntas
+    // de partidos de esas competiciones, y cuenta como jugado cada quiz con alguna respuesta en ellas.
+    const european = Prisma.sql`(${Prisma.join(EUROPEAN_COMPETITIONS.map((code) => Prisma.sql`${code}`))})`;
+    const filter = query.competitionId
+      ? Prisma.sql`md."competitionId" = ${query.competitionId}`
+      : query.scope === 'CHAMPIONS'
+        ? Prisma.sql`c.code::text IN ${european}`
+        : Prisma.sql`c.code::text NOT IN ${european}`;
+    const totals =
+      query.competitionId || query.scope
+        ? Prisma.sql`
         SELECT p."userId", SUM(COALESCE(a."pointsEarned", 0)) AS points,
           COUNT(DISTINCT p.id) AS "quizzesPlayed"
         FROM quiz_participations p JOIN quiz_events e ON e.id = p."eventId"
@@ -763,9 +771,10 @@ export class QuizService {
         JOIN quiz_questions q ON q.id = a."questionId"
         JOIN matches mt ON mt.id = q."matchId"
         JOIN matchdays md ON md.id = mt."matchdayId"
-        WHERE e."seasonLabel" = ${seasonLabel} AND md."competitionId" = ${query.competitionId}
+        JOIN competitions c ON c.id = md."competitionId"
+        WHERE e."seasonLabel" = ${seasonLabel} AND ${filter}
         GROUP BY p."userId"`
-      : Prisma.sql`
+        : Prisma.sql`
         SELECT p."userId", SUM(p.points) AS points, COUNT(*) AS "quizzesPlayed"
         FROM quiz_participations p JOIN quiz_events e ON e.id = p."eventId"
         WHERE e."seasonLabel" = ${seasonLabel} GROUP BY p."userId"`;
@@ -812,12 +821,30 @@ export class QuizService {
         participations: { some: {} },
         ...(query.competitionId
           ? { questions: { some: { match: { matchday: { competitionId: query.competitionId } } } } }
-          : {}),
+          : query.scope
+            ? {
+                questions: {
+                  some: {
+                    match: {
+                      matchday: {
+                        competition: {
+                          code:
+                            query.scope === 'CHAMPIONS'
+                              ? { in: EUROPEAN_COMPETITIONS }
+                              : { notIn: EUROPEAN_COMPETITIONS },
+                        },
+                      },
+                    },
+                  },
+                },
+              }
+            : {}),
       },
     });
     return {
       seasonLabel,
       competitionId: query.competitionId ?? null,
+      scope: query.competitionId ? null : (query.scope ?? null),
       provisional: provisional > 0,
       rows: rows.slice(0, limit).map(mapRow),
       me: own[0] ? mapRow(own[0]) : null,
