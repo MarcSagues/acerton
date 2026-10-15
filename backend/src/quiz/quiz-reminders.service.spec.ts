@@ -142,9 +142,9 @@ describe('QuizRemindersService.sendDueReminders', () => {
 });
 
 describe('quizTitle', () => {
-  it('names a mixed quiz by its window and an old one by its league and matchday', () => {
-    expect(quizTitle({ windowKind: 'WEEKEND', matchday: null })).toBe('Quiz del fin de semana');
-    expect(quizTitle({ windowKind: 'MIDWEEK', matchday: null })).toBe('Quiz de entre semana');
+  it('names a mixed quiz by its kind (leagues or Champions) and an old one by its league and matchday', () => {
+    expect(quizTitle({ windowKind: 'WEEKEND', matchday: null })).toBe('Quiz de ligas');
+    expect(quizTitle({ windowKind: 'MIDWEEK', matchday: null })).toBe('Quiz de Champions');
     expect(
       quizTitle({ windowKind: null, matchday: { order: 8, competition: { name: 'La Liga' } } }),
     ).toBe('Quiz de La Liga · Jornada 8');

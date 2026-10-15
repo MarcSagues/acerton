@@ -4,7 +4,7 @@ import { MatchdaysService } from '../matchdays/matchdays.service';
 import { FootballProvider } from '../football-data/football-provider.interface';
 import { QuizService, seasonLabelFor } from './quiz.service';
 import { getCurrentFootballSeason } from '../common/season.util';
-import { quizWindowFor } from './quiz.rules';
+import { openQuizWindow } from './quiz.rules';
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -107,13 +107,23 @@ integration('Quiz API service against MySQL', () => {
     }
   });
 
-  /** Ventana del quiz mixto que se puede publicar ya y que aun no ha empezado del todo: la de "dentro de un dia". */
+  /** El proximo quiz de ligas cuyos partidos aun no han empezado (si ahora se juega el de Champions, el siguiente). */
+  function leagueWindow() {
+    const now = openQuizWindow(new Date());
+    return now.kind === 'WEEKEND' ? now : openQuizWindow(now.start);
+  }
+
+  /** Hora de los partidos: dentro de la ventana y nunca a medianoche UTC (seria una hora sin confirmar). */
   function kickoffBase(): Date {
-    const now = Date.now();
-    const window = quizWindowFor(new Date(now + 24 * 60 * 60 * 1000));
-    const from = Math.max(now + 60 * 60 * 1000, window.start.getTime());
-    // A medio camino del final de la ventana, y nunca a medianoche UTC (seria una hora sin confirmar).
-    return new Date(Math.floor((from + window.end.getTime()) / 2 / 60000) * 60000 + 30000);
+    return new Date(leagueWindow().start.getTime() + 2 * 60 * 60 * 1000 + 30000);
+  }
+
+  /** Cierra ya el quiz (su cierre es a hora fija, dias despues): como si hubiese llegado el corte. */
+  async function closeNow(eventId: string) {
+    await prisma.quizEvent.update({
+      where: { id: eventId },
+      data: { closesAt: new Date(Date.now() - 1000) },
+    });
   }
 
   async function createRound(league = 'liga', order = 1, count = 10) {
@@ -142,9 +152,10 @@ integration('Quiz API service against MySQL', () => {
   }
 
   async function publish() {
-    await service.publishAvailable();
+    const window = leagueWindow();
+    await service.publishAvailable(window.opensAt);
     return prisma.quizEvent.findFirst({
-      where: { windowKey: quizWindowFor(kickoffBase()).key },
+      where: { windowKey: window.key },
       include: { questions: { orderBy: { order: 'asc' } } },
     });
   }
@@ -293,26 +304,40 @@ integration('Quiz API service against MySQL', () => {
     ).toBe(true);
   });
 
-  it('updates the deadline when a quiz match moves earlier and locks when it starts, without reopening', async () => {
+  it('keeps its fixed close when a game moves earlier, voids that game and never reopens', async () => {
     const event = (await round('liga', 1, 12))!;
-    const [first] = quizMatchIds(event);
-    const earlier = new Date(Date.now() + 60000);
-    await prisma.match.update({ where: { id: first }, data: { kickoff: earlier } });
-    expect((await service.detail(event.id, `${prefix}a`)).quiz.closesAt).toBe(
-      earlier.toISOString(),
-    );
-    await prisma.match.update({ where: { id: first }, data: { status: 'LIVE' } });
-    await expect(service.start(event.id, `${prefix}a`)).rejects.toMatchObject({
-      response: { code: 'QUIZ_CLOSED' },
-    });
+    const [first, second] = quizMatchIds(event);
+    // Un partido se adelanta y se juega: el quiz sigue abierto hasta su hora fija.
     await prisma.match.update({
       where: { id: first },
-      data: { status: 'POSTPONED', kickoff: future() },
+      data: { kickoff: new Date(Date.now() - 60000), status: 'LIVE' },
     });
+    const open = await service.detail(event.id, `${prefix}a`);
+    expect(open.canAnswer).toBe(true);
+    expect(open.quiz.closesAt).toBe(event.closesAt.toISOString());
+    await service.start(event.id, `${prefix}a`);
+    // Llega el cierre: el adelantado se anula, el resto se resuelve con normalidad.
+    await prisma.match.update({
+      where: { id: first },
+      data: { status: 'FINISHED', homeScore: 1, awayScore: 0 },
+    });
+    await prisma.match.update({
+      where: { id: second },
+      data: { status: 'FINISHED', homeScore: 0, awayScore: 0 },
+    });
+    await closeNow(event.id);
+    const closed = await service.detail(event.id, `${prefix}a`);
+    expect(closed.canAnswer).toBe(false);
+    for (const question of closed.questions) {
+      if (question.match.id === first) expect(question.resolution).toBe('VOID');
+      if (question.match.id === second) expect(question.resolution).toBe('RESOLVED');
+    }
+    await expect(service.start(event.id, `${prefix}b`)).rejects.toMatchObject({
+      response: { code: 'QUIZ_CLOSED' },
+    });
+    // Aunque el cierre se moviese, un quiz cerrado no se reabre.
+    await prisma.quizEvent.update({ where: { id: event.id }, data: { closesAt: future() } });
     expect((await service.detail(event.id, `${prefix}a`)).canAnswer).toBe(false);
-    expect(
-      (await prisma.quizEvent.findUniqueOrThrow({ where: { id: event.id } })).lockedAt,
-    ).not.toBeNull();
   });
 
   it('checks the deadline again after waiting for a competing database lock', async () => {
@@ -325,10 +350,7 @@ integration('Quiz API service against MySQL', () => {
     const held = prisma.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM quiz_events WHERE id = ${event.id} FOR UPDATE`);
       const soon = new Date(Date.now() + 100);
-      await tx.match.updateMany({
-        where: { id: { in: quizMatchIds(event) } },
-        data: { kickoff: soon },
-      });
+      await tx.quizEvent.update({ where: { id: event.id }, data: { closesAt: soon } });
       acquired();
       await new Promise((resolve) => setTimeout(resolve, 250));
     });
@@ -355,6 +377,7 @@ integration('Quiz API service against MySQL', () => {
       where: { id: { in: quizMatchIds(event) } },
       data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
     });
+    await closeNow(event.id);
     const first = await service.detail(event.id, `${prefix}a`);
     const second = await service.detail(event.id, `${prefix}a`);
     expect(second.quiz.participation?.points).toBe(first.quiz.participation?.points);
@@ -398,6 +421,7 @@ integration('Quiz API service against MySQL', () => {
       where: { id: { in: quizMatchIds(event) } },
       data: { status: 'FINISHED', homeScore: 3, awayScore: 0 },
     });
+    await closeNow(event.id);
     const general = await service.rankings(`${prefix}b`, { limit: 1 });
     const league = await service.rankings(`${prefix}b`, { competitionId: `${prefix}liga` });
     const premier = await service.rankings(`${prefix}b`, { competitionId: `${prefix}premier` });

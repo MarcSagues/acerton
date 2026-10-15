@@ -4,14 +4,15 @@ import {
   matchInterest,
   mustLockQuiz,
   planMixedQuiz,
-  publishableWindows,
+  openQuizWindow,
   QUESTION_TYPES,
   QUIZ_QUESTION_COUNT,
   QuizCandidate,
   questionTarget,
   quizDeadline,
-  quizWindowFor,
+  resolveMixedQuestion,
   resolveQuizQuestion,
+  windowCompetitions,
 } from './quiz.rules';
 
 function match(id: number, overrides: Partial<Match> = {}): Match {
@@ -145,35 +146,65 @@ describe('mixed quiz selection and generation', () => {
   });
 });
 
-describe('mixed quiz windows (Madrid time)', () => {
-  it('weekend runs Friday to Monday and midweek Tuesday to Thursday', () => {
-    // Sabado 17 de octubre de 2026, 20:00 en Madrid (verano, UTC+2).
-    expect(quizWindowFor(new Date('2026-10-17T18:00:00Z'))).toEqual({
+describe('mixed quiz dates (Madrid time)', () => {
+  const at = (iso: string) => openQuizWindow(new Date(iso));
+
+  it('the league quiz is played Tuesday to Friday 18:00, with the league games from Friday to Tuesday', () => {
+    // Jueves 15 de octubre de 2026 (verano, UTC+2).
+    expect(at('2026-10-15T12:00:00Z')).toEqual({
       key: '2026-10-16-WEEKEND',
       kind: 'WEEKEND',
-      start: new Date('2026-10-15T22:00:00Z'),
-      end: new Date('2026-10-19T22:00:00Z'),
+      opensAt: new Date('2026-10-13T16:00:00Z'),
+      start: new Date('2026-10-16T16:00:00Z'),
+      end: new Date('2026-10-20T16:00:00Z'),
     });
-    expect(quizWindowFor(new Date('2026-10-19T21:59:00Z')).key).toBe('2026-10-16-WEEKEND');
-    const tuesday = quizWindowFor(new Date('2026-10-19T22:00:00Z'));
-    expect(tuesday.key).toBe('2026-10-20-MIDWEEK');
-    expect(tuesday.end).toEqual(new Date('2026-10-22T22:00:00Z'));
-    expect(quizWindowFor(new Date('2026-10-22T21:59:59Z')).kind).toBe('MIDWEEK');
+    expect(windowCompetitions('WEEKEND')).not.toContain('CHAMPIONS_LEAGUE');
+    expect(windowCompetitions('WEEKEND')).toContain('LA_LIGA');
   });
 
-  it('follows the winter time change', () => {
-    // El 25 de octubre de 2026 Madrid pasa a UTC+1: ese fin de semana empieza en verano y acaba en invierno.
-    const window = quizWindowFor(new Date('2026-10-24T12:00:00Z'));
-    expect(window.start).toEqual(new Date('2026-10-22T22:00:00Z'));
-    expect(window.end).toEqual(new Date('2026-10-26T23:00:00Z'));
+  it('the Champions quiz is played Friday to Tuesday 18:00, with the Champions games from Tuesday to Friday', () => {
+    const window = at('2026-10-16T16:00:00Z'); // justo en el corte del viernes
+    expect(window).toEqual({
+      key: '2026-10-20-MIDWEEK',
+      kind: 'MIDWEEK',
+      opensAt: new Date('2026-10-16T16:00:00Z'),
+      start: new Date('2026-10-20T16:00:00Z'),
+      end: new Date('2026-10-23T16:00:00Z'),
+    });
+    expect(at('2026-10-20T15:59:59Z').key).toBe('2026-10-20-MIDWEEK');
+    expect(windowCompetitions('MIDWEEK')).toEqual(['CHAMPIONS_LEAGUE']);
   });
 
-  it('publishes the next window only two days before it starts', () => {
-    const keys = (iso: string) => publishableWindows(new Date(iso)).map((w) => w.key);
-    expect(keys('2026-10-17T12:00:00Z')).toEqual(['2026-10-16-WEEKEND']);
-    expect(keys('2026-10-18T12:00:00Z')).toEqual(['2026-10-16-WEEKEND', '2026-10-20-MIDWEEK']);
-    expect(keys('2026-10-20T12:00:00Z')).toEqual(['2026-10-20-MIDWEEK']);
-    expect(keys('2026-10-21T12:00:00Z')).toEqual(['2026-10-20-MIDWEEK', '2026-10-23-WEEKEND']);
+  it('every quiz is open at least 3 days and follows the winter time change', () => {
+    for (let day = 1; day <= 60; day++) {
+      const window = at(new Date(Date.UTC(2026, 9, day, 9)).toISOString());
+      expect(window.start.getTime() - window.opensAt.getTime()).toBeGreaterThanOrEqual(
+        3 * 24 * 60 * 60 * 1000,
+      );
+    }
+    // El 25 de octubre Madrid pasa a UTC+1: el corte sigue a las 18:00 de alli.
+    const winter = at('2026-10-24T12:00:00Z');
+    expect(winter.start).toEqual(new Date('2026-10-27T17:00:00Z'));
+    expect(winter.end).toEqual(new Date('2026-10-30T17:00:00Z'));
+  });
+
+  it('voids a question whose game started before the quiz closed', () => {
+    const closesAt = new Date('2030-10-11T16:00:00Z');
+    const played = { status: 'FINISHED' as const, homeScore: 2, awayScore: 0 };
+    expect(
+      resolveMixedQuestion(
+        'WINNER',
+        match(1, { ...played, kickoff: new Date('2030-10-11T15:00:00Z') }),
+        closesAt,
+      ),
+    ).toEqual({ resolution: 'VOID', correctOption: null });
+    expect(
+      resolveMixedQuestion(
+        'WINNER',
+        match(1, { ...played, kickoff: new Date('2030-10-11T19:00:00Z') }),
+        closesAt,
+      ),
+    ).toEqual({ resolution: 'RESOLVED', correctOption: 'HOME' });
   });
 });
 
