@@ -59,12 +59,12 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     date: '2026-10-15',
     changes: [
       {
-        es: 'El Quiz ahora es uno solo con 20 preguntas de los mejores partidos de todas las ligas: un quiz para el fin de semana y otro entre semana.',
-        en: 'The Quiz is now a single quiz with 20 questions on the best games across every league: one for the weekend and one midweek.',
-        ca: 'El Quiz ara és un de sol amb 20 preguntes dels millors partits de totes les lligues: un quiz per al cap de setmana i un altre entre setmana.',
-        fr: 'Le Quiz devient un seul quiz de 20 questions sur les plus beaux matchs de tous les championnats : un pour le week-end et un en semaine.',
-        it: 'Il Quiz ora è uno solo, con 20 domande sulle partite migliori di tutti i campionati: uno per il weekend e uno infrasettimanale.',
-        de: 'Das Quiz ist jetzt ein einziges mit 20 Fragen zu den besten Spielen aller Ligen: eins fürs Wochenende und eins unter der Woche.',
+        es: 'Nuevo Quiz con fechas fijas: el de ligas (20 preguntas de los mejores partidos del fin de semana) se juega de martes a viernes, y el de Champions de viernes a martes cuando hay Champions.',
+        en: "New Quiz with fixed dates: the league quiz (20 questions on the best weekend games) runs Tuesday to Friday, and the Champions League quiz Friday to Tuesday when it's on.",
+        ca: 'Nou Quiz amb dates fixes: el de lligues (20 preguntes dels millors partits del cap de setmana) es juga de dimarts a divendres, i el de Champions de divendres a dimarts quan n’hi ha.',
+        fr: 'Nouveau Quiz à dates fixes : celui des championnats (20 questions sur les plus beaux matchs du week-end) se joue du mardi au vendredi, et celui de la Ligue des champions du vendredi au mardi quand il y en a.',
+        it: 'Nuovo Quiz con date fisse: quello dei campionati (20 domande sulle partite migliori del weekend) si gioca dal martedì al venerdì, e quello di Champions dal venerdì al martedì quando c’è.',
+        de: 'Neues Quiz mit festen Terminen: Das Liga-Quiz (20 Fragen zu den besten Wochenendspielen) läuft von Dienstag bis Freitag, das Champions-League-Quiz von Freitag bis Dienstag, wenn sie läuft.',
       },
     ],
   },

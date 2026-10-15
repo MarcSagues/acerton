@@ -231,6 +231,33 @@ export class MatchdaysService {
   }
 
   /**
+   * Para el Quiz: importa por adelantado las jornadas siguientes de una competicion (como mucho `maxRounds`) mientras la
+   * ultima que tenemos acabe antes de `until`. Hace falta cuando una liga juega jornada entre semana: la del fin de
+   * semana no se importaria hasta que empezase esa, y el quiz de ligas (que se publica el martes) se quedaria sin sus
+   * partidos. No abre pronosticos antes de tiempo: eso lo sigue limitando getOrders. Devuelve si importo alguna.
+   */
+  async ensureRoundsUntil(competitionId: string, until: Date, maxRounds = 2): Promise<boolean> {
+    const competition = await this.prisma.competition.findUnique({ where: { id: competitionId } });
+    if (!competition) return false;
+    let imported = false;
+    for (let i = 0; i < maxRounds; i++) {
+      const latest = await this.prisma.matchday.findFirst({
+        where: { competitionId, season: competition.currentSeason },
+        orderBy: { order: 'desc' },
+        include: { matches: { select: { kickoff: true } } },
+      });
+      if (!latest || !latest.matches.length || parseRoundOrder(latest.name, -1) !== latest.order) {
+        return imported;
+      }
+      const lastKickoff = Math.max(...latest.matches.map((m) => m.kickoff.getTime()));
+      if (lastKickoff >= until.getTime()) return imported;
+      if (!(await this.syncSpecificRound(competitionId, latest.order + 1))) return imported;
+      imported = true;
+    }
+    return imported;
+  }
+
+  /**
    * Jornada anterior/siguiente a una dada, dentro de la misma competicion,
    * ordenada por `order` (numero de jornada) en vez de por closesAt, para
    * que un partido reprogramado antes/despues de su jornada no desordene la

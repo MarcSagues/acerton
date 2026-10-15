@@ -1,5 +1,21 @@
 # Estado actual
 
+## 2026-10-15 — Quiz mixto con fechas fijas: de ligas y de Champions (fuera de sprint)
+
+Corrección del usuario sobre el quiz mixto de la entrada siguiente: no tenía sentido que la tarjeta dijera «16–19 oct» si se
+abría el 15 y cerraba el 17 (al empezar el primer partido). Pidió fechas fijas, un mínimo de 3 días abierto y que las
+preguntas sean de los partidos que se juegan después; y eligió **un quiz de ligas y otro de Champions (solo cuando la hay)**.
+Reglas (`openQuizWindow`, cortes los martes y viernes a las 18:00 de Madrid): **quiz de ligas** (`windowKind` WEEKEND) se
+juega de martes a viernes 18:00 con los partidos de liga de viernes 18:00 a martes 18:00; **quiz de Champions** (MIDWEEK) se
+juega de viernes a martes 18:00 con los de Champions de martes a viernes. Cierre fijo (`closesAt` = inicio de sus partidos);
+si un partido se adelanta y empieza antes, sus preguntas se anulan (`resolveMixedQuestion`). Sin partidos (semana sin
+Champions, parón), no hay quiz. Las jornadas de liga entre semana no entran en ningún quiz. `QuizJobs.importAhead` importa por
+adelantado (`MatchdaysService.ensureRoundsUntil`) las jornadas que necesitará el siguiente quiz; no abre pronósticos antes
+(`getOrders` lo sigue limitando). Un mixto antiguo que solape (el de dev de esta semana) evita publicar otro igual. API: la
+ventana trae `firstKickoff`/`lastKickoff`; la app titula «Quiz de ligas» / «Quiz de Champions» y pone «Partidos del X al Y».
+Sin migración nueva (mismos valores del enum). **Verificado**: backend 70 tests de Quiz (integración contra MySQL incluida),
+frontend 262. Línea de la 1.1.1 reescrita.
+
 ## 2026-10-15 — Quiz mixto: 20 preguntas de todas las ligas (fuera de sprint)
 
 Petición del usuario: en vez de un quiz por liga y jornada (10 preguntas), **un único quiz de 20 preguntas** con los partidos

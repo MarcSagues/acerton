@@ -47,7 +47,7 @@
         <header class="quiz-head">
           <span class="eyebrow mono">
             @if (days(quiz); as range) {
-              {{ range.from | date: 'd MMM' }} – {{ range.to | date: 'd MMM' }}
+              {{ 'quiz.partidosDel' | t: { from: (range.from | date: 'd MMM'), to: (range.to | date: 'd MMM') } }}
             } @else {
               {{ quiz.competition.name }}
             }

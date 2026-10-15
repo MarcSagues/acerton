@@ -69,14 +69,14 @@ export function dueClosingTier(event: QuizReminderEvent, now: Date): QuizClosing
   return null;
 }
 
-/** Titulo del aviso: el quiz mixto por su ventana, el antiguo por su liga y jornada. */
+/** Titulo del aviso: el quiz mixto, de ligas o de Champions; el antiguo, por su liga y jornada. */
 export function quizTitle(event: {
   windowKind: QuizWindowKind | null;
   matchday: { order: number; competition: { name: string } } | null;
 }): string {
   if (event.matchday)
     return `Quiz de ${event.matchday.competition.name} · Jornada ${event.matchday.order}`;
-  return event.windowKind === 'MIDWEEK' ? 'Quiz de entre semana' : 'Quiz del fin de semana';
+  return event.windowKind === 'MIDWEEK' ? 'Quiz de Champions' : 'Quiz de ligas';
 }
 
 /**

@@ -1,5 +1,11 @@
 # Decisiones
 
+## 2026-10-15 — Quiz mixto con fechas fijas: de ligas y de Champions
+
+Sustituye a la de abajo en cuanto a fechas: el quiz se juega con fechas fijas (cortes martes y viernes a las 18:00 de Madrid,
+mínimo 3 días abierto) y sus preguntas son de los partidos que se juegan justo después. Hay un quiz de ligas (de martes a
+viernes, partidos del fin de semana) y uno de Champions (de viernes a martes, solo si hay Champions esa semana); nada más.
+
 ## 2026-10-15 — Quiz mixto: un quiz de todas las ligas por fin de semana y entre semana
 
 El usuario pidió que el Quiz sea de 20 preguntas con los partidos más interesantes de todas las ligas mezcladas,

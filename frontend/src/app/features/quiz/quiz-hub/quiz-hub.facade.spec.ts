@@ -64,7 +64,7 @@ describe('QuizHubFacade', () => {
     const weekend = mixedSummary({ closesAt: '2026-10-16T18:00:00.000Z' });
     const midweek = mixedSummary({
       id: 'mx2',
-      window: { kind: 'MIDWEEK', start: '2026-10-19T22:00:00.000Z', end: '2026-10-22T22:00:00.000Z' },
+      window: { kind: 'MIDWEEK', start: '2026-10-19T22:00:00.000Z', end: '2026-10-22T22:00:00.000Z', firstKickoff: '2026-10-19T22:00:00.000Z', lastKickoff: '2026-10-22T22:00:00.000Z' },
       closesAt: '2026-10-20T16:45:00.000Z',
     });
     const played = mixedSummary({
@@ -82,9 +82,9 @@ describe('QuizHubFacade', () => {
     expect(facade.primaryQuiz()?.id).toBe('mx1');
     expect(facade.otherQuizzes().map((q) => q.id)).toEqual(['mx2']);
     expect(facade.previousQuiz()?.id).toBe('mx0');
-    expect(facade.title(weekend)).toBe('Quiz del finde');
-    expect(facade.title(midweek)).toBe('Quiz entre semana');
-    expect(facade.days(weekend)).toEqual({ from: '2026-10-16T10:00:00.000Z', to: '2026-10-19T10:00:00.000Z' });
+    expect(facade.title(weekend)).toBe('Quiz de ligas');
+    expect(facade.title(midweek)).toBe('Quiz de Champions');
+    expect(facade.days(weekend)).toEqual({ from: '2026-10-16T18:30:00.000Z', to: '2026-10-19T19:00:00.000Z' });
     expect(facade.days(quizSummary())).toBeNull();
   });
 

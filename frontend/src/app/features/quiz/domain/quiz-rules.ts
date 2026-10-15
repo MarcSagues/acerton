@@ -86,23 +86,15 @@ export function pickHubQuizzes(quizzes: readonly QuizSummary[]): {
   return { primary, others: open.slice(1), previous };
 }
 
-/** Titulo de un quiz: "Quiz del finde" / "Quiz entre semana" si es mixto; "Jornada N" si es de los antiguos. */
+/** Titulo de un quiz: "Quiz de ligas" / "Quiz de Champions" si es mixto; "Jornada N" si es de los antiguos. */
 export function quizTitle(quiz: Pick<QuizIdentity, 'kind' | 'window' | 'matchdayOrder'>): string {
   if (quiz.kind !== 'MIXED') return t('quiz.jornadaN', { order: quiz.matchdayOrder });
-  return quiz.window?.kind === 'MIDWEEK' ? t('quiz.quizEntreSemana') : t('quiz.quizFinde');
+  return quiz.window?.kind === 'MIDWEEK' ? t('quiz.quizChampions') : t('quiz.quizLigas');
 }
 
-const HALF_DAY_MS = 12 * 60 * 60 * 1000;
-
-/**
- * Primer y ultimo dia de la ventana de un quiz mixto, para pintarlos con el pipe de fecha. La ventana va de medianoche
- * a medianoche en Madrid: se toma el mediodia de cada extremo para que el dia salga bien en cualquier zona horaria.
- */
+/** Dias de los partidos de un quiz mixto (el primero y el ultimo), para pintarlos con el pipe de fecha. */
 export function windowDays(window: QuizWindow): { from: string; to: string } {
-  return {
-    from: new Date(Date.parse(window.start) + HALF_DAY_MS).toISOString(),
-    to: new Date(Date.parse(window.end) - HALF_DAY_MS).toISOString(),
-  };
+  return { from: window.firstKickoff, to: window.lastKickoff };
 }
 
 export function quizStatusLabel(quiz: QuizSummary): string {

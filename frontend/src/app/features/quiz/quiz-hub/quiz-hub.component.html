@@ -27,7 +27,7 @@
               <div class="card-title">
                 <span class="eyebrow mono">
                   @if (page.days(quiz); as days) {
-                    {{ days.from | date: 'd MMM' }} – {{ days.to | date: 'd MMM' }}
+                    {{ 'quiz.partidosDel' | t: { from: (days.from | date: 'd MMM'), to: (days.to | date: 'd MMM') } }}
                   } @else {
                     {{ quiz.competition.name }}
                   }

@@ -132,7 +132,7 @@ describe('QuizHistoryFacade', () => {
     const mixed: QuizHistoryEntry = {
       ...entry('mx', LALIGA, [hit('m1')]),
       kind: 'MIXED',
-      window: { kind: 'WEEKEND', start: '2026-10-15T22:00:00.000Z', end: '2026-10-19T22:00:00.000Z' },
+      window: { kind: 'WEEKEND', start: '2026-10-16T16:00:00.000Z', end: '2026-10-20T16:00:00.000Z', firstKickoff: '2026-10-16T18:30:00.000Z', lastKickoff: '2026-10-19T19:00:00.000Z' },
       competition: { id: 'MIXED', code: 'MIXED', name: 'Piqo', logoUrl: null },
       competitions: [PREMIER, LALIGA],
     };
@@ -143,6 +143,6 @@ describe('QuizHistoryFacade', () => {
     expect(facade.quizzes().map((q) => q.quizId)).toEqual(['mx']);
     facade.selectCompetition(LALIGA.id);
     expect(facade.quizzes().map((q) => q.quizId)).toEqual(['mx', 'liga']);
-    expect(facade.title(mixed)).toBe('Quiz del finde');
+    expect(facade.title(mixed)).toBe('Quiz de ligas');
   });
 });

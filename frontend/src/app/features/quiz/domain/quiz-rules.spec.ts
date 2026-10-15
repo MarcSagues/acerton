@@ -70,20 +70,18 @@ describe('quiz-rules', () => {
     expect(picked.previous).toBeNull();
   });
 
-  it('titula el quiz mixto por su ventana y el antiguo por su jornada', () => {
-    expect(quizTitle(mixedSummary())).toBe('Quiz del finde');
-    expect(quizTitle(mixedSummary({ window: { kind: 'MIDWEEK', start: '', end: '' } }))).toBe('Quiz entre semana');
+  it('titula el quiz mixto por su tipo (ligas o Champions) y el antiguo por su jornada', () => {
+    const champions = mixedSummary();
+    champions.window = { ...champions.window!, kind: 'MIDWEEK' };
+    expect(quizTitle(mixedSummary())).toBe('Quiz de ligas');
+    expect(quizTitle(champions)).toBe('Quiz de Champions');
     expect(quizTitle(quizSummary({ matchdayOrder: 9 }))).toBe('Jornada 9');
     setLanguageForTests('en');
-    expect(quizTitle(mixedSummary())).toBe('Weekend quiz');
+    expect(quizTitle(mixedSummary())).toBe('League quiz');
   });
 
-  it('los dias de la ventana salen al mediodia de cada extremo (bien en cualquier zona horaria)', () => {
-    // Del viernes 16 (00:00 en Madrid = 22:00 UTC del 15) al lunes 19 de octubre.
-    expect(windowDays({ kind: 'WEEKEND', start: '2026-10-15T22:00:00.000Z', end: '2026-10-19T22:00:00.000Z' })).toEqual({
-      from: '2026-10-16T10:00:00.000Z',
-      to: '2026-10-19T10:00:00.000Z',
-    });
+  it('los dias del quiz mixto son los de su primer y su ultimo partido', () => {
+    expect(windowDays(mixedSummary().window!)).toEqual({ from: '2026-10-16T18:30:00.000Z', to: '2026-10-19T19:00:00.000Z' });
   });
 
   it('pinta la pregunta a partir del tipo, con el equipo cuando toca', () => {

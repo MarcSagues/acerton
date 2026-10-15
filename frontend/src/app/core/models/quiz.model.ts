@@ -39,16 +39,21 @@ export interface QuizParticipation {
 }
 
 /**
- * MIXED: quiz de 20 preguntas con partidos de todas las ligas, uno por ventana (fin de semana de viernes a lunes o
- * entre semana de martes a jueves, hora de Madrid). MATCHDAY: los antiguos, de una liga y jornada.
+ * MIXED: quiz de 20 preguntas con fechas fijas (hora de Madrid): el de ligas se juega de martes a viernes a las 18:00
+ * con los partidos de liga del fin de semana; el de Champions, de viernes a martes con los de Champions de esa semana.
+ * MATCHDAY: los antiguos, de una liga y jornada.
  */
 export type QuizKind = 'MIXED' | 'MATCHDAY';
 
 export interface QuizWindow {
+  /** WEEKEND: quiz de ligas. MIDWEEK: quiz de Champions. */
   kind: 'WEEKEND' | 'MIDWEEK';
+  /** Limites de sus partidos: empiezan al cerrar el quiz (`start`) y acaban en el corte siguiente. */
   start: string;
-  /** Inicio de la ventana siguiente (exclusivo). */
   end: string;
+  /** Primer y ultimo partido de sus preguntas. */
+  firstKickoff: string;
+  lastKickoff: string;
 }
 
 /** Lo que identifica un quiz: su tipo, su ventana o su liga y jornada, y las ligas de sus preguntas. */
