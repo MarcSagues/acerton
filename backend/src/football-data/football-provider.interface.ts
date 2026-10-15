@@ -16,6 +16,9 @@ export interface ProviderFixture {
   status: ProviderFixtureStatus;
   homeGoals: number | null;
   awayGoals: number | null;
+  /** Resultado al descanso, si el proveedor lo da (para las preguntas del Quiz sobre cada parte). */
+  htHomeGoals?: number | null;
+  htAwayGoals?: number | null;
 }
 
 /**
