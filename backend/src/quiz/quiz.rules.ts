@@ -249,9 +249,8 @@ export function generateMixedQuizQuestions(candidates: QuizCandidate[]) {
 }
 
 const MADRID = 'Europe/Madrid';
-const DAY_MS = 24 * 60 * 60 * 1000;
-/** Un quiz mixto se publica dos dias antes de que empiece su ventana. */
-export const QUIZ_OPEN_LEAD_MS = 2 * DAY_MS;
+/** Hora de los cortes del Quiz (Madrid): los martes y los viernes a esta hora cierra un quiz y abre el siguiente. */
+export const QUIZ_CUT_HOUR = 18;
 
 const madridFormat = new Intl.DateTimeFormat('en-US', {
   timeZone: MADRID,
@@ -288,45 +287,74 @@ function madridOffsetMs(instant: number): number {
   );
 }
 
-/** Medianoche de Madrid de un dia (calendario en UTC), como instante. */
-function madridMidnight(day: Date): Date {
-  const guess = day.getTime();
+/** Un dia (calendario en UTC) a una hora de Madrid, como instante. */
+function madridAt(day: Date, hour: number): Date {
+  const guess = day.getTime() + hour * 60 * 60 * 1000;
   const first = guess - madridOffsetMs(guess);
   return new Date(guess - madridOffsetMs(first));
 }
 
+/** Cortes del Quiz alrededor de un instante: martes y viernes a las QUIZ_CUT_HOUR de Madrid, en orden. */
+function cutsAround(date: Date): Date[] {
+  const { year, month, day } = madridParts(date);
+  const cuts: Date[] = [];
+  for (let offset = -8; offset <= 16; offset++) {
+    const calendar = new Date(Date.UTC(year, month - 1, day + offset));
+    const weekday = calendar.getUTCDay();
+    if (weekday === 2 || weekday === 5) cuts.push(madridAt(calendar, QUIZ_CUT_HOUR));
+  }
+  return cuts;
+}
+
+/**
+ * Un quiz mixto (peticion del usuario, 2026-10-15): se juega con fechas fijas, de un corte al siguiente, y sus
+ * preguntas son de los partidos que se juegan despues, hasta el corte siguiente (mientras esta abierto el otro quiz):
+ * - WEEKEND, quiz de ligas: se juega de martes a viernes a las 18:00; partidos de liga de viernes 18:00 a martes 18:00.
+ * - MIDWEEK, quiz de Champions: se juega de viernes a martes a las 18:00; partidos de Champions de martes a viernes.
+ * `start`-`end` son los limites de los partidos; el quiz cierra en `start`.
+ */
 export interface QuizWindow {
   key: string;
   kind: QuizWindowKind;
+  opensAt: Date;
   start: Date;
   end: Date;
 }
 
-/**
- * Ventana del quiz mixto en la que cae un instante (hora de Madrid): fin de semana de viernes a lunes y entre semana de
- * martes a jueves. `end` es el inicio de la ventana siguiente.
- */
-export function quizWindowFor(date: Date): QuizWindow {
-  const { year, month, day, weekday } = madridParts(date);
-  const weekend = weekday === 5 || weekday === 6 || weekday === 0 || weekday === 1;
-  // Dias desde el inicio de la ventana: el viernes en la de fin de semana, el martes en la de entre semana.
-  const back = weekend ? (weekday + 2) % 7 : weekday - 2;
-  const startDay = new Date(Date.UTC(year, month - 1, day - back));
-  const endDay = new Date(startDay.getTime() + (weekend ? 4 : 3) * DAY_MS);
-  const kind: QuizWindowKind = weekend ? 'WEEKEND' : 'MIDWEEK';
-  return {
-    key: `${startDay.toISOString().slice(0, 10)}-${kind}`,
-    kind,
-    start: madridMidnight(startDay),
-    end: madridMidnight(endDay),
-  };
+function windowFrom(opensAt: Date, start: Date, end: Date): QuizWindow {
+  const kind: QuizWindowKind = madridParts(start).weekday === 5 ? 'WEEKEND' : 'MIDWEEK';
+  const { year, month, day } = madridParts(start);
+  const date = new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10);
+  return { key: `${date}-${kind}`, kind, opensAt, start, end };
 }
 
-/** Ventanas que se pueden publicar ahora: la actual y, si empieza en menos de QUIZ_OPEN_LEAD_MS, la siguiente. */
-export function publishableWindows(now: Date): QuizWindow[] {
-  const current = quizWindowFor(now);
-  const next = quizWindowFor(current.end);
-  return next.start.getTime() - now.getTime() <= QUIZ_OPEN_LEAD_MS ? [current, next] : [current];
+/** El quiz que se juega en este momento: el que abrio en el ultimo corte y cierra en el siguiente. */
+export function openQuizWindow(now: Date): QuizWindow {
+  const cuts = cutsAround(now);
+  const i = cuts.findIndex((cut, index) => cut <= now && now < cuts[index + 1]);
+  return windowFrom(cuts[i], cuts[i + 1], cuts[i + 2]);
+}
+
+/** Ligas de cada quiz: el de ligas, todas menos la Champions; el de Champions, solo ella. */
+export function windowCompetitions(kind: QuizWindowKind): CompetitionCode[] {
+  return kind === 'MIDWEEK'
+    ? ['CHAMPIONS_LEAGUE']
+    : QUIZ_COMPETITIONS.filter((code) => code !== 'CHAMPIONS_LEAGUE');
+}
+
+/**
+ * Resolucion de una pregunta de un quiz mixto: se anula si su partido empezo antes del cierre del quiz (se adelanto),
+ * porque se pudo responder viendolo; si no, como cualquier otra.
+ */
+export function resolveMixedQuestion(
+  type: QuizQuestionType,
+  match: Match,
+  closesAt: Date,
+): { resolution: QuizResolution; correctOption: QuizOption | null } {
+  if (match.kickoff.getTime() < closesAt.getTime() && match.status !== 'POSTPONED') {
+    return { resolution: 'VOID', correctOption: null };
+  }
+  return resolveQuizQuestion(type, match);
 }
 
 export function resolveQuizQuestion(

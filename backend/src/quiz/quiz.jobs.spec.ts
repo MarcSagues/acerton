@@ -15,7 +15,10 @@ function jobs(key = 'test-key') {
     refreshAll: jest.fn().mockResolvedValue(undefined),
   };
   const prisma = { match: { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() } };
-  const matchdays = { ensureUpcomingMatchday: jest.fn().mockResolvedValue(true) };
+  const matchdays = {
+    ensureUpcomingMatchday: jest.fn().mockResolvedValue(true),
+    ensureRoundsUntil: jest.fn().mockResolvedValue(false),
+  };
   const football = { getFixturesByIds: jest.fn().mockResolvedValue([]) };
   const instance = new QuizJobs(
     quiz as unknown as QuizService,
@@ -83,5 +86,25 @@ describe('global quiz calendar jobs', () => {
     release(true);
     await first;
     expect(matchdays.ensureUpcomingMatchday).toHaveBeenCalledTimes(2);
+  });
+
+  it('imports ahead the rounds the next mixed quiz needs, and waits three hours when there is nothing new', async () => {
+    jest.useFakeTimers();
+    const { instance, matchdays } = jobs();
+    await instance.syncCalendars();
+    expect(matchdays.ensureRoundsUntil.mock.calls.map((call) => call[0])).toEqual([
+      'liga',
+      'premier',
+    ]);
+    // Hasta el final de los partidos del quiz siguiente: siempre por delante de ahora.
+    expect((matchdays.ensureRoundsUntil.mock.calls[0][1] as Date).getTime()).toBeGreaterThan(
+      Date.now(),
+    );
+    await instance.syncCalendars();
+    expect(matchdays.ensureRoundsUntil).toHaveBeenCalledTimes(2);
+    jest.advanceTimersByTime(3 * 60 * 60 * 1000);
+    await instance.syncCalendars();
+    expect(matchdays.ensureRoundsUntil).toHaveBeenCalledTimes(4);
+    jest.useRealTimers();
   });
 });

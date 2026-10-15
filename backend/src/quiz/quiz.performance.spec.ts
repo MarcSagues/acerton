@@ -54,7 +54,7 @@ function build() {
     competition: { findMany: jest.fn().mockResolvedValue(COMPETITIONS) },
     match: { findMany: jest.fn().mockResolvedValue([]) },
     quizEvent: {
-      findUnique: jest.fn().mockResolvedValue(null),
+      findFirst: jest.fn().mockResolvedValue(null),
       findMany: jest.fn(
         ({ include, where }: { include?: unknown; where: { id?: { in: string[] } } }) =>
           Promise.resolve(include ? (where.id?.in ?? []).map(fullEvent) : LIGHT_EVENTS),
@@ -99,6 +99,8 @@ describe('QuizService.overview — rendimiento', () => {
           kind: 'WEEKEND',
           start: '2026-10-15T22:00:00.000Z',
           end: '2026-10-19T22:00:00.000Z',
+          firstKickoff: new Date(NOW + HOUR).toISOString(),
+          lastKickoff: new Date(NOW + HOUR).toISOString(),
         },
       }),
     );
@@ -144,15 +146,14 @@ describe('QuizService.overview — rendimiento', () => {
 
   it('publicar y pedir las ligas se hace una vez, no en cada apertura', async () => {
     const { prisma, service } = build();
+    const publish = jest.spyOn(service, 'publishAvailable');
 
     await service.overview('u1');
     await service.overview('u1');
     await service.overview('u1');
 
     expect(prisma.competition.findMany).toHaveBeenCalledTimes(1);
-    // Una sola publicacion: una consulta de partidos por ventana publicable (la actual y, a veces, la siguiente).
-    expect(prisma.match.findMany.mock.calls.length).toBeGreaterThanOrEqual(1);
-    expect(prisma.match.findMany.mock.calls.length).toBeLessThanOrEqual(2);
+    expect(publish).toHaveBeenCalledTimes(1);
   });
 
   it('las aperturas a la vez comparten el mismo refresco en vez de lanzar una transaccion cada una', async () => {
