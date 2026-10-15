@@ -220,15 +220,17 @@ export function planMixedQuiz(
     .map((match) => ({ match, count: counts.get(match.id)! }));
 }
 
+const OTHER_TYPES = QUESTION_TYPES.filter((type) => type !== 'WINNER');
+
 /**
- * Preguntas del quiz mixto: cada partido elegido con sus tipos de pregunta (distintos, rotando de un partido a otro para
- * que no salga siempre el mismo), y en el quiz por orden de inicio, con las preguntas de un mismo partido juntas.
+ * Preguntas del quiz mixto: cada partido elegido empieza por quien gana y sigue con otros tipos (distintos, rotando de un
+ * partido a otro para que no salgan siempre los mismos); en el quiz van por orden de inicio, las de un partido juntas.
  */
 export function generateMixedQuizQuestions(candidates: QuizCandidate[]) {
   const items = planMixedQuiz(candidates).flatMap(({ match, count }, rank) =>
     Array.from({ length: count }, (_, k) => ({
       match,
-      type: QUESTION_TYPES[(rank + k) % QUESTION_TYPES.length],
+      type: k === 0 ? ('WINNER' as const) : OTHER_TYPES[(rank + k - 1) % OTHER_TYPES.length],
       k,
     })),
   );
