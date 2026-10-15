@@ -4,6 +4,7 @@ import {
   QuizRemindersService,
   dueClosingTier,
   openingNotice,
+  quizTitle,
 } from './quiz-reminders.service';
 
 const HOUR = 60 * 60 * 1000;
@@ -137,5 +138,15 @@ describe('QuizRemindersService.sendDueReminders', () => {
       data: { reminder1hSentAt: now, reminder24hSentAt: now },
     });
     expect(notifications.notifyQuiz).not.toHaveBeenCalled();
+  });
+});
+
+describe('quizTitle', () => {
+  it('names a mixed quiz by its window and an old one by its league and matchday', () => {
+    expect(quizTitle({ windowKind: 'WEEKEND', matchday: null })).toBe('Quiz del fin de semana');
+    expect(quizTitle({ windowKind: 'MIDWEEK', matchday: null })).toBe('Quiz de entre semana');
+    expect(
+      quizTitle({ windowKind: null, matchday: { order: 8, competition: { name: 'La Liga' } } }),
+    ).toBe('Quiz de La Liga · Jornada 8');
   });
 });

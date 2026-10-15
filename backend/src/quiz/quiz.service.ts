@@ -1,16 +1,18 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { Prisma, QuizOption, QuizStatus } from '@prisma/client';
+import { Match, Prisma, QuizOption, QuizStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MatchdaysService } from '../matchdays/matchdays.service';
 import { xpProgressForLevel } from '../xp/xp.util';
 import { findFavoriteTeam } from '../users/team-catalog';
-import { getCurrentFootballSeason } from '../common/season.util';
+import { getCurrentFootballSeason, getFootballSeasonForDate } from '../common/season.util';
 import { isKickoffTimeUnconfirmed } from '../matchdays/matchday.util';
 import { QuizAnswerDto, QuizRankingQueryDto } from './dto/quiz.dto';
 import {
-  generateQuizQuestions,
+  generateMixedQuizQuestions,
   mustLockQuiz,
+  publishableWindows,
   QUIZ_COMPETITIONS,
+  QUIZ_QUESTION_COUNT,
   quizDeadline,
   resolveQuizQuestion,
 } from './quiz.rules';
@@ -27,12 +29,57 @@ const REFRESH_TTL_MS = 20_000;
 /** Cuantos quizzes como maximo se devuelven en el historial (los mas recientes). */
 const HISTORY_LIMIT = 50;
 
+/** Cada pregunta trae la liga de su partido: en el quiz mixto cada una puede ser de una liga distinta. */
+const QUESTION_INCLUDE = {
+  match: { include: { matchday: { include: { competition: true } } } },
+} satisfies Prisma.QuizQuestionInclude;
+
 const EVENT_INCLUDE = {
   matchday: { include: { competition: true, matches: true } },
-  questions: { orderBy: { order: 'asc' as const }, include: { match: true } },
+  questions: { orderBy: { order: 'asc' as const }, include: QUESTION_INCLUDE },
 } satisfies Prisma.QuizEventInclude;
 
 type LoadedEvent = Prisma.QuizEventGetPayload<{ include: typeof EVENT_INCLUDE }>;
+type LoadedQuestion = LoadedEvent['questions'][number];
+
+/**
+ * Liga que se envia en `competition` para un quiz mixto: las apps anteriores agrupan los quizzes por liga y no saben de
+ * quizzes mixtos. Las nuevas usan `kind` y `competitions`.
+ */
+const MIXED_COMPETITION = { id: 'MIXED', code: 'MIXED', name: 'Piqo', logoUrl: null };
+
+function competitionView(competition: {
+  id: string;
+  code: string;
+  name: string;
+  logoUrl: string | null;
+}) {
+  return {
+    id: competition.id,
+    code: competition.code,
+    name: competition.name,
+    logoUrl: competition.logoUrl,
+  };
+}
+
+/** Partidos que deciden el cierre: toda la jornada en un quiz antiguo; en uno mixto, solo los de sus preguntas. */
+function eventMatches(event: Pick<LoadedEvent, 'matchday' | 'questions'>): Match[] {
+  if (event.matchday) return event.matchday.matches;
+  const matches = new Map<string, Match>();
+  for (const question of event.questions) matches.set(question.match.id, question.match);
+  return [...matches.values()];
+}
+
+/** Ligas de las preguntas de un quiz, en el orden en que salen. */
+function eventCompetitions(questions: LoadedQuestion[]) {
+  const competitions = new Map<string, ReturnType<typeof competitionView>>();
+  for (const question of questions) {
+    const competition = question.match.matchday.competition;
+    if (!competitions.has(competition.id))
+      competitions.set(competition.id, competitionView(competition));
+  }
+  return [...competitions.values()];
+}
 type Participation = Prisma.QuizParticipationGetPayload<{ include: { answers: true } }>;
 type Tx = Prisma.TransactionClient;
 
@@ -129,46 +176,65 @@ export class QuizService {
     return run;
   }
 
-  /** Publishes only eligible, not-yet-started rounds already imported locally. No provider request. */
-  async publishAvailable(): Promise<void> {
+  /**
+   * Publica el quiz mixto de la ventana actual y, dos dias antes de que empiece, el de la siguiente (fin de semana de
+   * viernes a lunes, entre semana de martes a jueves): 20 preguntas de los partidos aun sin empezar de todas las ligas
+   * del Quiz ya importados en local (ver planMixedQuiz). Sin peticiones al proveedor. Desde 2026-10-15 ya no se publican
+   * quizzes por liga y jornada; los que hubiera siguen funcionando hasta cerrar.
+   */
+  async publishAvailable(now = new Date()): Promise<void> {
     const competitions = await this.competitions();
-    for (const competition of competitions) {
-      const rounds = await this.prisma.matchday.findMany({
-        where: {
-          competitionId: competition.id,
-          season: competition.currentSeason,
-          quizEvent: null,
-          matches: { some: {} },
-          status: { not: 'FINISHED' },
-        },
-        include: { matches: true },
-        orderBy: { order: 'asc' },
+    if (!competitions.length) return;
+    for (const window of publishableWindows(now)) {
+      const existing = await this.prisma.quizEvent.findUnique({
+        where: { windowKey: window.key },
+        select: { id: true },
       });
-      for (const round of rounds) {
-        const deadline = quizDeadline(round.matches, round.closesAt);
-        if (
-          mustLockQuiz(null, round.matches, deadline.closesAt, new Date()) ||
-          !(await this.matchdays.canAcceptPredictions(round.id))
-        )
-          continue;
-        const questions = generateQuizQuestions(round.matches);
-        if (!questions.length) continue;
-        try {
-          await this.prisma.quizEvent.create({
-            data: {
-              matchdayId: round.id,
-              seasonLabel: seasonLabelFor(round.season),
-              status: 'OPEN',
-              openedAt: new Date(),
-              closesAt: deadline.closesAt,
-              questions: { create: questions },
-            },
-          });
-        } catch (error) {
-          // Concurrent publication creates the same event only once, including its questions.
-          if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'))
-            throw error;
-        }
+      if (existing) continue;
+      const matches = await this.prisma.match.findMany({
+        where: {
+          status: 'SCHEDULED',
+          kickoff: { gt: now, gte: window.start, lt: window.end },
+          matchday: {
+            OR: competitions.map((c) => ({ competitionId: c.id, season: c.currentSeason })),
+          },
+        },
+        include: { matchday: { select: { competition: { select: { code: true } } } } },
+      });
+      const questions = generateMixedQuizQuestions(
+        matches.map(({ matchday, ...match }) => ({
+          ...match,
+          competitionCode: matchday.competition.code,
+        })),
+      );
+      if (!questions.length) continue;
+      const selectedIds = new Set(questions.map((q) => q.matchId));
+      const selected = matches.filter((match) => selectedIds.has(match.id));
+      const deadline = quizDeadline(selected, window.start);
+      if (mustLockQuiz(null, selected, deadline.closesAt, now)) continue;
+      const seasonLabel = seasonLabelFor(getFootballSeasonForDate(window.start));
+      const previous = await this.prisma.quizEvent.count({
+        where: { seasonLabel, windowKey: { not: null } },
+      });
+      try {
+        await this.prisma.quizEvent.create({
+          data: {
+            windowKey: window.key,
+            windowKind: window.kind,
+            windowStart: window.start,
+            windowEnd: window.end,
+            number: previous + 1,
+            seasonLabel,
+            status: 'OPEN',
+            openedAt: now,
+            closesAt: deadline.closesAt,
+            questions: { create: questions },
+          },
+        });
+      } catch (error) {
+        // Concurrent publication creates the same event only once, including its questions.
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'))
+          throw error;
       }
     }
   }
@@ -189,9 +255,12 @@ export class QuizService {
       async (tx) => {
         const event = await this.lockEvent(tx, id);
         const now = new Date();
-        const { closesAt } = quizDeadline(event.matchday.matches, event.closesAt);
-        const locked = mustLockQuiz(event.lockedAt, event.matchday.matches, closesAt, now);
-        const eligible = !locked && (await this.matchdays.canAcceptPredictions(event.matchdayId));
+        const matches = eventMatches(event);
+        const { closesAt } = quizDeadline(matches, event.closesAt);
+        const locked = mustLockQuiz(event.lockedAt, matches, closesAt, now);
+        const eligible =
+          !locked &&
+          (!event.matchdayId || (await this.matchdays.canAcceptPredictions(event.matchdayId)));
         let status: QuizStatus = locked ? 'CLOSED' : eligible ? 'OPEN' : 'SCHEDULED';
         let changed = false;
         let pending = false;
@@ -261,23 +330,46 @@ export class QuizService {
     for (const event of events) await this.refreshEvent(event.id);
   }
 
+  /** Lo comun de un quiz antiguo (una liga y jornada) y de uno mixto (todas las ligas, por ventana). */
+  private identity(
+    event: Pick<
+      LoadedEvent,
+      | 'matchday'
+      | 'matchdayId'
+      | 'windowKey'
+      | 'windowKind'
+      | 'windowStart'
+      | 'windowEnd'
+      | 'number'
+    > & { questions: LoadedQuestion[] },
+  ) {
+    const mixed = !event.matchday;
+    return {
+      kind: mixed ? ('MIXED' as const) : ('MATCHDAY' as const),
+      window:
+        mixed && event.windowKind && event.windowStart && event.windowEnd
+          ? {
+              kind: event.windowKind,
+              start: event.windowStart.toISOString(),
+              end: event.windowEnd.toISOString(),
+            }
+          : null,
+      competition: event.matchday ? competitionView(event.matchday.competition) : MIXED_COMPETITION,
+      competitions: eventCompetitions(event.questions),
+      matchdayId: event.matchdayId ?? '',
+      matchdayOrder: event.matchday?.order ?? event.number ?? 0,
+      matchdayName: event.matchday?.name ?? event.windowKey ?? '',
+    };
+  }
+
   private summary(event: LoadedEvent, participation: Participation | null) {
-    const competition = event.matchday.competition;
     return {
       id: event.id,
-      competition: {
-        id: competition.id,
-        code: competition.code,
-        name: competition.name,
-        logoUrl: competition.logoUrl,
-      },
-      matchdayId: event.matchdayId,
-      matchdayOrder: event.matchday.order,
-      matchdayName: event.matchday.name,
+      ...this.identity(event),
       seasonLabel: event.seasonLabel,
       status: event.status,
       closesAt: event.closesAt.toISOString(),
-      kickoffConfirmed: quizDeadline(event.matchday.matches, event.closesAt).kickoffConfirmed,
+      kickoffConfirmed: quizDeadline(eventMatches(event), event.closesAt).kickoffConfirmed,
       questionCount: event.questions.length,
       matchCount: new Set(event.questions.map((q) => q.matchId)).size,
       participation: participation
@@ -302,7 +394,7 @@ export class QuizService {
     const now = new Date();
     const canAnswer =
       event.status === 'OPEN' &&
-      !mustLockQuiz(event.lockedAt, event.matchday.matches, event.closesAt, now);
+      !mustLockQuiz(event.lockedAt, eventMatches(event), event.closesAt, now);
     return {
       serverNow: now.toISOString(),
       quiz: this.summary(event, participation),
@@ -334,6 +426,7 @@ export class QuizService {
       resolution: question.resolution,
       correctOption: resolved ? question.correctOption : null,
       pointsEarned: resolved ? (answer?.pointsEarned ?? 0) : null,
+      competition: competitionView(match.matchday.competition),
       match: {
         id: match.id,
         homeTeam: match.homeTeam,
@@ -384,8 +477,8 @@ export class QuizService {
         answers: true,
         event: {
           include: {
-            matchday: { include: { competition: true } },
-            questions: { orderBy: { order: 'asc' }, include: { match: true } },
+            matchday: { include: { competition: true, matches: true } },
+            questions: { orderBy: { order: 'asc' }, include: QUESTION_INCLUDE },
           },
         },
       },
@@ -405,10 +498,8 @@ export class QuizService {
         );
         return {
           quizId: event.id,
-          competition: { id: event.matchday.competition.id, name: event.matchday.competition.name },
+          ...this.identity(event),
           seasonLabel: event.seasonLabel,
-          matchdayOrder: event.matchday.order,
-          matchdayName: event.matchday.name,
           closesAt: event.closesAt.toISOString(),
           status: event.status,
           completedAt: participation.completedAt?.toISOString() ?? null,
@@ -427,7 +518,7 @@ export class QuizService {
   }
 
   /**
-   * Resumen del Quiz por liga: el proximo quiz abierto y el ultimo ya cerrado de cada una. Se resuelve con pocas consultas en
+   * Resumen del Quiz: los quizzes abiertos y el ultimo mixto ya cerrado. Se resuelve con pocas consultas en
    * lote (la lista ligera de quizzes de la temporada, los quizzes elegidos y mis participaciones) en vez de recorrer cada liga
    * y cada quiz con varias consultas y un refresco cada uno.
    */
@@ -435,27 +526,27 @@ export class QuizService {
     await this.publishAvailableIfStale();
     const competitions = await this.competitions();
     const serverNow = new Date();
-    const competitionsView = competitions.map(({ id, code, name, logoUrl }) => ({
-      id,
-      code,
-      name,
-      logoUrl,
-    }));
+    const competitionsView = competitions.map(competitionView);
     if (competitions.length === 0)
-      return { serverNow: serverNow.toISOString(), competitions: competitionsView, quizzes: [] };
+      return {
+        serverNow: serverNow.toISOString(),
+        competitions: competitionsView,
+        events: [],
+        quizzes: [],
+      };
 
+    const seasonLabels = [...new Set(competitions.map((c) => seasonLabelFor(c.currentSeason)))];
+    // Quizzes mixtos de la temporada y, mientras sigan abiertos, los antiguos por liga y jornada.
     const scope: Prisma.QuizEventWhereInput = {
-      OR: competitions.map((c) => ({ matchday: { competitionId: c.id, season: c.currentSeason } })),
+      OR: [
+        { windowKey: { not: null }, seasonLabel: { in: seasonLabels } },
+        { matchdayId: { not: null }, status: { in: ['SCHEDULED', 'OPEN'] } },
+      ],
     };
     const lightEvents = () =>
       this.prisma.quizEvent.findMany({
         where: scope,
-        select: {
-          id: true,
-          status: true,
-          closesAt: true,
-          matchday: { select: { competitionId: true } },
-        },
+        select: { id: true, status: true, closesAt: true, windowKey: true },
       });
     let events = await lightEvents();
     // Los quizzes sin cerrar se refrescan (si toca) para que un cierre vencido no oculte el siguiente abierto.
@@ -467,21 +558,19 @@ export class QuizService {
     }
     if (refreshed) events = await lightEvents();
 
+    // Los abiertos (del que cierra antes al que mas tarda) y el ultimo mixto ya cerrado.
     const now = Date.now();
-    const picked: string[] = [];
-    for (const competition of competitions) {
-      const mine = events.filter((e) => e.matchday.competitionId === competition.id);
-      const next = mine
-        .filter((e) => e.status === 'OPEN' && e.closesAt.getTime() > now)
-        .sort((a, b) => a.closesAt.getTime() - b.closesAt.getTime())[0];
-      const previous = mine
-        .filter(
-          (e) => e.status === 'CLOSED' || e.status === 'FINISHED' || e.closesAt.getTime() <= now,
-        )
-        .sort((a, b) => b.closesAt.getTime() - a.closesAt.getTime())[0];
-      for (const id of new Set([next?.id, previous?.id].filter((id): id is string => !!id)))
-        picked.push(id);
-    }
+    const open = events
+      .filter((e) => e.status === 'OPEN' && e.closesAt.getTime() > now)
+      .sort((a, b) => a.closesAt.getTime() - b.closesAt.getTime());
+    const previous = events
+      .filter(
+        (e) =>
+          e.windowKey &&
+          (e.status === 'CLOSED' || e.status === 'FINISHED' || e.closesAt.getTime() <= now),
+      )
+      .sort((a, b) => b.closesAt.getTime() - a.closesAt.getTime())[0];
+    const picked = [...new Set([...open.map((e) => e.id), previous?.id].filter((id) => !!id))];
 
     const [full, participations] = picked.length
       ? await Promise.all([
@@ -494,19 +583,33 @@ export class QuizService {
       : [[], []];
     const eventById = new Map(full.map((event) => [event.id, event]));
     const participationByEvent = new Map(participations.map((p) => [p.eventId, p]));
-    const quizzes = picked.flatMap((id) => {
+    const summaries = picked.flatMap((id) => {
       const event = eventById.get(id);
       return event ? [this.summary(event, participationByEvent.get(id) ?? null)] : [];
     });
-    return { serverNow: serverNow.toISOString(), competitions: competitionsView, quizzes };
+    return {
+      serverNow: serverNow.toISOString(),
+      competitions: competitionsView,
+      events: summaries,
+      // Apps anteriores al quiz mixto: muestran los quizzes en pestañas por liga, asi que el mixto sale en todas.
+      quizzes: summaries.flatMap((summary) =>
+        summary.kind === 'MIXED'
+          ? competitionsView.map((competition) => ({ ...summary, competition }))
+          : [summary],
+      ),
+    };
   }
 
   private async assertWritable(event: LoadedEvent) {
-    const deadline = quizDeadline(event.matchday.matches, event.closesAt);
-    if (mustLockQuiz(event.lockedAt, event.matchday.matches, deadline.closesAt, new Date())) {
+    const matches = eventMatches(event);
+    const deadline = quizDeadline(matches, event.closesAt);
+    if (mustLockQuiz(event.lockedAt, matches, deadline.closesAt, new Date())) {
       fail('QUIZ_CLOSED', 409, 'El quiz ya está cerrado');
     }
-    if (event.status !== 'OPEN' || !(await this.matchdays.canAcceptPredictions(event.matchdayId))) {
+    if (
+      event.status !== 'OPEN' ||
+      (event.matchdayId && !(await this.matchdays.canAcceptPredictions(event.matchdayId)))
+    ) {
       fail('QUIZ_NOT_OPEN', 409, 'El quiz todavía no está abierto');
     }
     return deadline.closesAt;
@@ -532,7 +635,11 @@ export class QuizService {
         await action(tx, event, participation);
         // Re-check after writes and any wait for the lock; rollback a request crossing the deadline.
         if (Date.now() >= deadline.getTime()) fail('QUIZ_CLOSED', 409, 'El quiz ya está cerrado');
-        const latest = await tx.match.findMany({ where: { matchdayId: event.matchdayId } });
+        const latest = await tx.match.findMany({
+          where: event.matchdayId
+            ? { matchdayId: event.matchdayId }
+            : { id: { in: eventMatches(event).map((match) => match.id) } },
+        });
         if (mustLockQuiz(null, latest, quizDeadline(latest, deadline).closesAt, new Date())) {
           fail('QUIZ_CLOSED', 409, 'El quiz ya está cerrado');
         }
@@ -551,7 +658,7 @@ export class QuizService {
       if (
         new Set(answers.map((a) => a.questionId)).size !== answers.length ||
         !answers.length ||
-        answers.length > 10
+        answers.length > QUIZ_QUESTION_COUNT
       ) {
         fail('INVALID_QUIZ_ANSWER', 400, 'Respuesta de quiz no válida');
       }
@@ -609,25 +716,34 @@ export class QuizService {
       fail('QUIZ_NOT_FOUND', 404, 'Competición no encontrada');
     }
     // Only local data is refreshed; rankings never fetch the provider or a user's group.
-    const competitionFilter = query.competitionId
-      ? Prisma.sql`AND m."competitionId" = ${query.competitionId}`
-      : Prisma.empty;
     const events = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
-      SELECT e.id FROM quiz_events e JOIN matchdays m ON m.id = e."matchdayId"
-      WHERE e."seasonLabel" = ${seasonLabel} ${competitionFilter} AND
+      SELECT e.id FROM quiz_events e
+      WHERE e."seasonLabel" = ${seasonLabel} AND
         (e.status <> 'FINISHED' OR EXISTS (
           SELECT 1 FROM quiz_questions q JOIN matches changed ON changed.id = q."matchId"
           WHERE q."eventId" = e.id AND changed."updatedAt" > e."updatedAt"
         ))
     `);
     for (const event of events) await this.refreshEventIfStale(event.id);
-    const ranked = Prisma.sql`
-      WITH totals AS (
+    // General: los puntos de cada quiz. Por liga: solo los de las preguntas de partidos de esa liga (un quiz mixto
+    // mezcla ligas), y cuenta como jugado cada quiz con alguna respuesta en ella.
+    const totals = query.competitionId
+      ? Prisma.sql`
+        SELECT p."userId", SUM(COALESCE(a."pointsEarned", 0)) AS points,
+          COUNT(DISTINCT p.id) AS "quizzesPlayed"
+        FROM quiz_participations p JOIN quiz_events e ON e.id = p."eventId"
+        JOIN quiz_answers a ON a."participationId" = p.id
+        JOIN quiz_questions q ON q.id = a."questionId"
+        JOIN matches mt ON mt.id = q."matchId"
+        JOIN matchdays md ON md.id = mt."matchdayId"
+        WHERE e."seasonLabel" = ${seasonLabel} AND md."competitionId" = ${query.competitionId}
+        GROUP BY p."userId"`
+      : Prisma.sql`
         SELECT p."userId", SUM(p.points) AS points, COUNT(*) AS "quizzesPlayed"
         FROM quiz_participations p JOIN quiz_events e ON e.id = p."eventId"
-        JOIN matchdays m ON m.id = e."matchdayId"
-        WHERE e."seasonLabel" = ${seasonLabel} ${competitionFilter} GROUP BY p."userId"
-      ), ranked AS (
+        WHERE e."seasonLabel" = ${seasonLabel} GROUP BY p."userId"`;
+    const ranked = Prisma.sql`
+      WITH totals AS (${totals}), ranked AS (
         SELECT t.*, RANK() OVER (ORDER BY t.points DESC) AS position,
           ROW_NUMBER() OVER (ORDER BY t.points DESC, t."userId" ASC) AS "rowNumber",
           COUNT(*) OVER () AS total, u.name, u."avatarUrl", u."avatarBackground"
@@ -667,7 +783,9 @@ export class QuizService {
         seasonLabel,
         status: { not: 'FINISHED' },
         participations: { some: {} },
-        ...(query.competitionId ? { matchday: { competitionId: query.competitionId } } : {}),
+        ...(query.competitionId
+          ? { questions: { some: { match: { matchday: { competitionId: query.competitionId } } } } }
+          : {}),
       },
     });
     return {
