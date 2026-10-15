@@ -8,12 +8,12 @@ const COMPETITIONS = [
   { id: 'c2', code: 'PREMIER_LEAGUE', name: 'Premier League', logoUrl: null, currentSeason: 2026 },
 ];
 
-/** Quizzes ligeros: mixtos (uno abierto y dos ya cerrados) y uno antiguo de una liga que sigue abierto. */
+/** Quizzes mixtos ligeros: dos abiertos y dos ya cerrados. */
 const LIGHT_EVENTS = [
   { id: 'mixed-open', status: 'OPEN', closesAt: new Date(NOW + 2 * HOUR), windowKey: 'w3' },
   { id: 'mixed-old', status: 'FINISHED', closesAt: new Date(NOW - 96 * HOUR), windowKey: 'w1' },
   { id: 'mixed-done', status: 'CLOSED', closesAt: new Date(NOW - 24 * HOUR), windowKey: 'w2' },
-  { id: 'c1-open', status: 'OPEN', closesAt: new Date(NOW + HOUR), windowKey: null },
+  { id: 'mixed-soon', status: 'OPEN', closesAt: new Date(NOW + HOUR), windowKey: 'w4' },
 ];
 
 function fullEvent(id: string) {
@@ -89,7 +89,7 @@ describe('QuizService.overview — rendimiento', () => {
 
     const result = await service.overview('u1');
 
-    expect(result.events.map((q) => q.id)).toEqual(['c1-open', 'mixed-open', 'mixed-done']);
+    expect(result.events.map((q) => q.id)).toEqual(['mixed-soon', 'mixed-open', 'mixed-done']);
     const mixed = result.events.find((q) => q.id === 'mixed-open')!;
     expect(mixed).toEqual(
       expect.objectContaining({
@@ -103,7 +103,17 @@ describe('QuizService.overview — rendimiento', () => {
       }),
     );
     expect(mixed.competitions.map((c) => c.id)).toEqual(['c2', 'c1']);
-    expect(result.events.find((q) => q.id === 'c1-open')!.kind).toBe('MATCHDAY');
+  });
+
+  it('solo pide quizzes mixtos: los antiguos por liga y jornada ya no se ofrecen', async () => {
+    const { prisma, service } = build();
+
+    await service.overview('u1');
+
+    expect(prisma.quizEvent.findMany.mock.calls[0][0].where).toEqual({
+      windowKey: { not: null },
+      seasonLabel: { in: ['2026/27'] },
+    });
   });
 
   it('para las apps anteriores repite el quiz mixto en cada liga', async () => {
@@ -112,7 +122,8 @@ describe('QuizService.overview — rendimiento', () => {
     const result = await service.overview('u1');
 
     expect(result.quizzes.map((q) => `${q.id}@${q.competition.id}`)).toEqual([
-      'c1-open@c1',
+      'mixed-soon@c1',
+      'mixed-soon@c2',
       'mixed-open@c1',
       'mixed-open@c2',
       'mixed-done@c1',
@@ -124,7 +135,7 @@ describe('QuizService.overview — rendimiento', () => {
     const { service, refresh } = build();
 
     await service.overview('u1');
-    expect(refresh.mock.calls.map((c) => c[0]).sort()).toEqual(['c1-open', 'mixed-open']);
+    expect(refresh.mock.calls.map((c) => c[0]).sort()).toEqual(['mixed-open', 'mixed-soon']);
 
     refresh.mockClear();
     await service.overview('u1');
@@ -149,7 +160,7 @@ describe('QuizService.overview — rendimiento', () => {
 
     await Promise.all([service.overview('u1'), service.overview('u2'), service.overview('u3')]);
 
-    expect(refresh.mock.calls.filter((c) => c[0] === 'c1-open')).toHaveLength(1);
+    expect(refresh.mock.calls.filter((c) => c[0] === 'mixed-soon')).toHaveLength(1);
   });
 
   it('sin ligas del Quiz devuelve el resumen vacio sin consultar quizzes', async () => {

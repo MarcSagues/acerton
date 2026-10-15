@@ -534,17 +534,16 @@ export class QuizService {
       };
 
     const seasonLabels = [...new Set(competitions.map((c) => seasonLabelFor(c.currentSeason)))];
-    // Quizzes mixtos de la temporada y, mientras sigan abiertos, los antiguos por liga y jornada.
+    // Solo los quizzes mixtos de la temporada: los antiguos por liga y jornada ya no se ofrecen (los que siguieran
+    // abiertos se cierran solos y quedan en el historial).
     const scope: Prisma.QuizEventWhereInput = {
-      OR: [
-        { windowKey: { not: null }, seasonLabel: { in: seasonLabels } },
-        { matchdayId: { not: null }, status: { in: ['SCHEDULED', 'OPEN'] } },
-      ],
+      windowKey: { not: null },
+      seasonLabel: { in: seasonLabels },
     };
     const lightEvents = () =>
       this.prisma.quizEvent.findMany({
         where: scope,
-        select: { id: true, status: true, closesAt: true, windowKey: true },
+        select: { id: true, status: true, closesAt: true },
       });
     let events = await lightEvents();
     // Los quizzes sin cerrar se refrescan (si toca) para que un cierre vencido no oculte el siguiente abierto.
@@ -563,9 +562,7 @@ export class QuizService {
       .sort((a, b) => a.closesAt.getTime() - b.closesAt.getTime());
     const previous = events
       .filter(
-        (e) =>
-          e.windowKey &&
-          (e.status === 'CLOSED' || e.status === 'FINISHED' || e.closesAt.getTime() <= now),
+        (e) => e.status === 'CLOSED' || e.status === 'FINISHED' || e.closesAt.getTime() <= now,
       )
       .sort((a, b) => b.closesAt.getTime() - a.closesAt.getTime())[0];
     const picked = [...new Set([...open.map((e) => e.id), previous?.id].filter((id) => !!id))];
