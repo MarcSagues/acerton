@@ -27,7 +27,7 @@ export class QuizAnswerDto {
 export class SaveQuizAnswersDto {
   @IsArray()
   @ArrayMinSize(1)
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(20)
   @ValidateNested({ each: true })
   @Type(() => QuizAnswerDto)
   answers!: QuizAnswerDto[];
