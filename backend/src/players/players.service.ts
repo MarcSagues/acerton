@@ -184,7 +184,8 @@ export class PlayersService {
       sharedGroups,
       quiz: {
         seasonLabel: ranking.seasonLabel,
-        position: ranking.me?.position ?? null,
+        // En la clasificacion salen todos; quien no ha jugado ningun quiz no tiene puesto que ensenar.
+        position: ranking.me && ranking.me.quizzesPlayed > 0 ? ranking.me.position : null,
         total: ranking.total,
         points: ranking.me?.points ?? 0,
         quizzesPlayed: ranking.me?.quizzesPlayed ?? 0,

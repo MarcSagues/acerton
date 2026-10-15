@@ -1,5 +1,12 @@
 # Estado actual
 
+## 2026-10-15 — Clasificación del Quiz con todos los usuarios (fuera de sprint)
+
+Petición del usuario: con la clasificación recién puesta a cero la app quedaba vacía. `QuizService.rankings` parte ahora de
+`users` con LEFT JOIN a los totales: salen todos, los que no han jugado con 0 puntos y 0 quizzes, empatados al final
+(orden: puntos, quizzes jugados, nombre). Vale para General, Ligas y Champions. En el perfil de jugador, quien no ha jugado
+ningún quiz sigue sin puesto («Sin datos»). **Verificado**: 107 tests de Quiz/Players (integración contra MySQL).
+
 ## 2026-10-15 — Quiz escondido a la app 1.1.0 (fuera de sprint)
 
 Aviso de un jugador: en una pregunta salían dos equipos, «Elige una opción» y Sí/No. Es la app 1.1.0 de la tienda, que no
