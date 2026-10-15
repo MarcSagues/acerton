@@ -6,6 +6,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { firstValueFrom } from 'rxjs';
 
 import { routes } from './app.routes';
+import { appClientInterceptor } from './core/interceptors/app-client.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { languageInterceptor } from './core/interceptors/language.interceptor';
 import { AuthService } from './core/services/auth.service';
@@ -62,7 +63,7 @@ export const appConfig: ApplicationConfig = {
         },
       }),
     ),
-    provideHttpClient(withInterceptors([languageInterceptor, authInterceptor])),
+    provideHttpClient(withInterceptors([appClientInterceptor, languageInterceptor, authInterceptor])),
     provideAnimationsAsync(),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

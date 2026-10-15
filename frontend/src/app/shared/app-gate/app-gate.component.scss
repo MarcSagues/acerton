@@ -1,0 +1,53 @@
+// Por encima de todo lo demas (avisos, diálogos, toasts): bloquea la app entera.
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+}
+
+.icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 24px/1 var(--font-ui);
+}
+
+h2 {
+  font: 700 20px/1.2 var(--font-ui);
+  margin: 0 0 10px;
+}
+
+p {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.btn {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-on);
+  border: none;
+  font: 600 15px/1 var(--font-ui);
+  cursor: pointer;
+}

@@ -65,6 +65,38 @@ export interface AppConfig {
     /** Remitente tal cual lo espera Resend: "Nombre <direccion@dominio>". */
     from: string;
   };
+  /**
+   * Version minima de la app nativa (ver AppConfigController): por debajo, la
+   * app enseña una pantalla que solo deja ir a la tienda. Vacio = sin minimo.
+   * Subirla SOLO cuando esa version ya este publicada en la tienda, o se
+   * bloquea a la gente sin nada que descargar.
+   */
+  appVersions: {
+    minVersion: Record<NativePlatform, string>;
+    storeUrl: Record<NativePlatform, string>;
+  };
+  /**
+   * Modo mantenimiento (ver MaintenanceGuard): la API contesta 503 a todo
+   * salvo a quien se deja pasar — una version de la app igual o mayor que
+   * `allowMinVersion` (la que esta en revision en la tienda) o los correos de
+   * `allowEmails` (la cuenta demo que se le da a Apple/Google).
+   */
+  maintenance: {
+    enabled: boolean;
+    platforms: AppPlatform[];
+    allowMinVersion: string;
+    allowEmails: string[];
+  };
+}
+
+export type NativePlatform = 'ios' | 'android';
+export type AppPlatform = NativePlatform | 'web';
+
+function csv(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 export default (): AppConfig => ({
@@ -114,5 +146,25 @@ export default (): AppConfig => ({
     // de enviarlo de verdad (ver MailService.send).
     resendApiKey: process.env.RESEND_API_KEY ?? '',
     from: process.env.MAIL_FROM ?? 'Piqo <support@piqo.es>',
+  },
+  appVersions: {
+    minVersion: {
+      ios: process.env.MIN_APP_VERSION_IOS?.trim() ?? '',
+      android: process.env.MIN_APP_VERSION_ANDROID?.trim() ?? '',
+    },
+    storeUrl: {
+      ios: process.env.APP_STORE_URL_IOS || 'https://apps.apple.com/app/id6811123768',
+      android:
+        process.env.APP_STORE_URL_ANDROID ||
+        'https://play.google.com/store/apps/details?id=app.piqo.es',
+    },
+  },
+  maintenance: {
+    enabled: process.env.MAINTENANCE_MODE === 'true',
+    platforms: (process.env.MAINTENANCE_PLATFORMS
+      ? csv(process.env.MAINTENANCE_PLATFORMS)
+      : ['ios', 'android', 'web']) as AppPlatform[],
+    allowMinVersion: process.env.MAINTENANCE_ALLOW_MIN_VERSION?.trim() ?? '',
+    allowEmails: csv(process.env.MAINTENANCE_ALLOW_EMAILS),
   },
 });

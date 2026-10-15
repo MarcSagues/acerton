@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { AllowDuringMaintenance } from '../app-client/app-client.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { DashboardApiKeyGuard } from '../common/guards/dashboard-api-key.guard';
 import { SendAnnouncementDto } from './dto/send-announcement.dto';
@@ -13,6 +14,7 @@ import { NotificationsService } from './notifications.service';
  * control de acceso.
  */
 @Public()
+@AllowDuringMaintenance()
 @UseGuards(DashboardApiKeyGuard)
 @Controller('dashboard')
 export class DashboardNotificationsController {

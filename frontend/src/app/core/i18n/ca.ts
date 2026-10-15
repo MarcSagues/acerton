@@ -2,6 +2,12 @@ import type { Catalog } from './translate';
 
 /** Catalan catalog: same keys as es.ts (typed as Catalog, so a missing or extra key does not compile). */
 export const ca: Catalog = {
+  'appGate.actualizaTexto': 'Actualitza Piqo per continuar jugant. Només triga un moment.',
+  'appGate.actualizaTitulo': 'Hi ha una versió nova',
+  'appGate.actualizar': 'Actualitzar',
+  'appGate.mantenimientoTexto': 'Estem millorant Piqo. Torna-ho a provar d’aquí a una estona.',
+  'appGate.mantenimientoTitulo': 'Estem en manteniment',
+  'appGate.reintentar': 'Tornar-ho a provar',
   'authPage.o': 'o',
   'common.1PuntoAcertar1x2': '1 punt per encertar l’1X2.',
   'common.5PuntosMarcadorExacto': '5 punts per marcador exacte, 2 per encertar només el guanyador.',
