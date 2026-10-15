@@ -21,7 +21,7 @@ antiguos se conservan y siguen funcionando hasta cerrar; ya no se publican nuevo
 **Frontend**: el centro del Quiz ya no tiene pestañas de liga para jugar (sí para filtrar la clasificación): tarjeta «Quiz del
 finde» / «Quiz entre semana» con los días y las ligas que entran, otros abiertos aparte y el último jugado; en cada pregunta sale
 su liga; el historial filtra por cualquier liga de las preguntas. Textos de intro, nota de la general y aviso actualizados en los
-6 idiomas; el titular del Quiz en la 1.1.0 del historial dice ahora «20 preguntas... un quiz el fin de semana y otro entre semana».
+6 idiomas. La 1.1.0 ya estaba aprobada en la App Store (TestFlight rechazó subir otra 1.1.0): versión **1.1.1** con su línea en el historial.
 **Verificado**: backend 542 tests (rules, rendimiento, historial, avisos) y los 7 de integración contra MySQL local; frontend
 tests (ver PR). **Necesita**: backend en main (Render aplica la migración) y portado a `dev` (migración a mano en Neon), build nueva.
 **Pendiente / NO verificado**: la ficha `docs/app-store/ficha-1.1.0.md` sigue con el texto anterior del Quiz.
