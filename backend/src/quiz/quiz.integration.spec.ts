@@ -422,33 +422,40 @@ integration('Quiz API service against MySQL', () => {
       data: { status: 'FINISHED', homeScore: 3, awayScore: 0, htHomeScore: 1, htAwayScore: 0 },
     });
     await closeNow(event.id);
+    // Salen todos los usuarios, tambien quien no ha jugado (c), con 0 puntos y al final.
+    const users = await prisma.user.count();
     const general = await service.rankings(`${prefix}b`, { limit: 1 });
     const league = await service.rankings(`${prefix}b`, { competitionId: `${prefix}liga` });
     const premier = await service.rankings(`${prefix}b`, { competitionId: `${prefix}premier` });
     expect(general.rows).toHaveLength(1);
-    expect(general.total).toBe(2);
+    expect(general.total).toBe(users);
     expect(general.nextCursor).toBe('1');
     expect(general.me?.userId).toBe(`${prefix}b`);
     expect(general.me?.position).toBe(1);
-    expect(league.rows.map((r) => r.position)).toEqual([1, 1]);
+    expect(league.rows.slice(0, 2).map((r) => r.position)).toEqual([1, 1]);
     // Por liga solo cuentan las preguntas de esa liga: entre las dos suman lo de la general.
     expect(general.me?.points).toBe(league.me!.points + premier.me!.points);
     expect(league.me?.quizzesPlayed).toBe(1);
-    // Ligas: todo lo de partidos de liga (aqui, todo); Champions: nada, no hay partidos europeos.
+    // Ligas: todo lo de partidos de liga (aqui, todo); Champions: nadie suma, no hay partidos europeos.
     const leagues = await service.rankings(`${prefix}b`, { scope: 'LEAGUES' });
     const champions = await service.rankings(`${prefix}b`, { scope: 'CHAMPIONS' });
     expect(leagues.scope).toBe('LEAGUES');
     expect(leagues.me?.points).toBe(general.me?.points);
-    expect(champions.total).toBe(0);
-    expect(champions.me).toBeNull();
+    expect(champions.total).toBe(users);
+    expect(champions.me).toEqual(
+      expect.objectContaining({ points: 0, quizzesPlayed: 0, position: 1 }),
+    );
     expect(general.provisional).toBe(false);
     const next = await service.rankings(`${prefix}c`, { cursor: '1', limit: 1 });
     expect(next.rows[0].userId).toBe(`${prefix}b`);
-    expect(next.me).toBeNull();
-    expect(next.nextCursor).toBeNull();
-    expect((await service.rankings(`${prefix}c`, { cursor: '100' })).total).toBe(2);
+    expect(next.me).toEqual(
+      expect.objectContaining({ userId: `${prefix}c`, points: 0, quizzesPlayed: 0 }),
+    );
+    expect(next.me!.position).toBeGreaterThan(general.me!.position);
+    expect((await service.rankings(`${prefix}c`, { cursor: '100' })).total).toBe(users);
     const old = await service.rankings(`${prefix}a`, { seasonLabel: seasonLabelFor(season - 1) });
-    expect(old.total).toBe(0);
+    expect(old.total).toBe(users);
+    expect(old.rows.every((row) => row.points === 0)).toBe(true);
     await expect(service.rankings(`${prefix}a`, { seasonLabel: '2026/99' })).rejects.toMatchObject({
       response: { code: 'INVALID_QUIZ_ANSWER' },
     });

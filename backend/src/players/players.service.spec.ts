@@ -220,6 +220,20 @@ describe('PlayersService.getProfile', () => {
     expect(profile.quiz.points).toBe(0);
   });
 
+  it('quien sale en la clasificacion del Quiz sin haber jugado no tiene puesto en su perfil', async () => {
+    const { quiz, service } = build();
+    quiz.rankings.mockResolvedValue({
+      seasonLabel: '2026/27',
+      total: 12,
+      me: { position: 5, points: 0, quizzesPlayed: 0 },
+    });
+
+    const profile = await service.getProfile('u1', 'u2');
+
+    expect(profile.quiz.position).toBeNull();
+    expect(profile.quiz.total).toBe(12);
+  });
+
   it('un jugador que no existe es un 404', async () => {
     const { service } = build({ user: null });
 
