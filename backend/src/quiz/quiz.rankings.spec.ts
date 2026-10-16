@@ -9,7 +9,6 @@ const ranked = (n: number, extra: Record<string, unknown> = {}) => ({
   avatarBackground: null,
   points: BigInt(300 - n),
   quizzesPlayed: BigInt(2),
-  total: BigInt(300),
   ...extra,
 });
 
@@ -17,7 +16,8 @@ function build(rows: ReturnType<typeof ranked>[], own: ReturnType<typeof ranked>
   const prisma = {
     competition: { findMany: jest.fn().mockResolvedValue([]) },
     $queryRaw: jest.fn().mockResolvedValue([]), // quizzes por refrescar: ninguno
-    $transaction: jest.fn().mockResolvedValue([rows, own, [{ total: BigInt(300) }]]),
+    // La pagina y la fila propia llegan en la misma consulta, ordenadas por numero de fila.
+    $transaction: jest.fn().mockResolvedValue([[...rows, ...own], [{ total: BigInt(300) }]]),
     quizEvent: { count: jest.fn().mockResolvedValue(0) },
   };
   return { prisma, service: new QuizService(prisma as never, {} as never) };
@@ -32,6 +32,7 @@ describe('QuizService.rankings — filas numeradas', () => {
 
     const result = await service.rankings('u200', { cursor: '10', limit: 2 });
 
+    // La fila propia (la 200) no se cuela en la pagina.
     expect(result.rows.map((r) => r.rowNumber)).toEqual([11, 12]);
     expect(result.me).toEqual(
       expect.objectContaining({ userId: 'u200', position: 195, rowNumber: 200 }),

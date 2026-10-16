@@ -74,6 +74,14 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
         it: 'Nuove domande nel Quiz: il risultato all’intervallo, le rimonte, i gol in ogni tempo, quanti gol ci saranno e altro.',
         de: 'Neue Quiz-Fragen: der Halbzeitstand, Comebacks, Tore in jeder Halbzeit, wie viele Tore fallen und mehr.',
       },
+      {
+        es: 'En la clasificación del Quiz salen también los jugadores que aún no han jugado, al final y sin puesto hasta que jueguen su primer quiz.',
+        en: "The Quiz standings now also show players who haven't played yet, at the bottom and without a position until they play their first quiz.",
+        ca: 'A la classificació del Quiz també hi surten els jugadors que encara no han jugat, al final i sense posició fins que juguin el seu primer quiz.',
+        fr: 'Le classement du Quiz affiche aussi les joueurs qui n’ont pas encore joué, en bas et sans position jusqu’à leur premier quiz.',
+        it: 'Nella classifica del Quiz compaiono anche i giocatori che non hanno ancora giocato, in fondo e senza posizione finché non giocano il primo quiz.',
+        de: 'In der Quiz-Tabelle stehen jetzt auch Spieler, die noch nicht gespielt haben – ganz unten und ohne Platz, bis sie ihr erstes Quiz spielen.',
+      },
     ],
   },
   {

@@ -115,7 +115,6 @@ interface RankedUser {
   avatarBackground: string | null;
   points: Prisma.Decimal;
   quizzesPlayed: bigint;
-  total: bigint;
   rowNumber: bigint;
 }
 
@@ -748,8 +747,6 @@ export class QuizService {
         ))
     `);
     for (const event of events) await this.refreshEventIfStale(event.id);
-    // Salen todos los usuarios, tambien los que aun no han jugado (con 0 puntos, empatados al final): con la
-    // clasificacion vacia la app parecia desierta (peticion del usuario, 2026-10-15).
     // General: los puntos de cada quiz. Ligas / Champions (y una liga, para apps anteriores): solo los de las preguntas
     // de partidos de esas competiciones, y cuenta como jugado cada quiz con alguna respuesta en ellas.
     const european = Prisma.sql`(${Prisma.join(EUROPEAN_COMPETITIONS.map((code) => Prisma.sql`${code}`))})`;
@@ -774,34 +771,46 @@ export class QuizService {
         SELECT p.userId, SUM(p.points) points, COUNT(*) quizzesPlayed
         FROM quiz_participations p JOIN quiz_events e ON e.id = p.eventId
         WHERE e.seasonLabel = ${seasonLabel} GROUP BY p.userId`;
+    // Salen tambien los que aun no han jugado (con la clasificacion vacia la app parecia desierta, peticion del usuario,
+    // 2026-10-15): las cuentas activas (email verificado y nombre elegido: una cuenta de Google a medias no ensena el nombre de
+    // su perfil) que ya existian en esa temporada, y siempre quien ha jugado. Quien no ha jugado va detras de todos los
+    // que han jugado, empatado al final (y la app no le ensena puesto: ver `quizzesPlayed`).
+    const seasonEnd = new Date(Date.UTC(season + 1, 6, 1));
+    const eligible = Prisma.sql`
+      FROM users u LEFT JOIN totals t ON t.userId = u.id
+      WHERE t.userId IS NOT NULL OR
+        (u.emailVerifiedAt IS NOT NULL AND u.usernameConfirmed = TRUE AND u.createdAt < ${seasonEnd})`;
     const ranked = Prisma.sql`
       WITH totals AS (${totals}), scored AS (
         SELECT u.id userId, COALESCE(t.points, 0) points, COALESCE(t.quizzesPlayed, 0) quizzesPlayed,
           u.name, u.avatarUrl, u.avatarBackground
-        FROM users u LEFT JOIN totals t ON t.userId = u.id
+        ${eligible}
       ), ranked AS (
-        SELECT s.*, RANK() OVER (ORDER BY s.points DESC) position,
-          ROW_NUMBER() OVER (ORDER BY s.points DESC, s.quizzesPlayed DESC, s.name ASC, s.userId ASC) rowNumber,
-          COUNT(*) OVER () total
+        SELECT s.*, RANK() OVER (ORDER BY s.quizzesPlayed > 0 DESC, s.points DESC) position,
+          ROW_NUMBER() OVER (ORDER BY s.quizzesPlayed > 0 DESC, s.points DESC, s.quizzesPlayed DESC, s.userId ASC) rowNumber
         FROM scored s
       )
     `;
     const offset = Number(query.cursor ?? 0);
     const limit = query.limit ?? 20;
-    const [rows, own, counts] = await this.prisma.$transaction(
+    // Una sola ordenacion: la pagina pedida y la fila propia salen de la misma consulta; el total no necesita ordenar.
+    const [fetched, counts] = await this.prisma.$transaction(
       [
         this.prisma.$queryRaw<RankedUser[]>(
-          Prisma.sql`${ranked} SELECT * FROM ranked WHERE rowNumber > ${offset} ORDER BY rowNumber LIMIT ${limit + 1}`,
-        ),
-        this.prisma.$queryRaw<RankedUser[]>(
-          Prisma.sql`${ranked} SELECT * FROM ranked WHERE userId = ${userId}`,
+          Prisma.sql`${ranked} SELECT * FROM ranked
+            WHERE (rowNumber > ${offset} AND rowNumber <= ${offset + limit + 1}) OR userId = ${userId}
+            ORDER BY rowNumber`,
         ),
         this.prisma.$queryRaw<{ total: bigint }[]>(
-          Prisma.sql`${ranked} SELECT COUNT(*) total FROM ranked`,
+          Prisma.sql`WITH totals AS (${totals}) SELECT COUNT(*) total ${eligible}`,
         ),
       ],
       { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
     );
+    const rows = fetched.filter(
+      (row) => Number(row.rowNumber) > offset && Number(row.rowNumber) <= offset + limit + 1,
+    );
+    const own = fetched.filter((row) => row.userId === userId);
     const mapRow = (row: RankedUser) => ({
       position: Number(row.position),
       // Orden total de la fila (los empates comparten `position` pero no `rowNumber`): sirve de cursor, y asi el cliente

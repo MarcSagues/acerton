@@ -95,6 +95,7 @@ integration('Quiz API service against MySQL', () => {
         email: `${prefix}${id}@example.test`,
         name: id.toUpperCase(),
         referralCode: `${prefix}${id}`,
+        emailVerifiedAt: new Date(),
       })),
     });
   });
@@ -422,13 +423,32 @@ integration('Quiz API service against MySQL', () => {
       data: { status: 'FINISHED', homeScore: 3, awayScore: 0, htHomeScore: 1, htAwayScore: 0 },
     });
     await closeNow(event.id);
-    // Salen todos los usuarios, tambien quien no ha jugado (c), con 0 puntos y al final.
-    const users = await prisma.user.count();
+    // Salen tambien las cuentas activas que no han jugado (c), detras de todos y sin compartir puesto con nadie que haya
+    // jugado; no salen las cuentas sin verificar (d) ni las de Google sin nombre elegido (e). El total no se compara con
+    // un numero fijo: otras suites pueden crear usuarios en la misma base a la vez.
+    await prisma.user.createMany({
+      data: [
+        {
+          id: `${prefix}d`,
+          email: `${prefix}d@example.test`,
+          name: 'D',
+          referralCode: `${prefix}d`,
+        },
+        {
+          id: `${prefix}e`,
+          email: `${prefix}e@example.test`,
+          name: 'Nombre De Google',
+          referralCode: `${prefix}e`,
+          emailVerifiedAt: new Date(),
+          usernameConfirmed: false,
+        },
+      ],
+    });
     const general = await service.rankings(`${prefix}b`, { limit: 1 });
     const league = await service.rankings(`${prefix}b`, { competitionId: `${prefix}liga` });
     const premier = await service.rankings(`${prefix}b`, { competitionId: `${prefix}premier` });
     expect(general.rows).toHaveLength(1);
-    expect(general.total).toBe(users);
+    expect(general.total).toBeGreaterThanOrEqual(3);
     expect(general.nextCursor).toBe('1');
     expect(general.me?.userId).toBe(`${prefix}b`);
     expect(general.me?.position).toBe(1);
@@ -441,20 +461,29 @@ integration('Quiz API service against MySQL', () => {
     const champions = await service.rankings(`${prefix}b`, { scope: 'CHAMPIONS' });
     expect(leagues.scope).toBe('LEAGUES');
     expect(leagues.me?.points).toBe(general.me?.points);
-    expect(champions.total).toBe(users);
-    expect(champions.me).toEqual(
-      expect.objectContaining({ points: 0, quizzesPlayed: 0, position: 1 }),
-    );
+    expect(champions.me).toEqual(expect.objectContaining({ points: 0, quizzesPlayed: 0 }));
     expect(general.provisional).toBe(false);
     const next = await service.rankings(`${prefix}c`, { cursor: '1', limit: 1 });
     expect(next.rows[0].userId).toBe(`${prefix}b`);
     expect(next.me).toEqual(
       expect.objectContaining({ userId: `${prefix}c`, points: 0, quizzesPlayed: 0 }),
     );
-    expect(next.me!.position).toBeGreaterThan(general.me!.position);
-    expect((await service.rankings(`${prefix}c`, { cursor: '100' })).total).toBe(users);
+    // Detras de todos los que han jugado (aqui a y b, con lo que hayan sumado, aunque sea 0).
+    const all = await service.rankings(`${prefix}c`, { limit: 100 });
+    const played = all.rows.filter((row) => row.quizzesPlayed > 0);
+    expect(next.me!.position).toBe(played.length + 1);
+    expect(all.rows.findIndex((row) => row.quizzesPlayed === 0)).toBe(played.length);
+    const ids = all.rows.map((row) => row.userId);
+    expect(ids).toEqual(expect.arrayContaining([`${prefix}a`, `${prefix}b`, `${prefix}c`]));
+    expect(ids).not.toContain(`${prefix}d`);
+    expect(ids).not.toContain(`${prefix}e`);
+    expect((await service.rankings(`${prefix}d`, {})).me).toBeNull();
+    expect((await service.rankings(`${prefix}c`, { cursor: '100' })).total).toBeGreaterThanOrEqual(
+      3,
+    );
+    // En una temporada ya acabada no salen las cuentas creadas despues.
     const old = await service.rankings(`${prefix}a`, { seasonLabel: seasonLabelFor(season - 1) });
-    expect(old.total).toBe(users);
+    expect(old.me).toBeNull();
     expect(old.rows.every((row) => row.points === 0)).toBe(true);
     await expect(service.rankings(`${prefix}a`, { seasonLabel: '2026/99' })).rejects.toMatchObject({
       response: { code: 'INVALID_QUIZ_ANSWER' },

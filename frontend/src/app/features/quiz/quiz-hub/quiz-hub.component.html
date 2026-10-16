@@ -213,13 +213,15 @@
         <div class="loading small" role="status" [attr.aria-label]="'common.cargando' | t"><app-spinner [size]="22"></app-spinner></div>
       }
       @case ('ready') {
-        @if (page.rankingRows().length === 0) {
+        <!-- Salen tambien quienes no han jugado (sin puesto): si nadie ha jugado aun, la invitacion a estrenarla va encima. -->
+        @if (page.rankingNobodyPlayed()) {
           <p class="empty">{{ 'quiz.rankingVacio' | t }}</p>
-        } @else {
+        }
+        @if (page.rankingRows().length > 0) {
           @if (page.rankingMe(); as me) {
             <!-- Mi puesto, siempre arriba: al pulsar baja con scroll suave a mi fila (y si no esta cargada, carga a los que tengo cerca). -->
             <button type="button" class="row me pinned" (click)="goToMe()" [attr.aria-label]="'quiz.irATuPosicion' | t">
-              <span class="col-pos mono">{{ me.position }}</span>
+              <span class="col-pos mono">{{ me.quizzesPlayed > 0 ? me.position : '–' }}</span>
               <span class="col-name">
                 <app-avatar [url]="me.avatarUrl" [background]="me.avatarBackground" [name]="me.name" [size]="28"></app-avatar>
                 <span class="name-wrap">
@@ -247,7 +249,7 @@
                     [id]="'quiz-row-' + item.row.userId"
                     [routerLink]="['/player', item.row.userId]"
                   >
-                    <span class="col-pos mono">{{ item.row.position }}</span>
+                    <span class="col-pos mono">{{ item.row.quizzesPlayed > 0 ? item.row.position : '–' }}</span>
                     <span class="col-name">
                       <app-avatar [url]="item.row.avatarUrl" [background]="item.row.avatarBackground" [name]="item.row.name" [size]="28"></app-avatar>
                       <span class="name-wrap">

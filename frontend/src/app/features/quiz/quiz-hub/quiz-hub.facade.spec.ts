@@ -154,6 +154,18 @@ describe('QuizHubFacade', () => {
       return facade;
     }
 
+    it('invita a estrenar la clasificacion solo si no ha jugado nadie (salen todos, tambien quien no ha jugado)', () => {
+      const facade = setup();
+      facade.init();
+      http.expectOne(`${API}/overview`).flush(overview());
+      rankingReq(null).flush(ranking({ rows: [row(1, { quizzesPlayed: 0, points: 0 })], me, total: 80 }));
+      expect(facade.rankingNobodyPlayed()).toBe(true);
+    });
+
+    it('con alguien que ya ha jugado no sale la invitacion a estrenarla', () => {
+      expect(open().rankingNobodyPlayed()).toBe(false);
+    });
+
     it('el scroll infinito pide la pagina que sigue al final del tramo y la une a lo cargado', () => {
       const facade = open();
 

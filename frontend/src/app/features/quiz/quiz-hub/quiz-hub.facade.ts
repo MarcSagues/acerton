@@ -84,6 +84,11 @@ export class QuizHubFacade {
   /** Tramos de la clasificacion ya cargados (ver ranking-segments.ts): uno al abrir, y otro mas al saltar a "mi puesto" si esta lejos. */
   private readonly rankingSegments = signal<RankingSegment[]>([]);
   readonly rankingRows = computed(() => this.rankingSegments().flatMap((segment) => segment.rows));
+  /** Los que han jugado van delante: si el primero de la clasificacion no ha jugado, no ha jugado nadie. */
+  readonly rankingNobodyPlayed = computed(() => {
+    const first = this.rankingRows()[0];
+    return !first || (first.rowNumber === 1 && first.quizzesPlayed === 0);
+  });
   readonly rankingMe = signal<QuizRankingRow | null>(null);
   readonly rankingTotal = signal(0);
   readonly rankingSeasonLabel = signal<string | null>(null);

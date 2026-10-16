@@ -3,9 +3,20 @@
 ## 2026-10-15 — Clasificación del Quiz con todos los usuarios (fuera de sprint)
 
 Petición del usuario: con la clasificación recién puesta a cero la app quedaba vacía. `QuizService.rankings` parte ahora de
-`users` con LEFT JOIN a los totales: salen todos, los que no han jugado con 0 puntos y 0 quizzes, empatados al final
-(orden: puntos, quizzes jugados, nombre). Vale para General, Ligas y Champions. En el perfil de jugador, quien no ha jugado
-ningún quiz sigue sin puesto («Sin datos»). **Verificado**: 107 tests de Quiz/Players (integración contra MySQL).
+`users` con LEFT JOIN a los totales. Vale para General, Ligas y Champions. Ajustes tras la revisión (2026-10-16):
+
+- Solo cuentas activas: email verificado y nombre confirmado (una cuenta de Google sin onboarding no enseña el nombre de su
+  perfil de Google), creadas antes del 1 de julio que cierra esa temporada (las temporadas pasadas no se llenan de cuentas
+  nuevas). Quien ha jugado sale siempre.
+- Quien no ha jugado va detrás de todos los que han jugado (aunque estos tengan 0 puntos) y nunca comparte puesto con
+  ellos. La app no le enseña puesto («–»), ni en el Quiz ni en su perfil («Sin datos»): la señal es `quizzesPlayed = 0`. El
+  `position` numérico se mantiene para no romper apps anteriores.
+- Si no ha jugado nadie (Champions sin partidos, temporada recién empezada) vuelve a salir «quiz.rankingVacio» encima de la
+  lista.
+- Desempate estable (`userId`, ya no el nombre, que cambia). Una sola ordenación por petición: la página y la fila propia
+  van en la misma consulta y el total es un `COUNT` sin ventana.
+
+**Verificado**: 108 tests de Quiz/Players (integración contra MySQL) y 265 de frontend.
 
 ## 2026-10-15 — Quiz escondido a la app 1.1.0 (fuera de sprint)
 
