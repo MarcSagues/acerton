@@ -34,12 +34,17 @@ export class CookieConsentFacade {
 
   private updateConsent(choice: ConsentChoice): void {
     const granted = choice === 'accepted';
+    // Clarity tambien escucha Google Consent Mode: analytics_storage tiene
+    // que ir igual que lo que se le dice a Clarity, y Clarity va despues
+    // para que su estado explicito sea siempre el ultimo que recibe.
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        ad_storage: granted ? 'granted' : 'denied',
+        ad_user_data: granted ? 'granted' : 'denied',
+        ad_personalization: granted ? 'granted' : 'denied',
+        analytics_storage: granted ? 'granted' : 'denied',
+      });
+    }
     this.clarity.setConsent(granted);
-    if (typeof gtag !== 'function') return;
-    gtag('consent', 'update', {
-      ad_storage: granted ? 'granted' : 'denied',
-      ad_user_data: granted ? 'granted' : 'denied',
-      ad_personalization: granted ? 'granted' : 'denied',
-    });
   }
 }

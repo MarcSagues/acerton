@@ -5,6 +5,9 @@
  * v2: desde que el aviso incluye tambien analitica (Microsoft Clarity), una
  * aceptacion antigua (solo anuncios de Google) no vale como consentimiento
  * para analitica, asi que se vuelve a preguntar una vez.
+ *
+ * index.html lee esta misma clave antes de arrancar Angular (Consent Mode
+ * por defecto): si cambia, hay que cambiarla tambien alli.
  */
 const STORAGE_KEY = 'quiniela.cookieConsent.v2';
 
