@@ -5,18 +5,21 @@ import { environment } from '../../../environments/environment';
 import { readCookieConsent } from '../../shared/cookie-consent/cookie-consent.storage';
 
 /**
- * Microsoft Clarity (mapas de calor y grabaciones de sesion), solo en web.
+ * Microsoft Clarity (mapas de calor y grabaciones de sesion), en web y en la
+ * app de iOS. La app de iOS es la misma web dentro de un WKWebView servida
+ * como https://app.piqo.es (ver capacitor.config.ts), asi que el script web
+ * de Clarity la graba igual, sin SDK nativo. En Android no se carga.
  *
- * - Sin `clarityProjectId` en el environment no hace nada: asi se puede
- *   desplegar el codigo antes de tener el proyecto creado en clarity.ms.
- * - No se carga en la app nativa, por lo mismo que AdSense (ver index.html):
- *   alli no hay aviso de cookies y un script de terceros dentro del WebView
- *   tendria que pasar por la revision de privacidad de App Store/Play.
+ * - Sin `clarityProjectId` en el environment no hace nada.
  * - Consentimiento (obligatorio en UE/Reino Unido/Suiza desde oct. 2025):
- *   arranca en "denied" y solo pasa a "granted" para analitica si el usuario
- *   acepta en el aviso de cookies. Sin consentimiento Clarity funciona en
- *   modo limitado (sin cookies ni sesiones enlazadas). ad_Storage va siempre
- *   denegado: Clarity no se usa para publicidad.
+ *   ad_Storage va siempre denegado (Clarity no se usa para publicidad).
+ *   analytics_Storage:
+ *   - web: "granted" solo si el usuario acepta el aviso de cookies.
+ *   - iOS: siempre "denied". En la app no hay aviso de cookies (ver
+ *     CookieConsentFacade), asi que Clarity funciona en su modo sin cookies:
+ *     no guarda nada en el dispositivo ni relaciona visitas, y por tanto no
+ *     es "tracking" a efectos de App Tracking Transparency.
+ * - Etiqueta `platform` (web/ios) para poder filtrar en clarity.microsoft.com.
  */
 @Injectable({ providedIn: 'root' })
 export class ClarityService {
@@ -24,11 +27,13 @@ export class ClarityService {
 
   init(): void {
     const projectId = environment.clarityProjectId;
-    if (this.initialized || !projectId || Capacitor.isNativePlatform()) return;
+    const platform = Capacitor.getPlatform();
+    if (this.initialized || !projectId || platform === 'android') return;
     this.initialized = true;
 
     Clarity.init(projectId);
-    this.setConsent(readCookieConsent() === 'accepted');
+    Clarity.setTag('platform', platform);
+    this.setConsent(platform === 'web' && readCookieConsent() === 'accepted');
   }
 
   setConsent(granted: boolean): void {

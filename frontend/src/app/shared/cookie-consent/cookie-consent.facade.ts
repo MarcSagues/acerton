@@ -12,7 +12,8 @@ export class CookieConsentFacade {
   /**
    * En la app nativa no hay cookies de terceros que consentir (ver
    * index.html: AdSense/Google Consent Mode solo cargan en web, la app usa
-   * AdMob con su propio flujo de ATT; Clarity tampoco carga ahi) — el banner
+   * AdMob con su propio flujo de ATT; Clarity en iOS va siempre sin cookies,
+   * ver ClarityService) — el banner
    * no debe aparecer (Guideline 5.1.2(i) de App Store: un banner de cookies
    * dentro de la app sin nada real detras solo confunde la revision).
    */
