@@ -9,6 +9,7 @@ import { DeepLinkService } from './core/services/deep-link.service';
 import { EdgeSwipeBackService } from './core/services/edge-swipe-back.service';
 import { KeyboardInsetService } from './core/services/keyboard-inset.service';
 import { ScrollTopService } from './core/services/scroll-top.service';
+import { ClarityService } from './core/services/clarity.service';
 import { KeyboardAccessoryComponent } from './shared/ui/keyboard-accessory/keyboard-accessory.component';
 
 @Component({
@@ -33,11 +34,13 @@ export class AppComponent {
   private readonly edgeSwipeBackService = inject(EdgeSwipeBackService);
   private readonly keyboardInsetService = inject(KeyboardInsetService);
   private readonly scrollTopService = inject(ScrollTopService);
+  private readonly clarityService = inject(ClarityService);
 
   constructor() {
     this.deepLinkService.init();
     this.edgeSwipeBackService.init();
     this.keyboardInsetService.init();
     this.scrollTopService.init();
+    this.clarityService.init();
   }
 }

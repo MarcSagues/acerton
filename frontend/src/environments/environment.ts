@@ -11,6 +11,9 @@ export const environment = {
   // sirve de nada si se comparte fuera de la app (p.ej. el enlace de
   // invitacion a un grupo) — hay que usar siempre esta URL real en su lugar.
   appUrl: 'http://localhost:4200',
+  // Microsoft Clarity (ver ClarityService): vacio = desactivado. En local
+  // no se graba nada para no ensuciar las estadisticas.
+  clarityProjectId: '',
   // Mismo client id "web" que el backend (GOOGLE_CLIENT_ID en .env) — el
   // plugin nativo de Google Sign-In lo exige en todas las plataformas para
   // que el idToken resultante se pueda verificar en un backend compartido.
