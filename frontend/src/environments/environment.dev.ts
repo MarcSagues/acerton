@@ -6,10 +6,10 @@ export const environment = {
   // hace falta la URL completa).
   apiUrl: 'https://api-dev.piqo.es/api',
   appUrl: 'https://app-dev.piqo.es',
-  // Microsoft Clarity (ver ClarityService): vacio = desactivado. Pon aqui
-  // el id de un proyecto aparte si quieres probarlo en app-dev.piqo.es sin
-  // mezclar sesiones con produccion.
-  clarityProjectId: '',
+  // Microsoft Clarity (ver ClarityService): proyecto "Piqo dev" en
+  // clarity.microsoft.com, aparte del de produccion para no mezclar
+  // sesiones (app-dev.piqo.es y builds de TestFlight dev).
+  clarityProjectId: 'yza2kkdztr',
   // Ver comentario en environment.ts: activo aqui para poder probarlo en
   // TestFlight dev, desactivado en environment.prod.ts.
   adRewardedWildcardsEnabled: true,
