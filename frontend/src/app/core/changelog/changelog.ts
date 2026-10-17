@@ -55,6 +55,20 @@ export interface ChangelogEntry {
 /** De la más nueva a la más antigua. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    version: '1.1.2',
+    date: '2026-10-17',
+    changes: [
+      {
+        es: 'Usamos Microsoft Clarity, sin cookies, para ver qué partes de la app cuestan más y mejorarlas. Lo tienes explicado en la política de privacidad.',
+        en: 'We use Microsoft Clarity, without cookies, to see which parts of the app are harder to use and improve them. It is explained in the privacy policy.',
+        ca: 'Fem servir Microsoft Clarity, sense cookies, per veure quines parts de l’app costen més i millorar-les. Ho tens explicat a la política de privacitat.',
+        fr: 'Nous utilisons Microsoft Clarity, sans cookies, pour voir quelles parties de l’app posent le plus de difficultés et les améliorer. Tout est expliqué dans la politique de confidentialité.',
+        it: 'Usiamo Microsoft Clarity, senza cookie, per vedere quali parti dell’app sono più difficili da usare e migliorarle. Trovi tutto spiegato nell’informativa sulla privacy.',
+        de: 'Wir nutzen Microsoft Clarity ohne Cookies, um zu sehen, welche Teile der App schwieriger zu bedienen sind, und sie zu verbessern. Alles dazu steht in der Datenschutzerklärung.',
+      },
+    ],
+  },
+  {
     version: '1.1.1',
     date: '2026-10-15',
     changes: [
