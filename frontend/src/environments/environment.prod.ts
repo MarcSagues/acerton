@@ -4,9 +4,9 @@ export const environment = {
   // del mismo dominio, no en el mismo origen, asi que hace falta la URL completa.
   apiUrl: 'https://api.piqo.es/api',
   appUrl: 'https://app.piqo.es',
-  // Microsoft Clarity (ver ClarityService): id del proyecto en
-  // clarity.ms > Settings > Overview. Vacio = desactivado.
-  clarityProjectId: '',
+  // Microsoft Clarity (ver ClarityService): proyecto "Piqo" en
+  // clarity.microsoft.com (app.piqo.es). Vacio = desactivado.
+  clarityProjectId: 'yz7jj2599w',
   // Banner "consigue un comodin extra viendo un video" (ver
   // CurrentMatchdayFacade.showAdRewardBanner) — escondido a peticion
   // explicita del usuario antes de la primera subida a main. El resto del
