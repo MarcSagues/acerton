@@ -1,21 +1,23 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { Capacitor } from '@capacitor/core';
+import { ClarityService } from '../../core/services/clarity.service';
+import { ConsentChoice, readCookieConsent, storeCookieConsent } from './cookie-consent.storage';
 
 declare function gtag(...args: unknown[]): void;
 
-const STORAGE_KEY = 'quiniela.cookieConsent';
-type ConsentChoice = 'accepted' | 'rejected';
-
 @Injectable()
 export class CookieConsentFacade {
+  private readonly clarity = inject(ClarityService);
+
   /**
    * En la app nativa no hay cookies de terceros que consentir (ver
    * index.html: AdSense/Google Consent Mode solo cargan en web, la app usa
-   * AdMob con su propio flujo de ATT) — el banner no debe aparecer ahi
-   * (Guideline 5.1.2(i) de App Store: un banner de cookies dentro de la app
-   * sin nada real detras solo confunde la revision).
+   * AdMob con su propio flujo de ATT; Clarity en iOS va siempre sin cookies,
+   * ver ClarityService) — el banner
+   * no debe aparecer (Guideline 5.1.2(i) de App Store: un banner de cookies
+   * dentro de la app sin nada real detras solo confunde la revision).
    */
-  readonly visible = signal(!Capacitor.isNativePlatform() && this.readStoredChoice() === null);
+  readonly visible = signal(!Capacitor.isNativePlatform() && readCookieConsent() === null);
 
   accept(): void {
     this.applyChoice('accepted');
@@ -26,30 +28,24 @@ export class CookieConsentFacade {
   }
 
   private applyChoice(choice: ConsentChoice): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, choice);
-    } catch {
-      /* localStorage no disponible: el aviso volvera a salir la proxima vez */
-    }
+    storeCookieConsent(choice);
     this.updateConsent(choice);
     this.visible.set(false);
   }
 
   private updateConsent(choice: ConsentChoice): void {
     const granted = choice === 'accepted';
-    if (typeof gtag !== 'function') return;
-    gtag('consent', 'update', {
-      ad_storage: granted ? 'granted' : 'denied',
-      ad_user_data: granted ? 'granted' : 'denied',
-      ad_personalization: granted ? 'granted' : 'denied',
-    });
-  }
-
-  private readStoredChoice(): ConsentChoice | null {
-    try {
-      return localStorage.getItem(STORAGE_KEY) as ConsentChoice | null;
-    } catch {
-      return null;
+    // Clarity tambien escucha Google Consent Mode: analytics_storage tiene
+    // que ir igual que lo que se le dice a Clarity, y Clarity va despues
+    // para que su estado explicito sea siempre el ultimo que recibe.
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        ad_storage: granted ? 'granted' : 'denied',
+        ad_user_data: granted ? 'granted' : 'denied',
+        ad_personalization: granted ? 'granted' : 'denied',
+        analytics_storage: granted ? 'granted' : 'denied',
+      });
     }
+    this.clarity.setConsent(granted);
   }
 }

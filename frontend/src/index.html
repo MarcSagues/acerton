@@ -164,13 +164,22 @@
     (function () {
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return;
 
+      // Eleccion ya guardada del aviso de cookies (misma clave que
+      // cookie-consent.storage.ts): sin esto, quien ya acepto volveria a
+      // "denied" en cada visita, y Clarity (que tambien lee Consent Mode)
+      // recibiria dos estados distintos.
+      var consent = 'denied';
+      try {
+        if (localStorage.getItem('quiniela.cookieConsent.v2') === 'accepted') consent = 'granted';
+      } catch (e) {}
+
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () { dataLayer.push(arguments); };
       gtag('consent', 'default', {
-        ad_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied',
-        analytics_storage: 'denied',
+        ad_storage: consent,
+        ad_user_data: consent,
+        ad_personalization: consent,
+        analytics_storage: consent,
       });
 
       var adsenseScript = document.createElement('script');
