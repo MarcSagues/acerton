@@ -101,8 +101,9 @@ export class QuizRemindersService {
     if (this.running) return;
     this.running = true;
     try {
+      // Solo los mixtos: los antiguos (una liga y jornada) siguen abriendose pero la app ya no los ensena.
       const events = await this.prisma.quizEvent.findMany({
-        where: { status: 'OPEN' },
+        where: { status: 'OPEN', windowKey: { not: null } },
         include: { matchday: { select: { order: true, competition: { select: { name: true } } } } },
       });
       for (const event of events) {

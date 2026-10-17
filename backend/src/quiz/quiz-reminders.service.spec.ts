@@ -72,9 +72,7 @@ describe('QuizRemindersService.sendDueReminders', () => {
       quizEvent: {
         findMany: jest
           .fn()
-          .mockResolvedValue(
-            events.map((e) => ({ ...e, matchday: { order: 9, competition: { name: 'LaLiga' } } })),
-          ),
+          .mockResolvedValue(events.map((e) => ({ ...e, windowKind: 'WEEKEND', matchday: null }))),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       notificationPreference: {
@@ -94,6 +92,9 @@ describe('QuizRemindersService.sendDueReminders', () => {
 
     await service.sendDueReminders(now);
 
+    expect(prisma.quizEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: 'OPEN', windowKey: { not: null } } }),
+    );
     expect(prisma.notificationPreference.findMany).toHaveBeenCalledWith({
       where: { quizOpening: true },
       select: { userId: true },
@@ -101,7 +102,7 @@ describe('QuizRemindersService.sendDueReminders', () => {
     expect(notifications.notifyQuiz).toHaveBeenCalledWith(
       ['u1', 'u2'],
       'QUIZ_OPENED',
-      'Quiz de LaLiga · Jornada 9',
+      'Quiz de ligas',
       expect.any(String),
       'q1',
     );
